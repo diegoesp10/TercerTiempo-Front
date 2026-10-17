@@ -3,6 +3,7 @@
 export type Position = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Forward';
 export type MembershipStatus = 'Pending' | 'Active' | 'Inactive';
 export type MatchStatus = 'Scheduled' | 'InProgress' | 'Played' | 'Postponed' | 'Cancelled';
+export type CompetitionLevel = 'Professional' | 'National' | 'Regional' | 'Cup' | 'Youth' | 'Other';
 
 export interface ProblemDetails {
   type?: string;
@@ -32,6 +33,9 @@ export interface SquadMembershipDto {
   teamName: string;
   teamShortName: string;
   teamCrestUrl: string | null;
+  competitionId: string;
+  competitionName: string;
+  competitionLevel: CompetitionLevel;
   seasonId: string;
   seasonLabel: string;
   shirtNumber: number | null;
@@ -61,13 +65,28 @@ export interface JoinTeamRequest {
   shirtNumber: number | null;
 }
 
-// --- Competición / equipos ---
+// --- Competiciones / equipos ---
+
+export interface CompetitionDto {
+  id: string;
+  name: string;
+  category: string;
+  level: CompetitionLevel;
+  tier: number;
+  group: string | null;
+  region: string;
+  sortOrder: number;
+  currentSeasonId: string | null;
+  currentSeasonLabel: string | null;
+  teamsCount: number;
+}
 
 export interface SeasonDto {
   id: string;
   label: string;
   competitionId: string;
   competitionName: string;
+  level: CompetitionLevel;
   region: string;
   startsOn: string;
   endsOn: string;
@@ -94,6 +113,8 @@ export interface TeamSummaryDto {
   name: string;
   shortName: string;
   crestUrl: string | null;
+  competitionId: string;
+  competitionName: string;
   position: number | null;
   played: number | null;
   points: number | null;
@@ -122,6 +143,7 @@ export interface TeamDetailDto {
   crestUrl: string | null;
   season: SeasonDto;
   standing: StandingDto | null;
+  rosterPublished: boolean;
   roster: RosterEntryDto[];
   registeredPlayers: SquadMemberDto[];
 }
@@ -264,11 +286,11 @@ export interface PlayerDashboardDto {
 
 export interface SyncResultDto {
   provider: string;
-  competition: string;
-  season: string;
+  competitions: number;
   teams: number;
   matches: number;
   standings: number;
   rosterEntries: number;
+  errors: string[];
   syncedAt: string;
 }

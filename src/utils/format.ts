@@ -1,4 +1,4 @@
-import type { MatchDto, MatchStatus, MembershipStatus, Position } from '@/types/api';
+import type { CompetitionDto, CompetitionLevel, MatchDto, MatchStatus, MembershipStatus, Position } from '@/types/api';
 
 export const positionLabels: Record<Position, string> = {
   Goalkeeper: 'Portero',
@@ -25,6 +25,28 @@ export const membershipStatusLabels: Record<MembershipStatus, string> = {
   Active: 'Verificado',
   Inactive: 'Baja',
 };
+
+export const levelLabels: Record<CompetitionLevel, string> = {
+  Professional: 'Profesional',
+  National: 'Nacional',
+  Regional: 'Regional',
+  Cup: 'Copas',
+  Youth: 'Fútbol base',
+  Other: 'Otras',
+};
+
+/** Orden de presentación de los niveles: primero donde juega el fútbol amateur asturiano. */
+export const levelOrder: CompetitionLevel[] = ['National', 'Regional', 'Professional', 'Cup', 'Youth', 'Other'];
+
+/** Agrupa las competiciones por nivel respetando levelOrder y el sortOrder de cada liga. */
+export function groupByLevel(competitions: CompetitionDto[]): { level: CompetitionLevel; competitions: CompetitionDto[] }[] {
+  return levelOrder
+    .map((level) => ({
+      level,
+      competitions: competitions.filter((c) => c.level === level).sort((a, b) => a.sortOrder - b.sortOrder),
+    }))
+    .filter((group) => group.competitions.length > 0);
+}
 
 const dateTime = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' });
 const dateOnly = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' });

@@ -99,7 +99,8 @@ function opponentOf(match: { homeTeam: { id: string; name: string }; awayTeam: {
       <section v-if="league" class="card">
         <h2 class="font-semibold text-slate-900">Frente a la liga</h2>
         <p class="mb-4 text-xs text-slate-500">
-          <template v-if="league.teamPosition">Tu equipo es {{ league.teamPosition }}º de {{ league.teamsCount }}.</template>
+          {{ data.season?.competitionName }}:
+          <template v-if="league.teamPosition">tu equipo es {{ league.teamPosition }}º de {{ league.teamsCount }}.</template>
           <template v-else>{{ league.teamsCount }} equipos en la competición.</template>
         </p>
 

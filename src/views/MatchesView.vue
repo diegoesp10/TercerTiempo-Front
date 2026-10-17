@@ -23,7 +23,7 @@ const pending = computed(() => played.value.filter((m) => !m.myPerformanceId).le
 <template>
   <PageHeader
     title="Partidos"
-    :subtitle="auth.membership ? `${auth.membership.teamName} · temporada ${auth.membership.seasonLabel}` : undefined"
+    :subtitle="auth.membership ? `${auth.membership.teamName} · ${auth.membership.competitionName} · ${auth.membership.seasonLabel}` : undefined"
   />
 
   <Alert v-if="!teamId" kind="info">

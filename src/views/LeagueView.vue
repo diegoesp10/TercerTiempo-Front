@@ -1,25 +1,60 @@
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
 import Alert from '@/components/ui/Alert.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
+import { groupByLevel, levelLabels } from '@/utils/format';
 
 const auth = useAuthStore();
-const { data, loading, error } = useAsync(() => api.stats.leagueTable());
+const route = useRoute();
+const router = useRouter();
+
+const competitions = useAsync(() => api.competitions.list());
+const groups = computed(() => groupByLevel(competitions.data.value ?? []));
+
+const selectedId = ref<string | null>(typeof route.query.competition === 'string' ? route.query.competition : null);
+
+watch(competitions.data, (list) => {
+  if (!list || list.length === 0) return;
+  if (selectedId.value && list.some((c) => c.id === selectedId.value)) return;
+  selectedId.value = auth.membership?.competitionId ?? list.find((c) => c.level === 'National')?.id ?? list[0]?.id ?? null;
+});
+
+const table = useAsync(() => api.stats.leagueTable(selectedId.value), { immediate: false });
+
+watch(selectedId, (id) => {
+  if (!id) return;
+  if (route.query.competition !== id) void router.replace({ query: { ...route.query, competition: id } });
+  void table.run();
+}, { immediate: true });
 </script>
 
 <template>
   <PageHeader
     title="Clasificación"
-    :subtitle="data ? `${data.season.competitionName} · ${data.season.label}` : undefined"
-  />
+    :subtitle="table.data.value ? `${table.data.value.season.competitionName} · ${table.data.value.season.label}` : undefined"
+  >
+    <template #actions>
+      <select v-if="groups.length > 0" v-model="selectedId" class="input w-auto min-w-64" aria-label="Competición">
+        <optgroup v-for="group in groups" :key="group.level" :label="levelLabels[group.level]">
+          <option v-for="competition in group.competitions" :key="competition.id" :value="competition.id">
+            {{ competition.name }}
+          </option>
+        </optgroup>
+      </select>
+    </template>
+  </PageHeader>
 
-  <Spinner v-if="loading" />
-  <Alert v-else-if="error" kind="error">{{ error }}</Alert>
+  <Spinner v-if="competitions.loading.value || table.loading.value" />
+  <Alert v-else-if="competitions.error.value" kind="error">{{ competitions.error.value }}</Alert>
+  <Alert v-else-if="table.error.value" kind="error">{{ table.error.value }}</Alert>
+  <Alert v-else-if="groups.length === 0" kind="warning">Todavía no hay ligas sincronizadas.</Alert>
 
-  <div v-else-if="data" class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+  <div v-else-if="table.data.value" class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
     <table class="min-w-full text-sm">
       <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
         <tr>
@@ -37,13 +72,14 @@ const { data, loading, error } = useAsync(() => api.stats.leagueTable());
       </thead>
       <tbody class="divide-y divide-slate-100">
         <tr
-          v-for="row in data.standings"
+          v-for="row in table.data.value.standings"
           :key="row.teamId"
           :class="row.teamId === auth.membership?.teamId ? 'bg-emerald-50 font-medium' : 'hover:bg-slate-50'"
         >
           <td class="px-3 py-2 tabular-nums text-slate-500">{{ row.position }}</td>
           <td class="px-3 py-2">
-            <RouterLink :to="{ name: 'team', params: { teamId: row.teamId } }" class="hover:text-emerald-700 hover:underline">
+            <RouterLink :to="{ name: 'team', params: { teamId: row.teamId } }" class="flex items-center gap-2 hover:text-emerald-700 hover:underline">
+              <img v-if="row.crestUrl" :src="row.crestUrl" :alt="''" class="h-5 w-5 object-contain" loading="lazy" />
               {{ row.teamName }}
             </RouterLink>
           </td>
@@ -58,5 +94,6 @@ const { data, loading, error } = useAsync(() => api.stats.leagueTable());
         </tr>
       </tbody>
     </table>
+    <p v-if="table.data.value.standings.length === 0" class="p-4 text-sm text-slate-500">El proveedor aún no publica clasificación para esta liga.</p>
   </div>
 </template>

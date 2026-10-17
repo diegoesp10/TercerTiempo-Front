@@ -1,6 +1,7 @@
 import { http } from './http';
 import type {
   AuthResponse,
+  CompetitionDto,
   JoinTeamRequest,
   LeagueTableDto,
   LoginRequest,
@@ -27,8 +28,11 @@ export const api = {
     joinTeam: (body: JoinTeamRequest) => http<PlayerDto>('/api/players/me/team', { method: 'POST', body }),
     leaveTeam: () => http<PlayerDto>('/api/players/me/team', { method: 'DELETE' }),
   },
+  competitions: {
+    list: () => http<CompetitionDto[]>('/api/competitions'),
+  },
   teams: {
-    list: () => http<TeamSummaryDto[]>('/api/teams'),
+    list: (competitionId: string) => http<TeamSummaryDto[]>(`/api/teams?competitionId=${encodeURIComponent(competitionId)}`),
     get: (teamId: string) => http<TeamDetailDto>(`/api/teams/${teamId}`),
     matches: (teamId: string) => http<MatchDto[]>(`/api/teams/${teamId}/matches`),
   },
@@ -42,7 +46,8 @@ export const api = {
   },
   stats: {
     dashboard: () => http<PlayerDashboardDto>('/api/stats/dashboard'),
-    leagueTable: () => http<LeagueTableDto>('/api/league/table'),
+    leagueTable: (competitionId?: string | null) =>
+      http<LeagueTableDto>(competitionId ? `/api/league/table?competitionId=${encodeURIComponent(competitionId)}` : '/api/league/table'),
   },
   admin: {
     sync: () => http<SyncResultDto>('/api/admin/sync', { method: 'POST' }),

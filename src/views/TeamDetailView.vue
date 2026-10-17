@@ -8,7 +8,7 @@ import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
-import { membershipStatusLabels, positionLabels } from '@/utils/format';
+import { levelLabels, membershipStatusLabels, positionLabels } from '@/utils/format';
 
 const props = defineProps<{ teamId: string }>();
 
@@ -51,8 +51,13 @@ async function leave() {
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">
-    <PageHeader :title="data.name" :subtitle="`${data.season.competitionName} · ${data.season.label}`">
+    <RouterLink :to="{ name: 'teams', query: { competition: data.season.competitionId } }" class="text-sm text-slate-500 hover:text-slate-800">
+      ← {{ data.season.competitionName }}
+    </RouterLink>
+
+    <PageHeader :title="data.name" :subtitle="`${levelLabels[data.season.level]} · ${data.season.competitionName} · ${data.season.label}`" class="mt-2">
       <template #actions>
+        <img v-if="data.crestUrl" :src="data.crestUrl" :alt="data.name" class="h-12 w-12 object-contain" />
         <RouterLink v-if="isMyTeam" to="/partidos" class="btn-primary">Ver partidos</RouterLink>
         <button v-if="isMyTeam" type="button" class="btn-secondary" @click="leave">Abandonar plantilla</button>
       </template>
@@ -60,7 +65,7 @@ async function leave() {
 
     <Alert v-if="joinError" kind="error" class="mb-4">{{ joinError }}</Alert>
     <Alert v-if="isMyTeam && auth.membership?.status === 'Pending'" kind="warning" class="mb-4">
-      Tu pertenencia está <strong>pendiente de validar</strong>: no apareces en la plantilla del proveedor. Hasta que se valide no podrás registrar rendimiento.
+      Tu pertenencia está <strong>pendiente de validar</strong>: no apareces en la plantilla publicada. Hasta que se valide no podrás registrar rendimiento.
     </Alert>
 
     <div v-if="data.standing" class="mb-6 grid grid-cols-3 gap-3 sm:grid-cols-6">
@@ -75,11 +80,18 @@ async function leave() {
     <div class="grid gap-6 lg:grid-cols-5">
       <section class="card lg:col-span-3">
         <div class="mb-3 flex items-center justify-between">
-          <h2 class="font-semibold text-slate-900">Plantilla (según el proveedor)</h2>
-          <span class="text-xs text-slate-500">{{ data.roster.length }} jugadores</span>
+          <h2 class="font-semibold text-slate-900">Plantilla (según futbolasturiano.es)</h2>
+          <span v-if="data.rosterPublished" class="text-xs text-slate-500">{{ data.roster.length }} jugadores</span>
         </div>
 
-        <p v-if="data.roster.length === 0" class="text-sm text-slate-500">Todavía no hay plantilla sincronizada para este equipo.</p>
+        <template v-if="!data.rosterPublished">
+          <p class="text-sm text-slate-600">
+            El proveedor no publica la plantilla de este equipo. Al unirte quedarás <strong>activo directamente</strong>, sin verificación contra la plantilla.
+          </p>
+          <button v-if="canJoin" type="button" class="btn-primary mt-4" :disabled="joining !== null" @click="join(null)">
+            {{ joining ? 'Uniéndote…' : 'Unirme a este equipo' }}
+          </button>
+        </template>
 
         <table v-else class="min-w-full text-sm">
           <thead class="text-xs uppercase tracking-wide text-slate-500">
@@ -111,14 +123,14 @@ async function leave() {
           </tbody>
         </table>
 
-        <div v-if="canJoin" class="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-600">
+        <div v-if="data.rosterPublished && canJoin" class="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-600">
           ¿No apareces en la lista?
           <button type="button" class="font-medium text-emerald-700 hover:underline" :disabled="joining !== null" @click="join(null)">
             Unirme igualmente (pendiente de validación)
           </button>
         </div>
         <p v-else-if="!auth.isAuthenticated" class="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-600">
-          <RouterLink to="/registro" class="font-medium text-emerald-700 hover:underline">Date de alta</RouterLink> para reclamar tu ficha.
+          <RouterLink to="/registro" class="font-medium text-emerald-700 hover:underline">Date de alta</RouterLink> para unirte a este equipo.
         </p>
       </section>
 

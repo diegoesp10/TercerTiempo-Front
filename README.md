@@ -28,8 +28,10 @@ npm run dev
 La aplicación queda en `http://localhost:5173`. La URL de la API se configura en `.env.development`
 (`VITE_API_URL`); `.env.example` documenta las variables disponibles.
 
-Flujo de prueba: *Darme de alta* → *Equipos* → entrar en uno → **«Soy yo»** sobre tu ficha de la
-plantilla → *Partidos* → abrir un partido disputado → guardar rendimiento → *Panel*.
+Flujo de prueba: *Darme de alta* → *Equipos* → elegir nivel (Nacional/Regional), liga y grupo → entrar en tu
+equipo → **«Soy yo»** sobre tu ficha de la plantilla (o **«Unirme a este equipo»** si la web no la publica) →
+*Partidos* → abrir un partido disputado → guardar rendimiento → *Panel*. En *Liga* se puede consultar la
+clasificación de cualquier liga sincronizada.
 
 ## Scripts
 
@@ -51,7 +53,7 @@ src/
 ├── composables/  useAsync (estado de carga/error)
 ├── utils/        formato de fechas, etiquetas de posición/estado, resultado por equipo
 ├── components/   layout (AppShell), ui (StatCard, Badge, Alert, Spinner, PageHeader, PercentileBar),
-│                 matches (MatchRow), performance (PerformanceForm)
+│                 competitions (CompetitionPicker: nivel → liga/grupo), matches (MatchRow), performance (PerformanceForm)
 └── views/        Login, Registro, Panel, Equipos, Equipo, Partidos, Partido, Liga, NotFound
 ```
 
