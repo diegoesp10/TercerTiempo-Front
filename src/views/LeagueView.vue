@@ -18,10 +18,12 @@ const groups = computed(() => groupByLevel(competitions.data.value ?? []));
 
 const selectedId = ref<string | null>(typeof route.query.competition === 'string' ? route.query.competition : null);
 
+const preferredCompetitionId = computed(() => auth.playerSquad?.competitionId ?? auth.coachSquads[0]?.competitionId ?? null);
+
 watch(competitions.data, (list) => {
   if (!list || list.length === 0) return;
   if (selectedId.value && list.some((c) => c.id === selectedId.value)) return;
-  selectedId.value = auth.membership?.competitionId ?? list.find((c) => c.level === 'National')?.id ?? list[0]?.id ?? null;
+  selectedId.value = preferredCompetitionId.value ?? list.find((c) => c.level === 'National')?.id ?? list[0]?.id ?? null;
 });
 
 const table = useAsync(() => api.stats.leagueTable(selectedId.value), { immediate: false });
@@ -74,7 +76,7 @@ watch(selectedId, (id) => {
         <tr
           v-for="row in table.data.value.standings"
           :key="row.teamId"
-          :class="row.teamId === auth.membership?.teamId ? 'bg-emerald-50 font-medium' : 'hover:bg-slate-50'"
+          :class="auth.isMyTeam(row.teamId) ? 'bg-emerald-50 font-medium' : 'hover:bg-slate-50'"
         >
           <td class="px-3 py-2 tabular-nums text-slate-500">{{ row.position }}</td>
           <td class="px-3 py-2">

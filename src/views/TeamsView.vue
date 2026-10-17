@@ -17,11 +17,13 @@ const competitions = useAsync(() => api.competitions.list());
 
 const selectedId = ref<string | null>(typeof route.query.competition === 'string' ? route.query.competition : null);
 
-// Selección inicial: la de la URL, si no la del equipo del jugador, si no la primera liga nacional.
+/** Liga preferida: la de la plantilla del jugador, la de la primera plantilla del técnico o la primera nacional. */
+const preferredCompetitionId = computed(() => auth.playerSquad?.competitionId ?? auth.coachSquads[0]?.competitionId ?? null);
+
 watch(competitions.data, (list) => {
   if (!list || list.length === 0) return;
   if (selectedId.value && list.some((c) => c.id === selectedId.value)) return;
-  selectedId.value = auth.membership?.competitionId ?? list.find((c) => c.level === 'National')?.id ?? list[0]?.id ?? null;
+  selectedId.value = preferredCompetitionId.value ?? list.find((c) => c.level === 'National')?.id ?? list[0]?.id ?? null;
 });
 
 const teams = useAsync(() => (selectedId.value ? api.teams.list(selectedId.value) : Promise.resolve([])), { immediate: false });
@@ -33,14 +35,20 @@ watch(selectedId, (id) => {
 }, { immediate: true });
 
 const selected = computed(() => competitions.data.value?.find((c) => c.id === selectedId.value) ?? null);
+
+const subtitle = computed(() =>
+  auth.isCoach
+    ? 'Elige nivel, liga y grupo, entra en tu equipo y crea su plantilla.'
+    : 'Elige nivel, liga y grupo para ver equipos, calendarios y plantillas.',
+);
 </script>
 
 <template>
-  <PageHeader title="Equipos" subtitle="Elige nivel, liga y grupo, entra en tu equipo y reclama tu ficha en la plantilla." />
+  <PageHeader title="Equipos" :subtitle="subtitle" />
 
-  <Alert v-if="auth.isAuthenticated && !auth.hasTeam" kind="info" class="mb-4">
-    Todavía no perteneces a ningún equipo. Entra en el tuyo y pulsa <strong>«Soy yo»</strong> sobre tu ficha de la plantilla
-    (o <strong>«Unirme a este equipo»</strong> si su plantilla no está publicada).
+  <Alert v-if="auth.isCoach && auth.coachSquads.length === 0" kind="info" class="mb-4">
+    Todavía no gestionas ninguna plantilla. Entra en tu equipo y pulsa <strong>«Crear plantilla»</strong>; si ya la creó otro
+    miembro del cuerpo técnico, <RouterLink to="/invitacion" class="font-medium underline">únete con su código</RouterLink>.
   </Alert>
 
   <Spinner v-if="competitions.loading.value" />
@@ -65,7 +73,7 @@ const selected = computed(() => competitions.data.value?.find((c) => c.id === se
         :key="team.id"
         :to="{ name: 'team', params: { teamId: team.id } }"
         class="card flex items-center gap-4 transition hover:border-emerald-300 hover:shadow"
-        :class="team.id === auth.membership?.teamId ? 'border-emerald-300 bg-emerald-50' : ''"
+        :class="auth.isMyTeam(team.id) ? 'border-emerald-300 bg-emerald-50' : ''"
       >
         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
           <img v-if="team.crestUrl" :src="team.crestUrl" :alt="team.name" class="h-10 w-10 object-contain" loading="lazy" />
@@ -78,7 +86,7 @@ const selected = computed(() => competitions.data.value?.find((c) => c.id === se
             <template v-else>Sin clasificación</template>
           </p>
         </div>
-        <span v-if="team.id === auth.membership?.teamId" class="text-xs font-medium text-emerald-700">Tu equipo</span>
+        <span v-if="auth.isMyTeam(team.id)" class="text-xs font-medium text-emerald-700">Tu equipo</span>
       </RouterLink>
     </div>
   </template>

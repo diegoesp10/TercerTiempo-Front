@@ -35,7 +35,7 @@ async function submit() {
   <div class="mx-auto mt-8 max-w-md">
     <div class="card">
       <h1 class="text-xl font-semibold text-slate-900">Entrar</h1>
-      <p class="mt-1 text-sm text-slate-500">Accede para registrar tu rendimiento partido a partido.</p>
+      <p class="mt-1 text-sm text-slate-500">Cuerpo técnico: gestiona tu plantilla y sus actas. Jugadores: consulta tus estadísticas.</p>
 
       <form class="mt-6 space-y-4" @submit.prevent="submit">
         <Alert v-if="error" kind="error">{{ error }}</Alert>

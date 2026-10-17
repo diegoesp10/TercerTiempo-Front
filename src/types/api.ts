@@ -1,9 +1,12 @@
 // Tipos espejo de los DTOs de la API (TercerTiempo.Application). Los enums viajan como string.
 
+export type AccountType = 'Player' | 'Coach';
 export type Position = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Forward';
-export type MembershipStatus = 'Pending' | 'Active' | 'Inactive';
 export type MatchStatus = 'Scheduled' | 'InProgress' | 'Played' | 'Postponed' | 'Cancelled';
 export type CompetitionLevel = 'Professional' | 'National' | 'Regional' | 'Cup' | 'Youth' | 'Other';
+export type SquadVisibility = 'Private' | 'Public';
+export type StaffRole = 'HeadCoach' | 'AssistantCoach' | 'Delegate' | 'Physio' | 'Analyst' | 'Other';
+export type SquadPlayerStatus = 'Active' | 'Left';
 
 export interface ProblemDetails {
   type?: string;
@@ -13,13 +16,14 @@ export interface ProblemDetails {
   errors?: Record<string, string[]>;
 }
 
-// --- Auth / jugador ---
+// --- Cuentas ---
 
 export interface RegisterRequest {
   email: string;
   password: string;
   displayName: string;
-  position: Position;
+  accountType: AccountType;
+  position: Position | null;
   birthDate: string | null;
 }
 
@@ -28,7 +32,10 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface SquadMembershipDto {
+/** Plantilla a la que está vinculado un jugador. */
+export interface PlayerSquadDto {
+  squadId: string;
+  squadPlayerId: string;
   teamId: string;
   teamName: string;
   teamShortName: string;
@@ -39,9 +46,7 @@ export interface SquadMembershipDto {
   seasonId: string;
   seasonLabel: string;
   shirtNumber: number | null;
-  status: MembershipStatus;
-  verifiedInRoster: boolean;
-  joinedAt: string;
+  visibility: SquadVisibility;
 }
 
 export interface PlayerDto {
@@ -49,20 +54,133 @@ export interface PlayerDto {
   displayName: string;
   position: Position;
   birthDate: string | null;
-  linkedToProvider: boolean;
-  membership: SquadMembershipDto | null;
+  squad: PlayerSquadDto | null;
+}
+
+export interface SquadSummaryDto {
+  id: string;
+  teamId: string;
+  teamName: string;
+  teamShortName: string;
+  teamCrestUrl: string | null;
+  competitionId: string;
+  competitionName: string;
+  competitionLevel: CompetitionLevel;
+  seasonId: string;
+  seasonLabel: string;
+  visibility: SquadVisibility;
+  playersCount: number;
+  staffCount: number;
+  /** Rol del técnico autenticado en esta plantilla (null si no forma parte del staff). */
+  myRole: StaffRole | null;
+}
+
+export interface CoachDto {
+  id: string;
+  displayName: string;
+  squads: SquadSummaryDto[];
+}
+
+export interface AccountDto {
+  type: AccountType;
+  player: PlayerDto | null;
+  coach: CoachDto | null;
 }
 
 export interface AuthResponse {
   accessToken: string;
   expiresAt: string;
-  player: PlayerDto;
+  account: AccountDto;
 }
 
-export interface JoinTeamRequest {
-  teamId: string;
-  rosterEntryId: string | null;
+// --- Plantillas ---
+
+export interface SquadStaffDto {
+  coachId: string;
+  displayName: string;
+  role: StaffRole;
+  joinedAt: string;
+}
+
+/** Ficha de un jugador dentro de la plantilla (venga del proveedor o añadida a mano). */
+export interface SquadPlayerDto {
+  id: string;
+  fullName: string;
+  position: Position | null;
   shirtNumber: number | null;
+  fromRoster: boolean;
+  linked: boolean;
+  linkedPlayerName: string | null;
+  status: SquadPlayerStatus;
+}
+
+export interface SquadDetailDto {
+  summary: SquadSummaryDto;
+  /** Solo se devuelve al cuerpo técnico. */
+  inviteCode: string | null;
+  canManage: boolean;
+  staff: SquadStaffDto[];
+  players: SquadPlayerDto[];
+}
+
+export interface SquadPlayerRequest {
+  fullName: string;
+  position: Position | null;
+  shirtNumber: number | null;
+}
+
+export interface JoinSquadStaffRequest {
+  inviteCode: string;
+  role: StaffRole;
+}
+
+export interface JoinSquadAsPlayerRequest {
+  inviteCode: string;
+  squadPlayerId: string | null;
+}
+
+export interface SquadInviteDto {
+  squadId: string;
+  teamName: string;
+  competitionName: string;
+  seasonLabel: string;
+  unlinkedPlayers: SquadPlayerDto[];
+}
+
+export interface SquadMatchDto {
+  match: MatchDto;
+  entriesRecorded: number;
+}
+
+export interface MatchSheetEntryDto {
+  player: SquadPlayerDto;
+  performance: PerformanceDto | null;
+}
+
+export interface MatchSheetDto {
+  squad: SquadSummaryDto;
+  match: MatchDto;
+  canEdit: boolean;
+  entries: MatchSheetEntryDto[];
+}
+
+/** Línea del acta tal y como se envía: con played = false se borra la línea si existía. */
+export interface MatchSheetEntryInput extends PerformanceStats {
+  squadPlayerId: string;
+  played: boolean;
+}
+
+export interface SquadPlayerStatsDto {
+  player: SquadPlayerDto;
+  stats: IndividualStatsDto;
+  impact: TeamImpactDto;
+}
+
+export interface SquadStatsDto {
+  squad: SquadSummaryDto;
+  teamMatchesPlayed: number;
+  matchesRecorded: number;
+  players: SquadPlayerStatsDto[];
 }
 
 // --- Competiciones / equipos ---
@@ -120,20 +238,22 @@ export interface TeamSummaryDto {
   points: number | null;
 }
 
+/** Jugador de la plantilla según el proveedor externo. */
 export interface RosterEntryDto {
   id: string;
   fullName: string;
   position: Position | null;
   shirtNumber: number | null;
-  claimed: boolean;
 }
 
-export interface SquadMemberDto {
-  playerId: string;
-  displayName: string;
-  position: Position;
-  shirtNumber: number | null;
-  status: MembershipStatus;
+/** Plantilla gestionada en Tercer Tiempo para el equipo en la temporada actual, si existe. */
+export interface TeamSquadDto {
+  squadId: string;
+  visibility: SquadVisibility;
+  playersCount: number;
+  staffCount: number;
+  canView: boolean;
+  isMine: boolean;
 }
 
 export interface TeamDetailDto {
@@ -145,7 +265,7 @@ export interface TeamDetailDto {
   standing: StandingDto | null;
   rosterPublished: boolean;
   roster: RosterEntryDto[];
-  registeredPlayers: SquadMemberDto[];
+  squad: TeamSquadDto | null;
 }
 
 export interface LeagueTableDto {
@@ -153,7 +273,7 @@ export interface LeagueTableDto {
   standings: StandingDto[];
 }
 
-// --- Partidos / rendimiento ---
+// --- Partidos / actas ---
 
 export interface TeamRefDto {
   id: string;
@@ -173,7 +293,6 @@ export interface MatchDto {
   homeGoals: number | null;
   awayGoals: number | null;
   venue: string | null;
-  myPerformanceId: string | null;
 }
 
 export interface PerformanceStats {
@@ -189,24 +308,36 @@ export interface PerformanceStats {
   saves: number;
   yellowCards: number;
   redCard: boolean;
-  selfRating: number;
+  /** Valoración del cuerpo técnico, 1-10. */
+  rating: number;
   notes: string | null;
 }
 
 export interface PerformanceDto extends PerformanceStats {
   id: string;
   matchId: string;
-  playerId: string;
+  squadId: string;
+  squadPlayerId: string;
   playerName: string;
-  playerPosition: Position;
+  position: Position | null;
+  shirtNumber: number | null;
   teamId: string;
   updatedAt: string;
 }
 
+/** Acta de una plantilla en un partido; si no es visible para el usuario llega sin líneas. */
+export interface MatchSquadSheetDto {
+  squadId: string;
+  teamId: string;
+  teamName: string;
+  visibility: SquadVisibility;
+  visible: boolean;
+  entries: PerformanceDto[];
+}
+
 export interface MatchDetailDto {
   match: MatchDto;
-  myPerformance: PerformanceDto | null;
-  performances: PerformanceDto[];
+  sheets: MatchSquadSheetDto[];
 }
 
 export interface PerformanceWithMatchDto {
@@ -268,7 +399,8 @@ export interface LeagueComparisonDto {
   teamGoalsForPerMatch: number | null;
   teamGoalsAgainstPerMatch: number | null;
   teamPointsPerMatch: number | null;
-  playersOnPlatform: number;
+  /** Fichas con minutos en actas visibles (plantillas públicas y la propia). */
+  playersCompared: number;
   goalsPer90Percentile: number | null;
   assistsPer90Percentile: number | null;
   ratingPercentile: number | null;

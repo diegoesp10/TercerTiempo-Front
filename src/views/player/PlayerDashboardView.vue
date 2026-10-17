@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { api } from '@/api';
+import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
@@ -9,28 +10,61 @@ import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
-import { formatDate, formatNumber, formatPct, membershipStatusLabels, outcomeFor, outcomeLabels, positionLabels } from '@/utils/format';
+import {
+  formatDate,
+  formatNumber,
+  formatPct,
+  opponentLabel,
+  outcomeFor,
+  outcomeLabels,
+  outcomeTone,
+  positionLabels,
+  visibilityLabels,
+} from '@/utils/format';
 
 const auth = useAuthStore();
-const { data, loading, error } = useAsync(async () => {
-  const dashboard = await api.stats.dashboard();
+const squad = computed(() => auth.playerSquad);
+
+const { data, loading, error, run } = useAsync(async () => {
+  if (!auth.playerSquad) return null;
+  const dashboard = await api.players.dashboard();
   auth.setPlayer(dashboard.player);
   return dashboard;
 });
 
-const membership = computed(() => data.value?.player.membership ?? null);
 const impact = computed(() => data.value?.teamImpact ?? null);
 const league = computed(() => data.value?.league ?? null);
-const hasPercentiles = computed(() => league.value !== null && league.value.playersOnPlatform >= 2);
+const hasPercentiles = computed(() => league.value !== null && league.value.playersCompared >= 2);
 
-function opponentOf(match: { homeTeam: { id: string; name: string }; awayTeam: { id: string; name: string } }) {
-  const teamId = membership.value?.teamId;
-  return match.homeTeam.id === teamId ? `vs ${match.awayTeam.name}` : `@ ${match.homeTeam.name}`;
+const leaveError = ref<string | null>(null);
+
+async function leave() {
+  if (!confirm('¿Seguro que quieres desvincularte de la plantilla? Tus actas siguen en la plantilla; solo se rompe el vínculo con tu cuenta.')) return;
+  leaveError.value = null;
+  try {
+    auth.setPlayer(await api.players.leaveSquad());
+    await run();
+  } catch (e) {
+    leaveError.value = errorMessage(e);
+  }
 }
 </script>
 
 <template>
-  <Spinner v-if="loading" />
+  <template v-if="!squad">
+    <PageHeader :title="`Hola, ${auth.displayName}`" subtitle="Todavía no estás vinculado a ninguna plantilla." />
+    <div class="card max-w-2xl">
+      <h2 class="font-semibold text-slate-900">Vincúlate a tu ficha</h2>
+      <p class="mt-2 text-sm text-slate-600">
+        Tu cuerpo técnico gestiona la plantilla en Tercer Tiempo y registra el acta de cada partido. Pídele el
+        <strong>código de invitación</strong> y elige tu ficha: desde ese momento verás tus estadísticas, lo que aportas al
+        equipo y cómo te comparas con la liga.
+      </p>
+      <RouterLink to="/invitacion" class="btn-primary mt-4">Tengo un código de invitación</RouterLink>
+    </div>
+  </template>
+
+  <Spinner v-else-if="loading" />
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">
@@ -40,20 +74,16 @@ function opponentOf(match: { homeTeam: { id: string; name: string }; awayTeam: {
     >
       <template #actions>
         <Badge>{{ positionLabels[data.player.position] }}</Badge>
-        <Badge v-if="membership" :tone="membership.status === 'Active' ? 'green' : 'amber'">
-          {{ membership.teamName }} · {{ membershipStatusLabels[membership.status] }}
-        </Badge>
+        <RouterLink :to="{ name: 'squad', params: { squadId: squad.squadId } }" class="btn-secondary">
+          <span v-if="squad.shirtNumber" class="text-slate-400">{{ squad.shirtNumber }}</span>
+          {{ squad.teamName }}
+          <Badge :tone="squad.visibility === 'Public' ? 'green' : 'slate'">{{ visibilityLabels[squad.visibility] }}</Badge>
+        </RouterLink>
       </template>
     </PageHeader>
 
-    <Alert v-if="!membership" kind="info" class="mb-6">
-      Todavía no perteneces a ningún equipo.
-      <RouterLink to="/equipos" class="font-medium underline">Elige tu equipo y reclama tu ficha</RouterLink> para empezar a registrar partidos.
-    </Alert>
-
-    <Alert v-else-if="data.individual.matchesLogged === 0" kind="info" class="mb-6">
-      Aún no has registrado ningún partido.
-      <RouterLink to="/partidos" class="font-medium underline">Ve a tus partidos</RouterLink> y registra tu rendimiento en los ya disputados.
+    <Alert v-if="data.individual.matchesLogged === 0" kind="info" class="mb-6">
+      Tu cuerpo técnico todavía no ha registrado ninguna acta con tu ficha. En cuanto lo haga, aquí aparecerán tus números.
     </Alert>
 
     <!-- Individual -->
@@ -64,7 +94,7 @@ function opponentOf(match: { homeTeam: { id: string; name: string }; awayTeam: {
         <StatCard label="Minutos" :value="data.individual.minutes" />
         <StatCard label="Goles" :value="data.individual.goals" :hint="`${formatNumber(data.individual.goalsPer90)} por 90'`" accent />
         <StatCard label="Asistencias" :value="data.individual.assists" :hint="`${formatNumber(data.individual.assistsPer90)} por 90'`" />
-        <StatCard label="Nota media" :value="formatNumber(data.individual.averageRating, 1)" hint="autoevaluación 1-10" />
+        <StatCard label="Nota media" :value="formatNumber(data.individual.averageRating, 1)" hint="valoración del cuerpo técnico" />
         <StatCard label="Precisión tiro" :value="formatPct(data.individual.shotAccuracyPct)" :hint="`${data.individual.shotsOnTarget}/${data.individual.shots} a puerta`" />
       </div>
     </section>
@@ -116,16 +146,18 @@ function opponentOf(match: { homeTeam: { id: string; name: string }; awayTeam: {
         </table>
 
         <div class="mt-5">
-          <h3 class="mb-2 text-sm font-medium text-slate-800">Tú frente a los jugadores de la liga registrados</h3>
+          <h3 class="mb-2 text-sm font-medium text-slate-800">Tú frente a los jugadores con actas visibles</h3>
           <div v-if="hasPercentiles" class="space-y-3">
             <PercentileBar label="Goles por 90'" :value="league.goalsPer90Percentile" />
             <PercentileBar label="Asistencias por 90'" :value="league.assistsPer90Percentile" />
             <PercentileBar label="Nota media" :value="league.ratingPercentile" />
             <PercentileBar label="Minutos jugados" :value="league.minutesPercentile" />
-            <p class="text-xs text-slate-500">Percentil entre {{ league.playersOnPlatform }} jugadores con minutos registrados. P75 = mejor que el 75%.</p>
+            <p class="text-xs text-slate-500">
+              Percentil entre {{ league.playersCompared }} jugadores con minutos en plantillas públicas de la liga (y la tuya). P75 = mejor que el 75%.
+            </p>
           </div>
           <p v-else class="text-sm text-slate-500">
-            La comparativa se activa cuando al menos dos jugadores de la liga registran minutos en la plataforma.
+            La comparativa se activa cuando al menos dos jugadores de la liga tienen minutos en actas visibles (plantillas públicas o la tuya).
           </p>
         </div>
       </section>
@@ -134,8 +166,8 @@ function opponentOf(match: { homeTeam: { id: string; name: string }; awayTeam: {
     <!-- Últimos partidos -->
     <section v-if="data.recentPerformances.length > 0" class="mt-8">
       <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Últimos partidos registrados</h2>
-        <RouterLink to="/partidos" class="text-sm text-emerald-700 hover:underline">Ver todos</RouterLink>
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Tus últimas actas</h2>
+        <RouterLink :to="{ name: 'squad-matches', params: { squadId: squad.squadId } }" class="text-sm text-emerald-700 hover:underline">Ver todos los partidos</RouterLink>
       </div>
       <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
         <table class="min-w-full text-sm">
@@ -153,24 +185,29 @@ function opponentOf(match: { homeTeam: { id: string; name: string }; awayTeam: {
             <tr v-for="item in data.recentPerformances" :key="item.performance.id" class="hover:bg-slate-50">
               <td class="px-3 py-2">
                 <RouterLink :to="{ name: 'match', params: { matchId: item.match.id } }" class="font-medium text-slate-800 hover:text-emerald-700">
-                  J{{ item.match.matchday }} · {{ opponentOf(item.match) }}
+                  J{{ item.match.matchday }} · {{ opponentLabel(item.match, squad.teamId) }}
                 </RouterLink>
                 <p class="text-xs text-slate-500">{{ formatDate(item.match.kickoffAt) }}</p>
               </td>
               <td class="px-3 py-2 text-center tabular-nums">
                 {{ item.match.homeGoals }}-{{ item.match.awayGoals }}
-                <Badge v-if="membership && outcomeFor(item.match, membership.teamId)" :tone="outcomeFor(item.match, membership.teamId) === 'win' ? 'green' : outcomeFor(item.match, membership.teamId) === 'draw' ? 'amber' : 'red'" class="ml-1">
-                  {{ outcomeLabels[outcomeFor(item.match, membership.teamId)!] }}
+                <Badge v-if="outcomeFor(item.match, squad.teamId)" :tone="outcomeTone(outcomeFor(item.match, squad.teamId))" class="ml-1">
+                  {{ outcomeLabels[outcomeFor(item.match, squad.teamId)!] }}
                 </Badge>
               </td>
               <td class="px-3 py-2 text-center tabular-nums">{{ item.performance.minutesPlayed }}</td>
               <td class="px-3 py-2 text-center tabular-nums">{{ item.performance.goals }}</td>
               <td class="px-3 py-2 text-center tabular-nums">{{ item.performance.assists }}</td>
-              <td class="px-3 py-2 text-center font-semibold tabular-nums">{{ item.performance.selfRating }}</td>
+              <td class="px-3 py-2 text-center font-semibold tabular-nums">{{ item.performance.rating }}</td>
             </tr>
           </tbody>
         </table>
       </div>
+    </section>
+
+    <section class="mt-10 border-t border-slate-200 pt-4">
+      <Alert v-if="leaveError" kind="error" class="mb-3">{{ leaveError }}</Alert>
+      <button type="button" class="btn-ghost text-red-600 hover:bg-red-50" @click="leave">Desvincularme de la plantilla</button>
     </section>
   </template>
 </template>

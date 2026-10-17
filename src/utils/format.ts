@@ -1,4 +1,18 @@
-import type { CompetitionDto, CompetitionLevel, MatchDto, MatchStatus, MembershipStatus, Position } from '@/types/api';
+import type {
+  AccountType,
+  CompetitionDto,
+  CompetitionLevel,
+  MatchDto,
+  MatchStatus,
+  Position,
+  SquadVisibility,
+  StaffRole,
+} from '@/types/api';
+
+export const accountTypeLabels: Record<AccountType, string> = {
+  Player: 'Jugador',
+  Coach: 'Cuerpo técnico',
+};
 
 export const positionLabels: Record<Position, string> = {
   Goalkeeper: 'Portero',
@@ -7,10 +21,36 @@ export const positionLabels: Record<Position, string> = {
   Forward: 'Delantero',
 };
 
+export const positionShortLabels: Record<Position, string> = {
+  Goalkeeper: 'POR',
+  Defender: 'DEF',
+  Midfielder: 'MED',
+  Forward: 'DEL',
+};
+
 export const positionOptions = (Object.keys(positionLabels) as Position[]).map((value) => ({
   value,
   label: positionLabels[value],
 }));
+
+export const staffRoleLabels: Record<StaffRole, string> = {
+  HeadCoach: 'Primer entrenador',
+  AssistantCoach: 'Segundo entrenador',
+  Delegate: 'Delegado',
+  Physio: 'Fisio',
+  Analyst: 'Analista',
+  Other: 'Otro',
+};
+
+export const staffRoleOptions = (Object.keys(staffRoleLabels) as StaffRole[]).map((value) => ({
+  value,
+  label: staffRoleLabels[value],
+}));
+
+export const visibilityLabels: Record<SquadVisibility, string> = {
+  Private: 'Privada',
+  Public: 'Pública',
+};
 
 export const matchStatusLabels: Record<MatchStatus, string> = {
   Scheduled: 'Programado',
@@ -18,12 +58,6 @@ export const matchStatusLabels: Record<MatchStatus, string> = {
   Played: 'Finalizado',
   Postponed: 'Aplazado',
   Cancelled: 'Cancelado',
-};
-
-export const membershipStatusLabels: Record<MembershipStatus, string> = {
-  Pending: 'Pendiente de validar',
-  Active: 'Verificado',
-  Inactive: 'Baja',
 };
 
 export const levelLabels: Record<CompetitionLevel, string> = {
@@ -72,3 +106,16 @@ export function outcomeFor(match: MatchDto, teamId: string): Outcome {
 }
 
 export const outcomeLabels: Record<Exclude<Outcome, null>, string> = { win: 'V', draw: 'E', loss: 'D' };
+
+export type Tone = 'green' | 'amber' | 'red' | 'blue' | 'slate';
+
+export const outcomeTone = (outcome: Outcome): Tone =>
+  outcome === 'win' ? 'green' : outcome === 'draw' ? 'amber' : outcome === 'loss' ? 'red' : 'slate';
+
+/** Rival y localía de un partido para un equipo: "vs Rival" en casa, "@ Rival" fuera. */
+export function opponentLabel(match: MatchDto, teamId: string): string {
+  return match.homeTeam.id === teamId ? `vs ${match.awayTeam.name}` : `@ ${match.homeTeam.name}`;
+}
+
+export const scoreLabel = (match: MatchDto) =>
+  match.homeGoals === null || match.awayGoals === null ? null : `${match.homeGoals} - ${match.awayGoals}`;

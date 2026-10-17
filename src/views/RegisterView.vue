@@ -1,22 +1,37 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import { useAuthStore } from '@/stores/auth';
-import type { Position } from '@/types/api';
+import type { AccountType, Position } from '@/types/api';
 import { positionOptions } from '@/utils/format';
 
 const auth = useAuthStore();
 const router = useRouter();
 
-const form = reactive<{ email: string; password: string; displayName: string; position: Position; birthDate: string }>({
+const form = reactive<{
+  accountType: AccountType;
+  email: string;
+  password: string;
+  displayName: string;
+  position: Position;
+  birthDate: string;
+}>({
+  accountType: 'Coach',
   email: '',
   password: '',
   displayName: '',
   position: 'Midfielder',
   birthDate: '',
 });
+
+const isPlayer = computed(() => form.accountType === 'Player');
+
+const accountTypes: { value: AccountType; title: string; description: string }[] = [
+  { value: 'Coach', title: 'Cuerpo técnico', description: 'Entrenador, ayudante, delegado… Creas la plantilla y registras las actas.' },
+  { value: 'Player', title: 'Jugador', description: 'Te vinculas a tu ficha con el código de tu cuerpo técnico y sigues tus números.' },
+];
 
 const loading = ref(false);
 const error = ref<string | null>(null);
@@ -27,8 +42,15 @@ async function submit() {
   error.value = null;
   fieldErrors.value = {};
   try {
-    await auth.register({ ...form, birthDate: form.birthDate || null });
-    await router.push({ name: 'teams' });
+    await auth.register({
+      email: form.email,
+      password: form.password,
+      displayName: form.displayName,
+      accountType: form.accountType,
+      position: isPlayer.value ? form.position : null,
+      birthDate: isPlayer.value && form.birthDate ? form.birthDate : null,
+    });
+    await router.push(isPlayer.value ? { name: 'join' } : { name: 'teams' });
   } catch (e) {
     error.value = errorMessage(e);
     if (e instanceof ApiError) fieldErrors.value = e.fieldErrors;
@@ -39,28 +61,44 @@ async function submit() {
 </script>
 
 <template>
-  <div class="mx-auto mt-8 max-w-md">
+  <div class="mx-auto mt-8 max-w-lg">
     <div class="card">
       <h1 class="text-xl font-semibold text-slate-900">Darme de alta</h1>
-      <p class="mt-1 text-sm text-slate-500">
-        Usa el nombre con el que apareces en la plantilla de tu equipo: así te verificamos automáticamente.
-      </p>
+      <p class="mt-1 text-sm text-slate-500">Elige qué papel tienes en tu equipo: la cuenta no se puede cambiar después.</p>
 
       <form class="mt-6 space-y-4" @submit.prevent="submit">
         <Alert v-if="error" kind="error">{{ error }}</Alert>
 
+        <div class="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Tipo de cuenta">
+          <button
+            v-for="type in accountTypes"
+            :key="type.value"
+            type="button"
+            role="radio"
+            :aria-checked="form.accountType === type.value"
+            class="rounded-xl border p-3 text-left transition"
+            :class="form.accountType === type.value ? 'border-emerald-600 bg-emerald-50 ring-2 ring-emerald-500/30' : 'border-slate-200 bg-white hover:border-emerald-300'"
+            @click="form.accountType = type.value"
+          >
+            <p class="font-medium text-slate-900">{{ type.title }}</p>
+            <p class="mt-1 text-xs text-slate-500">{{ type.description }}</p>
+          </button>
+        </div>
+
         <div>
           <label class="label" for="displayName">Nombre y apellidos</label>
           <input id="displayName" v-model="form.displayName" type="text" required maxlength="100" class="input" />
+          <p v-if="isPlayer" class="mt-1 text-xs text-slate-400">Tal y como apareces en la plantilla: así tu cuerpo técnico te reconoce al vincularte.</p>
           <p v-if="fieldErrors.displayName" class="field-error">{{ fieldErrors.displayName[0] }}</p>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div v-if="isPlayer" class="grid gap-4 sm:grid-cols-2">
           <div>
             <label class="label" for="position">Posición</label>
             <select id="position" v-model="form.position" class="input">
               <option v-for="option in positionOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
             </select>
+            <p v-if="fieldErrors.position" class="field-error">{{ fieldErrors.position[0] }}</p>
           </div>
           <div>
             <label class="label" for="birthDate">Fecha de nacimiento</label>
@@ -82,7 +120,9 @@ async function submit() {
           <p v-if="fieldErrors.password" class="field-error">{{ fieldErrors.password[0] }}</p>
         </div>
 
-        <button type="submit" class="btn-primary w-full" :disabled="loading">{{ loading ? 'Creando cuenta…' : 'Crear cuenta' }}</button>
+        <button type="submit" class="btn-primary w-full" :disabled="loading">
+          {{ loading ? 'Creando cuenta…' : isPlayer ? 'Crear cuenta de jugador' : 'Crear cuenta de cuerpo técnico' }}
+        </button>
       </form>
 
       <p class="mt-4 text-center text-sm text-slate-500">

@@ -1,44 +1,80 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { api } from '@/api';
-import type { AuthResponse, LoginRequest, PlayerDto, RegisterRequest } from '@/types/api';
+import type { AccountDto, AuthResponse, LoginRequest, PlayerDto, RegisterRequest, SquadSummaryDto } from '@/types/api';
 
 const TOKEN_KEY = 'tt.token';
-const PLAYER_KEY = 'tt.player';
+const ACCOUNT_KEY = 'tt.account';
 
-function readPlayer(): PlayerDto | null {
+function readAccount(): AccountDto | null {
   try {
-    return JSON.parse(localStorage.getItem(PLAYER_KEY) ?? 'null') as PlayerDto | null;
+    return JSON.parse(localStorage.getItem(ACCOUNT_KEY) ?? 'null') as AccountDto | null;
   } catch {
     return null;
   }
 }
 
+/** Sesión: token JWT y cuenta (jugador con su plantilla, o técnico con sus plantillas), persistidos en localStorage. */
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem(TOKEN_KEY));
-  const player = ref<PlayerDto | null>(readPlayer());
+  const account = ref<AccountDto | null>(readAccount());
 
   const isAuthenticated = computed(() => token.value !== null);
-  const membership = computed(() => player.value?.membership ?? null);
-  const hasTeam = computed(() => membership.value !== null);
-  const canLogPerformance = computed(() => membership.value?.status === 'Active');
+  const isCoach = computed(() => account.value?.type === 'Coach');
+  const isPlayer = computed(() => account.value?.type === 'Player');
+
+  const player = computed(() => account.value?.player ?? null);
+  const coach = computed(() => account.value?.coach ?? null);
+  const displayName = computed(() => player.value?.displayName ?? coach.value?.displayName ?? '');
+
+  /** Plantilla a la que está vinculado el jugador (null si todavía no se ha vinculado). */
+  const playerSquad = computed(() => player.value?.squad ?? null);
+  /** Plantillas en cuyo cuerpo técnico está el técnico. */
+  const coachSquads = computed<SquadSummaryDto[]>(() => coach.value?.squads ?? []);
+
+  const myTeamIds = computed(() => {
+    const ids = coachSquads.value.map((s) => s.teamId);
+    if (playerSquad.value) ids.push(playerSquad.value.teamId);
+    return ids;
+  });
+
+  const mySquadIds = computed(() => {
+    const ids = coachSquads.value.map((s) => s.id);
+    if (playerSquad.value) ids.push(playerSquad.value.squadId);
+    return ids;
+  });
+
+  const isMyTeam = (teamId: string) => myTeamIds.value.includes(teamId);
+  const isMySquad = (squadId: string) => mySquadIds.value.includes(squadId);
+  /** ¿Forma parte del cuerpo técnico de esta plantilla? */
+  const isStaffOf = (squadId: string) => coachSquads.value.some((s) => s.id === squadId);
 
   function setSession(session: AuthResponse) {
     token.value = session.accessToken;
     localStorage.setItem(TOKEN_KEY, session.accessToken);
-    setPlayer(session.player);
+    setAccount(session.account);
+  }
+
+  function setAccount(value: AccountDto) {
+    account.value = value;
+    localStorage.setItem(ACCOUNT_KEY, JSON.stringify(value));
   }
 
   function setPlayer(value: PlayerDto) {
-    player.value = value;
-    localStorage.setItem(PLAYER_KEY, JSON.stringify(value));
+    if (!account.value) return;
+    setAccount({ ...account.value, player: value });
+  }
+
+  function setCoachSquads(squads: SquadSummaryDto[]) {
+    if (!account.value?.coach) return;
+    setAccount({ ...account.value, coach: { ...account.value.coach, squads } });
   }
 
   function logout() {
     token.value = null;
-    player.value = null;
+    account.value = null;
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(PLAYER_KEY);
+    localStorage.removeItem(ACCOUNT_KEY);
   }
 
   async function login(request: LoginRequest) {
@@ -49,10 +85,32 @@ export const useAuthStore = defineStore('auth', () => {
     setSession(await api.auth.register(request));
   }
 
-  async function refreshPlayer() {
+  /** Vuelve a pedir la cuenta a la API (plantillas nuevas, vínculos, visibilidad...). */
+  async function refreshAccount() {
     if (!token.value) return;
-    setPlayer(await api.players.me());
+    setAccount(await api.auth.me());
   }
 
-  return { token, player, isAuthenticated, membership, hasTeam, canLogPerformance, login, register, logout, setPlayer, refreshPlayer };
+  return {
+    token,
+    account,
+    isAuthenticated,
+    isCoach,
+    isPlayer,
+    player,
+    coach,
+    displayName,
+    playerSquad,
+    coachSquads,
+    isMyTeam,
+    isMySquad,
+    isStaffOf,
+    login,
+    register,
+    logout,
+    setAccount,
+    setPlayer,
+    setCoachSquads,
+    refreshAccount,
+  };
 });
