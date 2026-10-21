@@ -40,6 +40,16 @@ Condensed** para titulares, cifras y cabeceras de tabla. Fondo fijo con un campo
 siega, líneas que se dibujan al cargar, haz de luz de los focos) en `components/backgrounds/PitchBackground.vue`, más
 tenue en el tema claro. Los gráficos tienen un tema de ECharts por cada tema de la interfaz (`charts/theme.ts`).
 
+## Textos legales
+
+La **política de privacidad** (`/privacidad`) y las **condiciones de uso** (`/condiciones`) están en
+`src/views/legal/` sobre `components/legal/LegalPage.vue`; se enlazan desde el pie y el registro exige aceptarlas. Los
+datos del titular (razón social, NIF, domicilio, alojamiento, pasarela de pago), la fecha de versión y las fuentes de
+datos con su atribución están en `src/legal/entity.ts`: los valores entre corchetes son marcadores que hay que rellenar
+antes de abrir el servicio al público. Los textos están redactados conforme al RGPD/LOPDGDD para el modelo actual
+(cuentas de club, cuerpo técnico y jugador; datos de fuentes públicas; nota calculada; vídeos de pago; menores) y
+conviene que los revise un abogado antes de comercializar la aplicación.
+
 ## Arranque rápido
 
 Requisitos: Node 22+ y la API arrancada en `http://localhost:5080` (ver repo del backend).
@@ -99,6 +109,7 @@ src/
 ├── composables/  useAsync (estado de carga/error), useSquad (contexto de la plantilla para sus pestañas)
 ├── utils/        formato de fechas, etiquetas (posición, rol, visibilidad, estado), resultado por equipo
 ├── three/        textura del balón generada en canvas
+├── legal/        datos del titular, fecha de versión y fuentes de datos para los textos legales
 ├── charts/       ECharts: registro y tema, escala de color de las notas, perfil por 90' y constructores de opciones
 │                 (nota por partido, desglose de la nota, radar, comparador, resultados y nota del equipo, repartos)
 ├── components/   layout (AppShell, BrandMark, AuthPanel: acceso con balón 3D), backgrounds (PitchBackground),
@@ -106,10 +117,11 @@ src/
 │                 PageHeader, PercentileBar, RatingBadge), charts (AppChart, ChartCard), competitions (CompetitionPicker:
 │                 nivel → liga/grupo), matches (MatchRow, MatchdayFixtures: jornada con navegación),
 │                 sheet (OfficialSheetPanel: acta oficial con estado y reintento; SheetComparison: comparador),
-│                 videos (MatchVideos: lista, reproductor con ticket, compra, subida)
+│                 videos (MatchVideos: lista, reproductor con ticket, compra, subida), legal (LegalPage)
 └── views/        Home (landing / panel del club / panel del técnico / panel del jugador), Login, Registro (tres tipos
                   de cuenta; el técnico con código de acceso), Invitación (jugadores), Equipos, Equipo, Partido (acta
-                  oficial, vídeos y actas internas), Liga, NotFound
+                  oficial, vídeos y actas internas), Liga, Ajustes, NotFound
+    ├── legal/    PrivacyView (política de privacidad) y TermsView (condiciones de uso)
     ├── club/     ClubHomeView (equipos del club, nombramientos y códigos de acceso)
     ├── coach/    CoachHomeView (mis plantillas y nombramientos), RedeemView (canjear un código de acceso)
     ├── player/   PlayerDashboardView (vínculo con la plantilla y estadísticas)

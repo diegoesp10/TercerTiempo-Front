@@ -30,6 +30,9 @@ const form = reactive<{
   accessCode: typeof route.query.code === 'string' ? route.query.code.toUpperCase() : '',
 });
 
+// Aceptación expresa de las condiciones y la política de privacidad: sin ella no se envía el formulario.
+const acceptsTerms = ref(false);
+
 const isPlayer = computed(() => form.accountType === 'Player');
 const isCoach = computed(() => form.accountType === 'Coach');
 const isClub = computed(() => form.accountType === 'Club');
@@ -148,7 +151,19 @@ async function submit() {
           <p v-if="fieldErrors.password" class="field-error">{{ fieldErrors.password[0] }}</p>
         </div>
 
-        <button type="submit" class="btn-primary w-full" :disabled="loading">
+        <label class="flex items-start gap-3 text-sm text-slate-600">
+          <input v-model="acceptsTerms" type="checkbox" required class="mt-1 h-4 w-4 shrink-0 accent-brand-500" />
+          <span>
+            He leído y acepto las
+            <RouterLink to="/condiciones" target="_blank" class="font-semibold text-accent-400 hover:underline">condiciones de uso</RouterLink>
+            y la
+            <RouterLink to="/privacidad" target="_blank" class="font-semibold text-accent-400 hover:underline">política de privacidad</RouterLink>.
+            <template v-if="isPlayer">Si tienes entre 14 y 17 años, confirmas que cuentas con la autorización de tus padres o tutores.</template>
+            <template v-else>Confirmas que eres mayor de edad{{ isClub ? ' y que puedes actuar en nombre del club' : '' }}.</template>
+          </span>
+        </label>
+
+        <button type="submit" class="btn-primary w-full" :disabled="loading || !acceptsTerms">
           {{ loading ? 'Creando cuenta…' : isPlayer ? 'Crear cuenta de jugador' : isClub ? 'Crear cuenta de club' : 'Crear cuenta y canjear el código' }}
         </button>
       </form>

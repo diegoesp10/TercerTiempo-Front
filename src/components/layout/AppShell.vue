@@ -145,7 +145,14 @@ function logout() {
     </main>
 
     <footer class="border-t border-line py-5 text-center text-xs text-slate-500">
-      <span class="font-display text-sm font-semibold uppercase tracking-wide text-slate-600">Tercer Tiempo</span> · actas y rendimiento para el fútbol amateur asturiano
+      <p>
+        <span class="font-display text-sm font-semibold uppercase tracking-wide text-slate-600">Tercer Tiempo</span> · actas y rendimiento para el fútbol amateur asturiano
+      </p>
+      <nav class="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1" aria-label="Información legal">
+        <RouterLink to="/privacidad" class="hover:text-slate-700 hover:underline">Política de privacidad</RouterLink>
+        <RouterLink to="/condiciones" class="hover:text-slate-700 hover:underline">Condiciones de uso</RouterLink>
+        <span>Datos de <a href="https://www.futbolasturiano.es" target="_blank" rel="noopener" class="hover:underline">futbolasturiano.es</a> y <a href="https://www.asturfutbol.es" target="_blank" rel="noopener" class="hover:underline">asturfutbol.es</a></span>
+      </nav>
     </footer>
   </div>
 </template>
