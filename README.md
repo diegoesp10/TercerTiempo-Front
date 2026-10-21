@@ -19,6 +19,23 @@ La API vive en su propio repositorio: [TercerTiempo-Back](https://github.com/die
 - [Apache ECharts 6](https://echarts.apache.org) con [vue-echarts 8](https://vue-echarts.dev) para los gráficos: solo
   se registran los tipos que se usan (`src/charts/setup.ts`), con un tema propio alineado con Tailwind
   (`src/charts/theme.ts`) y en un chunk aparte que solo se descarga en las páginas con gráficos
+- [Three.js](https://threejs.org) con [TresJS 5](https://tresjs.org) (`@tresjs/core`) para el balón 3D de la portada y
+  de las pantallas de acceso: geometría y textura generadas en código (`src/three/ballTexture.ts`, los doce pentágonos
+  en los vértices de un icosaedro), luces de estadio en azul y cian, chunk aparte y balón estático en SVG si no hay
+  WebGL o el usuario prefiere menos animación
+- [GSAP 3](https://gsap.com) para las animaciones: balón que bota en los loaders (`BallLoader`), líneas del campo que
+  se dibujan al cargar (`PitchBackground`) y entrada escalonada de la portada
+
+## Diseño
+
+Tema oscuro único en azules de estadio nocturno (`src/style.css`): tokens en `@theme` (fondos `navy-*` / `surface-*`,
+marca `brand-*` azul eléctrico y `accent-*` cian, verde césped `emerald-*`), tipografía Sora para titulares y números e
+Inter para el texto, tarjetas de cristal (`.card`), botones con degradado y halo (`.btn-primary`), texto con degradado
+(`.text-gradient`) y etiqueta luminosa (`.eyebrow`). Las escalas `slate`, `emerald`, `sky`, `amber` y `red` de Tailwind
+están **redefinidas para el fondo oscuro** (slate-900 es el texto principal, slate-500 el secundario, slate-200 las
+líneas, slate-50 el relleno sutil), de modo que las utilidades que usan las vistas no tienen que cambiar al tocar la
+paleta. Fondo fijo de toda la app en `components/backgrounds/PitchBackground.vue` (focos, campo en perspectiva y
+motas de luz) y transición entre páginas en `App.vue`.
 
 ## Arranque rápido
 
@@ -78,9 +95,11 @@ src/
 ├── router/       rutas y guardas de autenticación
 ├── composables/  useAsync (estado de carga/error), useSquad (contexto de la plantilla para sus pestañas)
 ├── utils/        formato de fechas, etiquetas (posición, rol, visibilidad, estado), resultado por equipo
+├── three/        textura del balón generada en canvas
 ├── charts/       ECharts: registro y tema, escala de color de las notas, perfil por 90' y constructores de opciones
 │                 (nota por partido, desglose de la nota, radar, comparador, resultados y nota del equipo, repartos)
-├── components/   layout (AppShell, navegación según tipo de cuenta), ui (StatCard, Badge, Alert, Spinner,
+├── components/   layout (AppShell, BrandMark, AuthPanel: acceso con balón 3D), backgrounds (PitchBackground),
+│                 three (BallScene, Ball), ui (StatCard, Badge, Alert, Spinner y BallLoader,
 │                 PageHeader, PercentileBar, RatingBadge), charts (AppChart, ChartCard), competitions (CompetitionPicker:
 │                 nivel → liga/grupo), matches (MatchRow, MatchdayFixtures: jornada con navegación),
 │                 sheet (OfficialSheetPanel: acta oficial con estado y reintento; SheetComparison: comparador),

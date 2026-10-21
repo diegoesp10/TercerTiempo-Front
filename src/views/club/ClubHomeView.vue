@@ -194,7 +194,7 @@ const sortedAppointments = computed(() => {
             <span v-else>{{ team.teamShortName }}</span>
           </div>
           <div class="min-w-0 flex-1">
-            <RouterLink :to="{ name: 'team', params: { teamId: team.teamId } }" class="font-medium text-slate-900 hover:text-emerald-700">{{ team.teamName }}</RouterLink>
+            <RouterLink :to="{ name: 'team', params: { teamId: team.teamId } }" class="font-medium text-slate-900 hover:text-accent-400">{{ team.teamName }}</RouterLink>
             <p class="text-xs text-slate-500">
               <template v-if="team.competitionName">{{ team.competitionName }} · {{ team.seasonLabel }}<template v-if="team.seasonEndsOn"> · temporada hasta {{ formatDate(team.seasonEndsOn) }}</template></template>
               <template v-else>Sin temporada en curso en el proveedor</template>
@@ -202,7 +202,7 @@ const sortedAppointments = computed(() => {
           </div>
           <div class="flex items-center gap-2 text-xs text-slate-500">
             <Badge :tone="team.activeAppointments > 0 ? 'green' : 'amber'">{{ team.activeAppointments }} {{ team.activeAppointments === 1 ? 'técnico vigente' : 'técnicos vigentes' }}</Badge>
-            <RouterLink v-if="team.squadId" :to="{ name: 'squad', params: { squadId: team.squadId } }" class="text-emerald-700 hover:underline">Plantilla</RouterLink>
+            <RouterLink v-if="team.squadId" :to="{ name: 'squad', params: { squadId: team.squadId } }" class="text-accent-400 hover:underline">Plantilla</RouterLink>
             <span v-else>Sin plantilla todavía</span>
             <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy" @click="removeTeam(team.teamId, team.teamName)">Desvincular</button>
           </div>
@@ -255,7 +255,7 @@ const sortedAppointments = computed(() => {
           </button>
         </form>
 
-        <div v-if="lastCreated?.accessCode" class="mt-4 rounded-xl border border-emerald-300 bg-emerald-50 p-4">
+        <div v-if="lastCreated?.accessCode" class="mt-4 rounded-xl border border-accent-400/40 bg-brand-500/10 p-4">
           <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Código de acceso para {{ lastCreated.coachName }}</p>
           <p class="mt-1 font-mono text-2xl font-semibold tracking-[0.3em] text-slate-900">{{ lastCreated.accessCode }}</p>
           <p class="mt-1 text-xs text-slate-600">

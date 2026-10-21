@@ -71,7 +71,7 @@ const tabs = [
       </div>
       <div class="min-w-0 flex-1">
         <h1 class="text-2xl font-semibold tracking-tight text-slate-900">
-          <RouterLink :to="{ name: 'team', params: { teamId: summary.teamId } }" class="hover:text-emerald-700">{{ summary.teamName }}</RouterLink>
+          <RouterLink :to="{ name: 'team', params: { teamId: summary.teamId } }" class="hover:text-accent-400">{{ summary.teamName }}</RouterLink>
         </h1>
         <p class="text-sm text-slate-500">{{ levelLabels[summary.competitionLevel] }} · {{ summary.competitionName }} · {{ summary.seasonLabel }}</p>
       </div>
@@ -83,7 +83,7 @@ const tabs = [
       </div>
     </div>
 
-    <nav class="mb-6 flex gap-1 border-b border-slate-200" aria-label="Secciones de la plantilla">
+    <nav class="mb-6 flex gap-1 overflow-x-auto border-b border-slate-200 whitespace-nowrap" aria-label="Secciones de la plantilla">
       <RouterLink
         v-for="tab in tabs"
         :key="tab.name"

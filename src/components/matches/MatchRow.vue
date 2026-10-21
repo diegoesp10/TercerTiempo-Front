@@ -23,7 +23,7 @@ const target = computed<RouteLocationRaw>(() => props.to ?? { name: 'match', par
 <template>
   <RouterLink
     :to="target"
-    class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:border-emerald-300 hover:shadow"
+    class="flex items-center gap-4 rounded-xl border border-slate-200 bg-surface px-4 py-3 shadow-sm transition hover:border-brand-400/60 hover:shadow"
   >
     <div class="w-14 shrink-0 text-center">
       <p class="text-xs uppercase text-slate-400">Jornada</p>

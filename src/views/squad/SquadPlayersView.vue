@@ -164,7 +164,7 @@ function remove(player: SquadPlayerDto) {
               role="radio"
               :aria-checked="detail.summary.visibility === option"
               class="rounded-md px-3 py-1 text-sm font-medium transition"
-              :class="detail.summary.visibility === option ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'"
+              :class="detail.summary.visibility === option ? 'bg-brand-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
               :disabled="busy"
               @click="setVisibility(option)"
             >
@@ -209,7 +209,7 @@ function remove(player: SquadPlayerDto) {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="player in active" :key="player.id" :class="player.id === myEntryId ? 'bg-emerald-50' : ''">
+              <tr v-for="player in active" :key="player.id" :class="player.id === myEntryId ? 'bg-brand-500/10' : ''">
                 <template v-if="editingId === player.id">
                   <td class="py-2 pr-3">
                     <input v-model.number="edit.shirtNumber" type="number" min="1" max="99" class="input w-16 px-2 py-1" aria-label="Dorsal" />
@@ -234,7 +234,7 @@ function remove(player: SquadPlayerDto) {
                   <td class="py-2 pr-3">
                     <RouterLink
                       :to="{ name: 'squad-player', params: { squadId, squadPlayerId: player.id } }"
-                      class="font-medium text-slate-800 hover:text-emerald-700 hover:underline"
+                      class="font-medium text-slate-800 hover:text-accent-400 hover:underline"
                     >{{ player.fullName }}</RouterLink>
                     <p class="text-xs text-slate-400">{{ player.fromRoster ? 'futbolasturiano.es' : 'añadido a mano' }}</p>
                   </td>

@@ -132,7 +132,7 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
             <p class="text-xs text-slate-500">Todos los datos salen de las actas; las notas, calculadas con esos datos.</p>
           </div>
           <label class="flex items-center gap-2 text-sm text-slate-600">
-            <input v-model="includeAverage" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-emerald-600" />
+            <input v-model="includeAverage" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-accent-400" />
             Media de la plantilla
           </label>
         </div>
@@ -144,7 +144,7 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
             class="flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition"
             :class="selected.includes(row.player.id)
               ? 'border-transparent text-white shadow-sm'
-              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 disabled:opacity-50'"
+              : 'border-slate-200 bg-surface text-slate-700 hover:border-slate-300 disabled:opacity-50'"
             :style="selected.includes(row.player.id) ? { backgroundColor: colorOf(row.player.id) } : undefined"
             :disabled="!selected.includes(row.player.id) && selected.length >= MAX_SELECTED"
             @click="toggle(row.player.id)"

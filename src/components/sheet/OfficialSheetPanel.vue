@@ -85,7 +85,7 @@ const eventIcon: Record<string, string> = {
         </p>
       </div>
       <div class="flex items-center gap-2">
-        <a v-if="sheet?.sourceUrl" :href="sheet.sourceUrl" target="_blank" rel="noopener" class="text-sm text-emerald-700 hover:underline">Ver en asturfutbol.es</a>
+        <a v-if="sheet?.sourceUrl" :href="sheet.sourceUrl" target="_blank" rel="noopener" class="text-sm text-accent-400 hover:underline">Ver en asturfutbol.es</a>
         <button type="button" class="btn-ghost px-3 py-1 text-xs" :disabled="loading" @click="load(true)">{{ loading ? 'Consultando…' : 'Actualizar' }}</button>
       </div>
     </div>
@@ -106,7 +106,7 @@ const eventIcon: Record<string, string> = {
 
       <template v-else>
         <div class="grid gap-6 lg:grid-cols-2">
-          <div v-for="team in teams" :key="team.side" class="rounded-xl border p-4" :class="highlightTeamId && team.teamId === highlightTeamId ? 'border-emerald-300 bg-emerald-50/40' : 'border-slate-200'">
+          <div v-for="team in teams" :key="team.side" class="rounded-xl border p-4" :class="highlightTeamId && team.teamId === highlightTeamId ? 'border-accent-400/40 bg-brand-500/10/40' : 'border-slate-200'">
             <div class="mb-2 flex items-center justify-between">
               <h3 class="font-semibold text-slate-900">{{ team.teamName }}</h3>
               <span v-if="team.goals !== null" class="text-xl font-bold tabular-nums text-slate-900">{{ team.goals }}</span>

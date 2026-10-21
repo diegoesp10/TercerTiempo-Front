@@ -73,8 +73,8 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
         </div>
         <div class="flex items-center gap-2">
           <div v-if="available" class="inline-flex rounded-lg border border-slate-200 p-0.5" role="radiogroup" aria-label="Filtro">
-            <button type="button" role="radio" :aria-checked="filter === 'all'" class="rounded-md px-3 py-1 text-xs font-medium" :class="filter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'" @click="filter = 'all'">Todos</button>
-            <button type="button" role="radio" :aria-checked="filter === 'differences'" class="rounded-md px-3 py-1 text-xs font-medium" :class="filter === 'differences' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'" @click="filter = 'differences'">Solo discrepancias</button>
+            <button type="button" role="radio" :aria-checked="filter === 'all'" class="rounded-md px-3 py-1 text-xs font-medium" :class="filter === 'all' ? 'bg-brand-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'" @click="filter = 'all'">Todos</button>
+            <button type="button" role="radio" :aria-checked="filter === 'differences'" class="rounded-md px-3 py-1 text-xs font-medium" :class="filter === 'differences' ? 'bg-brand-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'" @click="filter = 'differences'">Solo discrepancias</button>
           </div>
           <button type="button" class="btn-ghost px-3 py-1 text-xs" :disabled="loading" @click="load(true)">{{ loading ? 'Consultando…' : 'Actualizar' }}</button>
         </div>

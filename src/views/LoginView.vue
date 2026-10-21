@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ApiError, errorMessage } from '@/api/http';
+import AuthPanel from '@/components/layout/AuthPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import { useAuthStore } from '@/stores/auth';
 
@@ -32,33 +33,31 @@ async function submit() {
 </script>
 
 <template>
-  <div class="mx-auto mt-8 max-w-md">
-    <div class="card">
-      <h1 class="text-xl font-semibold text-slate-900">Entrar</h1>
-      <p class="mt-1 text-sm text-slate-500">Cuerpo técnico: gestiona tu plantilla y sus actas. Jugadores: consulta tus estadísticas.</p>
+  <AuthPanel title="El acta de cada partido, convertida en estadísticas" subtitle="Clubes, cuerpo técnico y jugadores, cada uno con su panel.">
+    <h1 class="text-2xl font-bold text-white">Entrar</h1>
+    <p class="mt-1 text-sm text-slate-500">Cuerpo técnico: gestiona tu plantilla y sus actas. Jugadores: consulta tus estadísticas. Clubes: nombra a tus técnicos.</p>
 
-      <form class="mt-6 space-y-4" @submit.prevent="submit">
-        <Alert v-if="error" kind="error">{{ error }}</Alert>
+    <form class="mt-6 space-y-4" @submit.prevent="submit">
+      <Alert v-if="error" kind="error">{{ error }}</Alert>
 
-        <div>
-          <label class="label" for="email">Email</label>
-          <input id="email" v-model="form.email" type="email" autocomplete="email" required class="input" />
-          <p v-if="fieldErrors.email" class="field-error">{{ fieldErrors.email[0] }}</p>
-        </div>
+      <div>
+        <label class="label" for="email">Email</label>
+        <input id="email" v-model="form.email" type="email" autocomplete="email" required class="input" />
+        <p v-if="fieldErrors.email" class="field-error">{{ fieldErrors.email[0] }}</p>
+      </div>
 
-        <div>
-          <label class="label" for="password">Contraseña</label>
-          <input id="password" v-model="form.password" type="password" autocomplete="current-password" required class="input" />
-          <p v-if="fieldErrors.password" class="field-error">{{ fieldErrors.password[0] }}</p>
-        </div>
+      <div>
+        <label class="label" for="password">Contraseña</label>
+        <input id="password" v-model="form.password" type="password" autocomplete="current-password" required class="input" />
+        <p v-if="fieldErrors.password" class="field-error">{{ fieldErrors.password[0] }}</p>
+      </div>
 
-        <button type="submit" class="btn-primary w-full" :disabled="loading">{{ loading ? 'Entrando…' : 'Entrar' }}</button>
-      </form>
+      <button type="submit" class="btn-primary w-full py-2.5" :disabled="loading">{{ loading ? 'Entrando…' : 'Entrar' }}</button>
+    </form>
 
-      <p class="mt-4 text-center text-sm text-slate-500">
-        ¿Aún no tienes cuenta?
-        <RouterLink to="/registro" class="font-medium text-emerald-700 hover:underline">Date de alta</RouterLink>
-      </p>
-    </div>
-  </div>
+    <p class="mt-6 text-center text-sm text-slate-500">
+      ¿Aún no tienes cuenta?
+      <RouterLink to="/registro" class="font-semibold text-accent-400 hover:underline">Date de alta</RouterLink>
+    </p>
+  </AuthPanel>
 </template>

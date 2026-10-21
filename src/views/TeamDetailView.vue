@@ -113,14 +113,14 @@ async function linkToClub() {
         <template v-if="data.squad && !data.squad.canView">
           Es <strong>privada</strong>: solo su cuerpo técnico y sus jugadores vinculados pueden ver las actas y las estadísticas.
           <template v-if="auth.isCoach">
-            ¿Eres de su cuerpo técnico? Pide a tu club un código de acceso y <RouterLink to="/codigo-acceso" class="font-medium text-emerald-700 hover:underline">canjéalo</RouterLink>.
+            ¿Eres de su cuerpo técnico? Pide a tu club un código de acceso y <RouterLink to="/codigo-acceso" class="font-medium text-accent-400 hover:underline">canjéalo</RouterLink>.
           </template>
           <template v-else-if="auth.isPlayer">
             ¿Juegas en este equipo? Pide el código a tu cuerpo técnico y
-            <RouterLink to="/invitacion" class="font-medium text-emerald-700 hover:underline">vincúlate a tu ficha</RouterLink>.
+            <RouterLink to="/invitacion" class="font-medium text-accent-400 hover:underline">vincúlate a tu ficha</RouterLink>.
           </template>
           <template v-else>
-            <RouterLink to="/registro" class="font-medium text-emerald-700 hover:underline">Date de alta</RouterLink> si formas parte del equipo.
+            <RouterLink to="/registro" class="font-medium text-accent-400 hover:underline">Date de alta</RouterLink> si formas parte del equipo.
           </template>
         </template>
 
@@ -134,7 +134,7 @@ async function linkToClub() {
           </template>
           <template v-else-if="auth.isPlayer">Pide a tu cuerpo técnico que la cree: después podrás vincularte a tu ficha con su código de invitación.</template>
           <template v-else>
-            ¿Eres del club o de su cuerpo técnico? <RouterLink to="/registro" class="font-medium text-emerald-700 hover:underline">Date de alta</RouterLink>.
+            ¿Eres del club o de su cuerpo técnico? <RouterLink to="/registro" class="font-medium text-accent-400 hover:underline">Date de alta</RouterLink>.
           </template>
         </template>
 
@@ -143,14 +143,14 @@ async function linkToClub() {
     </section>
 
     <!-- Próximo partido -->
-    <section v-if="nextMatch && nextOpponent" class="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+    <section v-if="nextMatch && nextOpponent" class="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-accent-400/30 bg-brand-500/10 p-4">
       <div class="w-16 shrink-0 text-center">
-        <p class="text-xs uppercase text-emerald-700">Jornada</p>
-        <p class="text-2xl font-semibold text-emerald-900">{{ nextMatch.matchday }}</p>
+        <p class="text-xs uppercase text-accent-400">Jornada</p>
+        <p class="text-2xl font-semibold text-white">{{ nextMatch.matchday }}</p>
       </div>
       <div class="min-w-0 flex-1">
         <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Próximo partido</p>
-        <RouterLink :to="{ name: 'match', params: { matchId: nextMatch.id } }" class="block truncate text-lg font-semibold text-slate-900 hover:text-emerald-700">
+        <RouterLink :to="{ name: 'match', params: { matchId: nextMatch.id } }" class="block truncate text-lg font-semibold text-slate-900 hover:text-accent-400">
           <span class="text-slate-400">{{ nextOpponent.prefix }}</span> {{ nextOpponent.team.name }}
         </RouterLink>
         <p class="text-sm text-slate-600">{{ formatKickoff(nextMatch.kickoffAt) }}<span v-if="nextMatch.venue"> · {{ nextMatch.venue }}</span></p>

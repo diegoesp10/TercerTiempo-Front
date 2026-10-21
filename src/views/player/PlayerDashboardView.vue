@@ -195,7 +195,7 @@ async function leave() {
         <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Tus gráficos</h2>
         <RouterLink
           :to="{ name: 'squad-player', params: { squadId: squad.squadId, squadPlayerId: squad.squadPlayerId } }"
-          class="text-sm text-emerald-700 hover:underline"
+          class="text-sm text-accent-400 hover:underline"
         >
           Ver ficha completa
         </RouterLink>
@@ -217,9 +217,9 @@ async function leave() {
     <section v-if="data.recentPerformances.length > 0" class="mt-8">
       <div class="mb-3 flex items-center justify-between">
         <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Tus últimas actas</h2>
-        <RouterLink :to="{ name: 'squad-matches', params: { squadId: squad.squadId } }" class="text-sm text-emerald-700 hover:underline">Ver todos los partidos</RouterLink>
+        <RouterLink :to="{ name: 'squad-matches', params: { squadId: squad.squadId } }" class="text-sm text-accent-400 hover:underline">Ver todos los partidos</RouterLink>
       </div>
-      <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
@@ -234,7 +234,7 @@ async function leave() {
           <tbody class="divide-y divide-slate-100">
             <tr v-for="item in data.recentPerformances" :key="item.performance.id" class="hover:bg-slate-50">
               <td class="px-3 py-2">
-                <RouterLink :to="{ name: 'match', params: { matchId: item.match.id } }" class="font-medium text-slate-800 hover:text-emerald-700">
+                <RouterLink :to="{ name: 'match', params: { matchId: item.match.id } }" class="font-medium text-slate-800 hover:text-accent-400">
                   J{{ item.match.matchday }} · {{ opponentLabel(item.match, squad.teamId) }}
                 </RouterLink>
                 <p class="text-xs text-slate-500">{{ formatDate(item.match.kickoffAt) }}</p>

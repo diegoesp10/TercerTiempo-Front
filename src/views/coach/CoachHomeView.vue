@@ -33,7 +33,7 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
       <h2 class="font-semibold text-slate-900">No tienes ningún nombramiento vigente</h2>
       <p class="mt-3 text-sm text-slate-600">
         Tu club te nombra para un equipo y una temporada y te entrega un <strong>código de acceso</strong>. Al
-        <RouterLink to="/codigo-acceso" class="font-medium text-emerald-700 hover:underline">canjearlo</RouterLink>
+        <RouterLink to="/codigo-acceso" class="font-medium text-accent-400 hover:underline">canjearlo</RouterLink>
         entras en el cuerpo técnico de la plantilla y puedes registrar sus actas hasta que el nombramiento caduque.
       </p>
     </div>

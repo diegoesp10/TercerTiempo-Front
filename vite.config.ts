@@ -2,9 +2,11 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
+import { templateCompilerOptions } from '@tresjs/core';
 
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
+  // templateCompilerOptions: los componentes <Tres*> de TresJS son elementos del renderer de Three.js, no de Vue.
+  plugins: [vue({ ...templateCompilerOptions }), tailwindcss()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -14,8 +16,8 @@ export default defineConfig({
     port: 5173,
   },
   build: {
-    // Apache ECharts (~670 kB, ~225 kB gzip) va en su propio chunk, que solo se descarga en las páginas con gráficos;
+    // Apache ECharts (~670 kB) y Three.js (~650 kB) van en chunks propios que solo se descargan donde se usan;
     // el aviso por defecto (500 kB) no aporta nada aquí.
-    chunkSizeWarningLimit: 750,
+    chunkSizeWarningLimit: 800,
   },
 });

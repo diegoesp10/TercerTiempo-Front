@@ -107,7 +107,7 @@ onMounted(() => {
           <p class="text-sm text-slate-500">{{ invite.competitionName }} · {{ invite.seasonLabel }}</p>
         </div>
 
-        <div v-if="suggested" class="mt-4 flex items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50 p-4">
+        <div v-if="suggested" class="mt-4 flex items-center justify-between gap-3 rounded-xl border border-accent-400/40 bg-brand-500/10 p-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Parece que esta es tu ficha</p>
             <p class="font-medium text-slate-900">
@@ -125,7 +125,7 @@ onMounted(() => {
             {{ suggested ? 'Otras fichas sin vincular' : 'Fichas sin vincular' }}
           </h2>
           <p v-if="others.length === 0" class="text-sm text-slate-500">No quedan fichas libres en esta plantilla.</p>
-          <ul v-else class="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+          <ul v-else class="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-surface">
             <li v-for="entry in others" :key="entry.id" class="flex items-center justify-between gap-3 px-4 py-2">
               <div class="text-sm">
                 <span v-if="entry.shirtNumber" class="mr-1 text-slate-400">{{ entry.shirtNumber }}</span>

@@ -31,14 +31,14 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
         <Badge :tone="data.match.status === 'Played' ? 'slate' : 'blue'">{{ matchStatusLabels[data.match.status] }}</Badge>
       </div>
       <div class="mt-4 grid grid-cols-3 items-center text-center">
-        <RouterLink :to="{ name: 'team', params: { teamId: data.match.homeTeam.id } }" class="text-lg font-semibold text-slate-900 hover:text-emerald-700">
+        <RouterLink :to="{ name: 'team', params: { teamId: data.match.homeTeam.id } }" class="text-lg font-semibold text-slate-900 hover:text-accent-400">
           {{ data.match.homeTeam.name }}
         </RouterLink>
         <div class="text-3xl font-bold tabular-nums text-slate-900">
           <template v-if="data.match.status === 'Played'">{{ data.match.homeGoals }} - {{ data.match.awayGoals }}</template>
           <span v-else class="text-slate-300">vs</span>
         </div>
-        <RouterLink :to="{ name: 'team', params: { teamId: data.match.awayTeam.id } }" class="text-lg font-semibold text-slate-900 hover:text-emerald-700">
+        <RouterLink :to="{ name: 'team', params: { teamId: data.match.awayTeam.id } }" class="text-lg font-semibold text-slate-900 hover:text-accent-400">
           {{ data.match.awayTeam.name }}
         </RouterLink>
       </div>
@@ -63,18 +63,18 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
           <Badge :tone="sheet.visibility === 'Public' ? 'green' : 'slate'" class="ml-2">{{ visibilityLabels[sheet.visibility] }}</Badge>
         </h2>
         <div class="flex gap-3 text-sm">
-          <RouterLink v-if="sheet.visible" :to="{ name: 'squad', params: { squadId: sheet.squadId } }" class="text-emerald-700 hover:underline">Ver plantilla</RouterLink>
+          <RouterLink v-if="sheet.visible" :to="{ name: 'squad', params: { squadId: sheet.squadId } }" class="text-accent-400 hover:underline">Ver plantilla</RouterLink>
           <RouterLink
             v-if="auth.isStaffOf(sheet.squadId) && data.match.status === 'Played'"
             :to="{ name: 'sheet', params: { squadId: sheet.squadId, matchId: data.match.id } }"
-            class="font-medium text-emerald-700 hover:underline"
+            class="font-medium text-accent-400 hover:underline"
           >
             Editar acta
           </RouterLink>
           <RouterLink
             v-if="sheet.visible"
             :to="{ name: 'sheet', params: { squadId: sheet.squadId, matchId: data.match.id }, query: { tab: 'comparador' } }"
-            class="text-emerald-700 hover:underline"
+            class="text-accent-400 hover:underline"
           >
             Comparar con la federación
           </RouterLink>
@@ -104,7 +104,7 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr v-for="p in sheet.entries" :key="p.id" :class="p.squadPlayerId === auth.playerSquad?.squadPlayerId ? 'bg-emerald-50' : ''">
+            <tr v-for="p in sheet.entries" :key="p.id" :class="p.squadPlayerId === auth.playerSquad?.squadPlayerId ? 'bg-brand-500/10' : ''">
               <td class="py-2 pr-3 whitespace-nowrap">
                 <span v-if="p.shirtNumber" class="mr-1 text-slate-400">{{ p.shirtNumber }}</span>
                 <span class="font-medium text-slate-800">{{ p.playerName }}</span>

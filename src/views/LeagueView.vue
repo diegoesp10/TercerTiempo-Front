@@ -72,7 +72,7 @@ watch(selectedId, (id) => {
       <Spinner v-if="table.loading.value" />
       <Alert v-else-if="table.error.value" kind="error">{{ table.error.value }}</Alert>
 
-      <div v-else-if="table.data.value" class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div v-else-if="table.data.value" class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
@@ -92,11 +92,11 @@ watch(selectedId, (id) => {
             <tr
               v-for="row in table.data.value.standings"
               :key="row.teamId"
-              :class="auth.isMyTeam(row.teamId) ? 'bg-emerald-50 font-medium' : 'hover:bg-slate-50'"
+              :class="auth.isMyTeam(row.teamId) ? 'bg-brand-500/10 font-medium' : 'hover:bg-slate-50'"
             >
               <td class="px-3 py-2 tabular-nums text-slate-500">{{ row.position }}</td>
               <td class="px-3 py-2">
-                <RouterLink :to="{ name: 'team', params: { teamId: row.teamId } }" class="flex items-center gap-2 hover:text-emerald-700 hover:underline">
+                <RouterLink :to="{ name: 'team', params: { teamId: row.teamId } }" class="flex items-center gap-2 hover:text-accent-400 hover:underline">
                   <img v-if="row.crestUrl" :src="row.crestUrl" :alt="''" class="h-5 w-5 object-contain" loading="lazy" />
                   {{ row.teamName }}
                 </RouterLink>

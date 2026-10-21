@@ -110,7 +110,7 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
               :key="option[0]"
               type="button"
               class="rounded-md px-2 py-0.5 font-medium"
-              :class="donutMetric === option[0] ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'"
+              :class="donutMetric === option[0] ? 'bg-brand-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
               @click="donutMetric = option[0]"
             >
               {{ option[1] }}
@@ -135,7 +135,7 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
 
     <p v-if="data.players.length === 0" class="text-sm text-slate-500">La plantilla no tiene jugadores todavía.</p>
 
-    <div v-else class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div v-else class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
       <table class="min-w-full text-sm">
         <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
@@ -153,7 +153,7 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
               <span v-if="row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.player.shirtNumber }}</span>
               <RouterLink
                 :to="{ name: 'squad-player', params: { squadId, squadPlayerId: row.player.id } }"
-                class="font-medium hover:text-emerald-700 hover:underline"
+                class="font-medium hover:text-accent-400 hover:underline"
                 :class="row.stats.matchesLogged === 0 ? '' : 'text-slate-800'"
               >{{ row.player.fullName }}</RouterLink>
               <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>

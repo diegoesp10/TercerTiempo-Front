@@ -184,7 +184,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
         <span class="flex items-center gap-2">
           <Badge v-if="outcome" :tone="outcomeTone(outcome)">{{ outcomeLabels[outcome] }}</Badge>
           <Badge :tone="data.match.status === 'Played' ? 'slate' : 'blue'">{{ matchStatusLabels[data.match.status] }}</Badge>
-          <RouterLink :to="{ name: 'match', params: { matchId: data.match.id } }" class="text-emerald-700 hover:underline">Ver partido</RouterLink>
+          <RouterLink :to="{ name: 'match', params: { matchId: data.match.id } }" class="text-accent-400 hover:underline">Ver partido</RouterLink>
         </span>
       </div>
       <div class="mt-3 grid grid-cols-3 items-center text-center">
@@ -197,7 +197,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
       </div>
     </div>
 
-    <nav class="mt-6 flex gap-1 border-b border-slate-200" aria-label="Secciones del partido">
+    <nav class="mt-6 flex gap-1 overflow-x-auto border-b border-slate-200 whitespace-nowrap" aria-label="Secciones del partido">
       <button
         v-for="item in tabs"
         :key="item.id"
@@ -244,7 +244,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
 
       <p v-if="!canEdit && playedRows.length === 0" class="text-sm text-slate-500">El cuerpo técnico todavía no ha registrado el acta de este partido.</p>
 
-      <div v-else class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div v-else class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
@@ -263,7 +263,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
           <tbody v-if="canEdit" class="divide-y divide-slate-100">
             <tr v-for="row in rows" :key="row.squadPlayerId" :class="row.played ? '' : 'text-slate-400'">
               <td class="px-2 py-1 text-center">
-                <input v-model="row.played" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-emerald-600" :aria-label="`${row.player.fullName} jugó`" @change="onPlayedChange(row)" />
+                <input v-model="row.played" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-accent-400" :aria-label="`${row.player.fullName} jugó`" @change="onPlayedChange(row)" />
               </td>
               <td class="px-3 py-1 whitespace-nowrap">
                 <span v-if="row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.player.shirtNumber }}</span>
@@ -271,7 +271,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
               </td>
               <td class="px-2 py-1 text-center">
-                <input v-model="row.started" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-emerald-600" :disabled="!row.played" aria-label="Titular" />
+                <input v-model="row.started" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-accent-400" :disabled="!row.played" aria-label="Titular" />
               </td>
               <td class="px-2 py-1 text-center">
                 <input v-model.number="row.minutesPlayed" type="number" min="0" max="120" class="input w-16 px-1 py-1 text-center" :disabled="!row.played" aria-label="Minutos" />

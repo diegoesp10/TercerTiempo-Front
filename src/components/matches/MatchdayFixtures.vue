@@ -160,7 +160,7 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
             <RouterLink
               :to="{ name: 'match', params: { matchId: match.id } }"
               class="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
-              :class="isHighlighted(match) ? 'bg-emerald-50 font-medium' : ''"
+              :class="isHighlighted(match) ? 'bg-brand-500/10 font-medium' : ''"
             >
               <span class="truncate text-right text-slate-800" :title="match.homeTeam.name">{{ match.homeTeam.name }}</span>
               <span class="min-w-16 text-center">

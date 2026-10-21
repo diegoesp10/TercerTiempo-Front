@@ -72,8 +72,8 @@ const subtitle = computed(() =>
         v-for="team in teams.data.value"
         :key="team.id"
         :to="{ name: 'team', params: { teamId: team.id } }"
-        class="card flex items-center gap-4 transition hover:border-emerald-300 hover:shadow"
-        :class="auth.isMyTeam(team.id) ? 'border-emerald-300 bg-emerald-50' : ''"
+        class="card flex items-center gap-4 transition hover:border-brand-400/60 hover:shadow"
+        :class="auth.isMyTeam(team.id) ? 'border-accent-400/40 bg-brand-500/10' : ''"
       >
         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
           <img v-if="team.crestUrl" :src="team.crestUrl" :alt="team.name" class="h-10 w-10 object-contain" loading="lazy" />

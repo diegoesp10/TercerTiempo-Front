@@ -159,7 +159,7 @@ const canUploadHere = computed(() => props.canUpload && !!props.uploadSquadId);
                 {{ busy === video.id ? 'Comprando…' : `Comprar por ${formatMoney(video.priceCents, video.currency)}` }}
               </button>
               <span v-else-if="!auth.isAuthenticated" class="text-xs text-slate-500">
-                <RouterLink to="/login" class="text-emerald-700 hover:underline">Entra</RouterLink> para verlo
+                <RouterLink to="/login" class="text-accent-400 hover:underline">Entra</RouterLink> para verlo
               </span>
               <button v-if="video.canDelete" type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy === video.id" @click="remove(video)">Eliminar</button>
             </div>

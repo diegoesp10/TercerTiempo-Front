@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ApiError, errorMessage } from '@/api/http';
+import AuthPanel from '@/components/layout/AuthPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import { useAuthStore } from '@/stores/auth';
 import type { AccountType, Position } from '@/types/api';
@@ -68,9 +69,9 @@ async function submit() {
 </script>
 
 <template>
-  <div class="mx-auto mt-8 max-w-lg">
-    <div class="card">
-      <h1 class="text-xl font-semibold text-slate-900">Darme de alta</h1>
+  <AuthPanel title="Tu equipo, con datos de verdad" subtitle="Clubes que nombran a su cuerpo técnico, técnicos que registran cada acta y jugadores que siguen su temporada.">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Darme de alta</h1>
       <p class="mt-1 text-sm text-slate-500">Elige qué papel tienes: la cuenta no se puede cambiar después.</p>
 
       <form class="mt-6 space-y-4" @submit.prevent="submit">
@@ -84,7 +85,7 @@ async function submit() {
             role="radio"
             :aria-checked="form.accountType === type.value"
             class="rounded-xl border p-3 text-left transition"
-            :class="form.accountType === type.value ? 'border-emerald-600 bg-emerald-50 ring-2 ring-emerald-500/30' : 'border-slate-200 bg-white hover:border-emerald-300'"
+            :class="form.accountType === type.value ? 'border-brand-400 bg-brand-500/15 ring-2 ring-brand-500/30' : 'border-slate-200 bg-surface hover:border-brand-400/60'"
             @click="form.accountType = type.value"
           >
             <p class="font-medium text-slate-900">{{ type.title }}</p>
@@ -154,8 +155,8 @@ async function submit() {
 
       <p class="mt-4 text-center text-sm text-slate-500">
         ¿Ya tienes cuenta?
-        <RouterLink to="/login" class="font-medium text-emerald-700 hover:underline">Entra</RouterLink>
+        <RouterLink to="/login" class="font-semibold text-accent-400 hover:underline">Entra</RouterLink>
       </p>
     </div>
-  </div>
+  </AuthPanel>
 </template>

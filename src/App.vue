@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
+import PitchBackground from '@/components/backgrounds/PitchBackground.vue';
 import AppShell from '@/components/layout/AppShell.vue';
 import { useAuthStore } from '@/stores/auth';
 
@@ -12,7 +13,12 @@ onMounted(() => {
 </script>
 
 <template>
+  <PitchBackground />
   <AppShell>
-    <RouterView />
+    <RouterView v-slot="{ Component }">
+      <Transition name="page" mode="out-in">
+        <component :is="Component" />
+      </Transition>
+    </RouterView>
   </AppShell>
 </template>

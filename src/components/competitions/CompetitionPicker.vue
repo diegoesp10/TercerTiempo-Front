@@ -42,7 +42,7 @@ function selectLevel(level: CompetitionLevel) {
         role="tab"
         :aria-selected="group.level === activeLevel"
         class="rounded-full px-4 py-1.5 text-sm font-medium transition"
-        :class="group.level === activeLevel ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100'"
+        :class="group.level === activeLevel ? 'bg-brand-500 text-white shadow-glow' : 'bg-surface text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100'"
         @click="selectLevel(group.level)"
       >
         {{ levelLabels[group.level] }}
@@ -56,8 +56,8 @@ function selectLevel(level: CompetitionLevel) {
         type="button"
         class="rounded-lg border px-3 py-2 text-left text-sm transition"
         :class="competition.id === modelValue
-          ? 'border-emerald-600 bg-emerald-50 text-emerald-800'
-          : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-300'"
+          ? 'border-brand-400 bg-brand-500/15 text-emerald-700'
+          : 'border-slate-200 bg-surface text-slate-700 hover:border-brand-400/60'"
         @click="emit('update:modelValue', competition.id)"
       >
         <span class="font-medium">{{ competition.category }}</span>

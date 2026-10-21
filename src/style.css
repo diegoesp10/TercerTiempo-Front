@@ -1,7 +1,116 @@
 @import "tailwindcss";
 
+/*
+  Sistema de diseño de Tercer Tiempo: tema oscuro en azules de estadio nocturno.
+  Las escalas slate / emerald / sky / amber / red se redefinen para el fondo oscuro, de modo que las utilidades que ya
+  usan las vistas (text-slate-900 = texto principal, text-slate-500 = secundario, border-slate-200 = líneas,
+  bg-slate-50 = relleno sutil, text-emerald-700 = enlace/acento verde césped...) cobran sentido sin reescribirlas.
+*/
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Sora", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Fondos */
+  --color-navy-950: #050b1a;
+  --color-navy-900: #081229;
+  --color-navy-800: #0b1a3a;
+  --color-surface: #0e1b3b;
+  --color-surface-2: #132450;
+  --color-surface-3: #182d60;
+
+  /* Marca: azul eléctrico y cian */
+  --color-brand-300: #8dc0ff;
+  --color-brand-400: #5aa0ff;
+  --color-brand-500: #2f7bff;
+  --color-brand-600: #1f5fd6;
+  --color-brand-700: #1748a3;
+  --color-accent-300: #8fe8ff;
+  --color-accent-400: #35d3ff;
+  --color-accent-500: #12b6e6;
+
+  /* Escala neutra invertida para texto y líneas sobre fondo oscuro */
+  --color-slate-50: #101d40;
+  --color-slate-100: #152552;
+  --color-slate-200: #1f3161;
+  --color-slate-300: #2c4075;
+  --color-slate-400: #6f7ea9;
+  --color-slate-500: #94a2cb;
+  --color-slate-600: #afbbde;
+  --color-slate-700: #c5cfec;
+  --color-slate-800: #dde4fa;
+  --color-slate-900: #f1f4ff;
+
+  /* Verde césped: acento secundario, enlaces y éxito */
+  --color-emerald-50: #0d2b3a;
+  --color-emerald-100: #0f3d3b;
+  --color-emerald-200: #165a52;
+  --color-emerald-300: #1f8a76;
+  --color-emerald-400: #2fd3a3;
+  --color-emerald-500: #22c39a;
+  --color-emerald-600: #16a883;
+  --color-emerald-700: #4fe2b6;
+  --color-emerald-800: #93f0d2;
+  --color-emerald-900: #d9fff2;
+
+  --color-sky-50: #0d2443;
+  --color-sky-100: #12325e;
+  --color-sky-200: #1d4b85;
+  --color-sky-700: #6fb6ff;
+  --color-sky-800: #aad5ff;
+
+  --color-amber-50: #2a2110;
+  --color-amber-100: #3b2e12;
+  --color-amber-200: #6b4e14;
+  --color-amber-400: #f5b53f;
+  --color-amber-700: #f7c45a;
+  --color-amber-800: #ffd98a;
+  --color-amber-900: #ffe9b8;
+
+  --color-red-50: #2f1422;
+  --color-red-100: #46182b;
+  --color-red-200: #7a2740;
+  --color-red-600: #ff6b81;
+  --color-red-700: #ff8597;
+  --color-red-800: #ffb1bd;
+
+  --shadow-card: 0 18px 50px -24px rgba(2, 8, 30, 0.9), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  --shadow-glow: 0 0 0 1px rgba(47, 123, 255, 0.35), 0 10px 40px -10px rgba(47, 123, 255, 0.65);
+  --shadow-glow-accent: 0 0 40px -8px rgba(53, 211, 255, 0.55);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-navy-950);
+    color: var(--color-slate-900);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: rgba(47, 123, 255, 0.45);
+  }
+
+  /* Tablas y listas: líneas finas y filas con relieve suave */
+  thead {
+    font-family: var(--font-display);
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="search"]::-webkit-search-cancel-button {
+    filter: invert(0.8);
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--color-navy-950); }
+  ::-webkit-scrollbar-thumb { background: var(--color-slate-300); border-radius: 999px; border: 2px solid var(--color-navy-950); }
 }
 
 @layer components {
@@ -9,30 +118,102 @@
   .btn-primary,
   .btn-secondary,
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition
-      focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2
-      disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition duration-200
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950
+      disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-emerald-600 text-white hover:bg-emerald-700;
+    @apply text-white;
+    background-image: linear-gradient(135deg, var(--color-brand-400) 0%, var(--color-brand-500) 55%, var(--color-brand-600) 100%);
+    box-shadow: var(--shadow-glow);
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 1px rgba(90, 160, 255, 0.6), 0 14px 44px -10px rgba(47, 123, 255, 0.85);
   }
   .btn-secondary {
-    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+    @apply border border-slate-300 bg-surface-2 text-slate-800 hover:border-brand-400 hover:bg-surface-3 hover:text-white;
   }
   .btn-ghost {
-    @apply text-slate-600 hover:bg-slate-100;
+    @apply text-slate-600 hover:bg-surface-2 hover:text-slate-900;
   }
   .input {
-    @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm
-      placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30;
+    @apply block w-full rounded-xl border border-slate-300 bg-navy-900 px-3 py-2 text-sm text-slate-900 shadow-sm
+      placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30;
+  }
+  select.input option {
+    background-color: var(--color-navy-900);
   }
   .label {
     @apply mb-1 block text-sm font-medium text-slate-700;
   }
   .card {
-    @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm;
+    @apply relative rounded-2xl border border-white/8 p-5;
+    background: linear-gradient(160deg, rgba(20, 36, 78, 0.85) 0%, rgba(12, 22, 50, 0.9) 100%);
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(14px);
+  }
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 40%);
   }
   .field-error {
     @apply mt-1 text-xs text-red-600;
   }
+
+  /* Texto con degradado de marca (titulares) */
+  .text-gradient {
+    background-image: linear-gradient(100deg, #ffffff 0%, var(--color-brand-300) 45%, var(--color-accent-400) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Etiqueta pequeña en mayúsculas con punto luminoso */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent-400;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--color-accent-400);
+    box-shadow: 0 0 12px var(--color-accent-400);
+  }
+
+  /* Transición entre páginas: con keyframes (y sin estado *-from) la página nunca se queda invisible aunque el
+     navegador no llegue a pintar el fotograma intermedio. */
+  .page-enter-active {
+    animation: page-in 0.24s ease-out;
+  }
+  .page-leave-active {
+    animation: page-out 0.16s ease-in;
+  }
+}
+
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes page-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-6px); }
+}
+
+@utility shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+@utility shadow-glow-accent {
+  box-shadow: var(--shadow-glow-accent);
+}
+
+@utility font-display {
+  font-family: var(--font-display);
 }
