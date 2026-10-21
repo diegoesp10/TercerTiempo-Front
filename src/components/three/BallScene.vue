@@ -2,7 +2,6 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import {
   AmbientLight,
-  Clock,
   DirectionalLight,
   Mesh,
   MeshStandardMaterial,
@@ -10,6 +9,7 @@ import {
   PointLight,
   Scene,
   SphereGeometry,
+  Timer,
   WebGLRenderer,
 } from 'three';
 import { createBallTexture } from '@/three/ballTexture';
@@ -82,9 +82,10 @@ onMounted(() => {
   const visibility = new IntersectionObserver(([entry]) => { visible = entry?.isIntersecting ?? true; }, { threshold: 0.05 });
   visibility.observe(host);
 
-  const clock = new Clock();
+  const timer = new Timer();
   const draw = () => {
-    const elapsed = clock.getElapsedTime();
+    timer.update();
+    const elapsed = timer.getElapsed();
     ball.rotation.y = elapsed * props.spin;
     ball.rotation.x = Math.sin(elapsed * 0.6) * 0.18 + 0.35;
     ball.position.y = Math.sin(elapsed * 1.4) * props.float;
