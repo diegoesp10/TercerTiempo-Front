@@ -22,10 +22,12 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => token.value !== null);
   const isCoach = computed(() => account.value?.type === 'Coach');
   const isPlayer = computed(() => account.value?.type === 'Player');
+  const isClub = computed(() => account.value?.type === 'Club');
 
   const player = computed(() => account.value?.player ?? null);
   const coach = computed(() => account.value?.coach ?? null);
-  const displayName = computed(() => player.value?.displayName ?? coach.value?.displayName ?? '');
+  const club = computed(() => account.value?.club ?? null);
+  const displayName = computed(() => player.value?.displayName ?? coach.value?.displayName ?? club.value?.name ?? '');
 
   /** Plantilla a la que está vinculado el jugador (null si todavía no se ha vinculado). */
   const playerSquad = computed(() => player.value?.squad ?? null);
@@ -97,8 +99,10 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     isCoach,
     isPlayer,
+    isClub,
     player,
     coach,
+    club,
     displayName,
     playerSquad,
     coachSquads,

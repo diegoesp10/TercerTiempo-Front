@@ -1,52 +1,45 @@
 <script setup lang="ts">
-import { api } from '@/api';
+import { computed } from 'vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
-import { staffRoleLabels, visibilityLabels } from '@/utils/format';
+import { appointmentStatusLabels, appointmentStatusTone, formatDate, staffRoleLabels, visibilityLabels } from '@/utils/format';
 
 const auth = useAuthStore();
 
-const { data, loading, error } = useAsync(async () => {
-  const squads = await api.squads.mine();
-  auth.setCoachSquads(squads);
-  return squads;
-});
+// La cuenta trae las plantillas vigentes y todos los nombramientos; se refresca al entrar.
+const { loading, error } = useAsync(() => auth.refreshAccount());
+
+const squads = computed(() => auth.coachSquads);
+const appointments = computed(() => auth.coach?.appointments ?? []);
+const pastAppointments = computed(() => appointments.value.filter((a) => a.status !== 'Active'));
 </script>
 
 <template>
-  <PageHeader :title="`Hola, ${auth.displayName}`" subtitle="Plantillas en las que formas parte del cuerpo técnico.">
+  <PageHeader :title="`Hola, ${auth.displayName}`" subtitle="Plantillas en las que formas parte del cuerpo técnico esta temporada.">
     <template #actions>
-      <RouterLink to="/invitacion" class="btn-secondary">Unirme con un código</RouterLink>
-      <RouterLink to="/equipos" class="btn-primary">Crear plantilla</RouterLink>
+      <RouterLink to="/codigo-acceso" class="btn-primary">Canjear un código de acceso</RouterLink>
     </template>
   </PageHeader>
 
-  <Spinner v-if="loading" />
+  <Spinner v-if="loading && squads.length === 0" />
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
-  <template v-else-if="data">
-    <div v-if="data.length === 0" class="card">
-      <h2 class="font-semibold text-slate-900">Todavía no gestionas ninguna plantilla</h2>
-      <ul class="mt-3 space-y-2 text-sm text-slate-600">
-        <li>
-          <strong>¿Eres el primero de tu cuerpo técnico en entrar?</strong>
-          Busca tu equipo en <RouterLink to="/equipos" class="font-medium text-emerald-700 hover:underline">Equipos</RouterLink>
-          y pulsa «Crear plantilla»: se importan las fichas publicadas por futbolasturiano.es y obtienes un código de invitación.
-        </li>
-        <li>
-          <strong>¿Tu plantilla ya existe?</strong>
-          Pide el código a quien la creó y
-          <RouterLink to="/invitacion" class="font-medium text-emerald-700 hover:underline">únete al cuerpo técnico</RouterLink>.
-        </li>
-      </ul>
+  <template v-else>
+    <div v-if="squads.length === 0" class="card">
+      <h2 class="font-semibold text-slate-900">No tienes ningún nombramiento vigente</h2>
+      <p class="mt-3 text-sm text-slate-600">
+        Tu club te nombra para un equipo y una temporada y te entrega un <strong>código de acceso</strong>. Al
+        <RouterLink to="/codigo-acceso" class="font-medium text-emerald-700 hover:underline">canjearlo</RouterLink>
+        entras en el cuerpo técnico de la plantilla y puedes registrar sus actas hasta que el nombramiento caduque.
+      </p>
     </div>
 
     <div v-else class="grid gap-4 md:grid-cols-2">
-      <article v-for="squad in data" :key="squad.id" class="card flex flex-col gap-4">
+      <article v-for="squad in squads" :key="squad.id" class="card flex flex-col gap-4">
         <div class="flex items-start gap-4">
           <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
             <img v-if="squad.teamCrestUrl" :src="squad.teamCrestUrl" :alt="squad.teamName" class="h-12 w-12 object-contain" loading="lazy" />
@@ -69,5 +62,24 @@ const { data, loading, error } = useAsync(async () => {
         </div>
       </article>
     </div>
+
+    <section v-if="appointments.length > 0" class="card mt-6">
+      <h2 class="font-semibold text-slate-900">Mis nombramientos</h2>
+      <ul class="mt-3 divide-y divide-slate-100 text-sm">
+        <li v-for="appointment in appointments" :key="appointment.id" class="flex flex-wrap items-center justify-between gap-2 py-2">
+          <div>
+            <p class="font-medium text-slate-800">{{ appointment.teamName }} <span class="text-slate-400">· {{ appointment.clubName }}</span></p>
+            <p class="text-xs text-slate-500">
+              {{ appointment.competitionName }} · {{ appointment.seasonLabel }} · {{ staffRoleLabels[appointment.role] }} ·
+              {{ formatDate(appointment.validFrom) }} → {{ formatDate(appointment.validUntil) }}
+            </p>
+          </div>
+          <Badge :tone="appointmentStatusTone(appointment.status)">{{ appointmentStatusLabels[appointment.status] }}</Badge>
+        </li>
+      </ul>
+      <p v-if="pastAppointments.length > 0" class="mt-3 text-xs text-slate-500">
+        Los nombramientos caducados o revocados dejan de dar acceso a la plantilla; las actas que registraste se conservan.
+      </p>
+    </section>
   </template>
 </template>

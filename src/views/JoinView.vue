@@ -7,8 +7,8 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import { useAuthStore } from '@/stores/auth';
-import type { SquadInviteDto, StaffRole } from '@/types/api';
-import { positionLabels, staffRoleOptions } from '@/utils/format';
+import type { SquadInviteDto } from '@/types/api';
+import { positionLabels } from '@/utils/format';
 
 const props = defineProps<{ code?: string }>();
 
@@ -16,7 +16,6 @@ const auth = useAuthStore();
 const router = useRouter();
 
 const code = ref((props.code ?? '').toUpperCase());
-const role = ref<StaffRole>('AssistantCoach');
 const loading = ref(false);
 const joining = ref<string | null>(null);
 const error = ref<string | null>(null);
@@ -59,20 +58,6 @@ async function joinAsPlayer(squadPlayerId: string) {
   }
 }
 
-async function joinAsStaff() {
-  loading.value = true;
-  error.value = null;
-  try {
-    const squad = await api.squads.joinStaff({ inviteCode: code.value, role: role.value });
-    await auth.refreshAccount();
-    await router.push({ name: 'squad', params: { squadId: squad.summary.id } });
-  } catch (e) {
-    error.value = errorMessage(e);
-  } finally {
-    loading.value = false;
-  }
-}
-
 onMounted(() => {
   if (auth.isPlayer && code.value && !auth.playerSquad) void lookup();
 });
@@ -80,22 +65,22 @@ onMounted(() => {
 
 <template>
   <div class="mx-auto max-w-2xl">
-    <PageHeader
-      :title="auth.isPlayer ? 'Vincúlate a tu plantilla' : 'Únete a un cuerpo técnico'"
-      :subtitle="auth.isPlayer
-        ? 'Tu cuerpo técnico te facilita el código de invitación de la plantilla.'
-        : 'Con el código de invitación que te da el cuerpo técnico actual de la plantilla.'"
-    />
+    <PageHeader title="Vincúlate a tu plantilla" subtitle="Tu cuerpo técnico te facilita el código de invitación de la plantilla." />
 
-    <Alert v-if="auth.isPlayer && auth.playerSquad" kind="info" class="mb-4">
+    <Alert v-if="auth.isCoach" kind="info">
+      Los códigos de invitación son para los jugadores. Si eres del cuerpo técnico, tu club te entrega un
+      <RouterLink to="/codigo-acceso" class="font-medium underline">código de acceso</RouterLink>.
+    </Alert>
+
+    <Alert v-else-if="auth.isPlayer && auth.playerSquad" kind="info" class="mb-4">
       Ya estás vinculado a <strong>{{ auth.playerSquad.teamName }}</strong>. Para cambiar de plantilla, desvincúlate primero desde
       <RouterLink to="/" class="font-medium underline">tu panel</RouterLink>.
     </Alert>
 
-    <div v-else class="card">
+    <div v-else-if="auth.isPlayer" class="card">
       <Alert v-if="error" kind="error" class="mb-4">{{ error }}</Alert>
 
-      <form class="flex flex-wrap items-end gap-3" @submit.prevent="auth.isPlayer ? lookup() : joinAsStaff()">
+      <form class="flex flex-wrap items-end gap-3" @submit.prevent="lookup">
         <div class="min-w-48 flex-1">
           <label class="label" for="code">Código de invitación</label>
           <input
@@ -111,18 +96,12 @@ onMounted(() => {
             @input="code = code.toUpperCase()"
           />
         </div>
-        <div v-if="auth.isCoach" class="min-w-48">
-          <label class="label" for="role">Tu rol en la plantilla</label>
-          <select id="role" v-model="role" class="input">
-            <option v-for="option in staffRoleOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-          </select>
-        </div>
         <button type="submit" class="btn-primary" :disabled="loading || code.trim().length < 4">
-          {{ loading ? 'Comprobando…' : auth.isPlayer ? 'Buscar mi plantilla' : 'Unirme al cuerpo técnico' }}
+          {{ loading ? 'Comprobando…' : 'Buscar mi plantilla' }}
         </button>
       </form>
 
-      <template v-if="auth.isPlayer && invite">
+      <template v-if="invite">
         <div class="mt-6 rounded-lg bg-slate-50 p-4">
           <p class="font-semibold text-slate-900">{{ invite.teamName }}</p>
           <p class="text-sm text-slate-500">{{ invite.competitionName }} · {{ invite.seasonLabel }}</p>
@@ -165,5 +144,7 @@ onMounted(() => {
         </div>
       </template>
     </div>
+
+    <Alert v-else kind="info">Las invitaciones a una plantilla son para cuentas de jugador.</Alert>
   </div>
 </template>

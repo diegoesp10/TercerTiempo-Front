@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
+import SheetComparison from '@/components/sheet/SheetComparison.vue';
+import MatchVideos from '@/components/videos/MatchVideos.vue';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -12,7 +15,19 @@ import { formatKickoff, matchStatusLabels, outcomeFor, outcomeLabels, outcomeTon
 
 const props = defineProps<{ squadId: string; matchId: string }>();
 
+const route = useRoute();
+const router = useRouter();
+
 const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, props.matchId));
+
+type Tab = 'acta' | 'comparador' | 'video';
+const tabs: { id: Tab; label: string }[] = [
+  { id: 'acta', label: 'Acta interna' },
+  { id: 'comparador', label: 'Comparador con la federación' },
+  { id: 'video', label: 'Vídeo' },
+];
+const tab = computed<Tab>(() => (route.query.tab === 'comparador' || route.query.tab === 'video' ? route.query.tab : 'acta'));
+const selectTab = (id: Tab) => void router.replace({ query: { ...route.query, tab: id === 'acta' ? undefined : id } });
 
 interface Row extends MatchSheetEntryInput {
   player: SquadPlayerDto;
@@ -182,10 +197,31 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
       </div>
     </div>
 
-    <section class="mt-6">
+    <nav class="mt-6 flex gap-1 border-b border-slate-200" aria-label="Secciones del partido">
+      <button
+        v-for="item in tabs"
+        :key="item.id"
+        type="button"
+        class="-mb-px border-b-2 px-4 py-2 text-sm font-medium transition"
+        :class="tab === item.id ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'"
+        @click="selectTab(item.id)"
+      >
+        {{ item.label }}
+      </button>
+    </nav>
+
+    <div v-if="tab === 'comparador'" class="mt-6">
+      <SheetComparison :squad-id="squadId" :match-id="matchId" />
+    </div>
+
+    <div v-else-if="tab === 'video'" class="mt-6">
+      <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="data.canEdit || data.squad.myRole !== null" />
+    </div>
+
+    <section v-else class="mt-6">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 class="font-semibold text-slate-900">Acta del partido</h2>
+          <h2 class="font-semibold text-slate-900">Acta interna del partido</h2>
           <p class="text-xs text-slate-500">
             <template v-if="canEdit">Marca quién jugó y rellena su línea. {{ playedRows.length }} de {{ rows.length }} jugadores en el acta.</template>
             <template v-else>{{ playedRows.length }} jugadores en el acta.</template>

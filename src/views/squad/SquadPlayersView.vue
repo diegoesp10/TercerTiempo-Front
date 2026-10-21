@@ -147,7 +147,7 @@ function remove(player: SquadPlayerDto) {
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Código de invitación</p>
           <p class="mt-2 font-mono text-2xl font-semibold tracking-[0.3em] text-slate-900">{{ detail.inviteCode }}</p>
-          <p class="mt-1 text-xs text-slate-500">Compártelo con el resto del staff y con los jugadores para que se vinculen a su ficha.</p>
+          <p class="mt-1 text-xs text-slate-500">Compártelo con los jugadores para que se vinculen a su ficha. El cuerpo técnico entra con el código de acceso de su club.</p>
           <div class="mt-3 flex flex-wrap gap-2">
             <button type="button" class="btn-secondary px-3 py-1 text-xs" @click="copyCode">{{ copied ? 'Copiado ✓' : 'Copiar' }}</button>
             <button type="button" class="btn-ghost px-3 py-1 text-xs" :disabled="busy" @click="rotateCode">Generar otro</button>
@@ -289,11 +289,13 @@ function remove(player: SquadPlayerDto) {
         <ul class="divide-y divide-slate-100 text-sm">
           <li v-for="member in detail.staff" :key="member.coachId" class="py-2">
             <p class="font-medium text-slate-800">{{ member.displayName }}</p>
-            <p class="text-xs text-slate-500">{{ staffRoleLabels[member.role] }} · desde {{ formatDate(member.joinedAt) }}</p>
+            <p class="text-xs text-slate-500">
+              {{ staffRoleLabels[member.role] }} · desde {{ formatDate(member.joinedAt) }}<template v-if="member.validUntil"> · hasta {{ formatDate(member.validUntil) }}</template>
+            </p>
           </li>
         </ul>
         <p v-if="canManage" class="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
-          Para incorporar a alguien al staff, pásale el código de invitación: al unirse elige su rol.
+          Los nombramientos los emite el club: cada técnico entra con su código de acceso y sale cuando caduca o se revoca.
         </p>
       </section>
     </div>

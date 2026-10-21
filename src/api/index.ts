@@ -1,21 +1,27 @@
-import { http } from './http';
+import { apiBaseUrl, http } from './http';
 import type {
   AccountDto,
+  AppointmentDto,
   AuthResponse,
+  ClubDto,
+  CoachDto,
   CompetitionDto,
   CompetitionMatchdayDto,
+  CreateAppointmentRequest,
   JoinSquadAsPlayerRequest,
-  JoinSquadStaffRequest,
   LeagueTableDto,
   LoginRequest,
   MatchDetailDto,
   MatchDto,
   MatchSheetDto,
   MatchSheetEntryInput,
+  MatchVideoDto,
+  OfficialSheetDto,
   PerformanceWithMatchDto,
   PlayerDashboardDto,
   PlayerDto,
   RegisterRequest,
+  SheetComparisonDto,
   SquadDetailDto,
   SquadInviteDto,
   SquadMatchDto,
@@ -29,6 +35,7 @@ import type {
   SyncResultDto,
   TeamDetailDto,
   TeamSummaryDto,
+  VideoTicketDto,
 } from '@/types/api';
 
 export const api = {
@@ -47,10 +54,24 @@ export const api = {
     performances: () => http<PerformanceWithMatchDto[]>('/api/players/me/performances'),
   },
 
+  /** Técnicos con cuenta: canjear los códigos de acceso que les entrega su club. */
+  coaches: {
+    redeem: (accessCode: string) => http<CoachDto>('/api/coaches/me/appointments/redeem', { method: 'POST', body: { accessCode } }),
+  },
+
+  /** Clubes: sus equipos y los nombramientos de sus técnicos. */
+  clubs: {
+    me: () => http<ClubDto>('/api/clubs/me'),
+    addTeam: (teamId: string) => http<ClubDto>('/api/clubs/me/teams', { method: 'POST', body: { teamId } }),
+    removeTeam: (teamId: string) => http<ClubDto>(`/api/clubs/me/teams/${teamId}`, { method: 'DELETE' }),
+    createAppointment: (body: CreateAppointmentRequest) => http<AppointmentDto>('/api/clubs/me/appointments', { method: 'POST', body }),
+    updateAppointment: (appointmentId: string, validUntil: string) =>
+      http<AppointmentDto>(`/api/clubs/me/appointments/${appointmentId}`, { method: 'PUT', body: { validUntil } }),
+    revokeAppointment: (appointmentId: string) => http<AppointmentDto>(`/api/clubs/me/appointments/${appointmentId}`, { method: 'DELETE' }),
+  },
+
   /** Gestión de plantillas por el cuerpo técnico (las lecturas también valen para jugadores vinculados y plantillas públicas). */
   squads: {
-    claim: (teamId: string) => http<SquadDetailDto>('/api/squads', { method: 'POST', body: { teamId } }),
-    joinStaff: (body: JoinSquadStaffRequest) => http<SquadDetailDto>('/api/squads/join', { method: 'POST', body }),
     mine: () => http<SquadSummaryDto[]>('/api/squads/mine'),
     get: (squadId: string) => http<SquadDetailDto>(`/api/squads/${squadId}`),
     addPlayer: (squadId: string, body: SquadPlayerRequest) =>
@@ -67,6 +88,15 @@ export const api = {
     sheet: (squadId: string, matchId: string) => http<MatchSheetDto>(`/api/squads/${squadId}/matches/${matchId}/sheet`),
     recordSheet: (squadId: string, matchId: string, entries: MatchSheetEntryInput[]) =>
       http<MatchSheetDto>(`/api/squads/${squadId}/matches/${matchId}/sheet`, { method: 'PUT', body: { entries } }),
+    /** Acta interna frente al acta oficial; con refresh se vuelve a pedir a la federación. */
+    compareSheet: (squadId: string, matchId: string, refresh = false) =>
+      http<SheetComparisonDto>(`/api/squads/${squadId}/matches/${matchId}/sheet/comparison${refresh ? '?refresh=true' : ''}`),
+    uploadVideo: (squadId: string, matchId: string, file: File, title: string | null) => {
+      const body = new FormData();
+      body.append('file', file, file.name);
+      if (title) body.append('title', title);
+      return http<MatchVideoDto>(`/api/squads/${squadId}/matches/${matchId}/video`, { method: 'POST', body });
+    },
     stats: (squadId: string) => http<SquadStatsDto>(`/api/squads/${squadId}/stats`),
     playerProfile: (squadId: string, squadPlayerId: string) =>
       http<SquadPlayerProfileDto>(`/api/squads/${squadId}/players/${squadPlayerId}/profile`),
@@ -86,6 +116,17 @@ export const api = {
   },
   matches: {
     get: (matchId: string) => http<MatchDetailDto>(`/api/matches/${matchId}`),
+    /** Acta oficial de la federación (o por qué aún no está). */
+    officialSheet: (matchId: string, refresh = false) =>
+      http<OfficialSheetDto>(`/api/matches/${matchId}/official-sheet${refresh ? '?refresh=true' : ''}`),
+    videos: (matchId: string) => http<MatchVideoDto[]>(`/api/matches/${matchId}/videos`),
+  },
+  videos: {
+    purchase: (videoId: string) => http<MatchVideoDto>(`/api/videos/${videoId}/purchase`, { method: 'POST' }),
+    ticket: (videoId: string) => http<VideoTicketDto>(`/api/videos/${videoId}/ticket`, { method: 'POST' }),
+    remove: (videoId: string) => http<boolean>(`/api/videos/${videoId}`, { method: 'DELETE' }),
+    /** URL que se pasa al reproductor (el ticket sustituye al JWT). */
+    streamUrl: (ticket: VideoTicketDto) => `${apiBaseUrl}/api/videos/${ticket.videoId}/stream?ticket=${encodeURIComponent(ticket.ticket)}`,
   },
   stats: {
     leagueTable: (competitionId?: string | null) =>

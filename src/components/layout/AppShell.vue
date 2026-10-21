@@ -21,6 +21,7 @@ const links = computed<NavLink[]>(() => {
   const items: NavLink[] = [];
 
   if (auth.isCoach) items.push({ to: '/', label: 'Mis plantillas', exact: true });
+  if (auth.isClub) items.push({ to: '/', label: 'Mi club', exact: true });
 
   if (auth.isPlayer) {
     items.push({ to: '/', label: 'Mi panel', exact: true });
@@ -40,6 +41,7 @@ const isActive = (link: NavLink) =>
 
 const teamLabel = computed(() => {
   if (auth.playerSquad) return auth.playerSquad.teamShortName;
+  if (auth.isClub) return auth.club ? `${auth.club.teams.length} equipos` : null;
   const squads = auth.coachSquads;
   if (squads.length === 1) return squads[0]?.teamShortName ?? null;
   return squads.length > 1 ? `${squads.length} plantillas` : null;
@@ -77,7 +79,7 @@ function logout() {
           <template v-if="auth.isAuthenticated && auth.account">
             <span class="flex items-center gap-2 text-sm text-slate-600">
               {{ auth.displayName }}
-              <Badge :tone="auth.isCoach ? 'blue' : 'green'">{{ accountTypeLabels[auth.account.type] }}</Badge>
+              <Badge :tone="auth.isCoach ? 'blue' : auth.isClub ? 'amber' : 'green'">{{ accountTypeLabels[auth.account.type] }}</Badge>
               <span v-if="teamLabel" class="text-slate-400">· {{ teamLabel }}</span>
             </span>
             <button type="button" class="btn-ghost" @click="logout">Salir</button>

@@ -1,17 +1,22 @@
 import type {
   AccountType,
+  AppointmentStatus,
   CompetitionDto,
   CompetitionLevel,
   MatchDto,
   MatchStatus,
+  OfficialEventType,
   Position,
+  SheetDifferenceDto,
   SquadVisibility,
   StaffRole,
+  VideoAccessLevel,
 } from '@/types/api';
 
 export const accountTypeLabels: Record<AccountType, string> = {
   Player: 'Jugador',
   Coach: 'Cuerpo técnico',
+  Club: 'Club',
 };
 
 export const positionLabels: Record<Position, string> = {
@@ -140,3 +145,47 @@ export function opponentLabel(match: MatchDto, teamId: string): string {
 
 export const scoreLabel = (match: MatchDto) =>
   match.homeGoals === null || match.awayGoals === null ? null : `${match.homeGoals} - ${match.awayGoals}`;
+
+export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
+  Pending: 'Pendiente de canjear',
+  Active: 'Vigente',
+  Expired: 'Caducado',
+  Revoked: 'Revocado',
+};
+
+export const appointmentStatusTone = (status: AppointmentStatus): Tone =>
+  status === 'Active' ? 'green' : status === 'Pending' ? 'amber' : status === 'Revoked' ? 'red' : 'slate';
+
+export const officialEventLabels: Record<OfficialEventType, string> = {
+  Goal: 'Gol',
+  PenaltyGoal: 'Gol de penalti',
+  OwnGoal: 'Gol en propia puerta',
+  YellowCard: 'Amarilla',
+  SecondYellow: 'Segunda amarilla',
+  RedCard: 'Roja',
+  Substitution: 'Cambio',
+};
+
+export const sheetFieldLabels: Record<SheetDifferenceDto['field'], string> = {
+  played: 'Jugó',
+  started: 'Titular',
+  minutes: 'Minutos',
+  goals: 'Goles',
+  yellowCards: 'Amarillas',
+  redCard: 'Roja',
+};
+
+export const videoAccessLabels: Record<VideoAccessLevel, string> = {
+  None: 'Sin acceso',
+  Locked: 'De pago',
+  Owner: 'Tu plantilla',
+  Purchased: 'Comprado',
+  Free: 'Gratis',
+};
+
+/** "5,00 €" a partir de céntimos. */
+export const formatMoney = (cents: number, currency = 'EUR') =>
+  (cents / 100).toLocaleString('es-ES', { style: 'currency', currency });
+
+export const formatBytes = (bytes: number) =>
+  bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : bytes >= 1024 ** 2 ? `${(bytes / 1024 ** 2).toFixed(0)} MB` : `${Math.ceil(bytes / 1024)} KB`;

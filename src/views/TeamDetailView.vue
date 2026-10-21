@@ -39,20 +39,22 @@ const nextOpponent = computed(() => {
   return m.homeTeam.id === props.teamId ? { prefix: 'vs', team: m.awayTeam } : { prefix: '@', team: m.homeTeam };
 });
 
-const claiming = ref(false);
-const claimError = ref<string | null>(null);
+const isMyClubTeam = computed(() => auth.club?.teams.some((t) => t.teamId === props.teamId) ?? false);
+const linking = ref(false);
+const linkError = ref<string | null>(null);
 
-async function claim() {
-  claiming.value = true;
-  claimError.value = null;
+/** Cuenta de club: vincula el equipo al club para poder nombrar a sus técnicos. */
+async function linkToClub() {
+  linking.value = true;
+  linkError.value = null;
   try {
-    const squad = await api.squads.claim(props.teamId);
+    await api.clubs.addTeam(props.teamId);
     await auth.refreshAccount();
-    await router.push({ name: 'squad', params: { squadId: squad.summary.id } });
+    await router.push({ name: 'home' });
   } catch (e) {
-    claimError.value = errorMessage(e);
+    linkError.value = errorMessage(e);
   } finally {
-    claiming.value = false;
+    linking.value = false;
   }
 }
 </script>
@@ -72,13 +74,14 @@ async function claim() {
         <RouterLink v-if="data.squad?.canView" :to="{ name: 'squad', params: { squadId: data.squad.squadId } }" class="btn-primary">
           {{ data.squad.isMine ? 'Mi plantilla' : 'Ver plantilla' }}
         </RouterLink>
-        <button v-else-if="auth.isCoach && !data.squad" type="button" class="btn-primary" :disabled="claiming" @click="claim">
-          {{ claiming ? 'Creando…' : 'Crear plantilla' }}
+        <RouterLink v-else-if="auth.isClub && isMyClubTeam" to="/" class="btn-primary">Nombrar técnicos</RouterLink>
+        <button v-else-if="auth.isClub" type="button" class="btn-primary" :disabled="linking" @click="linkToClub">
+          {{ linking ? 'Vinculando…' : 'Vincular a mi club' }}
         </button>
       </template>
     </PageHeader>
 
-    <Alert v-if="claimError" kind="error" class="mb-4">{{ claimError }}</Alert>
+    <Alert v-if="linkError" kind="error" class="mb-4">{{ linkError }}</Alert>
 
     <div v-if="data.standing" class="mb-6 grid grid-cols-3 gap-3 sm:grid-cols-6">
       <div class="card py-3 text-center"><p class="text-xs text-slate-500">Posición</p><p class="text-xl font-semibold">{{ data.standing.position }}º</p></div>
@@ -110,7 +113,7 @@ async function claim() {
         <template v-if="data.squad && !data.squad.canView">
           Es <strong>privada</strong>: solo su cuerpo técnico y sus jugadores vinculados pueden ver las actas y las estadísticas.
           <template v-if="auth.isCoach">
-            ¿Eres de su cuerpo técnico? <RouterLink to="/invitacion" class="font-medium text-emerald-700 hover:underline">Únete con el código de invitación</RouterLink>.
+            ¿Eres de su cuerpo técnico? Pide a tu club un código de acceso y <RouterLink to="/codigo-acceso" class="font-medium text-emerald-700 hover:underline">canjéalo</RouterLink>.
           </template>
           <template v-else-if="auth.isPlayer">
             ¿Juegas en este equipo? Pide el código a tu cuerpo técnico y
@@ -123,12 +126,15 @@ async function claim() {
 
         <template v-else-if="!data.squad">
           <template v-if="auth.isCoach">
-            Al crearla se importan las fichas publicadas por futbolasturiano.es (si las hay), podrás completarla a mano y
-            obtendrás un código de invitación para el resto del staff y los jugadores. Nace privada.
+            La plantilla se crea cuando un técnico nombrado por el club canjea su código de acceso: se importan las fichas
+            publicadas por futbolasturiano.es (si las hay) y nace privada, con un código de invitación para los jugadores.
+          </template>
+          <template v-else-if="auth.isClub">
+            Vincula el equipo a tu club y nombra a su cuerpo técnico: al canjear el código de acceso se crea la plantilla.
           </template>
           <template v-else-if="auth.isPlayer">Pide a tu cuerpo técnico que la cree: después podrás vincularte a tu ficha con su código de invitación.</template>
           <template v-else>
-            ¿Eres de su cuerpo técnico? <RouterLink to="/registro" class="font-medium text-emerald-700 hover:underline">Date de alta</RouterLink> y créala en un minuto.
+            ¿Eres del club o de su cuerpo técnico? <RouterLink to="/registro" class="font-medium text-emerald-700 hover:underline">Date de alta</RouterLink>.
           </template>
         </template>
 

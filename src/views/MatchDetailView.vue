@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { api } from '@/api';
+import OfficialSheetPanel from '@/components/sheet/OfficialSheetPanel.vue';
+import MatchVideos from '@/components/videos/MatchVideos.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
@@ -12,6 +15,9 @@ const props = defineProps<{ matchId: string }>();
 
 const auth = useAuthStore();
 const { data, loading, error } = useAsync(() => api.matches.get(props.matchId));
+
+/** Plantilla del usuario en este partido (para subir el vídeo). */
+const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.squadId)) ?? null);
 </script>
 
 <template>
@@ -38,14 +44,22 @@ const { data, loading, error } = useAsync(() => api.matches.get(props.matchId));
       </div>
     </div>
 
+    <div class="mt-6">
+      <OfficialSheetPanel :match-id="data.match.id" :highlight-team-id="mySquad?.teamId ?? null" />
+    </div>
+
+    <div class="mt-6">
+      <MatchVideos :match-id="data.match.id" :upload-squad-id="mySquad?.squadId ?? null" :can-upload="mySquad !== null" />
+    </div>
+
     <Alert v-if="data.sheets.length === 0" kind="info" class="mt-6">
-      Ninguno de los dos equipos tiene todavía plantilla en Tercer Tiempo, así que no hay actas que mostrar.
+      Ninguno de los dos equipos tiene todavía plantilla en Tercer Tiempo, así que no hay actas internas que mostrar.
     </Alert>
 
     <section v-for="sheet in data.sheets" :key="sheet.squadId" class="card mt-6">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 class="font-semibold text-slate-900">
-          Acta de {{ sheet.teamName }}
+          Acta interna de {{ sheet.teamName }}
           <Badge :tone="sheet.visibility === 'Public' ? 'green' : 'slate'" class="ml-2">{{ visibilityLabels[sheet.visibility] }}</Badge>
         </h2>
         <div class="flex gap-3 text-sm">
@@ -56,6 +70,13 @@ const { data, loading, error } = useAsync(() => api.matches.get(props.matchId));
             class="font-medium text-emerald-700 hover:underline"
           >
             Editar acta
+          </RouterLink>
+          <RouterLink
+            v-if="sheet.visible"
+            :to="{ name: 'sheet', params: { squadId: sheet.squadId, matchId: data.match.id }, query: { tab: 'comparador' } }"
+            class="text-emerald-700 hover:underline"
+          >
+            Comparar con la federación
           </RouterLink>
         </div>
       </div>

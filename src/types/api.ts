@@ -1,6 +1,11 @@
 // Tipos espejo de los DTOs de la API (TercerTiempo.Application). Los enums viajan como string.
 
-export type AccountType = 'Player' | 'Coach';
+export type AccountType = 'Player' | 'Coach' | 'Club';
+export type AppointmentStatus = 'Pending' | 'Active' | 'Expired' | 'Revoked';
+export type MatchSide = 'Home' | 'Away';
+export type OfficialSheetAvailability = 'NotPlayed' | 'Pending' | 'Available' | 'Unavailable';
+export type OfficialEventType = 'Goal' | 'PenaltyGoal' | 'OwnGoal' | 'YellowCard' | 'SecondYellow' | 'RedCard' | 'Substitution';
+export type VideoAccessLevel = 'None' | 'Locked' | 'Owner' | 'Purchased' | 'Free';
 export type Position = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Forward';
 export type MatchStatus = 'Scheduled' | 'InProgress' | 'Played' | 'Postponed' | 'Cancelled';
 export type CompetitionLevel = 'Professional' | 'National' | 'Regional' | 'Cup' | 'Youth' | 'Other';
@@ -26,6 +31,8 @@ export interface RegisterRequest {
   accountType: AccountType;
   position: Position | null;
   birthDate: string | null;
+  /** Solo cuerpo técnico: código de acceso entregado por el club. */
+  accessCode: string | null;
 }
 
 export interface LoginRequest {
@@ -76,16 +83,86 @@ export interface SquadSummaryDto {
   myRole: StaffRole | null;
 }
 
+/** Nombramiento visto por el técnico. */
+export interface CoachAppointmentDto {
+  id: string;
+  clubName: string;
+  teamId: string;
+  teamName: string;
+  seasonId: string;
+  seasonLabel: string;
+  competitionName: string;
+  role: StaffRole;
+  validFrom: string;
+  validUntil: string;
+  status: AppointmentStatus;
+  squadId: string | null;
+}
+
 export interface CoachDto {
   id: string;
   displayName: string;
+  /** Plantillas con nombramiento vigente. */
   squads: SquadSummaryDto[];
+  appointments: CoachAppointmentDto[];
+}
+
+// --- Clubes ---
+
+export interface ClubTeamDto {
+  teamId: string;
+  teamName: string;
+  teamShortName: string;
+  teamCrestUrl: string | null;
+  competitionId: string | null;
+  competitionName: string | null;
+  seasonId: string | null;
+  seasonLabel: string | null;
+  seasonEndsOn: string | null;
+  squadId: string | null;
+  activeAppointments: number;
+}
+
+/** Nombramiento visto por el club: el código de acceso solo llega mientras está pendiente. */
+export interface AppointmentDto {
+  id: string;
+  teamId: string;
+  teamName: string;
+  seasonId: string;
+  seasonLabel: string;
+  coachName: string;
+  email: string | null;
+  role: StaffRole;
+  accessCode: string | null;
+  status: AppointmentStatus;
+  coachId: string | null;
+  coachDisplayName: string | null;
+  redeemedAt: string | null;
+  validFrom: string;
+  validUntil: string;
+  createdAt: string;
+}
+
+export interface ClubDto {
+  id: string;
+  name: string;
+  teams: ClubTeamDto[];
+  appointments: AppointmentDto[];
+}
+
+export interface CreateAppointmentRequest {
+  teamId: string;
+  coachName: string;
+  email: string | null;
+  role: StaffRole;
+  validUntil: string | null;
 }
 
 export interface AccountDto {
   type: AccountType;
   player: PlayerDto | null;
   coach: CoachDto | null;
+  club: ClubDto | null;
 }
 
 export interface AuthResponse {
@@ -101,6 +178,8 @@ export interface SquadStaffDto {
   displayName: string;
   role: StaffRole;
   joinedAt: string;
+  /** Último día del nombramiento del club. */
+  validUntil: string | null;
 }
 
 /** Ficha de un jugador dentro de la plantilla (venga del proveedor o añadida a mano). */
@@ -128,11 +207,6 @@ export interface SquadPlayerRequest {
   fullName: string;
   position: Position | null;
   shirtNumber: number | null;
-}
-
-export interface JoinSquadStaffRequest {
-  inviteCode: string;
-  role: StaffRole;
 }
 
 export interface JoinSquadAsPlayerRequest {
@@ -519,4 +593,115 @@ export interface SyncResultDto {
   rosterEntries: number;
   errors: string[];
   syncedAt: string;
+}
+
+// --- Acta oficial (federación) y comparador ---
+
+export interface OfficialLineDto {
+  id: string;
+  shirtNumber: number | null;
+  fullName: string;
+  started: boolean;
+  played: boolean;
+  minuteIn: number | null;
+  minuteOut: number | null;
+  minutesPlayed: number;
+  goals: number;
+  penaltyGoals: number;
+  ownGoals: number;
+  yellowCards: number;
+  redCard: boolean;
+}
+
+export interface OfficialTeamSheetDto {
+  side: MatchSide;
+  teamName: string;
+  teamId: string | null;
+  goals: number | null;
+  starters: OfficialLineDto[];
+  bench: OfficialLineDto[];
+}
+
+export interface OfficialEventDto {
+  side: MatchSide;
+  type: OfficialEventType;
+  minute: number;
+  extraMinute: number | null;
+  playerName: string;
+  relatedPlayerName: string | null;
+}
+
+export interface OfficialSheetDto {
+  matchId: string;
+  status: OfficialSheetAvailability;
+  provider: string | null;
+  sheetCode: string | null;
+  sourceUrl: string | null;
+  checkedAt: string | null;
+  fetchedAt: string | null;
+  referee: string | null;
+  message: string | null;
+  home: OfficialTeamSheetDto | null;
+  away: OfficialTeamSheetDto | null;
+  events: OfficialEventDto[];
+}
+
+/** Campo en el que difieren las dos actas. */
+export interface SheetDifferenceDto {
+  field: 'played' | 'started' | 'minutes' | 'goals' | 'yellowCards' | 'redCard';
+  coach: string | null;
+  official: string | null;
+}
+
+export interface SheetComparisonRowDto {
+  player: SquadPlayerDto;
+  coach: PerformanceDto | null;
+  official: OfficialLineDto | null;
+  differences: SheetDifferenceDto[];
+}
+
+export interface SheetComparisonSummaryDto {
+  coachLines: number;
+  officialLines: number;
+  matched: number;
+  rowsWithDifferences: number;
+  differences: number;
+}
+
+export interface SheetComparisonDto {
+  squad: SquadSummaryDto;
+  match: MatchDto;
+  side: MatchSide;
+  canEdit: boolean;
+  official: OfficialSheetDto;
+  rows: SheetComparisonRowDto[];
+  unmatchedOfficial: OfficialLineDto[];
+  summary: SheetComparisonSummaryDto;
+}
+
+// --- Vídeos ---
+
+export interface MatchVideoDto {
+  id: string;
+  matchId: string;
+  squadId: string;
+  teamId: string;
+  teamName: string;
+  title: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  priceCents: number;
+  currency: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  access: VideoAccessLevel;
+  canWatch: boolean;
+  canDelete: boolean;
+}
+
+export interface VideoTicketDto {
+  videoId: string;
+  ticket: string;
+  expiresAt: string;
 }

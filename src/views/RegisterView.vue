@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import { useAuthStore } from '@/stores/auth';
@@ -9,6 +9,7 @@ import { positionOptions } from '@/utils/format';
 
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const form = reactive<{
   accountType: AccountType;
@@ -17,20 +18,25 @@ const form = reactive<{
   displayName: string;
   position: Position;
   birthDate: string;
+  accessCode: string;
 }>({
-  accountType: 'Coach',
+  accountType: typeof route.query.code === 'string' ? 'Coach' : 'Coach',
   email: '',
   password: '',
   displayName: '',
   position: 'Midfielder',
   birthDate: '',
+  accessCode: typeof route.query.code === 'string' ? route.query.code.toUpperCase() : '',
 });
 
 const isPlayer = computed(() => form.accountType === 'Player');
+const isCoach = computed(() => form.accountType === 'Coach');
+const isClub = computed(() => form.accountType === 'Club');
 
 const accountTypes: { value: AccountType; title: string; description: string }[] = [
-  { value: 'Coach', title: 'Cuerpo técnico', description: 'Entrenador, ayudante, delegado… Creas la plantilla y registras las actas.' },
-  { value: 'Player', title: 'Jugador', description: 'Te vinculas a tu ficha con el código de tu cuerpo técnico y sigues tus números.' },
+  { value: 'Coach', title: 'Cuerpo técnico', description: 'Entrenador, ayudante, delegado… Con el código de acceso de tu club registras las actas de tu plantilla.' },
+  { value: 'Player', title: 'Jugador', description: 'Te vinculas a tu ficha con el código de invitación de tu cuerpo técnico y sigues tus números.' },
+  { value: 'Club', title: 'Club', description: 'Das de alta a los técnicos de tus equipos cada temporada con un código de acceso.' },
 ];
 
 const loading = ref(false);
@@ -49,8 +55,9 @@ async function submit() {
       accountType: form.accountType,
       position: isPlayer.value ? form.position : null,
       birthDate: isPlayer.value && form.birthDate ? form.birthDate : null,
+      accessCode: isCoach.value ? form.accessCode.trim() : null,
     });
-    await router.push(isPlayer.value ? { name: 'join' } : { name: 'teams' });
+    await router.push(isPlayer.value ? { name: 'join' } : { name: 'home' });
   } catch (e) {
     error.value = errorMessage(e);
     if (e instanceof ApiError) fieldErrors.value = e.fieldErrors;
@@ -64,12 +71,12 @@ async function submit() {
   <div class="mx-auto mt-8 max-w-lg">
     <div class="card">
       <h1 class="text-xl font-semibold text-slate-900">Darme de alta</h1>
-      <p class="mt-1 text-sm text-slate-500">Elige qué papel tienes en tu equipo: la cuenta no se puede cambiar después.</p>
+      <p class="mt-1 text-sm text-slate-500">Elige qué papel tienes: la cuenta no se puede cambiar después.</p>
 
       <form class="mt-6 space-y-4" @submit.prevent="submit">
         <Alert v-if="error" kind="error">{{ error }}</Alert>
 
-        <div class="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Tipo de cuenta">
+        <div class="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Tipo de cuenta">
           <button
             v-for="type in accountTypes"
             :key="type.value"
@@ -85,9 +92,29 @@ async function submit() {
           </button>
         </div>
 
+        <div v-if="isCoach">
+          <label class="label" for="accessCode">Código de acceso de tu club</label>
+          <input
+            id="accessCode"
+            v-model="form.accessCode"
+            type="text"
+            required
+            maxlength="12"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="ABCD234567"
+            class="input font-mono uppercase tracking-widest"
+            @input="form.accessCode = form.accessCode.toUpperCase()"
+          />
+          <p class="mt-1 text-xs text-slate-400">
+            Te lo entrega tu club al nombrarte para un equipo y una temporada. Al crear la cuenta quedas en el cuerpo técnico de esa plantilla.
+          </p>
+          <p v-if="fieldErrors.accessCode" class="field-error">{{ fieldErrors.accessCode[0] }}</p>
+        </div>
+
         <div>
-          <label class="label" for="displayName">Nombre y apellidos</label>
-          <input id="displayName" v-model="form.displayName" type="text" required maxlength="100" class="input" />
+          <label class="label" for="displayName">{{ isClub ? 'Nombre del club' : 'Nombre y apellidos' }}</label>
+          <input id="displayName" v-model="form.displayName" type="text" required maxlength="120" class="input" />
           <p v-if="isPlayer" class="mt-1 text-xs text-slate-400">Tal y como apareces en la plantilla: así tu cuerpo técnico te reconoce al vincularte.</p>
           <p v-if="fieldErrors.displayName" class="field-error">{{ fieldErrors.displayName[0] }}</p>
         </div>
@@ -121,7 +148,7 @@ async function submit() {
         </div>
 
         <button type="submit" class="btn-primary w-full" :disabled="loading">
-          {{ loading ? 'Creando cuenta…' : isPlayer ? 'Crear cuenta de jugador' : 'Crear cuenta de cuerpo técnico' }}
+          {{ loading ? 'Creando cuenta…' : isPlayer ? 'Crear cuenta de jugador' : isClub ? 'Crear cuenta de club' : 'Crear cuenta y canjear el código' }}
         </button>
       </form>
 

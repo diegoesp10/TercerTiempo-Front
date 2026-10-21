@@ -56,7 +56,7 @@ const tabs = [
   <template v-else-if="error">
     <Alert v-if="forbidden" kind="warning">
       Esta plantilla es <strong>privada</strong>: solo su cuerpo técnico y sus jugadores vinculados pueden ver sus actas y estadísticas.
-      <template v-if="auth.isCoach"> ¿Eres de su cuerpo técnico? <RouterLink to="/invitacion" class="font-medium underline">Únete con el código</RouterLink>.</template>
+      <template v-if="auth.isCoach"> ¿Eres de su cuerpo técnico? Tu club te entrega un código de acceso: <RouterLink to="/codigo-acceso" class="font-medium underline">canjéalo</RouterLink>.</template>
       <template v-else-if="auth.isPlayer"> ¿Juegas en el equipo? <RouterLink to="/invitacion" class="font-medium underline">Vincúlate con el código de tu cuerpo técnico</RouterLink>.</template>
       <template v-else> <RouterLink to="/login" class="font-medium underline">Entra</RouterLink> si formas parte del equipo.</template>
     </Alert>

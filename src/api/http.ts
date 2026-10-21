@@ -22,14 +22,18 @@ export class ApiError extends Error {
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  /** Objeto (se envía como JSON) o FormData (multipart, para subir archivos). */
   body?: unknown;
 }
+
+export const apiBaseUrl = baseUrl;
 
 export async function http<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const auth = useAuthStore();
   const headers: Record<string, string> = { Accept: 'application/json' };
 
-  if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+  const isForm = options.body instanceof FormData;
+  if (options.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   if (auth.token) headers.Authorization = `Bearer ${auth.token}`;
 
   let response: Response;
@@ -37,7 +41,7 @@ export async function http<T>(path: string, options: RequestOptions = {}): Promi
     response = await fetch(`${baseUrl}${path}`, {
       method: options.method ?? 'GET',
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined ? undefined : isForm ? (options.body as FormData) : JSON.stringify(options.body),
     });
   } catch {
     throw new ApiError(0, { title: 'Sin conexión', detail: 'No se ha podido contactar con la API. ¿Está arrancada?' });
