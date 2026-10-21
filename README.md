@@ -19,10 +19,11 @@ La API vive en su propio repositorio: [TercerTiempo-Back](https://github.com/die
 - [Apache ECharts 6](https://echarts.apache.org) con [vue-echarts 8](https://vue-echarts.dev) para los gráficos: solo
   se registran los tipos que se usan (`src/charts/setup.ts`), con un tema propio alineado con Tailwind
   (`src/charts/theme.ts`) y en un chunk aparte que solo se descarga en las páginas con gráficos
-- [Three.js](https://threejs.org) con [TresJS 5](https://tresjs.org) (`@tresjs/core`) para el balón 3D de la portada y
-  de las pantallas de acceso: geometría y textura generadas en código (`src/three/ballTexture.ts`, los doce pentágonos
-  en los vértices de un icosaedro), luces de estadio en azul y cian, chunk aparte y balón estático en SVG si no hay
-  WebGL o el usuario prefiere menos animación
+- [Three.js](https://threejs.org) usado directamente (sin wrapper, para que el tree-shaking deje solo el renderer, la
+  esfera, el material y las luces: ~130 kB gzip) para el balón 3D de la portada y de las pantallas de acceso: geometría
+  y textura generadas en código (`src/three/ballTexture.ts`, los doce pentágonos en los vértices de un icosaedro),
+  luces de estadio en azul y cian, se descarga cuando el navegador está ocioso (`utils/idle.ts`), se pausa fuera de
+  pantalla y cae a un balón estático en SVG si no hay WebGL o el usuario prefiere menos animación
 - [GSAP 3](https://gsap.com) para las animaciones: balón que bota en los loaders (`BallLoader`), líneas del campo que
   se dibujan al cargar (`PitchBackground`) y entrada escalonada de la portada
 
@@ -81,7 +82,7 @@ hora y resultado, y se puede navegar al resto de jornadas; la ficha de cada equi
 | Script | Qué hace |
 |---|---|
 | `npm run dev` | Servidor de desarrollo con HMR |
-| `npm run build` | Type-check (`vue-tsc`) + build de producción en `dist/` |
+| `npm run build` | Type-check (`vue-tsc`) + build de producción en `dist/`. Las librerías pesadas van en chunks propios y estables (`vite.config.ts` → `manualChunks`): `echarts` (solo en las páginas con gráficos), `three` (portada y acceso), `gsap` y `vue` |
 | `npm run preview` | Sirve el build de producción |
 | `npm run typecheck` | Solo type-check |
 

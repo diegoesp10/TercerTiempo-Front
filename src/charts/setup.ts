@@ -2,7 +2,6 @@
 import { registerTheme, use } from 'echarts/core';
 import { BarChart, LineChart, PieChart, RadarChart, ScatterChart } from 'echarts/charts';
 import {
-  GraphicComponent,
   GridComponent,
   LegendComponent,
   MarkLineComponent,
@@ -33,7 +32,6 @@ export function setupCharts() {
     MarkLineComponent,
     RadarComponent,
     VisualMapComponent,
-    GraphicComponent,
   ]);
 
   registerTheme(CHART_THEME, themeDefinition);

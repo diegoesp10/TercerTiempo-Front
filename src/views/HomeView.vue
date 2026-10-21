@@ -2,14 +2,15 @@
 import { defineAsyncComponent, onMounted, ref } from 'vue';
 import gsap from 'gsap';
 import { useAuthStore } from '@/stores/auth';
+import { whenIdle } from '@/utils/idle';
 import ClubHomeView from '@/views/club/ClubHomeView.vue';
 import CoachHomeView from '@/views/coach/CoachHomeView.vue';
 import PlayerDashboardView from '@/views/player/PlayerDashboardView.vue';
 
 const auth = useAuthStore();
 
-// El balón 3D (Three.js) solo se descarga en la portada pública.
-const BallScene = defineAsyncComponent(() => import('@/components/three/BallScene.vue'));
+// El balón 3D (Three.js) solo se descarga en la portada pública, y cuando el navegador ya ha pintado lo importante.
+const BallScene = defineAsyncComponent(() => whenIdle().then(() => import('@/components/three/BallScene.vue')));
 
 const hero = ref<HTMLElement | null>(null);
 

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue';
+import { whenIdle } from '@/utils/idle';
 
 defineProps<{ title: string; subtitle: string }>();
 
-const BallScene = defineAsyncComponent(() => import('@/components/three/BallScene.vue'));
+const BallScene = defineAsyncComponent(() => whenIdle().then(() => import('@/components/three/BallScene.vue')));
 </script>
 
 <template>

@@ -2,11 +2,9 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
-import { templateCompilerOptions } from '@tresjs/core';
 
 export default defineConfig({
-  // templateCompilerOptions: los componentes <Tres*> de TresJS son elementos del renderer de Three.js, no de Vue.
-  plugins: [vue({ ...templateCompilerOptions }), tailwindcss()],
+  plugins: [vue(), tailwindcss()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -16,8 +14,21 @@ export default defineConfig({
     port: 5173,
   },
   build: {
-    // Apache ECharts (~670 kB) y Three.js (~650 kB) van en chunks propios que solo se descargan donde se usan;
-    // el aviso por defecto (500 kB) no aporta nada aquí.
-    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        // Librerías pesadas en chunks propios con nombre estable: se cachean entre despliegues y solo se descargan
+        // en las páginas que las usan (ECharts en estadísticas y comparador, Three.js en la portada y el acceso).
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('/three/')) return 'three';
+          if (id.includes('/echarts/') || id.includes('/zrender/') || id.includes('/vue-echarts/')) return 'echarts';
+          if (id.includes('/gsap/')) return 'gsap';
+          if (id.includes('/vue/') || id.includes('/@vue/') || id.includes('/vue-router/') || id.includes('/pinia/')) return 'vue';
+          return undefined;
+        },
+      },
+    },
+    // ECharts y Three.js superan los 500 kB sin comprimir por naturaleza; el aviso por defecto no aporta nada aquí.
+    chunkSizeWarningLimit: 750,
   },
 });
