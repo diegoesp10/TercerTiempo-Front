@@ -52,7 +52,17 @@ const pending = computed(() => played.value.filter((m) => m.entriesRecorded === 
       <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Próximos</h2>
       <p v-if="upcoming.length === 0" class="text-sm text-slate-500">No quedan partidos programados.</p>
       <div v-else class="space-y-2">
-        <MatchRow v-for="item in upcoming" :key="item.match.id" :match="item.match" :team-id="teamId" />
+        <MatchRow
+          v-for="item in upcoming"
+          :key="item.match.id"
+          :match="item.match"
+          :team-id="teamId"
+          :to="canManage ? { name: 'sheet', params: { squadId, matchId: item.match.id }, query: { tab: 'previa' } } : undefined"
+        >
+          <template v-if="canManage" #badge>
+            <span class="inline-flex items-center gap-1 text-xs font-medium text-brand-500"><Icon icon="chart-line" class="h-3 w-3" />Previa</span>
+          </template>
+        </MatchRow>
       </div>
     </section>
   </template>

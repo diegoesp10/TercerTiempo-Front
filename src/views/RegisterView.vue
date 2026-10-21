@@ -5,6 +5,7 @@ import { ApiError, errorMessage } from '@/api/http';
 import ClubPicker from '@/components/clubs/ClubPicker.vue';
 import AuthPanel from '@/components/layout/AuthPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
+import SearchSelect from '@/components/ui/SearchSelect.vue';
 import { useAuthStore } from '@/stores/auth';
 import type { AccountType, Position } from '@/types/api';
 import { positionOptions } from '@/utils/format';
@@ -135,9 +136,12 @@ async function submit() {
         <div v-if="isPlayer" class="grid gap-4 sm:grid-cols-2">
           <div>
             <label class="label" for="position">Posición</label>
-            <select id="position" v-model="form.position" class="input">
-              <option v-for="option in positionOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-            </select>
+            <SearchSelect
+              id="position"
+              :model-value="form.position"
+              :options="positionOptions"
+              @update:model-value="form.position = ($event as Position | null) ?? 'Midfielder'"
+            />
             <p v-if="fieldErrors.position" class="field-error">{{ fieldErrors.position[0] }}</p>
           </div>
           <div>

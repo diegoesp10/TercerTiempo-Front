@@ -4,6 +4,7 @@ import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { CompetitionMatchdayDto, MatchDto } from '@/types/api';
 import { formatDayHeading, formatDayRange, formatTime, localDayKey, matchStatusLabels } from '@/utils/format';
@@ -84,6 +85,14 @@ const days = computed(() => {
   return [...groups.values()];
 });
 
+const matchdayOptions = computed(() =>
+  matchdays.value.map((m) => ({
+    value: m.number,
+    label: `Jornada ${m.number}`,
+    hint: `${formatDayRange(m.startsAt, m.endsAt)}${m.number === current.value ? ' · actual' : ''}`,
+  })),
+);
+
 const isHighlighted = (match: MatchDto) =>
   !!props.highlightTeamIds?.some((id) => id === match.homeTeam.id || id === match.awayTeam.id);
 
@@ -93,56 +102,58 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
 <template>
   <section class="card">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
+      <!-- Navegación de jornadas: anterior · jornada con fechas y estado · siguiente -->
+      <div class="inline-flex items-stretch overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
         <button
           type="button"
-          class="btn-ghost px-2 py-1"
+          class="flex w-11 items-center justify-center text-slate-500 transition hover:bg-brand-500/10 hover:text-brand-500 disabled:cursor-not-allowed disabled:opacity-30"
           :disabled="previous === null || loading"
           aria-label="Jornada anterior"
           @click="go(previous)"
         >
-          ‹
+          <Icon icon="chevron-left" class="h-4 w-4" />
         </button>
-        <div>
-          <h2 class="font-semibold text-slate-900">
+        <div class="min-w-44 border-x border-line px-4 py-1.5 text-center">
+          <p class="font-display text-xl font-bold uppercase leading-tight text-slate-900">
             {{ selected !== null ? `Jornada ${selected}` : 'Jornadas' }}
-            <span v-if="summary" class="ml-1 text-sm font-normal text-slate-500">· {{ formatDayRange(summary.startsAt, summary.endsAt) }}</span>
-          </h2>
-          <Badge v-if="state" :tone="state.tone" class="mt-0.5">{{ state.label }}</Badge>
+          </p>
+          <p class="text-xs text-slate-500">
+            <span v-if="summary">{{ formatDayRange(summary.startsAt, summary.endsAt) }}</span>
+            <Badge v-if="state" :tone="state.tone" class="ml-1 align-middle">{{ state.label }}</Badge>
+          </p>
         </div>
         <button
           type="button"
-          class="btn-ghost px-2 py-1"
+          class="flex w-11 items-center justify-center text-slate-500 transition hover:bg-brand-500/10 hover:text-brand-500 disabled:cursor-not-allowed disabled:opacity-30"
           :disabled="next === null || loading"
           aria-label="Jornada siguiente"
           @click="go(next)"
         >
-          ›
+          <Icon icon="chevron-right" class="h-4 w-4" />
         </button>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <button
           v-if="current !== null && selected !== current"
           type="button"
-          class="btn-secondary px-3 py-1 text-xs"
+          class="btn-secondary px-3 py-1.5 text-xs"
           :disabled="loading"
           @click="go(current)"
         >
-          Ir a la jornada {{ current }}
+          <Icon icon="calendar-check" class="mr-1.5 h-3.5 w-3.5" />Jornada actual ({{ current }})
         </button>
-        <select
+        <SearchSelect
           v-if="matchdays.length > 0"
-          class="input w-auto py-1 text-sm"
+          class="w-64"
+          size="sm"
           aria-label="Elegir jornada"
-          :value="selected ?? ''"
+          :model-value="selected"
+          :options="matchdayOptions"
           :disabled="loading"
-          @change="go(Number(($event.target as HTMLSelectElement).value))"
-        >
-          <option v-for="m in matchdays" :key="m.number" :value="m.number">
-            J{{ m.number }} · {{ formatDayRange(m.startsAt, m.endsAt) }}{{ m.number === current ? ' · actual' : '' }}
-          </option>
-        </select>
+          searchable
+          @update:model-value="go($event === null ? null : Number($event))"
+        />
       </div>
     </div>
 

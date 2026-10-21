@@ -5,6 +5,7 @@ import { api } from '@/api';
 import MatchdayFixtures from '@/components/matches/MatchdayFixtures.vue';
 import Alert from '@/components/ui/Alert.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
+import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
@@ -17,6 +18,11 @@ const router = useRouter();
 
 const competitions = useAsync(() => api.competitions.list());
 const groups = computed(() => groupByLevel(competitions.data.value ?? []));
+
+/** Opciones del desplegable: una por competición, agrupadas por nivel. */
+const competitionOptions = computed(() =>
+  groups.value.flatMap((group) => group.competitions.map((c) => ({ value: c.id, label: c.name, group: levelLabels[group.level] }))),
+);
 
 const selectedId = ref<string | null>(typeof route.query.competition === 'string' ? route.query.competition : null);
 
@@ -49,13 +55,14 @@ watch(selectedId, (id) => {
     :subtitle="table.data.value ? `${table.data.value.season.competitionName} · ${table.data.value.season.label}` : undefined"
   >
     <template #actions>
-      <select v-if="groups.length > 0" v-model="selectedId" class="input w-auto min-w-64" aria-label="Competición">
-        <optgroup v-for="group in groups" :key="group.level" :label="levelLabels[group.level]">
-          <option v-for="competition in group.competitions" :key="competition.id" :value="competition.id">
-            {{ competition.name }}
-          </option>
-        </optgroup>
-      </select>
+      <SearchSelect
+        v-if="groups.length > 0"
+        v-model="selectedId"
+        class="w-full sm:w-72"
+        aria-label="Competición"
+        placeholder="Elige una competición"
+        :options="competitionOptions"
+      />
     </template>
   </PageHeader>
 

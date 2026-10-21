@@ -5,6 +5,9 @@ import type {
   AuthResponse,
   ClubCatalogDto,
   ClubDto,
+  RosterEntryRequest,
+  RosterEntryDto,
+  MatchPreviewDto,
   TeamCrestImportDto,
   CoachDto,
   CompetitionDto,
@@ -67,6 +70,10 @@ export const api = {
     me: () => http<ClubDto>('/api/clubs/me'),
     addTeam: (teamId: string) => http<ClubDto>('/api/clubs/me/teams', { method: 'POST', body: { teamId } }),
     removeTeam: (teamId: string) => http<ClubDto>(`/api/clubs/me/teams/${teamId}`, { method: 'DELETE' }),
+    addRosterEntry: (teamId: string, body: RosterEntryRequest) => http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster`, { method: 'POST', body }),
+    updateRosterEntry: (teamId: string, entryId: string, body: RosterEntryRequest) =>
+      http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster/${entryId}`, { method: 'PUT', body }),
+    removeRosterEntry: (teamId: string, entryId: string) => http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster/${entryId}`, { method: 'DELETE' }),
     uploadTeamCrest: (teamId: string, file: File) => {
       const body = new FormData();
       body.append('file', file);
@@ -128,6 +135,8 @@ export const api = {
     officialSheet: (matchId: string, refresh = false) =>
       http<OfficialSheetDto>(`/api/matches/${matchId}/official-sheet${refresh ? '?refresh=true' : ''}`),
     videos: (matchId: string) => http<MatchVideoDto[]>(`/api/matches/${matchId}/videos`),
+    /** Previa con probabilidades y análisis del rival (solo cuerpo técnico). */
+    preview: (matchId: string) => http<MatchPreviewDto>(`/api/matches/${matchId}/preview`),
   },
   videos: {
     purchase: (videoId: string) => http<MatchVideoDto>(`/api/videos/${videoId}/purchase`, { method: 'POST' }),

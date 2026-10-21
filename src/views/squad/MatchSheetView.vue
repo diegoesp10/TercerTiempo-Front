@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
 import SheetComparison from '@/components/sheet/SheetComparison.vue';
+import MatchPreview from '@/components/matches/MatchPreview.vue';
 import MatchVideos from '@/components/videos/MatchVideos.vue';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
@@ -20,13 +21,16 @@ const router = useRouter();
 
 const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, props.matchId));
 
-type Tab = 'acta' | 'comparador' | 'video';
+type Tab = 'acta' | 'comparador' | 'video' | 'previa';
 const tabs: { id: Tab; label: string }[] = [
   { id: 'acta', label: 'Acta interna' },
   { id: 'comparador', label: 'Comparador con la federación' },
   { id: 'video', label: 'Vídeo' },
+  { id: 'previa', label: 'Previa y rival' },
 ];
-const tab = computed<Tab>(() => (route.query.tab === 'comparador' || route.query.tab === 'video' ? route.query.tab : 'acta'));
+const tab = computed<Tab>(() =>
+  route.query.tab === 'comparador' || route.query.tab === 'video' || route.query.tab === 'previa' ? route.query.tab : 'acta',
+);
 const selectTab = (id: Tab) => void router.replace({ query: { ...route.query, tab: id === 'acta' ? undefined : id } });
 
 interface Row extends MatchSheetEntryInput {
@@ -53,6 +57,7 @@ const blank = (player: SquadPlayerDto): Row => ({
   redCard: false,
   rating: null,
   notes: null,
+  shirtNumber: null,
 });
 
 const fromSheet = (sheet: MatchSheetDto): Row[] =>
@@ -75,6 +80,7 @@ const fromSheet = (sheet: MatchSheetDto): Row[] =>
           redCard: performance.redCard,
           rating: performance.rating,
           notes: performance.notes,
+          shirtNumber: performance.matchShirtNumber,
         }
       : blank(player),
   );
@@ -95,6 +101,7 @@ const toEntry = (row: Row): MatchSheetEntryInput => ({
   yellowCards: row.yellowCards,
   redCard: row.redCard,
   notes: row.notes?.trim() ? row.notes.trim() : null,
+  shirtNumber: row.shirtNumber || null,
 });
 
 const rows = ref<Row[]>([]);
@@ -218,6 +225,10 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
       <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="data.canEdit || data.squad.myRole !== null" />
     </div>
 
+    <div v-else-if="tab === 'previa'" class="mt-6">
+      <MatchPreview :match-id="matchId" :my-team-id="teamId" />
+    </div>
+
     <section v-else class="mt-6">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -249,6 +260,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
           <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th v-if="canEdit" class="px-2 py-2 text-center" title="Jugó">Jugó</th>
+              <th v-if="canEdit" class="px-2 py-2 text-center" title="Dorsal en este partido (vacío = el de la ficha)">Dorsal</th>
               <th class="px-3 py-2 text-left">Jugador</th>
               <th class="px-2 py-2 text-center" title="Titular">Tit</th>
               <th class="px-2 py-2 text-center" title="Minutos">Min</th>
@@ -265,8 +277,19 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
               <td class="px-2 py-1 text-center">
                 <input v-model="row.played" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-accent-400" :aria-label="`${row.player.fullName} jugó`" @change="onPlayedChange(row)" />
               </td>
+              <td class="px-2 py-1 text-center">
+                <input
+                  v-model.number="row.shirtNumber"
+                  type="number"
+                  min="1"
+                  max="99"
+                  class="input w-14 px-1 py-1 text-center"
+                  :disabled="!row.played"
+                  :placeholder="row.player.shirtNumber ? String(row.player.shirtNumber) : '—'"
+                  aria-label="Dorsal en este partido"
+                />
+              </td>
               <td class="px-3 py-1 whitespace-nowrap">
-                <span v-if="row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.player.shirtNumber }}</span>
                 <span class="font-medium" :class="row.played ? 'text-slate-800' : ''">{{ row.player.fullName }}</span>
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
               </td>
@@ -297,7 +320,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
           <tbody v-else class="divide-y divide-slate-100">
             <tr v-for="row in playedRows" :key="row.squadPlayerId">
               <td class="px-3 py-2 whitespace-nowrap">
-                <span v-if="row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.player.shirtNumber }}</span>
+                <span v-if="row.shirtNumber ?? row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.shirtNumber ?? row.player.shirtNumber }}</span>
                 <span class="font-medium text-slate-800">{{ row.player.fullName }}</span>
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
               </td>

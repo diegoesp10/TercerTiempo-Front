@@ -6,6 +6,7 @@ import CompetitionPicker from '@/components/competitions/CompetitionPicker.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
+import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
@@ -201,10 +202,13 @@ const sortedAppointments = computed(() => {
       <div v-if="competitionId" class="mt-4 flex flex-wrap items-end gap-3">
         <div class="min-w-64 flex-1">
           <label class="label" for="team-to-add">Equipo</label>
-          <select id="team-to-add" v-model="teamToAdd" class="input">
-            <option value="">— Elige un equipo —</option>
-            <option v-for="team in availableTeams" :key="team.id" :value="team.id">{{ team.name }}</option>
-          </select>
+          <SearchSelect
+            id="team-to-add"
+            :model-value="teamToAdd || null"
+            placeholder="— Elige un equipo —"
+            :options="availableTeams.map((t) => ({ value: t.id, label: t.name }))"
+            @update:model-value="teamToAdd = String($event ?? '')"
+          />
         </div>
         <button type="button" class="btn-primary" :disabled="busy || !teamToAdd" @click="addTeam">Vincular</button>
       </div>
@@ -249,10 +253,13 @@ const sortedAppointments = computed(() => {
         <form class="mt-4 space-y-3" @submit.prevent="createAppointment">
           <div>
             <label class="label" for="ap-team">Equipo</label>
-            <select id="ap-team" v-model="appointmentForm.teamId" required class="input">
-              <option value="">— Elige un equipo —</option>
-              <option v-for="team in club.teams" :key="team.teamId" :value="team.teamId" :disabled="!team.seasonId">{{ team.teamName }}</option>
-            </select>
+            <SearchSelect
+              id="ap-team"
+              :model-value="appointmentForm.teamId || null"
+              placeholder="— Elige un equipo —"
+              :options="club.teams.map((t) => ({ value: t.teamId, label: t.teamName, hint: t.competitionName ?? undefined, disabled: !t.seasonId }))"
+              @update:model-value="appointmentForm.teamId = String($event ?? '')"
+            />
             <p v-if="fieldErrors.teamId" class="field-error">{{ fieldErrors.teamId[0] }}</p>
           </div>
           <div>
@@ -268,9 +275,12 @@ const sortedAppointments = computed(() => {
           <div class="grid gap-3 sm:grid-cols-2">
             <div>
               <label class="label" for="ap-role">Rol</label>
-              <select id="ap-role" v-model="appointmentForm.role" class="input">
-                <option v-for="option in staffRoleOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
+              <SearchSelect
+                id="ap-role"
+                :model-value="appointmentForm.role"
+                :options="staffRoleOptions"
+                @update:model-value="appointmentForm.role = ($event as StaffRole | null) ?? 'HeadCoach'"
+              />
             </div>
             <div>
               <label class="label" for="ap-until">Válido hasta</label>

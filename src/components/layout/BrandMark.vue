@@ -1,11 +1,11 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ size?: number }>(), { size: 36 });
+withDefaults(defineProps<{ size?: number; animated?: boolean }>(), { size: 36, animated: false });
 </script>
 
 <template>
   <!-- Logotipo de Tercer Tiempo: un balón azul con la Cruz de la Victoria asturiana en oro y un anillo de tres
        tiempos (el tercero, dorado). Es el mismo dibujo que public/favicon.svg: si cambia uno, cambia el otro. -->
-  <svg :width="size" :height="size" viewBox="0 0 64 64" aria-hidden="true">
+  <svg :width="size" :height="size" viewBox="0 0 64 64" aria-hidden="true" :class="{ 'tt-animated': animated }">
     <defs>
       <linearGradient id="tt-field" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stop-color="#1d4fd8" />
@@ -31,9 +31,12 @@ withDefaults(defineProps<{ size?: number }>(), { size: 36 });
     </g>
     <circle cx="32" cy="32" r="30" fill="none" stroke="url(#tt-gold)" stroke-width="2" />
     <!-- Tres tiempos: tres arcos; el tercero, en oro -->
+    <g class="tt-ring">
     <circle cx="32" cy="32" r="25.5" fill="none" stroke="#ffffff" stroke-opacity="0.3" stroke-width="1.5" stroke-dasharray="44.5 8.9" transform="rotate(-80 32 32)" />
     <circle cx="32" cy="32" r="25.5" fill="none" stroke="url(#tt-gold)" stroke-width="1.8" stroke-dasharray="44.5 115.7" transform="rotate(50 32 32)" />
+    </g>
     <!-- Asturias: la Cruz de la Victoria -->
+    <g class="tt-cross">
     <path fill="url(#tt-gold)" d="M27,14.5 Q32,16 37,14.5 L34.8,28.2 L48.5,26 Q47,31 48.5,36 L34.8,33.8 L37,49.5 Q32,48 27,49.5 L29.2,33.8 L15.5,36 Q17,31 15.5,26 L29.2,28.2 Z" />
     <g stroke="url(#tt-gold)" stroke-width="1.2" stroke-linecap="round">
       <line x1="24.5" y1="34.8" x2="24.5" y2="38.2" />
@@ -50,5 +53,32 @@ withDefaults(defineProps<{ size?: number }>(), { size: 36 });
       <circle cx="19.4" cy="31" r="1.1" />
       <circle cx="32" cy="45.6" r="1.1" />
     </g>
+    </g>
   </svg>
 </template>
+
+<style scoped>
+.tt-animated .tt-ring {
+  transform-origin: 32px 32px;
+  animation: tt-spin 1.4s linear infinite;
+}
+.tt-animated .tt-cross {
+  transform-origin: 32px 31px;
+  animation: tt-pulse 1.4s ease-in-out infinite;
+}
+@keyframes tt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes tt-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.88);
+    opacity: 0.85;
+  }
+}
+</style>

@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
+import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Badge from '@/components/ui/Badge.vue';
 import { useSquad } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
@@ -218,10 +219,15 @@ function remove(player: SquadPlayerDto) {
                     <input v-model="edit.fullName" type="text" required maxlength="150" class="input px-2 py-1" aria-label="Nombre" />
                   </td>
                   <td class="py-2 pr-3">
-                    <select v-model="edit.position" class="input px-2 py-1" aria-label="Posición">
-                      <option value="">—</option>
-                      <option v-for="option in positionOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-                    </select>
+                    <SearchSelect
+                      size="sm"
+                      aria-label="Posición"
+                      placeholder="—"
+                      clearable
+                      :model-value="edit.position || null"
+                      :options="positionOptions"
+                      @update:model-value="edit.position = ($event as Position | null) ?? ''"
+                    />
                   </td>
                   <td class="py-2 pr-3 text-xs text-slate-500">{{ player.linked ? player.linkedPlayerName : '—' }}</td>
                   <td class="py-2 text-right whitespace-nowrap">
@@ -264,10 +270,14 @@ function remove(player: SquadPlayerDto) {
           </div>
           <div class="w-44">
             <label class="label" for="new-position">Posición</label>
-            <select id="new-position" v-model="newPlayer.position" class="input">
-              <option value="">—</option>
-              <option v-for="option in positionOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-            </select>
+            <SearchSelect
+              id="new-position"
+              placeholder="—"
+              clearable
+              :model-value="newPlayer.position || null"
+              :options="positionOptions"
+              @update:model-value="newPlayer.position = ($event as Position | null) ?? ''"
+            />
           </div>
           <button type="submit" class="btn-primary" :disabled="busy || !newPlayer.fullName.trim()">Añadir</button>
         </form>

@@ -29,6 +29,10 @@ La API vive en su propio repositorio: [TercerTiempo-Back](https://github.com/die
 
 ## Diseño
 
+Iconos de **Font Awesome** (`src/icons.ts` registra solo los que se usan; `<Icon icon="chevron-down" />`). Todos los
+desplegables son `SearchSelect` (botón + panel con buscador por nombre, grupos y teclado); el indicador de carga es el
+logotipo animado (`BrandMark animated`).
+
 Tema **claro y oscuro** (`src/style.css`): todos los colores son variables CSS con un valor por tema, y las utilidades de
 Tailwind apuntan a ellas (`@theme inline`), así que las vistas no saben de temas. El tema lo elige el usuario en
 *Ajustes* (claro, oscuro o el del sistema) o con el icono de la barra superior; se guarda en el dispositivo
@@ -119,7 +123,9 @@ src/
 │                 sheet (OfficialSheetPanel: acta oficial con estado y reintento; SheetComparison: comparador),
 │                 videos (MatchVideos: lista, reproductor con ticket, compra, subida), legal (LegalPage),
 │                 clubs (ClubPicker: desplegable con búsqueda sobre el catálogo de clubes del registro),
-│                 teams (TeamCrest: escudo servido por la API o insignia con iniciales; ningún equipo sin imagen)
+│                 teams (TeamCrest: escudo servido por la API o insignia con iniciales; ClubRosterEditor: el club
+│                 corrige la plantilla publicada de sus equipos), matches (MatchPreview: previa con probabilidades y
+│                 análisis del rival para el técnico), ui (SearchSelect: el desplegable único con buscador)
 └── views/        Home (landing / panel del club / panel del técnico / panel del jugador), Login, Registro (tres tipos
                   de cuenta; el técnico con código de acceso), Invitación (jugadores), Equipos, Equipo, Partido (acta
                   oficial, vídeos y actas internas), Liga, Ajustes, NotFound

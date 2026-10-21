@@ -8,6 +8,7 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import ClubRosterEditor from '@/components/teams/ClubRosterEditor.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
@@ -37,7 +38,7 @@ const nextMatch = computed(() => {
 const nextOpponent = computed(() => {
   const m = nextMatch.value;
   if (!m) return null;
-  return m.homeTeam.id === props.teamId ? { prefix: 'vs', team: m.awayTeam } : { prefix: '@', team: m.homeTeam };
+  return m.homeTeam.id === props.teamId ? { home: true, team: m.awayTeam } : { home: false, team: m.homeTeam };
 });
 
 /** Ficha del club según la federación: campo (con enlace a cómo llegar), sede y equipación. */
@@ -67,6 +68,11 @@ const kit = computed(() =>
     .filter(Boolean)
     .join(' · '),
 );
+
+/** El club corrige la plantilla publicada de sus propios equipos. */
+function onRosterUpdated(roster: typeof data.value extends infer T ? (T extends { roster: infer R } ? R : never) : never) {
+  if (data.value) data.value = { ...data.value, roster, rosterPublished: roster.length > 0 };
+}
 
 const isMyClubTeam = computed(() => auth.club?.teams.some((t) => t.teamId === props.teamId) ?? false);
 const linking = ref(false);
@@ -212,7 +218,8 @@ async function linkToClub() {
       <div class="min-w-0 flex-1 basis-56">
         <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Próximo partido</p>
         <RouterLink :to="{ name: 'match', params: { matchId: nextMatch.id } }" class="block truncate text-lg font-semibold text-slate-900 hover:text-accent-400">
-          <span class="text-slate-400">{{ nextOpponent.prefix }}</span> {{ nextOpponent.team.name }}
+          <span class="text-slate-400">vs</span> {{ nextOpponent.team.name }}
+          <span class="ml-1 text-sm font-normal" :class="nextOpponent.home ? 'text-emerald-700' : 'text-slate-500'">{{ nextOpponent.home ? 'en casa' : 'fuera' }}</span>
         </RouterLink>
         <p class="text-sm text-slate-600">{{ formatKickoff(nextMatch.kickoffAt) }}<span v-if="nextMatch.venue"> · {{ nextMatch.venue }}</span></p>
       </div>
@@ -246,7 +253,9 @@ async function linkToClub() {
           <span v-if="data.rosterPublished" class="text-xs text-slate-500">{{ data.roster.length }} jugadores</span>
         </div>
 
-        <p v-if="!data.rosterPublished" class="text-sm text-slate-600">
+        <ClubRosterEditor v-if="auth.isClub && isMyClubTeam" :team-id="data.id" :roster="data.roster" @updated="onRosterUpdated" />
+
+        <p v-else-if="!data.rosterPublished" class="text-sm text-slate-600">
           El proveedor no publica la plantilla de este equipo. El cuerpo técnico puede añadir las fichas a mano.
         </p>
 

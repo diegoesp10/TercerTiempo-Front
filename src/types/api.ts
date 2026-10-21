@@ -265,6 +265,8 @@ export interface MatchSheetDto {
 export interface MatchSheetEntryInput extends PerformanceStats {
   squadPlayerId: string;
   played: boolean;
+  /** Dorsal solo para este partido (null = el de la ficha). */
+  shirtNumber: number | null;
 }
 
 export interface SquadPlayerStatsDto {
@@ -338,6 +340,14 @@ export interface TeamSummaryDto {
 /** Jugador de la plantilla según el proveedor externo. */
 export interface RosterEntryDto {
   id: string;
+  fullName: string;
+  position: Position | null;
+  shirtNumber: number | null;
+  /** Añadida o corregida por el club: el proveedor ya no la sobrescribe. */
+  managedByClub: boolean;
+}
+
+export interface RosterEntryRequest {
   fullName: string;
   position: Position | null;
   shirtNumber: number | null;
@@ -459,9 +469,96 @@ export interface PerformanceDto extends PerformanceStats {
   squadPlayerId: string;
   playerName: string;
   position: Position | null;
+  /** Dorsal con el que jugó: el de este partido si se registró, si no el de su ficha. */
   shirtNumber: number | null;
+  /** Dorsal registrado solo para este partido (null = el de la ficha). */
+  matchShirtNumber: number | null;
   teamId: string;
   updatedAt: string;
+}
+
+// --- Previa del partido (cuerpo técnico) ---
+
+export interface MatchPreviewDto {
+  match: MatchDto;
+  competitionName: string;
+  home: TeamPreviewDto;
+  away: TeamPreviewDto;
+  prediction: PredictionDto;
+  dataNotes: string[];
+}
+
+export interface TeamPreviewDto {
+  team: TeamRefDto;
+  position: number | null;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  points: number;
+  pointsPerMatch: number;
+  goalsForPerMatch: number;
+  goalsAgainstPerMatch: number;
+  atVenue: VenueRecordDto;
+  form: FormResultDto[];
+  officialSheets: number;
+  inFormPlayers: PreviewPlayerDto[];
+  setPieces: SetPiecesDto;
+}
+
+export interface VenueRecordDto {
+  label: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+}
+
+export interface FormResultDto {
+  matchId: string;
+  matchday: number;
+  opponentName: string;
+  home: boolean;
+  goalsFor: number;
+  goalsAgainst: number;
+  outcome: 'W' | 'D' | 'L';
+}
+
+export interface PreviewPlayerDto {
+  name: string;
+  shirtNumber: number | null;
+  matches: number;
+  started: number;
+  minutes: number;
+  goals: number;
+  penaltyGoals: number;
+  yellowCards: number;
+  redCards: number;
+  goalsLastThree: number;
+  formScore: number;
+}
+
+export interface SetPiecesDto {
+  penaltyGoalsFor: number;
+  penaltyGoalsAgainst: number;
+  ownGoalsFor: number;
+  ownGoalsAgainst: number;
+  yellowCards: number;
+  redCards: number;
+}
+
+export interface PredictionDto {
+  homeWin: number;
+  draw: number;
+  awayWin: number;
+  expectedHomeGoals: number;
+  expectedAwayGoals: number;
+  mostLikelyScore: string;
+  reasons: string[];
 }
 
 /** Acta de una plantilla en un partido; si no es visible para el usuario llega sin líneas. */
