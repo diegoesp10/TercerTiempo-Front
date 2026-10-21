@@ -6,6 +6,7 @@ import CompetitionPicker from '@/components/competitions/CompetitionPicker.vue';
 import Alert from '@/components/ui/Alert.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 
@@ -75,10 +76,7 @@ const subtitle = computed(() =>
         class="card flex items-center gap-4 transition hover:border-brand-400/60 hover:shadow"
         :class="auth.isMyTeam(team.id) ? 'border-accent-400/40 bg-brand-500/10' : ''"
       >
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
-          <img v-if="team.crestUrl" :src="team.crestUrl" :alt="team.name" class="h-10 w-10 object-contain" loading="lazy" />
-          <span v-else>{{ team.shortName }}</span>
-        </div>
+        <TeamCrest :src="team.crestUrl" :name="team.name" :short-name="team.shortName" size="lg" />
         <div class="min-w-0 flex-1">
           <p class="truncate font-medium text-slate-900">{{ team.name }}</p>
           <p class="text-xs text-slate-500">

@@ -4,6 +4,7 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, staffRoleLabels, visibilityLabels } from '@/utils/format';
@@ -41,10 +42,7 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
     <div v-else class="grid gap-4 md:grid-cols-2">
       <article v-for="squad in squads" :key="squad.id" class="card flex flex-col gap-4">
         <div class="flex items-start gap-4">
-          <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
-            <img v-if="squad.teamCrestUrl" :src="squad.teamCrestUrl" :alt="squad.teamName" class="h-12 w-12 object-contain" loading="lazy" />
-            <span v-else>{{ squad.teamShortName }}</span>
-          </div>
+          <TeamCrest :src="squad.teamCrestUrl" :name="squad.teamName" :short-name="squad.teamShortName" size="lg" />
           <div class="min-w-0 flex-1">
             <h2 class="truncate text-lg font-semibold text-slate-900">{{ squad.teamName }}</h2>
             <p class="text-sm text-slate-500">{{ squad.competitionName }} · {{ squad.seasonLabel }}</p>

@@ -6,6 +6,7 @@ import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { squadKey } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
 import type { SquadDetailDto } from '@/types/api';
@@ -65,10 +66,7 @@ const tabs = [
 
   <template v-else-if="summary && detail">
     <div class="mb-6 flex flex-wrap items-center gap-4">
-      <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
-        <img v-if="summary.teamCrestUrl" :src="summary.teamCrestUrl" :alt="summary.teamName" class="h-12 w-12 object-contain" />
-        <span v-else>{{ summary.teamShortName }}</span>
-      </div>
+      <TeamCrest :src="summary.teamCrestUrl" :name="summary.teamName" :short-name="summary.teamShortName" size="lg" />
       <div class="min-w-0 flex-1">
         <h1 class="text-2xl font-semibold tracking-tight text-slate-900">
           <RouterLink :to="{ name: 'team', params: { teamId: summary.teamId } }" class="hover:text-accent-400">{{ summary.teamName }}</RouterLink>

@@ -6,6 +6,7 @@ import MatchdayFixtures from '@/components/matches/MatchdayFixtures.vue';
 import Alert from '@/components/ui/Alert.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import { groupByLevel, levelLabels } from '@/utils/format';
@@ -97,7 +98,7 @@ watch(selectedId, (id) => {
               <td class="px-3 py-2 tabular-nums text-slate-500">{{ row.position }}</td>
               <td class="px-3 py-2">
                 <RouterLink :to="{ name: 'team', params: { teamId: row.teamId } }" class="flex items-center gap-2 hover:text-accent-400 hover:underline">
-                  <img v-if="row.crestUrl" :src="row.crestUrl" :alt="''" class="h-5 w-5 object-contain" loading="lazy" />
+                  <TeamCrest :src="row.crestUrl" :name="row.teamName" size="xs" />
                   {{ row.teamName }}
                 </RouterLink>
               </td>

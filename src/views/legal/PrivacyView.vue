@@ -17,7 +17,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
     <section>
       <h2>2. Qué es Tercer Tiempo y a quién se refieren los datos</h2>
       <p>
-        Tercer Tiempo es una plataforma para el fútbol amateur en la que los <strong>clubes</strong> dan de alta al cuerpo
+        Tercer Tiempo es una plataforma de seguimiento del rendimiento de cada jugador, partido a partido, en la que los <strong>clubes</strong> dan de alta al cuerpo
         técnico de sus equipos, el <strong>cuerpo técnico</strong> registra el acta interna de cada partido jugador a
         jugador, la plataforma la compara con el acta oficial de la federación y calcula estadísticas, y cada
         <strong>jugador</strong> consulta sus propios números. Tratamos datos de las personas que crean una cuenta y también de

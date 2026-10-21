@@ -3,7 +3,9 @@ import type {
   AccountDto,
   AppointmentDto,
   AuthResponse,
+  ClubCatalogDto,
   ClubDto,
+  TeamCrestImportDto,
   CoachDto,
   CompetitionDto,
   CompetitionMatchdayDto,
@@ -61,9 +63,15 @@ export const api = {
 
   /** Clubes: sus equipos y los nombramientos de sus técnicos. */
   clubs: {
+    catalog: (search?: string) => http<ClubCatalogDto[]>(`/api/clubs/catalog${search ? `?search=${encodeURIComponent(search)}` : ''}`),
     me: () => http<ClubDto>('/api/clubs/me'),
     addTeam: (teamId: string) => http<ClubDto>('/api/clubs/me/teams', { method: 'POST', body: { teamId } }),
     removeTeam: (teamId: string) => http<ClubDto>(`/api/clubs/me/teams/${teamId}`, { method: 'DELETE' }),
+    uploadTeamCrest: (teamId: string, file: File) => {
+      const body = new FormData();
+      body.append('file', file);
+      return http<TeamCrestImportDto>(`/api/clubs/me/teams/${teamId}/crest`, { method: 'PUT', body });
+    },
     createAppointment: (body: CreateAppointmentRequest) => http<AppointmentDto>('/api/clubs/me/appointments', { method: 'POST', body }),
     updateAppointment: (appointmentId: string, validUntil: string) =>
       http<AppointmentDto>(`/api/clubs/me/appointments/${appointmentId}`, { method: 'PUT', body: { validUntil } }),

@@ -7,6 +7,7 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import type { AppointmentDto, ClubDto, StaffRole, TeamSummaryDto } from '@/types/api';
@@ -61,6 +62,31 @@ function addTeam() {
     addingTeam.value = false;
     await auth.refreshAccount();
     return 'Equipo vinculado al club.';
+  });
+}
+
+// --- Escudo: el club puede sustituir el de sus propios equipos (PNG, JPG, WebP, SVG o GIF hasta 2 MB) ---
+const crestInput = ref<HTMLInputElement | null>(null);
+const crestTeamId = ref<string | null>(null);
+
+function pickCrest(teamId: string) {
+  crestTeamId.value = teamId;
+  crestInput.value?.click();
+}
+
+function uploadCrest(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  const teamId = crestTeamId.value;
+  input.value = '';
+  if (!file || !teamId) return;
+  void act(async () => {
+    const result = await api.clubs.uploadTeamCrest(teamId, file);
+    if (data.value) {
+      data.value = { ...data.value, teams: data.value.teams.map((t) => (t.teamId === teamId ? { ...t, teamCrestUrl: result.crestUrl } : t)) };
+    }
+    await auth.refreshAccount();
+    return `Escudo de ${result.teamName} actualizado.`;
   });
 }
 
@@ -149,7 +175,7 @@ const sortedAppointments = computed(() => {
   <PageHeader :title="club?.name ?? auth.displayName" subtitle="Equipos del club y nombramientos de sus técnicos por temporada.">
     <template #actions>
       <button type="button" class="btn-primary" :disabled="busy" @click="addingTeam = !addingTeam">
-        {{ addingTeam ? 'Cerrar' : 'Vincular un equipo' }}
+        {{ addingTeam ? 'Cerrar' : 'Vincular otro equipo' }}
       </button>
     </template>
   </PageHeader>
@@ -163,8 +189,11 @@ const sortedAppointments = computed(() => {
 
     <!-- Vincular equipo -->
     <section v-if="addingTeam" class="card mb-6">
-      <h2 class="font-semibold text-slate-900">Vincular un equipo</h2>
-      <p class="mt-1 text-sm text-slate-500">Elige la liga y el grupo en que juega y después el equipo. Un equipo solo puede pertenecer a un club.</p>
+      <h2 class="font-semibold text-slate-900">Vincular otro equipo</h2>
+      <p class="mt-1 text-sm text-slate-500">
+        Tus equipos quedaron vinculados al darte de alta; esto es para los que no se reconocieron por el nombre (un filial con otro nombre, un equipo nuevo).
+        Elige la liga y el grupo en que juega y después el equipo: su nombre tiene que corresponderse con el del club y solo puede pertenecer a un club.
+      </p>
       <div class="mt-4">
         <Spinner v-if="competitions.loading.value" />
         <CompetitionPicker v-else-if="competitions.data.value" v-model="competitionId" :competitions="competitions.data.value" />
@@ -183,16 +212,14 @@ const sortedAppointments = computed(() => {
 
     <!-- Equipos -->
     <section class="card mb-6">
+      <input ref="crestInput" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" class="hidden" aria-hidden="true" @change="uploadCrest" />
       <h2 class="font-semibold text-slate-900">Equipos del club</h2>
       <p v-if="club.teams.length === 0" class="mt-2 text-sm text-slate-500">
-        Todavía no has vinculado ningún equipo. Hazlo para poder nombrar a sus técnicos.
+        Ningún equipo del proveedor se reconoció con el nombre del club. Vincula los tuyos para poder nombrar a sus técnicos.
       </p>
       <ul v-else class="mt-3 divide-y divide-slate-100">
         <li v-for="team in club.teams" :key="team.teamId" class="flex flex-wrap items-center gap-3 py-3">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
-            <img v-if="team.teamCrestUrl" :src="team.teamCrestUrl" :alt="team.teamName" class="h-8 w-8 object-contain" loading="lazy" />
-            <span v-else>{{ team.teamShortName }}</span>
-          </div>
+          <TeamCrest :src="team.teamCrestUrl" :name="team.teamName" :short-name="team.teamShortName" />
           <div class="min-w-0 flex-1">
             <RouterLink :to="{ name: 'team', params: { teamId: team.teamId } }" class="font-medium text-slate-900 hover:text-accent-400">{{ team.teamName }}</RouterLink>
             <p class="text-xs text-slate-500">
@@ -204,6 +231,7 @@ const sortedAppointments = computed(() => {
             <Badge :tone="team.activeAppointments > 0 ? 'green' : 'amber'">{{ team.activeAppointments }} {{ team.activeAppointments === 1 ? 'técnico vigente' : 'técnicos vigentes' }}</Badge>
             <RouterLink v-if="team.squadId" :to="{ name: 'squad', params: { squadId: team.squadId } }" class="text-accent-400 hover:underline">Plantilla</RouterLink>
             <span v-else>Sin plantilla todavía</span>
+            <button type="button" class="btn-ghost px-2 py-1 text-xs" :disabled="busy" @click="pickCrest(team.teamId)">Cambiar escudo</button>
             <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy" @click="removeTeam(team.teamId, team.teamName)">Desvincular</button>
           </div>
         </li>

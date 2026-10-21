@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ApiError, errorMessage } from '@/api/http';
+import ClubPicker from '@/components/clubs/ClubPicker.vue';
 import AuthPanel from '@/components/layout/AuthPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import { useAuthStore } from '@/stores/auth';
@@ -116,8 +117,16 @@ async function submit() {
           <p v-if="fieldErrors.accessCode" class="field-error">{{ fieldErrors.accessCode[0] }}</p>
         </div>
 
-        <div>
-          <label class="label" for="displayName">{{ isClub ? 'Nombre del club' : 'Nombre y apellidos' }}</label>
+        <div v-if="isClub">
+          <label class="label" for="displayName">Club</label>
+          <ClubPicker id="displayName" v-model="form.displayName" />
+          <p class="mt-1 text-xs text-slate-400">
+            Elige tu club de la lista: solo puede haber una cuenta por club y al crearla quedan vinculados todos sus equipos (primero y filiales).
+          </p>
+          <p v-if="fieldErrors.displayName" class="field-error">{{ fieldErrors.displayName[0] }}</p>
+        </div>
+        <div v-else>
+          <label class="label" for="displayName">Nombre y apellidos</label>
           <input id="displayName" v-model="form.displayName" type="text" required maxlength="120" class="input" />
           <p v-if="isPlayer" class="mt-1 text-xs text-slate-400">Tal y como apareces en la plantilla: así tu cuerpo técnico te reconoce al vincularte.</p>
           <p v-if="fieldErrors.displayName" class="field-error">{{ fieldErrors.displayName[0] }}</p>
@@ -163,7 +172,7 @@ async function submit() {
           </span>
         </label>
 
-        <button type="submit" class="btn-primary w-full" :disabled="loading || !acceptsTerms">
+        <button type="submit" class="btn-primary w-full" :disabled="loading || !acceptsTerms || (isClub && !form.displayName)">
           {{ loading ? 'Creando cuenta…' : isPlayer ? 'Crear cuenta de jugador' : isClub ? 'Crear cuenta de club' : 'Crear cuenta y canjear el código' }}
         </button>
       </form>

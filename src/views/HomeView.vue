@@ -57,13 +57,13 @@ const highlights = [
     <!-- Hero -->
     <section class="grid items-center gap-10 py-6 lg:grid-cols-12 lg:py-12">
       <div class="lg:col-span-7">
-        <p class="eyebrow">Fútbol amateur asturiano</p>
+        <p class="eyebrow">Rendimiento partido a partido</p>
         <h1 class="mt-3 text-5xl font-bold leading-none tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
           El acta de cada partido,<br />convertida en estadísticas.
         </h1>
         <p class="mt-6 max-w-xl text-lg text-slate-600">
-          El club nombra a su cuerpo técnico cada temporada; el cuerpo técnico registra el rendimiento de cada jugador y
-          lo contrasta con el acta oficial de la federación. Cada jugador ve sus números. Cada plantilla decide qué comparte.
+          Registra el acta de cada partido, contrástala con la oficial y sigue el rendimiento de cada jugador jornada a
+          jornada. Cada plantilla decide qué comparte.
         </p>
         <div class="mt-8 flex flex-wrap gap-3">
           <RouterLink to="/registro" class="btn-primary px-6 py-3 text-base">Darme de alta</RouterLink>

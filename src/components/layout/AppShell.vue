@@ -146,7 +146,7 @@ function logout() {
 
     <footer class="border-t border-line py-5 text-center text-xs text-slate-500">
       <p>
-        <span class="font-display text-sm font-semibold uppercase tracking-wide text-slate-600">Tercer Tiempo</span> · actas y rendimiento para el fútbol amateur asturiano
+        <span class="font-display text-sm font-semibold uppercase tracking-wide text-slate-600">Tercer Tiempo</span> · el rendimiento de cada jugador, partido a partido
       </p>
       <nav class="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1" aria-label="Información legal">
         <RouterLink to="/privacidad" class="hover:text-slate-700 hover:underline">Política de privacidad</RouterLink>

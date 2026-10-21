@@ -8,6 +8,7 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import { formatKickoff, levelLabels, positionLabels, visibilityLabels } from '@/utils/format';
@@ -38,6 +39,34 @@ const nextOpponent = computed(() => {
   if (!m) return null;
   return m.homeTeam.id === props.teamId ? { prefix: 'vs', team: m.awayTeam } : { prefix: '@', team: m.homeTeam };
 });
+
+/** Ficha del club según la federación: campo (con enlace a cómo llegar), sede y equipación. */
+const profile = computed(() => data.value?.profile ?? null);
+const groundAddress = computed(() => [profile.value?.groundAddress, profile.value?.groundLocality].filter(Boolean).join(', '));
+const mapsUrl = computed(() => {
+  const query = [profile.value?.ground, profile.value?.groundAddress, profile.value?.groundLocality ?? profile.value?.locality].filter(Boolean).join(', ');
+  return query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : null;
+});
+/** Sede sin repetir lo que la federación ya mete en el domicilio ("…, 33013 Oviedo"). */
+const seatAddress = computed(() => {
+  const address = profile.value?.address ?? '';
+  const lower = address.toLowerCase();
+  const parts = [address];
+  const town = [profile.value?.postalCode, profile.value?.locality].filter((p) => p && !lower.includes(p.toLowerCase())).join(' ');
+  if (town) parts.push(town);
+  if (profile.value?.province && !lower.includes(profile.value.province.toLowerCase())) parts.push(profile.value.province);
+  return parts.filter(Boolean).join(', ');
+});
+const websiteUrl = computed(() => (profile.value?.website ? (/^https?:\/\//i.test(profile.value.website) ? profile.value.website : `https://${profile.value.website}`) : null));
+const kit = computed(() =>
+  [
+    profile.value?.shirtColor && `camiseta ${profile.value.shirtColor.toLowerCase()}`,
+    profile.value?.shortsColor && `pantalón ${profile.value.shortsColor.toLowerCase()}`,
+    profile.value?.socksColor && `medias ${profile.value.socksColor.toLowerCase()}`,
+  ]
+    .filter(Boolean)
+    .join(' · '),
+);
 
 const isMyClubTeam = computed(() => auth.club?.teams.some((t) => t.teamId === props.teamId) ?? false);
 const linking = ref(false);
@@ -70,7 +99,7 @@ async function linkToClub() {
 
     <PageHeader :title="data.name" :subtitle="`${levelLabels[data.season.level]} · ${data.season.competitionName} · ${data.season.label}`" class="mt-2">
       <template #actions>
-        <img v-if="data.crestUrl" :src="data.crestUrl" :alt="data.name" class="h-12 w-12 object-contain" />
+        <TeamCrest :src="data.crestUrl" :name="data.name" :short-name="data.shortName" size="lg" />
         <RouterLink v-if="data.squad?.canView" :to="{ name: 'squad', params: { squadId: data.squad.squadId } }" class="btn-primary">
           {{ data.squad.isMine ? 'Mi plantilla' : 'Ver plantilla' }}
         </RouterLink>
@@ -91,6 +120,38 @@ async function linkToClub() {
       <div class="card py-3 text-center"><p class="text-xs text-slate-500">Goles</p><p class="text-xl font-semibold">{{ data.standing.goalsFor }}:{{ data.standing.goalsAgainst }}</p></div>
       <div class="card py-3 text-center"><p class="text-xs text-slate-500">Diferencia</p><p class="text-xl font-semibold">{{ data.standing.goalDifference > 0 ? '+' : '' }}{{ data.standing.goalDifference }}</p></div>
     </div>
+
+    <!-- Ficha del club según la federación: campo donde juega de local, sede y equipación -->
+    <section v-if="profile" class="card mb-6">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="font-semibold text-slate-900">El club</h2>
+          <p class="mt-1 text-sm text-slate-600">
+            {{ profile.officialName ?? data.name }}<template v-if="profile.locality"> · {{ profile.locality }}</template><template v-if="profile.province"> ({{ profile.province }})</template>
+          </p>
+        </div>
+        <a v-if="data.officialUrl" :href="data.officialUrl" target="_blank" rel="noopener" class="text-xs text-accent-400 hover:underline">Ficha en la federación ↗</a>
+      </div>
+      <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+        <div v-if="profile.ground">
+          <dt class="eyebrow">Campo (como local)</dt>
+          <dd class="mt-1 font-medium text-slate-900">
+            {{ profile.ground }}<span v-if="profile.groundSurface" class="font-normal text-slate-500"> · {{ profile.groundSurface }}</span>
+          </dd>
+          <dd v-if="groundAddress" class="text-slate-600">{{ groundAddress }}</dd>
+          <dd v-if="mapsUrl" class="mt-1"><a :href="mapsUrl" target="_blank" rel="noopener" class="text-accent-400 hover:underline">Cómo llegar ↗</a></dd>
+        </div>
+        <div v-if="seatAddress || websiteUrl">
+          <dt class="eyebrow">Sede</dt>
+          <dd v-if="seatAddress" class="mt-1 text-slate-700">{{ seatAddress }}</dd>
+          <dd v-if="websiteUrl" class="mt-1"><a :href="websiteUrl" target="_blank" rel="noopener" class="text-accent-400 hover:underline">{{ profile.website }}</a></dd>
+        </div>
+        <div v-if="kit">
+          <dt class="eyebrow">Equipación</dt>
+          <dd class="mt-1 text-slate-700">{{ kit }}</dd>
+        </div>
+      </dl>
+    </section>
 
     <!-- Plantilla en Tercer Tiempo -->
     <section class="card mb-6">

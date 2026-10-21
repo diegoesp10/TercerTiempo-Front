@@ -150,6 +150,28 @@ export interface ClubDto {
   appointments: AppointmentDto[];
 }
 
+/** Club del catálogo del proveedor (primer equipo + filiales): es la lista de la que se elige el nombre al darse de alta. */
+export interface ClubCatalogDto {
+  name: string;
+  registered: boolean;
+  teams: ClubCatalogTeamDto[];
+}
+
+export interface ClubCatalogTeamDto {
+  id: string;
+  name: string;
+  competitionName: string | null;
+}
+
+/** Resultado de cambiar el escudo de un equipo: la nueva crestUrl lleva versión para invalidar la caché. */
+export interface TeamCrestImportDto {
+  teamId: string;
+  teamName: string;
+  crestUrl: string;
+  contentType: string;
+  bytes: number;
+}
+
 export interface CreateAppointmentRequest {
   teamId: string;
   coachName: string;
@@ -341,6 +363,26 @@ export interface TeamDetailDto {
   rosterPublished: boolean;
   roster: RosterEntryDto[];
   squad: TeamSquadDto | null;
+  /** Ficha del club según la federación (sede, campo, equipación); null si no se ha localizado. */
+  profile: TeamProfileDto | null;
+  /** Página del equipo en la federación. */
+  officialUrl: string | null;
+}
+
+export interface TeamProfileDto {
+  officialName: string | null;
+  locality: string | null;
+  province: string | null;
+  address: string | null;
+  postalCode: string | null;
+  website: string | null;
+  ground: string | null;
+  groundSurface: string | null;
+  groundAddress: string | null;
+  groundLocality: string | null;
+  shirtColor: string | null;
+  shortsColor: string | null;
+  socksColor: string | null;
 }
 
 /** Resumen de una jornada de la temporada (fechas y partidos jugados). */

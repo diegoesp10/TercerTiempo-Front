@@ -1,6 +1,6 @@
 # Tercer Tiempo · Frontend
 
-SPA de **Tercer Tiempo**, plataforma de actas y rendimiento para el fútbol amateur. El **club** nombra a los
+SPA de **Tercer Tiempo**, plataforma de seguimiento del rendimiento de cada jugador, partido a partido. El **club** nombra a los
 técnicos de sus equipos cada temporada y les entrega un código de acceso. El **cuerpo técnico** gestiona la plantilla
 de su equipo, comparte un código de invitación con los jugadores y, tras cada partido, rellena el acta interna
 (minutos, goles, asistencias, tiros, tarjetas; la nota se calcula sola), la compara con el **acta oficial de la
@@ -65,7 +65,7 @@ npm run dev
 La aplicación queda en `http://localhost:5173`. La URL de la API se configura en `.env.development`
 (`VITE_API_URL`); `.env.example` documenta las variables disponibles.
 
-Flujo de prueba como **club**: *Darme de alta* (Club) → **«Vincular un equipo»** (nivel, liga, grupo y equipo) →
+Flujo de prueba como **club**: *Darme de alta* (Club, eligiendo el club del desplegable: sus equipos quedan vinculados) →
 **«Nombrar a un técnico»** (equipo, nombre, rol y validez; por defecto hasta el final de la temporada) → aparece el
 **código de acceso** para entregárselo. Desde la tabla de nombramientos se prorroga, acorta o revoca cada uno.
 
@@ -117,12 +117,14 @@ src/
 │                 PageHeader, PercentileBar, RatingBadge), charts (AppChart, ChartCard), competitions (CompetitionPicker:
 │                 nivel → liga/grupo), matches (MatchRow, MatchdayFixtures: jornada con navegación),
 │                 sheet (OfficialSheetPanel: acta oficial con estado y reintento; SheetComparison: comparador),
-│                 videos (MatchVideos: lista, reproductor con ticket, compra, subida), legal (LegalPage)
+│                 videos (MatchVideos: lista, reproductor con ticket, compra, subida), legal (LegalPage),
+│                 clubs (ClubPicker: desplegable con búsqueda sobre el catálogo de clubes del registro),
+│                 teams (TeamCrest: escudo servido por la API o insignia con iniciales; ningún equipo sin imagen)
 └── views/        Home (landing / panel del club / panel del técnico / panel del jugador), Login, Registro (tres tipos
                   de cuenta; el técnico con código de acceso), Invitación (jugadores), Equipos, Equipo, Partido (acta
                   oficial, vídeos y actas internas), Liga, Ajustes, NotFound
     ├── legal/    PrivacyView (política de privacidad) y TermsView (condiciones de uso)
-    ├── club/     ClubHomeView (equipos del club, nombramientos y códigos de acceso)
+    ├── club/     ClubHomeView (equipos del club con cambio de escudo, vincular otro, nombramientos y códigos de acceso)
     ├── coach/    CoachHomeView (mis plantillas y nombramientos), RedeemView (canjear un código de acceso)
     ├── player/   PlayerDashboardView (vínculo con la plantilla y estadísticas)
     └── squad/    SquadLayoutView (cabecera + pestañas) con SquadPlayersView (fichas, staff, código, visibilidad),
