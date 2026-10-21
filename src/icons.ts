@@ -1,5 +1,6 @@
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
+  faArrowLeft,
   faArrowRightArrowLeft,
   faArrowUpFromBracket,
   faCalendarCheck,
@@ -10,10 +11,12 @@ import {
   faChevronRight,
   faCircleInfo,
   faFutbol,
+  faHouse,
   faLocationDot,
   faMagnifyingGlass,
   faPen,
   faPlus,
+  faRotateRight,
   faShieldHalved,
   faTrash,
   faTriangleExclamation,
@@ -28,6 +31,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
  * Se usan como <Icon icon="chevron-down" />.
  */
 library.add(
+  faArrowLeft,
   faArrowRightArrowLeft,
   faArrowUpFromBracket,
   faCalendarCheck,
@@ -38,10 +42,12 @@ library.add(
   faChevronRight,
   faCircleInfo,
   faFutbol,
+  faHouse,
   faLocationDot,
   faMagnifyingGlass,
   faPen,
   faPlus,
+  faRotateRight,
   faShieldHalved,
   faTrash,
   faTriangleExclamation,
