@@ -6,7 +6,7 @@ const tones = {
   amber: 'border-amber-400/40 bg-amber-100 text-amber-800',
   red: 'border-red-600/40 bg-red-100 text-red-800',
   blue: 'border-brand-400/40 bg-sky-100 text-sky-800',
-  slate: 'border-white/10 bg-slate-100 text-slate-700',
+  slate: 'border-line bg-slate-100 text-slate-700',
 };
 </script>
 

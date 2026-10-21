@@ -146,16 +146,16 @@ async function linkToClub() {
     <section v-if="nextMatch && nextOpponent" class="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-accent-400/30 bg-brand-500/10 p-4">
       <div class="w-16 shrink-0 text-center">
         <p class="text-xs uppercase text-accent-400">Jornada</p>
-        <p class="text-2xl font-semibold text-white">{{ nextMatch.matchday }}</p>
+        <p class="font-display text-3xl font-bold text-slate-900">{{ nextMatch.matchday }}</p>
       </div>
-      <div class="min-w-0 flex-1">
+      <div class="min-w-0 flex-1 basis-56">
         <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Próximo partido</p>
         <RouterLink :to="{ name: 'match', params: { matchId: nextMatch.id } }" class="block truncate text-lg font-semibold text-slate-900 hover:text-accent-400">
           <span class="text-slate-400">{{ nextOpponent.prefix }}</span> {{ nextOpponent.team.name }}
         </RouterLink>
         <p class="text-sm text-slate-600">{{ formatKickoff(nextMatch.kickoffAt) }}<span v-if="nextMatch.venue"> · {{ nextMatch.venue }}</span></p>
       </div>
-      <RouterLink :to="{ name: 'league', query: { competition: data.season.competitionId } }" class="btn-secondary">
+      <RouterLink :to="{ name: 'league', query: { competition: data.season.competitionId } }" class="btn-secondary w-full sm:w-auto">
         Ver la jornada completa
       </RouterLink>
     </section>

@@ -16,6 +16,7 @@ const router = createRouter({
     { path: '/registro', name: 'register', component: () => import('@/views/RegisterView.vue'), meta: { guestOnly: true } },
     { path: '/invitacion/:code?', name: 'join', component: () => import('@/views/JoinView.vue'), props: true, meta: { requiresAuth: true } },
     { path: '/codigo-acceso', name: 'redeem', component: () => import('@/views/coach/RedeemView.vue'), meta: { requiresAuth: true } },
+    { path: '/ajustes', name: 'settings', component: () => import('@/views/SettingsView.vue') },
     { path: '/equipos', name: 'teams', component: () => import('@/views/TeamsView.vue') },
     { path: '/equipos/:teamId', name: 'team', component: () => import('@/views/TeamDetailView.vue'), props: true },
     {

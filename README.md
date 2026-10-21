@@ -29,14 +29,16 @@ La API vive en su propio repositorio: [TercerTiempo-Back](https://github.com/die
 
 ## Diseño
 
-Tema oscuro único en azules de estadio nocturno (`src/style.css`): tokens en `@theme` (fondos `navy-*` / `surface-*`,
-marca `brand-*` azul eléctrico y `accent-*` cian, verde césped `emerald-*`), tipografía Sora para titulares y números e
-Inter para el texto, tarjetas de cristal (`.card`), botones con degradado y halo (`.btn-primary`), texto con degradado
-(`.text-gradient`) y etiqueta luminosa (`.eyebrow`). Las escalas `slate`, `emerald`, `sky`, `amber` y `red` de Tailwind
-están **redefinidas para el fondo oscuro** (slate-900 es el texto principal, slate-500 el secundario, slate-200 las
-líneas, slate-50 el relleno sutil), de modo que las utilidades que usan las vistas no tienen que cambiar al tocar la
-paleta. Fondo fijo de toda la app en `components/backgrounds/PitchBackground.vue` (focos, campo en perspectiva y
-motas de luz) y transición entre páginas en `App.vue`.
+Tema **claro y oscuro** (`src/style.css`): todos los colores son variables CSS con un valor por tema, y las utilidades de
+Tailwind apuntan a ellas (`@theme inline`), así que las vistas no saben de temas. El tema lo elige el usuario en
+*Ajustes* (claro, oscuro o el del sistema) o con el icono de la barra superior; se guarda en el dispositivo
+(`stores/settings.ts`, atributo `data-theme` en `<html>`, fijado antes de pintar desde `index.html` para evitar
+parpadeos). La escala `slate` es la escala de grises de la interfaz (slate-900 texto principal, slate-500 secundario,
+slate-200 líneas, slate-50 relleno sutil) y `emerald`/`sky`/`amber`/`red` los tonos semánticos; `brand-*` es el azul de
+la marca y `surface`/`line`/`canvas` las superficies. Tipografía deportiva: **Barlow** para el texto y **Barlow
+Condensed** para titulares, cifras y cabeceras de tabla. Fondo fijo con un campo de césped en perspectiva (bandas de
+siega, líneas que se dibujan al cargar, haz de luz de los focos) en `components/backgrounds/PitchBackground.vue`, más
+tenue en el tema claro. Los gráficos tienen un tema de ECharts por cada tema de la interfaz (`charts/theme.ts`).
 
 ## Arranque rápido
 

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted, ref } from 'vue';
-import gsap from 'gsap';
+import { defineAsyncComponent } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { whenIdle } from '@/utils/idle';
 import ClubHomeView from '@/views/club/ClubHomeView.vue';
@@ -12,17 +11,8 @@ const auth = useAuthStore();
 // El balón 3D (Three.js) solo se descarga en la portada pública, y cuando el navegador ya ha pintado lo importante.
 const BallScene = defineAsyncComponent(() => whenIdle().then(() => import('@/components/three/BallScene.vue')));
 
-const hero = ref<HTMLElement | null>(null);
-
-onMounted(() => {
-  if (!hero.value || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  gsap.from(hero.value.querySelectorAll('[data-reveal]'), { y: 24, opacity: 0, duration: 0.8, ease: 'power3.out', stagger: 0.1, delay: 0.1 });
-  gsap.from(hero.value.querySelector('[data-ball]'), { scale: 0.7, opacity: 0, duration: 1.1, ease: 'expo.out', delay: 0.3 });
-});
-
 const roles = [
   {
-    tone: 'from-amber-400/30 to-transparent text-amber-700',
     eyebrow: 'Club',
     title: 'Da de alta a tus técnicos',
     steps: [
@@ -32,7 +22,6 @@ const roles = [
     ],
   },
   {
-    tone: 'from-brand-400/30 to-transparent text-brand-300',
     eyebrow: 'Cuerpo técnico',
     title: 'Lleva la plantilla de tu equipo',
     steps: [
@@ -42,7 +31,6 @@ const roles = [
     ],
   },
   {
-    tone: 'from-emerald-400/30 to-transparent text-emerald-700',
     eyebrow: 'Jugador',
     title: 'Sigue tu temporada',
     steps: [
@@ -67,46 +55,41 @@ const highlights = [
 
   <div v-else class="pb-10">
     <!-- Hero -->
-    <section ref="hero" class="grid items-center gap-10 py-6 lg:grid-cols-12 lg:py-14">
+    <section class="grid items-center gap-10 py-6 lg:grid-cols-12 lg:py-12">
       <div class="lg:col-span-7">
-        <p data-reveal class="eyebrow">Fútbol amateur asturiano</p>
-        <h1 data-reveal class="mt-4 text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-          <span class="text-white">El acta de cada partido,</span><br />
-          <span class="text-gradient">convertida en estadísticas.</span>
+        <p class="eyebrow">Fútbol amateur asturiano</p>
+        <h1 class="mt-3 text-5xl font-bold leading-none tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
+          El acta de cada partido,<br />convertida en estadísticas.
         </h1>
-        <p data-reveal class="mt-6 max-w-xl text-lg text-slate-600">
+        <p class="mt-6 max-w-xl text-lg text-slate-600">
           El club nombra a su cuerpo técnico cada temporada; el cuerpo técnico registra el rendimiento de cada jugador y
           lo contrasta con el acta oficial de la federación. Cada jugador ve sus números. Cada plantilla decide qué comparte.
         </p>
-        <div data-reveal class="mt-8 flex flex-wrap gap-3">
+        <div class="mt-8 flex flex-wrap gap-3">
           <RouterLink to="/registro" class="btn-primary px-6 py-3 text-base">Darme de alta</RouterLink>
           <RouterLink to="/liga" class="btn-secondary px-6 py-3 text-base">Ver la jornada</RouterLink>
         </div>
-        <dl data-reveal class="mt-10 grid max-w-xl grid-cols-3 gap-3">
-          <div v-for="item in highlights" :key="item.label" class="rounded-2xl border border-white/8 bg-white/4 px-4 py-3 backdrop-blur">
-            <dt class="font-display text-2xl font-bold text-white">{{ item.value }}</dt>
+        <dl class="mt-10 grid max-w-xl grid-cols-3 gap-3">
+          <div v-for="item in highlights" :key="item.label" class="rounded-lg border border-line bg-surface px-4 py-3">
+            <dt class="font-display text-2xl font-bold text-slate-900 sm:text-3xl">{{ item.value }}</dt>
             <dd class="mt-0.5 text-xs text-slate-500">{{ item.label }}</dd>
           </div>
         </dl>
       </div>
 
-      <div data-ball class="relative mx-auto aspect-square w-full max-w-md lg:col-span-5">
-        <div class="absolute inset-8 rounded-full bg-brand-500/30 blur-3xl" />
-        <div class="absolute inset-0 rounded-full border border-white/6" />
-        <div class="absolute inset-6 rounded-full border border-dashed border-accent-400/20 animate-[spin_40s_linear_infinite]" />
+      <div class="mx-auto aspect-square w-full max-w-sm lg:col-span-5 lg:max-w-md">
         <BallScene :zoom="1" />
       </div>
     </section>
 
     <!-- Roles -->
     <section class="mt-6 grid gap-5 md:grid-cols-3">
-      <article v-for="role in roles" :key="role.eyebrow" class="card overflow-hidden">
-        <span class="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b" :class="role.tone.split(' ').slice(0, 2).join(' ')" />
-        <p class="relative text-xs font-bold uppercase tracking-[0.2em]" :class="role.tone.split(' ')[2]">{{ role.eyebrow }}</p>
-        <h2 class="relative mt-2 text-lg font-bold text-white">{{ role.title }}</h2>
-        <ol class="relative mt-4 space-y-2.5 text-sm text-slate-600">
+      <article v-for="role in roles" :key="role.eyebrow" class="card">
+        <p class="eyebrow">{{ role.eyebrow }}</p>
+        <h2 class="mt-2 text-2xl font-bold text-slate-900">{{ role.title }}</h2>
+        <ol class="mt-4 space-y-2.5 text-sm text-slate-600">
           <li v-for="(step, index) in role.steps" :key="index" class="flex gap-3">
-            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/6 font-display text-xs font-bold text-white">{{ index + 1 }}</span>
+            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500/10 font-display text-xs font-bold text-brand-500">{{ index + 1 }}</span>
             <span>{{ step }}</span>
           </li>
         </ol>
@@ -114,11 +97,11 @@ const highlights = [
     </section>
 
     <!-- Banda de datos -->
-    <section class="mt-10 overflow-hidden rounded-3xl border border-white/8 bg-gradient-to-r from-brand-700/40 via-navy-900 to-emerald-900/10 p-8 shadow-card lg:p-10">
-      <div class="grid items-center gap-8 lg:grid-cols-3">
+    <section class="card mt-8 lg:p-8">
+      <div class="grid items-center gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2">
           <p class="eyebrow">Datos reales, cada jornada</p>
-          <h2 class="mt-3 text-2xl font-bold text-white">Calendario, resultados y actas oficiales de 1ª, 2ª y 3ª RFEF y 1ª, 2ª y 3ª AsturFútbol</h2>
+          <h2 class="mt-2 text-2xl font-bold text-slate-900">Calendario, resultados y actas oficiales de 1ª, 2ª y 3ª RFEF y 1ª, 2ª y 3ª AsturFútbol</h2>
           <p class="mt-3 text-sm text-slate-600">
             Sin cuenta puedes consultar los equipos, sus calendarios, la clasificación y el acta oficial de cada partido.
             Con cuenta, el acta interna de tu plantilla y sus estadísticas.

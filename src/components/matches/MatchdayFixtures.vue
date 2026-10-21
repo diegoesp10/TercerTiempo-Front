@@ -159,10 +159,10 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
           <li v-for="match in day.matches" :key="match.id">
             <RouterLink
               :to="{ name: 'match', params: { matchId: match.id } }"
-              class="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
+              class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
               :class="isHighlighted(match) ? 'bg-brand-500/10 font-medium' : ''"
             >
-              <span class="truncate text-right text-slate-800" :title="match.homeTeam.name">{{ match.homeTeam.name }}</span>
+              <span class="min-w-0 truncate text-right text-slate-800" :title="match.homeTeam.name">{{ match.homeTeam.name }}</span>
               <span class="min-w-16 text-center">
                 <span v-if="hasScore(match)" class="rounded bg-slate-900 px-2 py-0.5 font-semibold tabular-nums text-white">
                   {{ match.homeGoals }} - {{ match.awayGoals }}
@@ -170,7 +170,7 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
                 <span v-else-if="match.status === 'Scheduled'" class="tabular-nums text-slate-600">{{ formatTime(match.kickoffAt) }}</span>
                 <Badge v-else tone="amber">{{ matchStatusLabels[match.status] }}</Badge>
               </span>
-              <span class="truncate text-slate-800" :title="match.awayTeam.name">{{ match.awayTeam.name }}</span>
+              <span class="min-w-0 truncate text-slate-800" :title="match.awayTeam.name">{{ match.awayTeam.name }}</span>
             </RouterLink>
             <p v-if="match.venue" class="-mt-1 truncate px-3 pb-2 text-center text-xs text-slate-400">{{ match.venue }}</p>
           </li>

@@ -11,7 +11,7 @@ import {
   VisualMapComponent,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
-import { CHART_THEME, themeDefinition } from './theme';
+import { CHART_THEMES, themeDefinitions } from './theme';
 
 let registered = false;
 
@@ -34,8 +34,9 @@ export function setupCharts() {
     VisualMapComponent,
   ]);
 
-  registerTheme(CHART_THEME, themeDefinition);
+  registerTheme(CHART_THEMES.light, themeDefinitions.light);
+  registerTheme(CHART_THEMES.dark, themeDefinitions.dark);
   registered = true;
 }
 
-export { CHART_THEME };
+export { CHART_THEMES };

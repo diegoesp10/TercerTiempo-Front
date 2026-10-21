@@ -1,18 +1,28 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#050b1a" />
+    <meta name="theme-color" content="#0a1120" />
     <title>Tercer Tiempo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <script>
+      // El tema se aplica antes de pintar para evitar el parpadeo claro/oscuro (lo gestiona stores/settings.ts).
+      (function () {
+        try {
+          var saved = localStorage.getItem('tt.theme');
+          var system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          document.documentElement.dataset.theme = saved === 'light' || saved === 'dark' ? saved : saved === 'system' ? system : 'dark';
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="min-h-screen bg-navy-950 text-slate-900 antialiased">
+  <body class="min-h-screen bg-canvas text-slate-900 antialiased">
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

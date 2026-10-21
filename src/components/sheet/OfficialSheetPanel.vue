@@ -111,6 +111,7 @@ const eventIcon: Record<string, string> = {
               <h3 class="font-semibold text-slate-900">{{ team.teamName }}</h3>
               <span v-if="team.goals !== null" class="text-xl font-bold tabular-nums text-slate-900">{{ team.goals }}</span>
             </div>
+            <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
               <thead class="text-xs uppercase tracking-wide text-slate-500">
                 <tr>
@@ -124,7 +125,7 @@ const eventIcon: Record<string, string> = {
               <tbody class="divide-y divide-slate-100">
                 <tr v-for="line in [...team.starters, ...team.bench]" :key="line.id" :class="line.played ? '' : 'text-slate-400'">
                   <td class="py-1 pr-2 tabular-nums text-slate-500">{{ line.shirtNumber ?? '—' }}</td>
-                  <td class="py-1 pr-2">
+                  <td class="py-1 pr-2 whitespace-nowrap">
                     <span class="font-medium" :class="line.played ? 'text-slate-800' : ''">{{ line.fullName }}</span>
                     <Badge v-if="line.started" class="ml-1">titular</Badge>
                   </td>
@@ -136,6 +137,7 @@ const eventIcon: Record<string, string> = {
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 

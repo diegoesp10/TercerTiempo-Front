@@ -8,15 +8,13 @@ const BallScene = defineAsyncComponent(() => whenIdle().then(() => import('@/com
 </script>
 
 <template>
-  <!-- Pantallas de acceso: panel visual con el balón 3D a la izquierda y el formulario a la derecha. -->
-  <div class="mx-auto mt-4 grid max-w-5xl overflow-hidden rounded-3xl border border-white/8 bg-navy-900/60 shadow-card backdrop-blur-xl lg:grid-cols-5">
-    <aside class="relative hidden overflow-hidden bg-gradient-to-br from-brand-700/60 via-navy-900 to-navy-950 p-8 lg:col-span-2 lg:block">
-      <div class="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-accent-500/25 blur-3xl" />
-      <div class="absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-brand-500/30 blur-3xl" />
-      <p class="eyebrow relative">Fútbol amateur asturiano</p>
-      <h2 class="relative mt-3 text-2xl font-bold text-white">{{ title }}</h2>
-      <p class="relative mt-2 text-sm text-slate-600">{{ subtitle }}</p>
-      <div class="relative mx-auto mt-6 aspect-square w-full max-w-xs">
+  <!-- Pantallas de acceso: panel con el balón 3D a la izquierda y el formulario a la derecha. -->
+  <div class="mx-auto mt-4 grid max-w-5xl overflow-hidden rounded-xl border border-line bg-surface shadow-card lg:grid-cols-5">
+    <aside class="relative hidden bg-brand-600 p-8 text-white lg:col-span-2 lg:block">
+      <p class="font-display text-xs font-semibold uppercase tracking-[0.18em] text-white/70">Fútbol amateur asturiano</p>
+      <h2 class="mt-3 text-2xl font-bold">{{ title }}</h2>
+      <p class="mt-2 text-sm text-white/80">{{ subtitle }}</p>
+      <div class="mx-auto mt-6 aspect-square w-full max-w-xs">
         <BallScene :zoom="1.15" />
       </div>
     </aside>
