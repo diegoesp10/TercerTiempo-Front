@@ -46,6 +46,7 @@ const tabs = [
   { name: 'squad', label: 'Plantilla' },
   { name: 'squad-matches', label: 'Partidos y actas' },
   { name: 'squad-stats', label: 'Estadísticas' },
+  { name: 'squad-compare', label: 'Comparador' },
 ] as const;
 </script>
 

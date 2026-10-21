@@ -3,6 +3,7 @@ import type {
   AccountDto,
   AuthResponse,
   CompetitionDto,
+  CompetitionMatchdayDto,
   JoinSquadAsPlayerRequest,
   JoinSquadStaffRequest,
   LeagueTableDto,
@@ -19,9 +20,11 @@ import type {
   SquadInviteDto,
   SquadMatchDto,
   SquadPlayerDto,
+  SquadPlayerProfileDto,
   SquadPlayerRequest,
   SquadStatsDto,
   SquadSummaryDto,
+  SquadTimelineDto,
   SquadVisibility,
   SyncResultDto,
   TeamDetailDto,
@@ -65,10 +68,16 @@ export const api = {
     recordSheet: (squadId: string, matchId: string, entries: MatchSheetEntryInput[]) =>
       http<MatchSheetDto>(`/api/squads/${squadId}/matches/${matchId}/sheet`, { method: 'PUT', body: { entries } }),
     stats: (squadId: string) => http<SquadStatsDto>(`/api/squads/${squadId}/stats`),
+    playerProfile: (squadId: string, squadPlayerId: string) =>
+      http<SquadPlayerProfileDto>(`/api/squads/${squadId}/players/${squadPlayerId}/profile`),
+    timeline: (squadId: string) => http<SquadTimelineDto>(`/api/squads/${squadId}/timeline`),
   },
 
   competitions: {
     list: () => http<CompetitionDto[]>('/api/competitions'),
+    /** Partidos de una jornada; sin número, la jornada en curso o la próxima. */
+    matchday: (competitionId: string, matchday?: number | null) =>
+      http<CompetitionMatchdayDto>(`/api/competitions/${competitionId}/matchdays/${matchday ?? 'current'}`),
   },
   teams: {
     list: (competitionId: string) => http<TeamSummaryDto[]>(`/api/teams?competitionId=${encodeURIComponent(competitionId)}`),

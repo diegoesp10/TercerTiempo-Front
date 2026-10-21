@@ -85,7 +85,28 @@ export function groupByLevel(competitions: CompetitionDto[]): { level: Competiti
 const dateTime = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' });
 const dateOnly = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' });
 
+const timeOnly = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' });
+const dayHeading = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+const dayMonth = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
+
 export const formatKickoff = (iso: string) => dateTime.format(new Date(iso));
+export const formatTime = (iso: string) => timeOnly.format(new Date(iso));
+/** "sábado, 17 de octubre" (con mayúscula inicial). */
+export const formatDayHeading = (iso: string) => {
+  const text = dayHeading.format(new Date(iso));
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+/** Fecha local "yyyy-mm-dd" para agrupar partidos por día. */
+export const localDayKey = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+/** Rango de fechas de una jornada: "17 oct" o "17 oct – 18 oct". */
+export const formatDayRange = (startIso: string, endIso: string) => {
+  const start = dayMonth.format(new Date(startIso));
+  const end = dayMonth.format(new Date(endIso));
+  return start === end ? start : `${start} – ${end}`;
+};
 export const formatDate = (iso: string) => dateOnly.format(new Date(iso));
 
 export const formatNumber = (value: number | null | undefined, digits = 2) =>

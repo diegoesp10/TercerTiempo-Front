@@ -13,4 +13,9 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  build: {
+    // Apache ECharts (~670 kB, ~225 kB gzip) va en su propio chunk, que solo se descarga en las páginas con gráficos;
+    // el aviso por defecto (500 kB) no aporta nada aquí.
+    chunkSizeWarningLimit: 750,
+  },
 });

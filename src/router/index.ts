@@ -25,6 +25,13 @@ const router = createRouter({
         { path: '', name: 'squad', component: () => import('@/views/squad/SquadPlayersView.vue') },
         { path: 'partidos', name: 'squad-matches', component: () => import('@/views/squad/SquadMatchesView.vue') },
         { path: 'estadisticas', name: 'squad-stats', component: () => import('@/views/squad/SquadStatsView.vue') },
+        { path: 'comparador', name: 'squad-compare', component: () => import('@/views/squad/SquadCompareView.vue') },
+        {
+          path: 'jugadores/:squadPlayerId',
+          name: 'squad-player',
+          component: () => import('@/views/squad/SquadPlayerProfileView.vue'),
+          props: true,
+        },
       ],
     },
     {

@@ -7,6 +7,7 @@ export type CompetitionLevel = 'Professional' | 'National' | 'Regional' | 'Cup' 
 export type SquadVisibility = 'Private' | 'Public';
 export type StaffRole = 'HeadCoach' | 'AssistantCoach' | 'Delegate' | 'Physio' | 'Analyst' | 'Other';
 export type SquadPlayerStatus = 'Active' | 'Left';
+export type MatchOutcome = 'NotPlayed' | 'Win' | 'Draw' | 'Loss';
 
 export interface ProblemDetails {
   type?: string;
@@ -268,6 +269,28 @@ export interface TeamDetailDto {
   squad: TeamSquadDto | null;
 }
 
+/** Resumen de una jornada de la temporada (fechas y partidos jugados). */
+export interface MatchdaySummaryDto {
+  number: number;
+  startsAt: string;
+  endsAt: string;
+  /** Fecha central de la jornada (mediana de sus partidos). */
+  referenceAt: string;
+  matches: number;
+  played: number;
+}
+
+/** Partidos de una jornada de una liga, con la jornada en curso y el resto de jornadas para navegar. */
+export interface CompetitionMatchdayDto {
+  competitionId: string;
+  competitionName: string;
+  season: SeasonDto;
+  matchday: number | null;
+  currentMatchday: number | null;
+  matchdays: MatchdaySummaryDto[];
+  matches: MatchDto[];
+}
+
 export interface LeagueTableDto {
   season: SeasonDto;
   standings: StandingDto[];
@@ -308,13 +331,13 @@ export interface PerformanceStats {
   saves: number;
   yellowCards: number;
   redCard: boolean;
-  /** Valoración del cuerpo técnico, 1-10. */
-  rating: number;
   notes: string | null;
 }
 
 export interface PerformanceDto extends PerformanceStats {
   id: string;
+  /** Nota calculada con los datos del acta (3,0-10,0); null si no llegó a jugar. */
+  rating: number | null;
   matchId: string;
   squadId: string;
   squadPlayerId: string;
@@ -414,6 +437,77 @@ export interface PlayerDashboardDto {
   teamImpact: TeamImpactDto | null;
   league: LeagueComparisonDto | null;
   recentPerformances: PerformanceWithMatchDto[];
+}
+
+// --- Gráficos ---
+
+/** Perfil por 90' (ejes del radar). */
+export interface PlayerAxesDto {
+  goalsPer90: number;
+  assistsPer90: number;
+  shotsOnTargetPer90: number;
+  keyPassesPer90: number;
+  tacklesPer90: number;
+  interceptionsPer90: number;
+  savesPer90: number;
+  averageRating: number | null;
+  participationPct: number;
+}
+
+/** Aportación de cada bloque a la nota (sobre la base de 6,0) y nota final. */
+export interface RatingBreakdownDto {
+  attack: number;
+  creation: number;
+  defense: number;
+  goalkeeping: number;
+  discipline: number;
+  result: number;
+  total: number;
+}
+
+export interface PlayerMatchPointDto {
+  match: MatchDto;
+  home: boolean;
+  opponentName: string;
+  opponentShortName: string;
+  goalsFor: number | null;
+  goalsAgainst: number | null;
+  outcome: MatchOutcome;
+  performance: PerformanceDto | null;
+  rating: RatingBreakdownDto | null;
+}
+
+export interface SquadPlayerProfileDto {
+  squad: SquadSummaryDto;
+  player: SquadPlayerDto;
+  stats: IndividualStatsDto;
+  impact: TeamImpactDto;
+  profile: PlayerAxesDto;
+  squadAverage: PlayerAxesDto;
+  squadBest: PlayerAxesDto;
+  matches: PlayerMatchPointDto[];
+}
+
+export interface SquadTimelinePointDto {
+  match: MatchDto;
+  home: boolean;
+  opponentName: string;
+  opponentShortName: string;
+  goalsFor: number;
+  goalsAgainst: number;
+  outcome: MatchOutcome;
+  points: number;
+  cumulativePoints: number;
+  sheetRecorded: boolean;
+  playersUsed: number;
+  averageRating: number | null;
+  bestPlayerName: string | null;
+  bestRating: number | null;
+}
+
+export interface SquadTimelineDto {
+  squad: SquadSummaryDto;
+  matches: SquadTimelinePointDto[];
 }
 
 export interface SyncResultDto {

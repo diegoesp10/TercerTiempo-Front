@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { api } from '@/api';
+import { goalsDonutOption, minutesBarsOption, ratingRankingOption, teamRatingOption, teamResultsOption } from '@/charts/options';
+import AppChart from '@/components/charts/AppChart.vue';
+import ChartCard from '@/components/charts/ChartCard.vue';
 import Alert from '@/components/ui/Alert.vue';
+import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useSquad } from '@/composables/useSquad';
@@ -11,6 +15,18 @@ import { formatNumber, formatPct, positionShortLabels } from '@/utils/format';
 const { squadId } = useSquad();
 
 const { data, loading, error } = useAsync(() => api.squads.stats(squadId.value));
+const timeline = useAsync(() => api.squads.timeline(squadId.value));
+
+const donutMetric = ref<'goals' | 'goalContributions'>('goals');
+
+const hasRecords = computed(() => (data.value?.matchesRecorded ?? 0) > 0);
+const teamResults = computed(() => (timeline.data.value?.matches.length ? teamResultsOption(timeline.data.value.matches) : null));
+const teamRating = computed(() =>
+  timeline.data.value?.matches.some((m) => m.averageRating !== null) ? teamRatingOption(timeline.data.value.matches) : null,
+);
+const donut = computed(() => (data.value ? goalsDonutOption(data.value.players, donutMetric.value) : null));
+const minutes = computed(() => (data.value ? minutesBarsOption(data.value.players) : null));
+const ranking = computed(() => (data.value ? ratingRankingOption(data.value.players) : null));
 
 type SortKey = 'name' | 'matches' | 'starts' | 'minutes' | 'goals' | 'assists' | 'contributions' | 'rating' | 'goalsPer90' | 'participation' | 'pointsWith' | 'pointsWithout';
 
@@ -21,7 +37,7 @@ const columns: { key: SortKey; label: string; title: string }[] = [
   { key: 'goals', label: 'G', title: 'Goles' },
   { key: 'assists', label: 'A', title: 'Asistencias' },
   { key: 'contributions', label: 'G+A', title: 'Goles más asistencias' },
-  { key: 'rating', label: 'Nota', title: 'Valoración media del cuerpo técnico (1-10)' },
+  { key: 'rating', label: 'Nota', title: 'Nota media calculada con los datos de las actas' },
   { key: 'goalsPer90', label: "G/90'", title: 'Goles por 90 minutos' },
   { key: 'participation', label: 'Part.', title: 'Porcentaje de los minutos posibles del equipo' },
   { key: 'pointsWith', label: 'PPP con', title: 'Puntos por partido del equipo cuando juega' },
@@ -80,6 +96,43 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
       <span v-if="data.matchesRecorded < data.teamMatchesPlayed" class="text-slate-500">Las estadísticas solo cuentan los partidos con acta.</span>
     </p>
 
+    <!-- Gráficos del equipo -->
+    <div v-if="hasRecords || teamResults" class="mb-8 grid gap-6 lg:grid-cols-3">
+      <ChartCard v-if="teamResults" title="Resultados y puntos" subtitle="Goles a favor y en contra por partido; puntos acumulados en el eje derecho." class="lg:col-span-2">
+        <AppChart :option="teamResults" :height="300" label="Resultados del equipo y puntos acumulados" />
+      </ChartCard>
+
+      <ChartCard v-if="hasRecords" title="Reparto de goles" subtitle="Según las actas registradas.">
+        <template #actions>
+          <div class="inline-flex rounded-lg border border-slate-200 p-0.5 text-xs">
+            <button
+              v-for="option in ([['goals', 'Goles'], ['goalContributions', 'G + A']] as const)"
+              :key="option[0]"
+              type="button"
+              class="rounded-md px-2 py-0.5 font-medium"
+              :class="donutMetric === option[0] ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'"
+              @click="donutMetric = option[0]"
+            >
+              {{ option[1] }}
+            </button>
+          </div>
+        </template>
+        <AppChart v-if="donut" :option="donut" :height="300" label="Reparto de goles entre los jugadores" />
+      </ChartCard>
+
+      <ChartCard v-if="teamRating" title="Nota media del equipo" subtitle="Media de las notas del acta en cada partido y mejor nota (rombo)." class="lg:col-span-2">
+        <AppChart :option="teamRating" :height="280" label="Nota media del equipo por partido" />
+      </ChartCard>
+
+      <ChartCard v-if="hasRecords" title="Ranking de nota" subtitle="Nota media de los jugadores con 90' o más.">
+        <AppChart v-if="ranking" :option="ranking" :height="280" label="Ranking de nota media" />
+      </ChartCard>
+
+      <ChartCard v-if="hasRecords" title="Minutos jugados" subtitle="Con el porcentaje de los minutos posibles del equipo." class="lg:col-span-3">
+        <AppChart v-if="minutes" :option="minutes" :height="Math.max(220, data.players.filter((r) => r.stats.minutes > 0).slice(0, 16).length * 26)" label="Minutos jugados por jugador" />
+      </ChartCard>
+    </div>
+
     <p v-if="data.players.length === 0" class="text-sm text-slate-500">La plantilla no tiene jugadores todavía.</p>
 
     <div v-else class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -98,7 +151,11 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
           <tr v-for="row in sorted" :key="row.player.id" :class="row.stats.matchesLogged === 0 ? 'text-slate-400' : 'hover:bg-slate-50'">
             <td class="px-3 py-2 whitespace-nowrap">
               <span v-if="row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.player.shirtNumber }}</span>
-              <span class="font-medium" :class="row.stats.matchesLogged === 0 ? '' : 'text-slate-800'">{{ row.player.fullName }}</span>
+              <RouterLink
+                :to="{ name: 'squad-player', params: { squadId, squadPlayerId: row.player.id } }"
+                class="font-medium hover:text-emerald-700 hover:underline"
+                :class="row.stats.matchesLogged === 0 ? '' : 'text-slate-800'"
+              >{{ row.player.fullName }}</RouterLink>
               <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
             </td>
             <td class="px-2 py-2 text-center tabular-nums">{{ row.stats.matchesLogged }}</td>
@@ -107,7 +164,7 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
             <td class="px-2 py-2 text-center font-semibold tabular-nums">{{ row.stats.goals }}</td>
             <td class="px-2 py-2 text-center tabular-nums">{{ row.stats.assists }}</td>
             <td class="px-2 py-2 text-center tabular-nums">{{ row.stats.goalContributions }}</td>
-            <td class="px-2 py-2 text-center tabular-nums">{{ formatNumber(row.stats.averageRating, 1) }}</td>
+            <td class="px-2 py-2 text-center"><RatingBadge :rating="row.stats.averageRating" size="sm" /></td>
             <td class="px-2 py-2 text-center tabular-nums">{{ formatNumber(row.stats.goalsPer90) }}</td>
             <td class="px-2 py-2 text-center tabular-nums">{{ formatPct(row.impact.participationPct) }}</td>
             <td class="px-2 py-2 text-center tabular-nums">{{ formatNumber(row.impact.pointsPerMatchWithPlayer) }}</td>

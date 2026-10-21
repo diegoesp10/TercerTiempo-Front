@@ -2,6 +2,7 @@
 import { api } from '@/api';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
@@ -100,7 +101,7 @@ const { data, loading, error } = useAsync(() => api.matches.get(props.matchId));
               <td class="px-2 py-2 text-center tabular-nums">{{ p.interceptions }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ p.saves }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ p.yellowCards }}/{{ p.redCard ? 1 : 0 }}</td>
-              <td class="px-2 py-2 text-center font-semibold tabular-nums">{{ p.rating }}</td>
+              <td class="px-2 py-2 text-center"><RatingBadge :rating="p.rating" size="sm" /></td>
             </tr>
           </tbody>
         </table>

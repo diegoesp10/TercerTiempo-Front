@@ -14,6 +14,9 @@ La API vive en su propio repositorio: [TercerTiempo-Back](https://github.com/die
 - Vite 8
 - Tailwind CSS 4 (configuración CSS-first en `src/style.css`)
 - Pinia (sesión) y Vue Router (guardas `requiresAuth` / `guestOnly`, rutas anidadas para la plantilla)
+- [Apache ECharts 6](https://echarts.apache.org) con [vue-echarts 8](https://vue-echarts.dev) para los gráficos: solo
+  se registran los tipos que se usan (`src/charts/setup.ts`), con un tema propio alineado con Tailwind
+  (`src/charts/theme.ts`) y en un chunk aparte que solo se descarga en las páginas con gráficos
 
 ## Arranque rápido
 
@@ -33,7 +36,10 @@ La aplicación queda en `http://localhost:5173`. La URL de la API se configura e
 Flujo de prueba como **cuerpo técnico**: *Darme de alta* (Cuerpo técnico) → *Equipos* → elegir nivel
 (Nacional/Regional), liga y grupo → entrar en tu equipo → **«Crear plantilla»** (se importan las fichas publicadas por
 futbolasturiano.es y aparece el código de invitación) → *Partidos y actas* → abrir un partido disputado → marcar quién
-jugó, rellenar sus líneas y **«Guardar acta»** → *Estadísticas*. En *Plantilla* se añaden o editan fichas, se regenera
+jugó, rellenar sus líneas y **«Guardar acta»** (la nota de cada jugador se calcula sola con los datos) →
+*Estadísticas* (gráficos del equipo: resultados y puntos, nota media por partido, reparto de goles, minutos y ranking de
+nota; cada nombre abre la ficha del jugador con su nota partido a partido, el desglose de la nota y su radar por 90') →
+*Comparador* (hasta 4 jugadores: radar superpuesto, cara a cara, nota por partido y acciones por 90'). En *Plantilla* se añaden o editan fichas, se regenera
 el código y se cambia la visibilidad.
 
 Flujo de prueba como **jugador**: *Darme de alta* (Jugador, con el nombre con el que apareces en la plantilla) →
@@ -41,7 +47,8 @@ introducir el código de invitación → **«Soy yo»** sobre tu ficha → *Mi p
 la plantilla y las actas de tu equipo.
 
 Sin cuenta se pueden consultar los equipos de cada liga, sus calendarios, la clasificación y las actas de las
-plantillas públicas.
+plantillas públicas. En *Liga* aparece la **jornada en curso** (o la próxima) de la liga elegida, con sus partidos por
+hora y resultado, y se puede navegar al resto de jornadas; la ficha de cada equipo destaca su próximo partido.
 
 ## Scripts
 
@@ -62,15 +69,19 @@ src/
 ├── router/       rutas y guardas de autenticación
 ├── composables/  useAsync (estado de carga/error), useSquad (contexto de la plantilla para sus pestañas)
 ├── utils/        formato de fechas, etiquetas (posición, rol, visibilidad, estado), resultado por equipo
+├── charts/       ECharts: registro y tema, escala de color de las notas, perfil por 90' y constructores de opciones
+│                 (nota por partido, desglose de la nota, radar, comparador, resultados y nota del equipo, repartos)
 ├── components/   layout (AppShell, navegación según tipo de cuenta), ui (StatCard, Badge, Alert, Spinner,
-│                 PageHeader, PercentileBar), competitions (CompetitionPicker: nivel → liga/grupo), matches (MatchRow)
+│                 PageHeader, PercentileBar, RatingBadge), charts (AppChart, ChartCard), competitions (CompetitionPicker:
+│                 nivel → liga/grupo), matches (MatchRow, MatchdayFixtures: jornada con navegación)
 └── views/        Home (landing / panel del técnico / panel del jugador), Login, Registro, Invitación,
                   Equipos, Equipo, Partido, Liga, NotFound
     ├── coach/    CoachHomeView (mis plantillas)
     ├── player/   PlayerDashboardView (vínculo con la plantilla y estadísticas)
     └── squad/    SquadLayoutView (cabecera + pestañas) con SquadPlayersView (fichas, staff, código, visibilidad),
-                  SquadMatchesView (partidos con estado del acta), SquadStatsView (tabla ordenable) y
-                  MatchSheetView (editor del acta: una línea por jugador)
+                  SquadMatchesView (partidos con estado del acta), SquadStatsView (gráficos del equipo + tabla
+                  ordenable), SquadCompareView (comparador de hasta 4 jugadores), SquadPlayerProfileView (ficha y
+                  gráficos de un jugador) y MatchSheetView (editor del acta: una línea por jugador, nota calculada)
 ```
 
 Convenciones:
@@ -85,7 +96,6 @@ Convenciones:
 ## Siguientes pasos sugeridos
 
 - Precargar el acta con las estadísticas oficiales por jugador que publica futbolasturiano.es en cada partido.
-- Gráficas de evolución por jornada (p. ej. Chart.js o ECharts) en el panel del jugador y en la plantilla.
-- Comparativa por posición y vista de un jugador para el cuerpo técnico.
+- Comparativa por posición y entre jugadores de distintas plantillas públicas de la liga.
 - Refresco automático del token / manejo de expiración más fino.
 - PWA para rellenar el acta desde el móvil nada más terminar el partido.

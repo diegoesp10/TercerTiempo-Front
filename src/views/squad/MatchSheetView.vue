@@ -4,6 +4,7 @@ import { api } from '@/api';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import type { MatchSheetDto, MatchSheetEntryInput, SquadPlayerDto } from '@/types/api';
@@ -15,6 +16,8 @@ const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, 
 
 interface Row extends MatchSheetEntryInput {
   player: SquadPlayerDto;
+  /** Nota calculada por la API al guardar (solo lectura). */
+  rating: number | null;
 }
 
 const blank = (player: SquadPlayerDto): Row => ({
@@ -33,7 +36,7 @@ const blank = (player: SquadPlayerDto): Row => ({
   saves: 0,
   yellowCards: 0,
   redCard: false,
-  rating: 6,
+  rating: null,
   notes: null,
 });
 
@@ -76,7 +79,6 @@ const toEntry = (row: Row): MatchSheetEntryInput => ({
   saves: row.saves,
   yellowCards: row.yellowCards,
   redCard: row.redCard,
-  rating: row.rating,
   notes: row.notes?.trim() ? row.notes.trim() : null,
 });
 
@@ -217,7 +219,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
               <th v-for="column in numericColumns" :key="column.key" class="px-2 py-2 text-center" :title="column.title">{{ column.label }}</th>
               <th class="px-2 py-2 text-center" title="Tarjetas amarillas">TA</th>
               <th class="px-2 py-2 text-center" title="Tarjeta roja">TR</th>
-              <th class="px-2 py-2 text-center" title="Valoración 1-10">Nota</th>
+              <th class="px-2 py-2 text-center" title="Nota calculada con los datos al guardar">Nota</th>
               <th class="px-3 py-2 text-left">Notas</th>
             </tr>
           </thead>
@@ -248,7 +250,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
                 <input v-model="row.redCard" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600" :disabled="!row.played" aria-label="Roja" />
               </td>
               <td class="px-2 py-1 text-center">
-                <input v-model.number="row.rating" type="number" min="1" max="10" class="input w-14 px-1 py-1 text-center font-semibold" :disabled="!row.played" aria-label="Valoración" />
+                <RatingBadge v-if="row.played" :rating="row.rating" size="sm" />
               </td>
               <td class="px-3 py-1">
                 <input v-model="row.notes" type="text" maxlength="1000" class="input min-w-40 px-2 py-1" :disabled="!row.played" placeholder="Opcional" aria-label="Notas" />
@@ -268,7 +270,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
               <td v-for="column in numericColumns" :key="column.key" class="px-2 py-2 text-center tabular-nums">{{ row[column.key] }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ row.yellowCards }}</td>
               <td class="px-2 py-2 text-center">{{ row.redCard ? '🟥' : '' }}</td>
-              <td class="px-2 py-2 text-center font-semibold tabular-nums">{{ row.rating }}</td>
+              <td class="px-2 py-2 text-center"><RatingBadge :rating="row.rating" size="sm" /></td>
               <td class="px-3 py-2 text-slate-600">{{ row.notes ?? '' }}</td>
             </tr>
           </tbody>
@@ -277,8 +279,13 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
 
       <p class="mt-3 text-xs text-slate-500">
         Tit = titular · Min = minutos (0-120) · G goles · A asistencias · T tiros · TP tiros a puerta · PC pases clave · Ent entradas ·
-        Int intercepciones · Par paradas · TA amarillas (dos implican roja) · Nota = valoración del cuerpo técnico de 1 a 10.
-        Con «jugó» desmarcado la línea se elimina del acta al guardar.
+        Int intercepciones · Par paradas · TA amarillas (dos implican roja). Con «jugó» desmarcado la línea se elimina del acta al guardar.
+      </p>
+      <p class="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+        <strong>La nota no se pone a mano:</strong> se calcula al guardar con los datos de cada línea, la posición del jugador y el
+        resultado. Parte de 6,0 y suma o resta por ataque (goles, tiros a puerta), creación (asistencias, pases clave), defensa
+        (entradas, intercepciones, portería a cero y goles encajados para defensas), portería (paradas), disciplina (tarjetas) y
+        resultado (según los minutos jugados). Escala de 3,0 a 10,0.
       </p>
     </section>
   </template>

@@ -10,7 +10,7 @@ import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
-import { levelLabels, positionLabels, visibilityLabels } from '@/utils/format';
+import { formatKickoff, levelLabels, positionLabels, visibilityLabels } from '@/utils/format';
 
 const props = defineProps<{ teamId: string }>();
 
@@ -22,6 +22,22 @@ const matches = useAsync(() => api.teams.matches(props.teamId));
 
 const played = computed(() => (matches.data.value ?? []).filter((m) => m.status === 'Played').reverse());
 const upcoming = computed(() => (matches.data.value ?? []).filter((m) => m.status !== 'Played'));
+
+/** Próximo partido por fecha (no por jornada: un aplazado de una jornada anterior puede jugarse más tarde). */
+const nextMatch = computed(() => {
+  const now = Date.now() - 2 * 60 * 60 * 1000;
+  return (
+    upcoming.value
+      .filter((m) => m.status === 'Scheduled' || m.status === 'InProgress')
+      .filter((m) => new Date(m.kickoffAt).getTime() >= now)
+      .sort((a, b) => new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime())[0] ?? null
+  );
+});
+const nextOpponent = computed(() => {
+  const m = nextMatch.value;
+  if (!m) return null;
+  return m.homeTeam.id === props.teamId ? { prefix: 'vs', team: m.awayTeam } : { prefix: '@', team: m.homeTeam };
+});
 
 const claiming = ref(false);
 const claimError = ref<string | null>(null);
@@ -118,6 +134,24 @@ async function claim() {
 
         <template v-else>Las actas de sus partidos y las estadísticas de sus jugadores están disponibles en la plantilla.</template>
       </div>
+    </section>
+
+    <!-- Próximo partido -->
+    <section v-if="nextMatch && nextOpponent" class="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+      <div class="w-16 shrink-0 text-center">
+        <p class="text-xs uppercase text-emerald-700">Jornada</p>
+        <p class="text-2xl font-semibold text-emerald-900">{{ nextMatch.matchday }}</p>
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Próximo partido</p>
+        <RouterLink :to="{ name: 'match', params: { matchId: nextMatch.id } }" class="block truncate text-lg font-semibold text-slate-900 hover:text-emerald-700">
+          <span class="text-slate-400">{{ nextOpponent.prefix }}</span> {{ nextOpponent.team.name }}
+        </RouterLink>
+        <p class="text-sm text-slate-600">{{ formatKickoff(nextMatch.kickoffAt) }}<span v-if="nextMatch.venue"> · {{ nextMatch.venue }}</span></p>
+      </div>
+      <RouterLink :to="{ name: 'league', query: { competition: data.season.competitionId } }" class="btn-secondary">
+        Ver la jornada completa
+      </RouterLink>
     </section>
 
     <div class="grid gap-6 lg:grid-cols-5">

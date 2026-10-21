@@ -8,6 +8,10 @@ import PageHeader from '@/components/ui/PageHeader.vue';
 import PercentileBar from '@/components/ui/PercentileBar.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
+import RatingBadge from '@/components/ui/RatingBadge.vue';
+import AppChart from '@/components/charts/AppChart.vue';
+import ChartCard from '@/components/charts/ChartCard.vue';
+import { profileRadarOption, ratingBreakdownOption, ratingTrendOption } from '@/charts/options';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import {
@@ -31,6 +35,28 @@ const { data, loading, error, run } = useAsync(async () => {
   auth.setPlayer(dashboard.player);
   return dashboard;
 });
+
+// Gráficos: la ficha del jugador en su plantilla (serie partido a partido, perfil por 90' y referencias).
+const profile = useAsync(() =>
+  auth.playerSquad ? api.squads.playerProfile(auth.playerSquad.squadId, auth.playerSquad.squadPlayerId) : Promise.resolve(null),
+);
+const trendChart = computed(() =>
+  profile.data.value ? ratingTrendOption(profile.data.value.matches, profile.data.value.squadAverage.averageRating) : null,
+);
+const radarChart = computed(() =>
+  profile.data.value
+    ? profileRadarOption(
+        [
+          { name: 'Tú', axes: profile.data.value.profile },
+          { name: 'Media de la plantilla', axes: profile.data.value.squadAverage, reference: true },
+        ],
+        profile.data.value.squadBest,
+        profile.data.value.player.position === 'Goalkeeper',
+      )
+    : null,
+);
+const breakdownChart = computed(() => (profile.data.value ? ratingBreakdownOption(profile.data.value.matches) : null));
+const hasCharts = computed(() => profile.data.value?.matches.some((m) => m.performance) ?? false);
 
 const impact = computed(() => data.value?.teamImpact ?? null);
 const league = computed(() => data.value?.league ?? null);
@@ -94,7 +120,7 @@ async function leave() {
         <StatCard label="Minutos" :value="data.individual.minutes" />
         <StatCard label="Goles" :value="data.individual.goals" :hint="`${formatNumber(data.individual.goalsPer90)} por 90'`" accent />
         <StatCard label="Asistencias" :value="data.individual.assists" :hint="`${formatNumber(data.individual.assistsPer90)} por 90'`" />
-        <StatCard label="Nota media" :value="formatNumber(data.individual.averageRating, 1)" hint="valoración del cuerpo técnico" />
+        <StatCard label="Nota media" :value="formatNumber(data.individual.averageRating, 1)" hint="calculada con los datos del acta" />
         <StatCard label="Precisión tiro" :value="formatPct(data.individual.shotAccuracyPct)" :hint="`${data.individual.shotsOnTarget}/${data.individual.shots} a puerta`" />
       </div>
     </section>
@@ -163,6 +189,30 @@ async function leave() {
       </section>
     </div>
 
+    <!-- Gráficos -->
+    <section v-if="hasCharts" class="mt-8">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Tus gráficos</h2>
+        <RouterLink
+          :to="{ name: 'squad-player', params: { squadId: squad.squadId, squadPlayerId: squad.squadPlayerId } }"
+          class="text-sm text-emerald-700 hover:underline"
+        >
+          Ver ficha completa
+        </RouterLink>
+      </div>
+      <div class="grid gap-6 lg:grid-cols-2">
+        <ChartCard title="Tu nota partido a partido" subtitle="Calculada con los datos del acta, frente a tu media y la de la plantilla." class="lg:col-span-2">
+          <AppChart v-if="trendChart" :option="trendChart" :height="280" label="Evolución de tu nota" />
+        </ChartCard>
+        <ChartCard title="Tu perfil por 90 minutos" subtitle="Frente a la media de tu plantilla.">
+          <AppChart v-if="radarChart" :option="radarChart" :height="320" label="Radar de tu perfil" />
+        </ChartCard>
+        <ChartCard title="Cómo se forma tu nota" subtitle="Lo que suma o resta cada bloque sobre 6,0.">
+          <AppChart v-if="breakdownChart" :option="breakdownChart" :height="320" label="Desglose de tu nota" />
+        </ChartCard>
+      </div>
+    </section>
+
     <!-- Últimos partidos -->
     <section v-if="data.recentPerformances.length > 0" class="mt-8">
       <div class="mb-3 flex items-center justify-between">
@@ -198,7 +248,7 @@ async function leave() {
               <td class="px-3 py-2 text-center tabular-nums">{{ item.performance.minutesPlayed }}</td>
               <td class="px-3 py-2 text-center tabular-nums">{{ item.performance.goals }}</td>
               <td class="px-3 py-2 text-center tabular-nums">{{ item.performance.assists }}</td>
-              <td class="px-3 py-2 text-center font-semibold tabular-nums">{{ item.performance.rating }}</td>
+              <td class="px-3 py-2 text-center"><RatingBadge :rating="item.performance.rating" size="sm" /></td>
             </tr>
           </tbody>
         </table>

@@ -232,7 +232,10 @@ function remove(player: SquadPlayerDto) {
                 <template v-else>
                   <td class="py-2 pr-3 tabular-nums text-slate-500">{{ player.shirtNumber ?? '—' }}</td>
                   <td class="py-2 pr-3">
-                    <p class="font-medium text-slate-800">{{ player.fullName }}</p>
+                    <RouterLink
+                      :to="{ name: 'squad-player', params: { squadId, squadPlayerId: player.id } }"
+                      class="font-medium text-slate-800 hover:text-emerald-700 hover:underline"
+                    >{{ player.fullName }}</RouterLink>
                     <p class="text-xs text-slate-400">{{ player.fromRoster ? 'futbolasturiano.es' : 'añadido a mano' }}</p>
                   </td>
                   <td class="py-2 pr-3 text-slate-600">{{ player.position ? positionLabels[player.position] : '—' }}</td>
