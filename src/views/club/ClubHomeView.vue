@@ -13,6 +13,7 @@ import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import type { AppointmentDto, ClubDto, StaffRole, TeamSummaryDto } from '@/types/api';
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, formatKickoff, staffRoleLabels, staffRoleOptions } from '@/utils/format';
+import { confirmDialog } from '@/composables/useConfirm';
 
 const auth = useAuthStore();
 
@@ -66,8 +67,8 @@ function addTeam() {
   });
 }
 
-function removeTeam(teamId: string, teamName: string) {
-  if (!confirm(`¿Desvincular ${teamName} del club? Los nombramientos ya emitidos no cambian.`)) return;
+async function removeTeam(teamId: string, teamName: string) {
+  if (!(await confirmDialog({ title: `Desvincular ${teamName}`, message: 'El equipo dejará de ser del club. Los nombramientos ya emitidos no cambian.', confirmLabel: 'Desvincular', danger: true }))) return;
   void act(async () => {
     data.value = await api.clubs.removeTeam(teamId);
     await auth.refreshAccount();
@@ -119,8 +120,8 @@ function saveValidity(appointment: AppointmentDto) {
   });
 }
 
-function revoke(appointment: AppointmentDto) {
-  if (!confirm(`¿Revocar el nombramiento de ${appointment.coachName}? Si ya lo canjeó, saldrá del cuerpo técnico de la plantilla.`)) return;
+async function revoke(appointment: AppointmentDto) {
+  if (!(await confirmDialog({ title: `Revocar el nombramiento de ${appointment.coachName}`, message: 'Si ya lo canjeó, saldrá del cuerpo técnico de la plantilla.', confirmLabel: 'Revocar', danger: true }))) return;
   void act(async () => {
     await api.clubs.revokeAppointment(appointment.id);
     if (lastCreated.value?.id === appointment.id) lastCreated.value = null;

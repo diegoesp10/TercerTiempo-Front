@@ -10,6 +10,7 @@ import { useSquad } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
 import type { Position, SquadPlayerDto, SquadPlayerRequest, SquadVisibility } from '@/types/api';
 import { formatDate, positionLabels, positionOptions, staffRoleLabels, visibilityLabels } from '@/utils/format';
+import { confirmDialog } from '@/composables/useConfirm';
 
 const { squadId, detail, reload } = useSquad();
 const auth = useAuthStore();
@@ -53,8 +54,8 @@ async function copyCode() {
   }
 }
 
-function rotateCode() {
-  if (!confirm('El código actual dejará de valer para quien aún no lo haya usado. ¿Generar uno nuevo?')) return;
+async function rotateCode() {
+  if (!(await confirmDialog({ title: 'Generar un código nuevo', message: 'El código actual dejará de valer para quien aún no lo haya usado.', confirmLabel: 'Generar' }))) return;
   void act(async () => {
     detail.value = await api.squads.rotateInviteCode(squadId.value);
     return 'Código nuevo generado.';
@@ -129,8 +130,8 @@ function saveEdit() {
   });
 }
 
-function remove(player: SquadPlayerDto) {
-  if (!confirm(`¿Dar de baja a ${player.fullName}? Sus actas se conservan.`)) return;
+async function remove(player: SquadPlayerDto) {
+  if (!(await confirmDialog({ title: `Dar de baja a ${player.fullName}`, message: 'Sus actas se conservan.', confirmLabel: 'Dar de baja', danger: true }))) return;
   void act(async () => {
     await api.squads.removePlayer(squadId.value, player.id);
     await reload();

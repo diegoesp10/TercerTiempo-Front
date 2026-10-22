@@ -8,6 +8,7 @@ import Modal from '@/components/ui/Modal.vue';
 import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vue';
 import type { InjuryDto, InjuryRequest, InjuryType, InjuryTypeDto, SquadPlayerDto } from '@/types/api';
 import { formatDate } from '@/utils/format';
+import { confirmDialog } from '@/composables/useConfirm';
 
 // Control de lesionados de la plantilla: lesiones abiertas con motivo, fechas y días de baja, alta e historial.
 // Opcional para el cuerpo técnico; los jugadores vinculados lo ven sin poder tocarlo.
@@ -140,8 +141,8 @@ function reopen(injury: InjuryDto) {
   void act(() => api.squads.reopenInjury(props.squadId, injury.id));
 }
 
-function remove(injury: InjuryDto) {
-  if (!confirm(`¿Borrar la lesión de ${injury.playerName}? Se registró por error y no quedará en el historial.`)) return;
+async function remove(injury: InjuryDto) {
+  if (!(await confirmDialog({ title: `Borrar la lesión de ${injury.playerName}`, message: 'Se registró por error y no quedará en el historial.', confirmLabel: 'Borrar', danger: true }))) return;
   void act(() => api.squads.deleteInjury(props.squadId, injury.id));
 }
 

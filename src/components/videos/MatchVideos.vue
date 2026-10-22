@@ -8,6 +8,7 @@ import Spinner from '@/components/ui/Spinner.vue';
 import { useAuthStore } from '@/stores/auth';
 import type { MatchVideoDto } from '@/types/api';
 import { formatBytes, formatKickoff, formatMoney, videoAccessLabels } from '@/utils/format';
+import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps<{
   matchId: string;
@@ -87,7 +88,7 @@ async function play(video: MatchVideoDto) {
 }
 
 async function purchase(video: MatchVideoDto) {
-  if (!confirm(`¿Comprar el acceso a «${video.title}» por ${formatMoney(video.priceCents, video.currency)}?`)) return;
+  if (!(await confirmDialog({ title: `Comprar «${video.title}»`, message: `El acceso al vídeo cuesta ${formatMoney(video.priceCents, video.currency)}.`, confirmLabel: 'Comprar' }))) return;
   busy.value = video.id;
   actionError.value = null;
   try {
@@ -101,7 +102,7 @@ async function purchase(video: MatchVideoDto) {
 }
 
 async function remove(video: MatchVideoDto) {
-  if (!confirm(`¿Eliminar «${video.title}»? Quien lo haya comprado dejará de poder verlo.`)) return;
+  if (!(await confirmDialog({ title: `Eliminar «${video.title}»`, message: 'Quien lo haya comprado dejará de poder verlo.', confirmLabel: 'Eliminar', danger: true }))) return;
   busy.value = video.id;
   actionError.value = null;
   try {

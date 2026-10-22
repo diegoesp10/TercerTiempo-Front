@@ -10,6 +10,7 @@ import Badge from '@/components/ui/Badge.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import type { Position, RosterEntryDto, RosterEntryRequest } from '@/types/api';
 import { positionLabels, positionOptions } from '@/utils/format';
+import { confirmDialog } from '@/composables/useConfirm';
 
 // La cuenta de club corrige la plantilla publicada de uno de sus equipos: añadir y retirar fichas en la tabla, y
 // editar cada jugador (datos, foto y sus actas) en un modal.
@@ -39,8 +40,8 @@ async function act(fn: () => Promise<RosterEntryDto[]>) {
 const openId = ref<string | null>(null);
 const openEntry = computed(() => props.roster.find((e) => e.id === openId.value) ?? null);
 
-function remove(entry: RosterEntryDto) {
-  if (!confirm(`¿Retirar a ${entry.fullName} de la plantilla publicada?`)) return;
+async function remove(entry: RosterEntryDto) {
+  if (!(await confirmDialog({ title: `Retirar a ${entry.fullName}`, message: 'Dejará de aparecer en la plantilla publicada del equipo.', confirmLabel: 'Retirar', danger: true }))) return;
   void act(() => api.clubs.removeRosterEntry(props.teamId, entry.id));
 }
 

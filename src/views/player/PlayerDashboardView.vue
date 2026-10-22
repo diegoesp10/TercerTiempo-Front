@@ -14,6 +14,7 @@ import ChartCard from '@/components/charts/ChartCard.vue';
 import { profileRadarOption, ratingBreakdownOption, ratingTrendOption } from '@/charts/options';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
+import { confirmDialog } from '@/composables/useConfirm';
 import {
   formatDate,
   formatNumber,
@@ -65,7 +66,7 @@ const hasPercentiles = computed(() => league.value !== null && league.value.play
 const leaveError = ref<string | null>(null);
 
 async function leave() {
-  if (!confirm('¿Seguro que quieres desvincularte de la plantilla? Tus actas siguen en la plantilla; solo se rompe el vínculo con tu cuenta.')) return;
+  if (!(await confirmDialog({ title: 'Desvincularte de la plantilla', message: 'Tus actas siguen en la plantilla; solo se rompe el vínculo con tu cuenta.', confirmLabel: 'Desvincularme', danger: true }))) return;
   leaveError.value = null;
   try {
     auth.setPlayer(await api.players.leaveSquad());
