@@ -52,7 +52,7 @@ async function submit() {
         <p v-if="fieldErrors.password" class="field-error">{{ fieldErrors.password[0] }}</p>
       </div>
 
-      <button type="submit" class="btn-primary w-full py-2.5" :disabled="loading">{{ loading ? 'Entrando…' : 'Entrar' }}</button>
+      <button type="submit" class="btn-primary w-full py-2.5" v-busy="loading" :disabled="loading">{{ loading ? 'Entrando…' : 'Entrar' }}</button>
     </form>
 
     <p class="mt-6 text-center text-sm text-slate-500">

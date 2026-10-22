@@ -46,6 +46,12 @@ import type {
   TeamDetailDto,
   TeamSummaryDto,
   VideoTicketDto,
+  VideoPart,
+  VideoVisibility,
+  VideoShareLinkDto,
+  SharedVideoDto,
+  VideoUploadDto,
+  BeginVideoUploadRequest,
 } from '@/types/api';
 
 export const api = {
@@ -109,7 +115,8 @@ export const api = {
     importRoster: (squadId: string) => http<SquadDetailDto>(`/api/squads/${squadId}/players/import`, { method: 'POST' }),
     setVisibility: (squadId: string, visibility: SquadVisibility) =>
       http<SquadDetailDto>(`/api/squads/${squadId}/visibility`, { method: 'PUT', body: { visibility } }),
-    rotateInviteCode: (squadId: string) => http<SquadDetailDto>(`/api/squads/${squadId}/invite-code`, { method: 'POST' }),
+    generatePlayerInviteCode: (squadId: string, squadPlayerId: string) =>
+      http<SquadDetailDto>(`/api/squads/${squadId}/players/${squadPlayerId}/invite-code`, { method: 'POST' }),
     matches: (squadId: string) => http<SquadMatchDto[]>(`/api/squads/${squadId}/matches`),
     sheet: (squadId: string, matchId: string) => http<MatchSheetDto>(`/api/squads/${squadId}/matches/${matchId}/sheet`),
     recordSheet: (squadId: string, matchId: string, entries: MatchSheetEntryInput[]) =>
@@ -117,12 +124,19 @@ export const api = {
     /** Acta interna frente al acta oficial; con refresh se vuelve a pedir a la federación. */
     compareSheet: (squadId: string, matchId: string, refresh = false) =>
       http<SheetComparisonDto>(`/api/squads/${squadId}/matches/${matchId}/sheet/comparison${refresh ? '?refresh=true' : ''}`),
-    uploadVideo: (squadId: string, matchId: string, file: File, title: string | null) => {
+    uploadVideo: (squadId: string, matchId: string, file: File, title: string | null, part: VideoPart = 'Full') => {
       const body = new FormData();
       body.append('file', file, file.name);
+      body.append('part', part);
       if (title) body.append('title', title);
       return http<MatchVideoDto>(`/api/squads/${squadId}/matches/${matchId}/video`, { method: 'POST', body });
     },
+    /** Subida por trozos: begin → uploadVideoChunk (api/videoUpload.ts) en orden → complete. */
+    beginVideoUpload: (squadId: string, matchId: string, body: BeginVideoUploadRequest) =>
+      http<VideoUploadDto>(`/api/squads/${squadId}/matches/${matchId}/video/uploads`, { method: 'POST', body }),
+    videoUpload: (squadId: string, uploadId: string) => http<VideoUploadDto>(`/api/squads/${squadId}/video-uploads/${uploadId}`),
+    completeVideoUpload: (squadId: string, uploadId: string) => http<MatchVideoDto>(`/api/squads/${squadId}/video-uploads/${uploadId}/complete`, { method: 'POST' }),
+    cancelVideoUpload: (squadId: string, uploadId: string) => http<boolean>(`/api/squads/${squadId}/video-uploads/${uploadId}`, { method: 'DELETE' }),
     stats: (squadId: string) => http<SquadStatsDto>(`/api/squads/${squadId}/stats`),
     playerProfile: (squadId: string, squadPlayerId: string) =>
       http<SquadPlayerProfileDto>(`/api/squads/${squadId}/players/${squadPlayerId}/profile`),
@@ -163,6 +177,13 @@ export const api = {
     remove: (videoId: string) => http<boolean>(`/api/videos/${videoId}`, { method: 'DELETE' }),
     /** URL que se pasa al reproductor (el ticket sustituye al JWT). */
     streamUrl: (ticket: VideoTicketDto) => `${apiBaseUrl}/api/videos/${ticket.videoId}/stream?ticket=${encodeURIComponent(ticket.ticket)}`,
+    setVisibility: (videoId: string, visibility: VideoVisibility) => http<MatchVideoDto>(`/api/videos/${videoId}/visibility`, { method: 'PUT', body: { visibility } }),
+    createShare: (videoId: string, expiresInHours: number | null) => http<VideoShareLinkDto>(`/api/videos/${videoId}/shares`, { method: 'POST', body: { expiresInHours } }),
+    shares: (videoId: string) => http<VideoShareLinkDto[]>(`/api/videos/${videoId}/shares`),
+    revokeShare: (videoId: string, linkId: string) => http<VideoShareLinkDto[]>(`/api/videos/${videoId}/shares/${linkId}`, { method: 'DELETE' }),
+    /** Visor público por enlace compartido (sin sesión). */
+    shared: (token: string) => http<SharedVideoDto>(`/api/videos/shared/${encodeURIComponent(token)}`),
+    sharedStreamUrl: (token: string) => `${apiBaseUrl}/api/videos/shared/${encodeURIComponent(token)}/stream`,
   },
   stats: {
     leagueTable: (competitionId?: string | null) =>

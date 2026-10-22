@@ -59,7 +59,7 @@ async function upload(event: Event) {
           <p class="font-medium text-slate-900">{{ team.teamName }}</p>
           <p class="text-xs text-slate-500">{{ team.teamCrestUrl ? 'Escudo guardado en Tercer Tiempo' : 'Sin escudo: se muestran las iniciales' }}</p>
         </div>
-        <button type="button" class="btn-secondary px-3 py-1.5 text-sm" :disabled="busy" @click="pick(team.teamId)">
+        <button type="button" class="btn-secondary px-3 py-1.5 text-sm" v-busy="busy" :disabled="busy" @click="pick(team.teamId)">
           <Icon icon="arrow-up-from-bracket" class="mr-1.5 h-3.5 w-3.5" />{{ team.teamCrestUrl ? 'Cambiar escudo' : 'Subir escudo' }}
         </button>
       </li>

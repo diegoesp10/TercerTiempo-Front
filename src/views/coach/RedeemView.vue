@@ -56,7 +56,7 @@ async function redeem() {
             @input="code = code.toUpperCase()"
           />
         </div>
-        <button type="submit" class="btn-primary" :disabled="loading || code.trim().length < 6">{{ loading ? 'Canjeando…' : 'Canjear' }}</button>
+        <button type="submit" class="btn-primary" v-busy="loading" :disabled="loading || code.trim().length < 6">{{ loading ? 'Canjeando…' : 'Canjear' }}</button>
       </form>
 
       <p class="mt-4 text-xs text-slate-500">

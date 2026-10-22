@@ -154,7 +154,7 @@ const sortedAppointments = computed(() => {
       <RouterLink to="/ajustes" title="Cambiar el escudo en Ajustes" class="rounded-full ring-offset-2 ring-offset-surface hover:ring-2 hover:ring-brand-400">
         <TeamCrest :src="auth.clubCrestUrl" :name="club?.name ?? auth.displayName" size="lg" />
       </RouterLink>
-      <button type="button" class="btn-primary" :disabled="busy" @click="addingTeam = !addingTeam">
+      <button type="button" class="btn-primary" v-busy="busy" :disabled="busy" @click="addingTeam = !addingTeam">
         {{ addingTeam ? 'Cerrar' : 'Vincular otro equipo' }}
       </button>
     </template>
@@ -189,7 +189,7 @@ const sortedAppointments = computed(() => {
             @update:model-value="teamToAdd = String($event ?? '')"
           />
         </div>
-        <button type="button" class="btn-primary" :disabled="busy || !teamToAdd" @click="addTeam">Vincular</button>
+        <button type="button" class="btn-primary" v-busy="busy" :disabled="busy || !teamToAdd" @click="addTeam">Vincular</button>
       </div>
     </section>
 
@@ -213,7 +213,7 @@ const sortedAppointments = computed(() => {
             <Badge :tone="team.activeAppointments > 0 ? 'green' : 'amber'">{{ team.activeAppointments }} {{ team.activeAppointments === 1 ? 'técnico vigente' : 'técnicos vigentes' }}</Badge>
             <RouterLink v-if="team.squadId" :to="{ name: 'squad', params: { squadId: team.squadId } }" class="text-accent-400 hover:underline">Plantilla</RouterLink>
             <span v-else>Sin plantilla todavía</span>
-            <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy" @click="removeTeam(team.teamId, team.teamName)">Desvincular</button>
+            <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" @click="removeTeam(team.teamId, team.teamName)">Desvincular</button>
           </div>
         </li>
       </ul>
@@ -265,7 +265,7 @@ const sortedAppointments = computed(() => {
               <p class="mt-1 text-xs text-slate-400">Vacío = fin de temporada<template v-if="selectedTeam?.seasonEndsOn"> ({{ formatDate(selectedTeam.seasonEndsOn) }})</template>.</p>
             </div>
           </div>
-          <button type="submit" class="btn-primary w-full" :disabled="busy || !appointmentForm.teamId || !appointmentForm.coachName.trim()">
+          <button type="submit" class="btn-primary w-full" v-busy="busy" :disabled="busy || !appointmentForm.teamId || !appointmentForm.coachName.trim()">
             {{ busy ? 'Creando…' : 'Crear nombramiento y código' }}
           </button>
         </form>
@@ -326,12 +326,12 @@ const sortedAppointments = computed(() => {
                 <td class="py-2 text-right whitespace-nowrap">
                   <template v-if="appointment.status === 'Revoked'"></template>
                   <template v-else-if="editingId === appointment.id">
-                    <button type="button" class="btn-primary px-3 py-1 text-xs" :disabled="busy" @click="saveValidity(appointment)">Guardar</button>
+                    <button type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="saveValidity(appointment)">Guardar</button>
                     <button type="button" class="btn-ghost ml-1 px-3 py-1 text-xs" @click="editingId = null">Cancelar</button>
                   </template>
                   <template v-else>
-                    <button type="button" class="btn-ghost px-3 py-1 text-xs" :disabled="busy" @click="startEdit(appointment)">Validez</button>
-                    <button type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy" @click="revoke(appointment)">Revocar</button>
+                    <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="startEdit(appointment)">Validez</button>
+                    <button type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" @click="revoke(appointment)">Revocar</button>
                   </template>
                 </td>
               </tr>

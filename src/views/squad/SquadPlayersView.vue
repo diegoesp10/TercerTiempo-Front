@@ -16,6 +16,7 @@ const { squadId, detail, reload } = useSquad();
 const auth = useAuthStore();
 
 const canManage = computed(() => detail.value?.canManage ?? false);
+const canInvitePlayers = computed(() => detail.value?.canInvitePlayers ?? false);
 const active = computed(() => (detail.value?.players ?? []).filter((p) => p.status === 'Active'));
 // Las lesiones solo llegan al cuerpo técnico y a los jugadores vinculados: si la API las manda, se muestra el panel.
 const seesInjuries = computed(() => canManage.value || myEntryId.value !== null);
@@ -39,26 +40,26 @@ async function act(fn: () => Promise<string | void>) {
   }
 }
 
-// --- Código de invitación ---
-const copied = ref(false);
+// --- Invitaciones personales ---
+const copied = ref<string | null>(null);
 
-async function copyCode() {
-  const code = detail.value?.inviteCode;
+async function copyCode(player: SquadPlayerDto) {
+  const code = player.inviteCode;
   if (!code) return;
   try {
     await navigator.clipboard.writeText(code);
-    copied.value = true;
-    setTimeout(() => (copied.value = false), 2000);
+    copied.value = player.id;
+    setTimeout(() => { if (copied.value === player.id) copied.value = null; }, 2000);
   } catch {
     /* portapapeles no disponible: el código queda visible para copiarlo a mano */
   }
 }
 
-async function rotateCode() {
-  if (!(await confirmDialog({ title: 'Generar un código nuevo', message: 'El código actual dejará de valer para quien aún no lo haya usado.', confirmLabel: 'Generar' }))) return;
+async function generateCode(player: SquadPlayerDto) {
+  if (player.inviteCode && !(await confirmDialog({ title: `Nuevo código para ${player.fullName}`, message: 'El código anterior de este jugador dejará de ser válido.', confirmLabel: 'Generar' }))) return;
   void act(async () => {
-    detail.value = await api.squads.rotateInviteCode(squadId.value);
-    return 'Código nuevo generado.';
+    detail.value = await api.squads.generatePlayerInviteCode(squadId.value, player.id);
+    return `Código personal generado para ${player.fullName}. Entrégaselo solo a este jugador.`;
   });
 }
 
@@ -148,17 +149,7 @@ async function remove(player: SquadPlayerDto) {
     <!-- Gestión (solo cuerpo técnico) -->
     <section v-if="canManage" class="card mb-6">
       <h2 class="font-semibold text-slate-900">Gestión de la plantilla</h2>
-      <div class="mt-4 grid gap-6 md:grid-cols-3">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Código de invitación</p>
-          <p class="mt-2 font-mono text-2xl font-semibold tracking-[0.3em] text-slate-900">{{ detail.inviteCode }}</p>
-          <p class="mt-1 text-xs text-slate-500">Compártelo con los jugadores para que se vinculen a su ficha. El cuerpo técnico entra con el código de acceso de su club.</p>
-          <div class="mt-3 flex flex-wrap gap-2">
-            <button type="button" class="btn-secondary px-3 py-1 text-xs" @click="copyCode">{{ copied ? 'Copiado ✓' : 'Copiar' }}</button>
-            <button type="button" class="btn-ghost px-3 py-1 text-xs" :disabled="busy" @click="rotateCode">Generar otro</button>
-          </div>
-        </div>
-
+      <div class="mt-4 grid gap-6 md:grid-cols-2">
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Visibilidad</p>
           <div class="mt-2 inline-flex rounded-lg border border-slate-200 p-0.5" role="radiogroup" aria-label="Visibilidad">
@@ -170,7 +161,7 @@ async function remove(player: SquadPlayerDto) {
               :aria-checked="detail.summary.visibility === option"
               class="rounded-md px-3 py-1 text-sm font-medium transition"
               :class="detail.summary.visibility === option ? 'bg-brand-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
-              :disabled="busy"
+              v-busy="busy" :disabled="busy"
               @click="setVisibility(option)"
             >
               {{ visibilityLabels[option] }}
@@ -185,10 +176,15 @@ async function remove(player: SquadPlayerDto) {
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Proveedor de datos</p>
           <p class="mt-2 text-xs text-slate-500">Añade las fichas publicadas por futbolasturiano.es que aún no estén en la plantilla.</p>
-          <button type="button" class="btn-secondary mt-3 px-3 py-1 text-xs" :disabled="busy" @click="importRoster">Importar plantilla publicada</button>
+          <button type="button" class="btn-secondary mt-3 px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="importRoster">Importar plantilla publicada</button>
         </div>
       </div>
     </section>
+
+    <Alert v-if="canInvitePlayers" kind="info" class="mb-6">
+      Genera el código personal junto al nombre de cada jugador y entrégaselo solo a él. Cada código vincula únicamente su ficha,
+      exige el mismo nombre y apellidos y queda invalidado al utilizarse.
+    </Alert>
 
     <div class="grid gap-6 lg:grid-cols-3">
       <!-- Jugadores -->
@@ -210,6 +206,7 @@ async function remove(player: SquadPlayerDto) {
                 <th class="py-2 pr-3 text-left">Jugador</th>
                 <th class="py-2 pr-3 text-left">Posición</th>
                 <th class="py-2 pr-3 text-left">Cuenta</th>
+                <th v-if="canInvitePlayers" class="py-2 pr-3 text-left">Invitación personal</th>
                 <th v-if="canManage" class="py-2 text-right"></th>
               </tr>
             </thead>
@@ -234,8 +231,9 @@ async function remove(player: SquadPlayerDto) {
                     />
                   </td>
                   <td class="py-2 pr-3 text-xs text-slate-500">{{ player.linked ? player.linkedPlayerName : '—' }}</td>
+                  <td v-if="canInvitePlayers" class="py-2 pr-3 text-xs text-slate-500">{{ player.linked ? 'Vinculado' : '—' }}</td>
                   <td class="py-2 text-right whitespace-nowrap">
-                    <button type="button" class="btn-primary px-3 py-1 text-xs" :disabled="busy" @click="saveEdit">Guardar</button>
+                    <button type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="saveEdit">Guardar</button>
                     <button type="button" class="btn-ghost ml-1 px-3 py-1 text-xs" @click="editingId = null">Cancelar</button>
                   </td>
                 </template>
@@ -256,11 +254,21 @@ async function remove(player: SquadPlayerDto) {
                   <td class="py-2 pr-3 text-slate-600">{{ player.position ? positionLabels[player.position] : '—' }}</td>
                   <td class="py-2 pr-3">
                     <Badge v-if="player.linked" tone="green">{{ player.id === myEntryId ? 'Eres tú' : 'Vinculado' }}</Badge>
-                    <span v-else class="text-xs text-slate-400">Sin cuenta</span>
+                    <span v-else class="text-xs text-slate-400">Sin vincular</span>
+                  </td>
+                  <td v-if="canInvitePlayers" class="py-2 pr-3">
+                    <span v-if="player.linked" class="text-xs text-slate-400">Código utilizado</span>
+                    <template v-else>
+                      <p v-if="player.inviteCode" class="mb-1 font-mono text-sm tracking-widest text-slate-900">{{ player.inviteCode }}</p>
+                      <div class="flex flex-wrap gap-1">
+                        <button v-if="player.inviteCode" type="button" class="btn-secondary px-2 py-1 text-xs" :aria-label="`Copiar código de ${player.fullName}`" @click="copyCode(player)">{{ copied === player.id ? 'Copiado ✓' : 'Copiar' }}</button>
+                        <button type="button" class="btn-ghost px-2 py-1 text-xs" :aria-label="`Generar código para ${player.fullName}`" v-busy="busy" :disabled="busy" @click="generateCode(player)">{{ player.inviteCode ? 'Generar otro' : 'Generar código' }}</button>
+                      </div>
+                    </template>
                   </td>
                   <td v-if="canManage" class="py-2 text-right whitespace-nowrap">
-                    <button type="button" class="btn-ghost px-3 py-1 text-xs" :disabled="busy" @click="startEdit(player)">Editar</button>
-                    <button type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy" @click="remove(player)">Baja</button>
+                    <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="startEdit(player)">Editar</button>
+                    <button type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" @click="remove(player)">Baja</button>
                   </td>
                 </template>
               </tr>
@@ -288,7 +296,7 @@ async function remove(player: SquadPlayerDto) {
               @update:model-value="newPlayer.position = ($event as Position | null) ?? ''"
             />
           </div>
-          <button type="submit" class="btn-primary" :disabled="busy || !newPlayer.fullName.trim()">Añadir</button>
+          <button type="submit" class="btn-primary" v-busy="busy" :disabled="busy || !newPlayer.fullName.trim()">Añadir</button>
         </form>
 
         <details v-if="left.length > 0" class="mt-4 text-sm">

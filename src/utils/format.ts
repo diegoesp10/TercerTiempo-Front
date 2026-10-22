@@ -11,6 +11,7 @@ import type {
   SquadVisibility,
   StaffRole,
   VideoAccessLevel,
+  VideoPart,
 } from '@/types/api';
 
 export const accountTypeLabels: Record<AccountType, string> = {
@@ -186,6 +187,12 @@ export const videoAccessLabels: Record<VideoAccessLevel, string> = {
 /** "5,00 €" a partir de céntimos. */
 export const formatMoney = (cents: number, currency = 'EUR') =>
   (cents / 100).toLocaleString('es-ES', { style: 'currency', currency });
+
+export const videoPartLabels: Record<VideoPart, string> = {
+  Full: 'Partido completo',
+  FirstHalf: '1ª parte',
+  SecondHalf: '2ª parte',
+};
 
 export const formatBytes = (bytes: number) =>
   bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : bytes >= 1024 ** 2 ? `${(bytes / 1024 ** 2).toFixed(0)} MB` : `${Math.ceil(bytes / 1024)} KB`;

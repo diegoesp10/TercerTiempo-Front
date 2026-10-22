@@ -93,8 +93,8 @@ async function add() {
             </td>
             <td class="py-2 pr-3 whitespace-nowrap"><RosterStatsSummary :stats="entry.stats" /></td>
             <td class="py-2 text-right whitespace-nowrap" @click.stop>
-              <button type="button" class="btn-ghost px-2 py-1 text-xs" :disabled="busy" aria-label="Ver y editar la ficha" @click="openId = entry.id"><Icon icon="pen" class="h-3.5 w-3.5" /></button>
-              <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy" aria-label="Retirar ficha" @click="remove(entry)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
+              <button type="button" class="btn-ghost px-2 py-1 text-xs" v-busy="busy" :disabled="busy" aria-label="Ver y editar la ficha" @click="openId = entry.id"><Icon icon="pen" class="h-3.5 w-3.5" /></button>
+              <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" aria-label="Retirar ficha" @click="remove(entry)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
             </td>
           </tr>
         </tbody>
@@ -115,10 +115,10 @@ async function add() {
         <label class="label" for="roster-new-position">Posición</label>
         <SearchSelect id="roster-new-position" placeholder="—" clearable :model-value="newEntry.position || null" :options="positionOptions" @update:model-value="newEntry.position = ($event as Position | null) ?? ''" />
       </div>
-      <button type="submit" class="btn-primary" :disabled="busy || !newEntry.fullName.trim()">Añadir</button>
+      <button type="submit" class="btn-primary" v-busy="busy" :disabled="busy || !newEntry.fullName.trim()">Añadir</button>
       <button type="button" class="btn-ghost" @click="adding = false">Cancelar</button>
     </form>
-    <button v-else type="button" class="btn-secondary mt-4 text-sm" :disabled="busy" @click="adding = true"><Icon icon="plus" class="mr-1.5 h-3.5 w-3.5" />Añadir jugador</button>
+    <button v-else type="button" class="btn-secondary mt-4 text-sm" v-busy="busy" :disabled="busy" @click="adding = true"><Icon icon="plus" class="mr-1.5 h-3.5 w-3.5" />Añadir jugador</button>
 
     <RosterPlayerModal :team-id="teamId" :entry="openEntry" @close="openId = null" @updated="emit('updated', $event)" />
   </div>

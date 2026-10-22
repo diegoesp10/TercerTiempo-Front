@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
-import { ApiError, errorMessage } from '@/api/http';
+import { errorMessage } from '@/api/http';
+import ShareVideoModal from '@/components/videos/ShareVideoModal.vue';
+import VideoPlayer from '@/components/videos/VideoPlayer.vue';
+import VideoUploader from '@/components/videos/VideoUploader.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAuthStore } from '@/stores/auth';
 import type { MatchVideoDto } from '@/types/api';
-import { formatBytes, formatKickoff, formatMoney, videoAccessLabels } from '@/utils/format';
+import { formatBytes, formatKickoff, formatMoney, videoAccessLabels, videoPartLabels } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps<{
@@ -37,35 +40,8 @@ async function load() {
 
 watch(() => props.matchId, () => void load(), { immediate: true });
 
-// --- Subida ---
-const file = ref<File | null>(null);
-const title = ref('');
-const uploading = ref(false);
-const uploadError = ref<string | null>(null);
-const fieldErrors = ref<Record<string, string[]>>({});
-
-function onFileChange(event: Event) {
-  const input = event.target as HTMLInputElement;
-  file.value = input.files?.[0] ?? null;
-}
-
-async function upload() {
-  if (!file.value || !props.uploadSquadId) return;
-  uploading.value = true;
-  uploadError.value = null;
-  fieldErrors.value = {};
-  try {
-    await api.squads.uploadVideo(props.uploadSquadId, props.matchId, file.value, title.value.trim() || null);
-    file.value = null;
-    title.value = '';
-    await load();
-  } catch (e) {
-    uploadError.value = errorMessage(e);
-    if (e instanceof ApiError) fieldErrors.value = e.fieldErrors;
-  } finally {
-    uploading.value = false;
-  }
-}
+// --- Subida (por trozos, en VideoUploader) ---
+const myVideos = computed(() => videos.value.filter((v) => v.squadId === props.uploadSquadId));
 
 // --- Reproducción y compra ---
 const playing = ref<string | null>(null);
@@ -88,7 +64,12 @@ async function play(video: MatchVideoDto) {
 }
 
 async function purchase(video: MatchVideoDto) {
-  if (!(await confirmDialog({ title: `Comprar «${video.title}»`, message: `El acceso al vídeo cuesta ${formatMoney(video.priceCents, video.currency)}.`, confirmLabel: 'Comprar' }))) return;
+  const parts = videos.value.filter((v) => v.squadId === video.squadId).length;
+  if (!(await confirmDialog({
+    title: `Comprar el vídeo de ${video.teamName}`,
+    message: `El acceso cuesta ${formatMoney(video.priceCents, video.currency)}${parts > 1 ? ' e incluye todas las partes del partido' : ''}.`,
+    confirmLabel: 'Comprar',
+  }))) return;
   busy.value = video.id;
   actionError.value = null;
   try {
@@ -108,6 +89,22 @@ async function remove(video: MatchVideoDto) {
   try {
     await api.videos.remove(video.id);
     if (playing.value === video.id) playing.value = null;
+    await load();
+  } catch (e) {
+    actionError.value = errorMessage(e);
+  } finally {
+    busy.value = null;
+  }
+}
+
+// Público/privado y enlaces compartidos: club propietario y cuerpo técnico vigente.
+const sharing = ref<MatchVideoDto | null>(null);
+
+async function toggleVisibility(video: MatchVideoDto) {
+  busy.value = video.id;
+  actionError.value = null;
+  try {
+    await api.videos.setVisibility(video.id, video.visibility === 'Public' ? 'Private' : 'Public');
     await load();
   } catch (e) {
     actionError.value = errorMessage(e);
@@ -146,46 +143,42 @@ const canUploadHere = computed(() => props.canUpload && !!props.uploadSquadId);
         <li v-for="video in videos" :key="video.id" class="py-3">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0">
-              <p class="font-medium text-slate-900">{{ video.title }}</p>
+              <p class="font-medium text-slate-900">
+                <Badge tone="slate" class="mr-2">{{ videoPartLabels[video.part] }}</Badge>{{ video.title }}
+                <Badge v-if="video.visibility === 'Public'" tone="green" class="ml-2" title="Cualquiera que llegue al partido puede verlo"><Icon icon="globe" class="mr-1 h-3 w-3" />Público</Badge>
+              </p>
               <p class="text-xs text-slate-500">
                 {{ video.teamName }} · subido por {{ video.uploadedBy }} el {{ formatKickoff(video.uploadedAt) }} · {{ formatBytes(video.sizeBytes) }}
               </p>
             </div>
             <div class="flex items-center gap-2">
               <Badge :tone="accessTone(video)">{{ videoAccessLabels[video.access] }}<template v-if="video.access === 'Locked'"> · {{ formatMoney(video.priceCents, video.currency) }}</template></Badge>
-              <button v-if="video.canWatch" type="button" class="btn-primary px-3 py-1 text-xs" :disabled="busy === video.id" @click="play(video)">
+              <button v-if="video.canWatch" type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy === video.id" :disabled="busy === video.id" @click="play(video)">
                 {{ playing === video.id ? 'Recargar' : 'Ver' }}
               </button>
-              <button v-else-if="video.access === 'Locked'" type="button" class="btn-secondary px-3 py-1 text-xs" :disabled="busy === video.id" @click="purchase(video)">
+              <button v-else-if="video.access === 'Locked'" type="button" class="btn-secondary px-3 py-1 text-xs" v-busy="busy === video.id" :disabled="busy === video.id" @click="purchase(video)">
                 {{ busy === video.id ? 'Comprando…' : `Comprar por ${formatMoney(video.priceCents, video.currency)}` }}
               </button>
               <span v-else-if="!auth.isAuthenticated" class="text-xs text-slate-500">
                 <RouterLink to="/login" class="text-accent-400 hover:underline">Entra</RouterLink> para verlo
               </span>
-              <button v-if="video.canDelete" type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy === video.id" @click="remove(video)">Eliminar</button>
+              <template v-if="video.canDelete">
+                <button type="button" class="btn-ghost px-3 py-1 text-xs" :title="video.visibility === 'Public' ? 'Volver a dejarlo solo para la plantilla, el club y quien lo compre' : 'Que cualquiera que llegue al partido lo vea sin pagar'" v-busy="busy === video.id" :disabled="busy === video.id" @click="toggleVisibility(video)">
+                  <Icon :icon="video.visibility === 'Public' ? 'lock' : 'globe'" class="mr-1.5 h-3.5 w-3.5" />{{ video.visibility === 'Public' ? 'Hacer privado' : 'Hacer público' }}
+                </button>
+                <button type="button" class="btn-ghost px-3 py-1 text-xs" :disabled="busy === video.id" @click="sharing = video"><Icon icon="link" class="mr-1.5 h-3.5 w-3.5" />Compartir</button>
+                <button type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy === video.id" :disabled="busy === video.id" @click="remove(video)">Eliminar</button>
+              </template>
             </div>
           </div>
 
-          <video v-if="playing === video.id && streamUrl" :key="streamUrl" :src="streamUrl" controls preload="metadata" class="mt-3 w-full rounded-lg bg-black" style="max-height: 60vh">
-            Tu navegador no reproduce este formato.
-          </video>
+          <VideoPlayer v-if="playing === video.id && streamUrl" :key="streamUrl" class="mt-3" :src="streamUrl" :type="video.contentType" :title="video.title" />
         </li>
       </ul>
 
-      <form v-if="canUploadHere" class="mt-4 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4" @submit.prevent="upload">
-        <div class="min-w-56 flex-1">
-          <label class="label" for="video-file">Archivo de vídeo</label>
-          <input id="video-file" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-matroska,.mp4,.webm,.mov,.mkv" class="input px-2 py-1.5" @change="onFileChange" />
-          <p v-if="fieldErrors['file.contentType'] || fieldErrors['file.length']" class="field-error">{{ (fieldErrors['file.contentType'] ?? fieldErrors['file.length'])?.[0] }}</p>
-        </div>
-        <div class="min-w-48 flex-1">
-          <label class="label" for="video-title">Título (opcional)</label>
-          <input id="video-title" v-model="title" type="text" maxlength="150" class="input" placeholder="Partido completo, primera parte…" />
-        </div>
-        <button type="submit" class="btn-primary" :disabled="uploading || !file">{{ uploading ? 'Subiendo…' : 'Subir vídeo' }}</button>
-        <Alert v-if="uploadError" kind="error" class="w-full">{{ uploadError }}</Alert>
-        <p v-if="uploading" class="w-full text-xs text-slate-500">La subida puede tardar varios minutos según el tamaño del archivo; no cierres la página.</p>
-      </form>
+      <VideoUploader v-if="canUploadHere && uploadSquadId" class="mt-4" :squad-id="uploadSquadId" :match-id="matchId" :existing="myVideos" @uploaded="load" />
+
+      <ShareVideoModal :video="sharing" @close="sharing = null" />
     </template>
   </section>
 </template>

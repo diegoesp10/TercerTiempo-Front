@@ -112,7 +112,7 @@ async function linkToClub() {
           {{ data.squad.isMine ? 'Mi plantilla' : 'Ver plantilla' }}
         </RouterLink>
         <RouterLink v-else-if="auth.isClub && isMyClubTeam" to="/" class="btn-primary">Nombrar técnicos</RouterLink>
-        <button v-else-if="auth.isClub" type="button" class="btn-primary" :disabled="linking" @click="linkToClub">
+        <button v-else-if="auth.isClub" type="button" class="btn-primary" v-busy="linking" :disabled="linking" @click="linkToClub">
           {{ linking ? 'Vinculando…' : 'Vincular a mi club' }}
         </button>
       </template>
@@ -196,12 +196,12 @@ async function linkToClub() {
         <template v-else-if="!data.squad">
           <template v-if="auth.isCoach">
             La plantilla se crea cuando un técnico nombrado por el club canjea su código de acceso: se importan las fichas
-            publicadas por futbolasturiano.es (si las hay) y nace privada, con un código de invitación para los jugadores.
+            publicadas por futbolasturiano.es (si las hay) y nace privada. El club o entrenador genera después un código personal para cada jugador.
           </template>
           <template v-else-if="auth.isClub">
             Vincula el equipo a tu club y nombra a su cuerpo técnico: al canjear el código de acceso se crea la plantilla.
           </template>
-          <template v-else-if="auth.isPlayer">Pide a tu cuerpo técnico que la cree: después podrás vincularte a tu ficha con su código de invitación.</template>
+          <template v-else-if="auth.isPlayer">Pide a tu cuerpo técnico que la cree: después tu club o entrenador te facilitará un código personal para vincular tu ficha.</template>
           <template v-else>
             ¿Eres del club o de su cuerpo técnico? <RouterLink to="/registro" class="font-medium text-accent-400 hover:underline">Date de alta</RouterLink>.
           </template>

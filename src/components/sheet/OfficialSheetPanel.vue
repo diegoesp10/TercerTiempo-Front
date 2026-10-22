@@ -81,7 +81,7 @@ const minutes = (line: OfficialLineDto) => {
       </div>
       <div class="flex items-center gap-2">
         <a v-if="sheet?.sourceUrl" :href="sheet.sourceUrl" target="_blank" rel="noopener" class="text-sm text-accent-400 hover:underline">Ver en asturfutbol.es</a>
-        <button type="button" class="btn-ghost px-3 py-1 text-xs" :disabled="loading" @click="load(true)">{{ loading ? 'Consultando…' : 'Actualizar' }}</button>
+        <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="loading" :disabled="loading" @click="load(true)">{{ loading ? 'Consultando…' : 'Actualizar' }}</button>
       </div>
     </div>
 

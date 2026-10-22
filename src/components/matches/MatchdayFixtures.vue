@@ -138,7 +138,7 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
           v-if="current !== null && selected !== current"
           type="button"
           class="btn-secondary px-3 py-1.5 text-xs"
-          :disabled="loading"
+          v-busy="loading" :disabled="loading"
           @click="go(current)"
         >
           <Icon icon="calendar-check" class="mr-1.5 h-3.5 w-3.5" />Jornada actual ({{ current }})
@@ -159,9 +159,11 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
 
     <Spinner v-if="loading && !data" />
     <Alert v-else-if="error" kind="error" class="mt-4">{{ error }}</Alert>
-    <p v-else-if="data && data.matches.length === 0" class="mt-4 text-sm text-slate-500">
-      Todavía no hay calendario publicado para esta liga.
-    </p>
+    <div v-else-if="data && data.matchdays.length === 0" class="mt-4 flex items-start gap-3 rounded-lg border border-line bg-surface-2 px-4 py-3 text-sm text-slate-600">
+      <Icon icon="calendar-check" class="mt-0.5 h-4 w-4 shrink-0 text-accent-400" />
+      <span>{{ data.notice ?? 'Todavía no hay partidos de esta temporada.' }}</span>
+    </div>
+    <p v-else-if="data && data.matches.length === 0" class="mt-4 text-sm text-slate-500">No hay partidos en esta jornada.</p>
 
     <div v-else-if="data" class="mt-4 space-y-4" :class="loading ? 'opacity-60' : ''">
       <div v-for="day in days" :key="day.heading">

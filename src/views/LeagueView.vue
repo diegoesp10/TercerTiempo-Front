@@ -52,7 +52,7 @@ watch(selectedId, (id) => {
 <template>
   <PageHeader
     title="Jornada y clasificación"
-    :subtitle="table.data.value ? `${table.data.value.season.competitionName} · ${table.data.value.season.label}` : undefined"
+    :subtitle="table.data.value?.season ? `${table.data.value.season.competitionName} · ${table.data.value.season.label}` : undefined"
   >
     <template #actions>
       <SearchSelect
@@ -79,6 +79,9 @@ watch(selectedId, (id) => {
       <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Clasificación</h2>
       <Spinner v-if="table.loading.value" />
       <Alert v-else-if="table.error.value" kind="error">{{ table.error.value }}</Alert>
+      <Alert v-else-if="table.data.value && table.data.value.standings.length === 0" kind="info">
+        {{ table.data.value.notice ?? 'Todavía no hay partidos jugados esta temporada.' }}
+      </Alert>
 
       <div v-else-if="table.data.value" class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
         <table class="min-w-full text-sm">

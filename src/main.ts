@@ -1,8 +1,11 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
+import { busy } from './directives/busy';
 import { Icon } from './icons';
 import router from './router';
 import './style.css';
 
-createApp(App).use(createPinia()).use(router).component('Icon', Icon).mount('#app');
+const app = createApp(App).use(createPinia()).use(router).component('Icon', Icon).directive('busy', busy);
+// Montar sobre la ruta inicial resuelta evita una vista vacía al entrar directamente por un enlace compartido.
+void router.isReady().then(() => app.mount('#app'));

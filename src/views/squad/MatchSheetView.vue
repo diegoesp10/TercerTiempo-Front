@@ -13,6 +13,7 @@ import CardMarks from '@/components/sheet/CardMarks.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
+import { useAuthStore } from '@/stores/auth';
 import type { MatchSheetDto, MatchSheetEntryInput, SquadPlayerDto } from '@/types/api';
 import { formatKickoff, matchStatusLabels, outcomeFor, outcomeLabels, outcomeTone, positionShortLabels } from '@/utils/format';
 
@@ -20,6 +21,7 @@ const props = defineProps<{ squadId: string; matchId: string }>();
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
 
 const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, props.matchId));
 
@@ -224,7 +226,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
     </div>
 
     <div v-else-if="tab === 'video'" class="mt-6">
-      <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="data.canEdit || data.squad.myRole !== null" />
+      <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="data.canEdit || data.squad.myRole !== null || !!auth.club?.teams.some((team) => team.teamId === data!.squad.teamId)" />
     </div>
 
     <div v-else-if="tab === 'previa'" class="mt-6">
@@ -241,9 +243,9 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
           </p>
         </div>
         <div v-if="canEdit" class="flex flex-wrap gap-2">
-          <button type="button" class="btn-ghost" :disabled="saving" @click="everyoneFullMatch">Todos 90'</button>
-          <button type="button" class="btn-secondary" :disabled="saving" @click="reset">Deshacer cambios</button>
-          <button type="button" class="btn-primary" :disabled="saving" @click="save">{{ saving ? 'Guardando…' : 'Guardar acta' }}</button>
+          <button type="button" class="btn-ghost" v-busy="saving" :disabled="saving" @click="everyoneFullMatch">Todos 90'</button>
+          <button type="button" class="btn-secondary" v-busy="saving" :disabled="saving" @click="reset">Deshacer cambios</button>
+          <button type="button" class="btn-primary" v-busy="saving" :disabled="saving" @click="save">{{ saving ? 'Guardando…' : 'Guardar acta' }}</button>
         </div>
       </div>
 

@@ -19,7 +19,8 @@ const auth = useAuthStore();
 const { data, loading, error } = useAsync(() => api.matches.get(props.matchId));
 
 /** Plantilla del usuario en este partido (para subir el vídeo). */
-const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.squadId)) ?? null);
+const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.squadId)
+  || auth.club?.teams.some((team) => team.teamId === s.teamId)) ?? null);
 </script>
 
 <template>

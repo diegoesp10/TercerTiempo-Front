@@ -284,6 +284,15 @@
     @apply mt-1 text-xs text-red-600;
   }
 
+  /* Botón en curso (directiva v-busy): anillo girando delante del texto, del color del propio botón. */
+  .busy-spinner {
+    @apply inline-block h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-r-transparent;
+    animation: busy-spin 0.7s linear infinite;
+  }
+  .is-busy {
+    @apply cursor-progress;
+  }
+
   /* Etiqueta pequeña en mayúsculas, estilo marcador deportivo */
   .eyebrow {
     @apply inline-block font-display text-xs font-semibold uppercase tracking-[0.18em] text-brand-500;
@@ -315,4 +324,8 @@
 
 @utility font-display {
   font-family: var(--font-display);
+}
+
+@keyframes busy-spin {
+  to { transform: rotate(360deg); }
 }

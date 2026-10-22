@@ -27,7 +27,7 @@ const roles = [
     steps: [
       'Entra con el código de acceso de tu club: tu plantilla te espera.',
       'Tras cada partido rellena el acta y compárala con la de la federación.',
-      'Sube el vídeo del partido; comparte el código de invitación con los jugadores.',
+      'Sube el vídeo del partido; genera un código personal para cada jugador.',
     ],
   },
   {

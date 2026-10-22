@@ -122,7 +122,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
   <Modal :open="entry !== null" :title="entry?.fullName ?? 'Jugador'" size="xl" @close="emit('close')">
     <template #header>
       <div v-if="current" class="flex items-center gap-4">
-        <button type="button" class="group relative rounded-full" :disabled="busy" title="Cambiar la foto" @click="photoInput?.click()">
+        <button type="button" class="group relative rounded-full" v-busy="busy" :disabled="busy" title="Cambiar la foto" @click="photoInput?.click()">
           <PlayerAvatar :src="current.photoUrl" :name="current.fullName" size="xl" />
           <span class="absolute inset-0 flex items-center justify-center rounded-full bg-slate-950/0 text-white opacity-0 transition group-hover:bg-slate-950/50 group-hover:opacity-100">
             <Icon icon="camera" class="h-6 w-6" />
@@ -138,7 +138,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
             {{ current.position ? positionLabels[current.position] : 'Sin posición' }}
             <Badge v-if="current.managedByClub" tone="blue" class="ml-2">Club</Badge>
           </p>
-          <button type="button" class="btn-ghost mt-1 px-2 py-1 text-xs" :disabled="busy" @click="photoInput?.click()">
+          <button type="button" class="btn-ghost mt-1 px-2 py-1 text-xs" v-busy="busy" :disabled="busy" @click="photoInput?.click()">
             <Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />{{ current.photoUrl ? 'Cambiar foto' : 'Subir foto' }}
           </button>
         </div>
@@ -163,7 +163,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
         <label class="label" for="player-position">Posición</label>
         <SearchSelect id="player-position" placeholder="—" clearable :model-value="form.position || null" :options="positionOptions" @update:model-value="form.position = ($event as Position | null) ?? ''" />
       </div>
-      <button type="submit" class="btn-primary" :disabled="busy || !dirty || !form.fullName.trim()"><Icon icon="check" class="mr-1.5 h-3.5 w-3.5" />Guardar</button>
+      <button type="submit" class="btn-primary" v-busy="busy" :disabled="busy || !dirty || !form.fullName.trim()"><Icon icon="check" class="mr-1.5 h-3.5 w-3.5" />Guardar</button>
     </form>
 
     <Spinner v-if="loading && !detail" class="my-6" />

@@ -2,7 +2,7 @@
 
 SPA de **Tercer Tiempo**, plataforma de seguimiento del rendimiento de cada jugador, partido a partido. El **club** nombra a los
 técnicos de sus equipos cada temporada y les entrega un código de acceso. El **cuerpo técnico** gestiona la plantilla
-de su equipo, comparte un código de invitación con los jugadores y, tras cada partido, rellena el acta interna
+de su equipo, genera un código personal para cada jugador y, tras cada partido, rellena el acta interna
 (minutos, goles, asistencias, tiros, tarjetas; la nota se calcula sola), la compara con el **acta oficial de la
 federación** (asturfutbol.es) y puede subir el **vídeo del partido**, que su plantilla ve gratis y el resto de técnicos
 previo pago. Cada **jugador** se vincula a su ficha y ve en su panel cuánto aporta a nivel individual, a su equipo y
@@ -79,8 +79,8 @@ Flujo de prueba como **club**: *Darme de alta* (Club, eligiendo el club del desp
 **código de acceso** para entregárselo. Desde la tabla de nombramientos se prorroga, acorta o revoca cada uno.
 
 Flujo de prueba como **cuerpo técnico**: *Darme de alta* (Cuerpo técnico) con el código de acceso del club → se crea
-la plantilla de tu equipo (se importan las fichas publicadas por futbolasturiano.es y aparece el código de invitación
-para los jugadores) → *Partidos y actas* → abrir un partido disputado → marcar quién jugó, rellenar sus líneas y
+la plantilla de tu equipo (se importan las fichas publicadas por futbolasturiano.es; el club o técnico genera después
+un código personal junto al nombre de cada jugador) → *Partidos y actas* → abrir un partido disputado → marcar quién jugó, rellenar sus líneas y
 **«Guardar acta»** (la nota de cada jugador se calcula sola con los datos) → pestaña **«Comparador con la
 federación»** (acta interna frente a la oficial, con las discrepancias marcadas y las líneas oficiales sin ficha; si la
 federación aún no la ha publicado, se reintenta solo) → pestaña **«Vídeo»** (subir el vídeo del partido; los técnicos
@@ -88,10 +88,10 @@ de otras plantillas lo compran) →
 *Estadísticas* (gráficos del equipo: resultados y puntos, nota media por partido, reparto de goles, minutos y ranking de
 nota; cada nombre abre la ficha del jugador con su nota partido a partido, el desglose de la nota y su radar por 90') →
 *Comparador* (hasta 4 jugadores: radar superpuesto, cara a cara, nota por partido y acciones por 90'). En *Plantilla* se añaden o editan fichas, se regenera
-el código y se cambia la visibilidad.
+el código personal de cada jugador y se cambia la visibilidad.
 
 Flujo de prueba como **jugador**: *Darme de alta* (Jugador, con el nombre con el que apareces en la plantilla) →
-introducir el código de invitación → **«Soy yo»** sobre tu ficha → *Mi panel*. *Mi plantilla* y *Partidos* muestran
+pedir al club o entrenador su código personal → introducirlo → comprobar la única ficha que autoriza el código → **«Vincular mi ficha»** → *Mi panel*. El nombre de la cuenta debe coincidir con la ficha y el código solo se usa una vez. *Mi plantilla* y *Partidos* muestran
 la plantilla y las actas de tu equipo.
 
 Sin cuenta se pueden consultar los equipos de cada liga, sus calendarios, la clasificación, el acta oficial de cada

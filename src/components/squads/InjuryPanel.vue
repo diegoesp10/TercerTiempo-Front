@@ -159,7 +159,7 @@ const expectedTone = (injury: InjuryDto) => {
         <h2 class="font-semibold text-slate-900"><Icon icon="user-injured" class="mr-2 h-4 w-4 text-red-500" />Lesionados</h2>
         <p class="text-xs text-slate-500">Quién está de baja, por qué, desde cuándo y cuándo se espera que vuelva.</p>
       </div>
-      <button v-if="canManage" type="button" class="btn-secondary px-3 py-1 text-xs" :disabled="busy || loading" @click="openNew()">
+      <button v-if="canManage" type="button" class="btn-secondary px-3 py-1 text-xs" v-busy="busy" :disabled="busy || loading" @click="openNew()">
         <Icon icon="plus" class="mr-1.5 h-3 w-3" />Nueva lesión
       </button>
     </div>
@@ -191,9 +191,9 @@ const expectedTone = (injury: InjuryDto) => {
           </p>
         </div>
         <div v-if="canManage" class="flex shrink-0 gap-1">
-          <button type="button" class="btn-primary px-3 py-1 text-xs" :disabled="busy" @click="close(injury)"><Icon icon="check" class="mr-1 h-3 w-3" />Alta</button>
-          <button type="button" class="btn-ghost px-2 py-1 text-xs" :disabled="busy" aria-label="Editar la lesión" @click="openEdit(injury)"><Icon icon="pen" class="h-3.5 w-3.5" /></button>
-          <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy" aria-label="Borrar la lesión" @click="remove(injury)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
+          <button type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="close(injury)"><Icon icon="check" class="mr-1 h-3 w-3" />Alta</button>
+          <button type="button" class="btn-ghost px-2 py-1 text-xs" v-busy="busy" :disabled="busy" aria-label="Editar la lesión" @click="openEdit(injury)"><Icon icon="pen" class="h-3.5 w-3.5" /></button>
+          <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" aria-label="Borrar la lesión" @click="remove(injury)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
         </div>
       </li>
     </ul>
@@ -207,8 +207,8 @@ const expectedTone = (injury: InjuryDto) => {
             <span class="block text-xs text-slate-500">{{ formatDate(injury.startedOn) }} → {{ formatDate(injury.returnedOn!) }} · {{ injury.daysOut }} días</span>
           </span>
           <span v-if="canManage" class="flex gap-1">
-            <button type="button" class="btn-ghost px-2 py-1 text-xs" :disabled="busy" @click="reopen(injury)">Recaída</button>
-            <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy" aria-label="Borrar" @click="remove(injury)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
+            <button type="button" class="btn-ghost px-2 py-1 text-xs" v-busy="busy" :disabled="busy" @click="reopen(injury)">Recaída</button>
+            <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" aria-label="Borrar" @click="remove(injury)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
           </span>
         </li>
       </ul>
@@ -246,7 +246,7 @@ const expectedTone = (injury: InjuryDto) => {
       <template #footer>
         <div class="flex justify-end gap-2">
           <button type="button" class="btn-ghost" @click="formOpen = false">Cancelar</button>
-          <button type="submit" form="injury-form" class="btn-primary" :disabled="busy || !form.type || !form.startedOn || (!editing && !form.squadPlayerId)">
+          <button type="submit" form="injury-form" class="btn-primary" v-busy="busy" :disabled="busy || !form.type || !form.startedOn || (!editing && !form.squadPlayerId)">
             {{ editing ? 'Guardar' : 'Registrar lesión' }}
           </button>
         </div>

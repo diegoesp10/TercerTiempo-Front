@@ -129,7 +129,7 @@ async function submit() {
         <div v-else>
           <label class="label" for="displayName">Nombre y apellidos</label>
           <input id="displayName" v-model="form.displayName" type="text" required maxlength="120" class="input" />
-          <p v-if="isPlayer" class="mt-1 text-xs text-slate-400">Tal y como apareces en la plantilla: así tu cuerpo técnico te reconoce al vincularte.</p>
+          <p v-if="isPlayer" class="mt-1 text-xs text-slate-400">Debe coincidir con el nombre y apellidos de tu ficha. Tu club o entrenador te entregará un código personal para vincularla.</p>
           <p v-if="fieldErrors.displayName" class="field-error">{{ fieldErrors.displayName[0] }}</p>
         </div>
 
@@ -176,7 +176,7 @@ async function submit() {
           </span>
         </label>
 
-        <button type="submit" class="btn-primary w-full" :disabled="loading || !acceptsTerms || (isClub && !form.displayName)">
+        <button type="submit" class="btn-primary w-full" v-busy="loading" :disabled="loading || !acceptsTerms || (isClub && !form.displayName)">
           {{ loading ? 'Creando cuenta…' : isPlayer ? 'Crear cuenta de jugador' : isClub ? 'Crear cuenta de club' : 'Crear cuenta y canjear el código' }}
         </button>
       </form>

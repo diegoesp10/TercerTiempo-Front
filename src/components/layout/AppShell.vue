@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import BrandMark from '@/components/layout/BrandMark.vue';
 import SyncBanner from '@/components/layout/SyncBanner.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
+import LoadingBar from '@/components/layout/LoadingBar.vue';
 import BackButton from '@/components/ui/BackButton.vue';
 import Badge from '@/components/ui/Badge.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
@@ -148,6 +149,7 @@ function logout() {
       </div>
     </header>
 
+    <LoadingBar />
     <SyncBanner />
     <ConfirmDialog />
 

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { useLoadingStore } from '@/stores/loading';
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -48,6 +49,7 @@ const router = createRouter({
     },
     { path: '/partidos/:matchId', name: 'match', component: () => import('@/views/MatchDetailView.vue'), props: true },
     { path: '/liga', name: 'league', component: () => import('@/views/LeagueView.vue'), meta: { root: true } },
+    { path: '/ver/:token', name: 'shared-video', component: () => import('@/views/SharedVideoView.vue'), props: true, meta: { root: true } },
     { path: '/privacidad', name: 'privacy', component: () => import('@/views/legal/PrivacyView.vue') },
     { path: '/condiciones', name: 'terms', component: () => import('@/views/legal/TermsView.vue') },
     { path: '/error/servidor', name: 'server-error', component: () => import('@/views/ServerErrorView.vue'), meta: { error: true } },
@@ -57,6 +59,7 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore();
+  useLoadingStore().navigating = true;
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } };
@@ -68,5 +71,8 @@ router.beforeEach((to) => {
 
   return true;
 });
+
+router.afterEach(() => { useLoadingStore().navigating = false; });
+router.onError((error) => { useLoadingStore().navigating = false; console.error('No se ha podido cargar la página.', error); });
 
 export default router;

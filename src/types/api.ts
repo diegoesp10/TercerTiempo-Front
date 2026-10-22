@@ -6,6 +6,10 @@ export type MatchSide = 'Home' | 'Away';
 export type OfficialSheetAvailability = 'NotPlayed' | 'Pending' | 'Available' | 'Unavailable';
 export type OfficialEventType = 'Goal' | 'PenaltyGoal' | 'OwnGoal' | 'YellowCard' | 'SecondYellow' | 'RedCard' | 'Substitution';
 export type VideoAccessLevel = 'None' | 'Locked' | 'Owner' | 'Purchased' | 'Free';
+/** El partido se sube entero o en dos partes, nunca mezclado. */
+export type VideoPart = 'Full' | 'FirstHalf' | 'SecondHalf';
+/** Private: plantilla, club y compradores. Public: cualquiera que llegue al partido, sin pagar. */
+export type VideoVisibility = 'Private' | 'Public';
 export type Position = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Forward';
 export type MatchStatus = 'Scheduled' | 'InProgress' | 'Played' | 'Postponed' | 'Cancelled';
 export type CompetitionLevel = 'Professional' | 'National' | 'Regional' | 'Cup' | 'Youth' | 'Other';
@@ -230,6 +234,8 @@ export interface SquadPlayerDto {
   status: SquadPlayerStatus;
   /** Lesión abierta; solo la ven el cuerpo técnico y los jugadores vinculados. */
   injury: InjuryDto | null;
+  /** Código personal pendiente; solo lo reciben el club y el cuerpo técnico. */
+  inviteCode: string | null;
 }
 
 export type InjuryType =
@@ -282,8 +288,7 @@ export interface InjuryRequest {
 
 export interface SquadDetailDto {
   summary: SquadSummaryDto;
-  /** Solo se devuelve al cuerpo técnico. */
-  inviteCode: string | null;
+  canInvitePlayers: boolean;
   canManage: boolean;
   staff: SquadStaffDto[];
   players: SquadPlayerDto[];
@@ -297,7 +302,6 @@ export interface SquadPlayerRequest {
 
 export interface JoinSquadAsPlayerRequest {
   inviteCode: string;
-  squadPlayerId: string | null;
 }
 
 export interface SquadInviteDto {
@@ -305,7 +309,7 @@ export interface SquadInviteDto {
   teamName: string;
   competitionName: string;
   seasonLabel: string;
-  unlinkedPlayers: SquadPlayerDto[];
+  player: SquadPlayerDto;
 }
 
 export interface SquadMatchDto {
@@ -526,16 +530,21 @@ export interface MatchdaySummaryDto {
 export interface CompetitionMatchdayDto {
   competitionId: string;
   competitionName: string;
-  season: SeasonDto;
+  /** null si la competición aún no tiene temporada en curso. */
+  season: SeasonDto | null;
   matchday: number | null;
   currentMatchday: number | null;
   matchdays: MatchdaySummaryDto[];
   matches: MatchDto[];
+  /** Explicación cuando no hay partidos (temporada nueva o sin calendario). */
+  notice: string | null;
 }
 
 export interface LeagueTableDto {
-  season: SeasonDto;
+  season: SeasonDto | null;
   standings: StandingDto[];
+  /** Explicación cuando no hay clasificación (temporada nueva o sin partidos). */
+  notice: string | null;
 }
 
 // --- Partidos / actas ---
@@ -942,6 +951,8 @@ export interface MatchVideoDto {
   squadId: string;
   teamId: string;
   teamName: string;
+  part: VideoPart;
+  visibility: VideoVisibility;
   title: string;
   fileName: string;
   contentType: string;
@@ -953,6 +964,52 @@ export interface MatchVideoDto {
   access: VideoAccessLevel;
   canWatch: boolean;
   canDelete: boolean;
+}
+
+/** Sesión de subida por trozos (reanudable mientras no caduque). */
+export interface VideoUploadDto {
+  uploadId: string;
+  squadId: string;
+  matchId: string;
+  part: VideoPart;
+  fileName: string;
+  sizeBytes: number;
+  chunkSize: number;
+  totalChunks: number;
+  receivedBytes: number;
+  /** Índice del siguiente trozo que espera la API. */
+  nextChunk: number;
+  complete: boolean;
+  expiresAt: string;
+}
+
+export interface BeginVideoUploadRequest {
+  part: VideoPart;
+  title: string | null;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+}
+
+export interface VideoShareLinkDto {
+  id: string;
+  videoId: string;
+  token: string;
+  createdAt: string;
+  expiresAt: string;
+  active: boolean;
+}
+
+/** Vídeo visto a través de un enlace compartido (sin sesión). */
+export interface SharedVideoDto {
+  videoId: string;
+  title: string;
+  part: VideoPart;
+  teamName: string;
+  match: MatchDto;
+  contentType: string;
+  sizeBytes: number;
+  expiresAt: string;
 }
 
 export interface VideoTicketDto {
