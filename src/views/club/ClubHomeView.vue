@@ -3,6 +3,7 @@ import { computed, reactive, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import { ApiError, errorMessage } from '@/api/http';
 import CompetitionPicker from '@/components/competitions/CompetitionPicker.vue';
+import LicensePanel from '@/components/licensing/LicensePanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
@@ -12,7 +13,7 @@ import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import type { AppointmentDto, ClubDto, StaffRole, TeamSummaryDto } from '@/types/api';
-import { appointmentStatusLabels, appointmentStatusTone, formatDate, formatKickoff, staffRoleLabels, staffRoleOptions } from '@/utils/format';
+import { appointmentStatusLabels, appointmentStatusTone, formatDate, formatKickoff, licenseStatusLabels, licenseStatusTone, staffRoleLabels, staffRoleOptions } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
 
 const auth = useAuthStore();
@@ -210,6 +211,7 @@ const sortedAppointments = computed(() => {
             </p>
           </div>
           <div class="flex items-center gap-2 text-xs text-slate-500">
+            <Badge :tone="licenseStatusTone[team.license]" :title="`Licencia ${licenseStatusLabels[team.license].toLowerCase()} · hasta el ${formatDate(team.licenseValidUntil)}`">Licencia {{ licenseStatusLabels[team.license].toLowerCase() }}</Badge>
             <Badge :tone="team.activeAppointments > 0 ? 'green' : 'amber'">{{ team.activeAppointments }} {{ team.activeAppointments === 1 ? 'técnico vigente' : 'técnicos vigentes' }}</Badge>
             <RouterLink v-if="team.squadId" :to="{ name: 'squad', params: { squadId: team.squadId } }" class="text-accent-400 hover:underline">Plantilla</RouterLink>
             <span v-else>Sin plantilla todavía</span>
@@ -218,6 +220,8 @@ const sortedAppointments = computed(() => {
         </li>
       </ul>
     </section>
+
+    <LicensePanel class="mb-6" />
 
     <div class="grid gap-6 lg:grid-cols-3">
       <!-- Nuevo nombramiento -->

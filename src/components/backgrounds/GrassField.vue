@@ -286,10 +286,10 @@ onBeforeUnmount(() => dispose?.());
 
 <style scoped>
 .grass-veil {
-  background: linear-gradient(to bottom, var(--t-canvas) 0%, color-mix(in srgb, var(--t-canvas) 85%, transparent) 28%, color-mix(in srgb, var(--t-canvas) 30%, transparent) 58%, color-mix(in srgb, var(--t-canvas) 8%, transparent) 100%);
+  background: linear-gradient(to bottom, var(--t-canvas) 0%, color-mix(in srgb, var(--t-canvas) 85%, transparent) 28%, color-mix(in srgb, var(--t-canvas) 30%, transparent) 58%, color-mix(in srgb, var(--t-canvas) 22%, transparent) 100%);
 }
 :root[data-theme="dark"] .grass-veil {
-  background: linear-gradient(to bottom, var(--t-canvas) 0%, color-mix(in srgb, var(--t-canvas) 85%, transparent) 30%, color-mix(in srgb, var(--t-canvas) 30%, transparent) 60%, color-mix(in srgb, var(--t-canvas) 10%, transparent) 100%);
+  background: linear-gradient(to bottom, var(--t-canvas) 0%, color-mix(in srgb, var(--t-canvas) 85%, transparent) 30%, color-mix(in srgb, var(--t-canvas) 30%, transparent) 60%, color-mix(in srgb, var(--t-canvas) 22%, transparent) 100%);
 }
 .grass-fallback {
   opacity: 1;

@@ -19,6 +19,11 @@ export class ApiError extends Error {
   get fieldErrors(): Record<string, string[]> {
     return this.problem.errors ?? {};
   }
+
+  /** Código del catálogo de errores (p. ej. license.required), si la API lo mandó. */
+  get code(): string | null {
+    return this.problem.code ?? null;
+  }
 }
 
 interface RequestOptions {

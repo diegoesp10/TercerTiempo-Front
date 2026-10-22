@@ -3,6 +3,7 @@ import type {
   AppointmentStatus,
   CompetitionDto,
   CompetitionLevel,
+  LicenseStatus,
   MatchDto,
   MatchStatus,
   OfficialEventType,
@@ -154,6 +155,14 @@ export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
   Expired: 'Caducado',
   Revoked: 'Revocado',
 };
+
+export const licenseStatusLabels: Record<LicenseStatus, string> = {
+  Trial: 'En prueba',
+  Active: 'Vigente',
+  Expired: 'Caducada',
+};
+
+export const licenseStatusTone: Record<LicenseStatus, Tone> = { Trial: 'blue', Active: 'green', Expired: 'red' };
 
 export const suggestionStatusLabels: Record<SuggestionStatus, string> = {
   Pending: 'Pendiente',

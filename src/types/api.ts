@@ -19,6 +19,8 @@ export type SquadPlayerStatus = 'Active' | 'Left';
 export type MatchOutcome = 'NotPlayed' | 'Win' | 'Draw' | 'Loss';
 
 export interface ProblemDetails {
+  /** Código de error del catálogo (p. ej. license.required). */
+  code?: string;
   type?: string;
   title?: string;
   status?: number;
@@ -127,6 +129,48 @@ export interface ClubTeamDto {
   seasonEndsOn: string | null;
   squadId: string | null;
   activeAppointments: number;
+  /** Estado de la licencia del equipo. */
+  license: LicenseStatus;
+  /** Último día con acceso a los datos privados del equipo. */
+  licenseValidUntil: string;
+}
+
+// --- Licencias por equipo ---
+
+export type LicenseStatus = 'Trial' | 'Active' | 'Expired';
+export type PaymentStatus = 'Pending' | 'Paid' | 'Cancelled';
+
+export interface TeamLicenseDto {
+  teamId: string;
+  teamName: string;
+  squadId: string | null;
+  status: LicenseStatus;
+  trialEndsOn: string;
+  paidUntil: string | null;
+  validUntil: string;
+  daysLeft: number;
+}
+
+export interface LicensingStatusDto {
+  licensed: boolean;
+  teams: TeamLicenseDto[];
+  monthlyPriceCents: number;
+  currency: string;
+  trialDays: number;
+  /** «mock» = pago simulado, sin cobro real. */
+  provider: string;
+}
+
+export interface LicenseCheckoutDto {
+  sessionId: string;
+  url: string;
+  teamId: string;
+  teamName: string;
+  months: number;
+  amountCents: number;
+  currency: string;
+  provider: string;
+  status: PaymentStatus;
 }
 
 /** Nombramiento visto por el club: el código de acceso solo llega mientras está pendiente. */

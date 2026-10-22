@@ -21,6 +21,7 @@ const detail = shallowRef<SquadDetailDto | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
 const forbidden = ref(false);
+const licenseCode = ref<string | null>(null);
 
 async function reload() {
   loading.value = true;
@@ -31,6 +32,7 @@ async function reload() {
   } catch (e) {
     error.value = errorMessage(e);
     forbidden.value = e instanceof ApiError && e.status === 403;
+    licenseCode.value = e instanceof ApiError && e.code?.startsWith('license.') ? e.code : null;
   } finally {
     loading.value = false;
   }
@@ -55,7 +57,15 @@ const tabs = [
   <Spinner v-if="loading && !detail" />
 
   <template v-else-if="error">
-    <Alert v-if="forbidden" kind="warning">
+    <Alert v-if="licenseCode === 'license.required'" kind="warning">
+      <strong>Este equipo no tiene licencia vigente en Tercer Tiempo.</strong> Sus actas, estadísticas, lesiones y vídeos se conservan, pero nadie del equipo puede verlos hasta que el club renueve la licencia.
+      <template v-if="auth.isClub"> <RouterLink to="/" class="font-medium underline">Renovar la licencia</RouterLink>.</template>
+      <template v-else> Pídeselo a tu club.</template>
+    </Alert>
+    <Alert v-else-if="licenseCode === 'license.viewer_required'" kind="warning">
+      Para ver las actas internas de otros equipos tu cuenta debe pertenecer a un equipo con licencia vigente. Los datos oficiales de la federación siguen siendo públicos.
+    </Alert>
+    <Alert v-else-if="forbidden" kind="warning">
       Esta plantilla es <strong>privada</strong>: solo su cuerpo técnico y sus jugadores vinculados pueden ver sus actas y estadísticas.
       <template v-if="auth.isCoach"> ¿Eres de su cuerpo técnico? Tu club te entrega un código de acceso: <RouterLink to="/codigo-acceso" class="font-medium underline">canjéalo</RouterLink>.</template>
       <template v-else-if="auth.isPlayer"> ¿Juegas en el equipo? <RouterLink to="/invitacion" class="font-medium underline">Vincúlate con el código de tu cuerpo técnico</RouterLink>.</template>

@@ -15,6 +15,8 @@ import type {
   InjuryTypeDto,
   JoinSquadAsPlayerRequest,
   LeagueTableDto,
+  LicenseCheckoutDto,
+  LicensingStatusDto,
   LoginRequest,
   MatchDetailDto,
   MatchDto,
@@ -49,6 +51,7 @@ import type {
   SyncStatusDto,
   TeamCrestImportDto,
   TeamDetailDto,
+  TeamLicenseDto,
   TeamSummaryDto,
   VideoPart,
   VideoShareLinkDto,
@@ -159,6 +162,16 @@ export const api = {
       http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/close`, { method: 'POST', body: { returnedOn } }),
     reopenInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/reopen`, { method: 'POST' }),
     deleteInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'DELETE' }),
+  },
+
+  /** Licencias por equipo: estado de la cuenta, licencias del club y pago (simulado de momento). */
+  licensing: {
+    status: () => http<LicensingStatusDto>('/api/licensing/status'),
+    club: () => http<TeamLicenseDto[]>('/api/licensing/club'),
+    beginCheckout: (teamId: string, months: number) =>
+      http<LicenseCheckoutDto>(`/api/licensing/club/${teamId}/checkout`, { method: 'POST', body: { months } }),
+    checkout: (sessionId: string) => http<LicenseCheckoutDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}`),
+    confirm: (sessionId: string) => http<TeamLicenseDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}/confirm`, { method: 'POST' }),
   },
 
   competitions: {
