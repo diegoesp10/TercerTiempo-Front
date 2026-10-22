@@ -36,6 +36,15 @@ const supported = computed(() => {
 const container = ref<HTMLDivElement | null>(null);
 let cleanup: (() => void) | null = null;
 
+// El balón (radio 1) más todo su vaivén vertical tiene que caber entero en el lienzo, con un pequeño margen:
+// la silueta de una esfera vista en perspectiva abarca asin(r / d), no atan(r / d).
+function fieldOfViewToFit(distance: number) {
+  const silhouette = Math.asin(1 / distance);
+  const drift = Math.atan(props.float / distance);
+  const margin = 0.94;
+  return ((silhouette + drift) * 2 * 180) / Math.PI / margin;
+}
+
 onMounted(() => {
   const host = container.value;
   if (!host || !supported.value) return;
@@ -46,8 +55,9 @@ onMounted(() => {
   host.appendChild(renderer.domElement);
 
   const scene = new Scene();
-  const camera = new PerspectiveCamera(38, 1, 0.1, 50);
-  camera.position.set(0, 0.2, 3.6 / props.zoom);
+  const distance = 3.6 / props.zoom;
+  const camera = new PerspectiveCamera(fieldOfViewToFit(distance), 1, 0.1, 50);
+  camera.position.set(0, 0, distance);
 
   const texture = createBallTexture();
   const geometry = new SphereGeometry(1, 96, 96);
