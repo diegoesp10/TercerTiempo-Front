@@ -3,7 +3,7 @@
 export type AccountType = 'Player' | 'Coach' | 'Club';
 export type AppointmentStatus = 'Pending' | 'Active' | 'Expired' | 'Revoked';
 export type MatchSide = 'Home' | 'Away';
-export type OfficialSheetAvailability = 'NotPlayed' | 'Pending' | 'Available' | 'Unavailable';
+export type OfficialSheetAvailability = 'NotPlayed' | 'Pending' | 'Available' | 'Unavailable' | 'Fetching';
 export type OfficialEventType = 'Goal' | 'PenaltyGoal' | 'OwnGoal' | 'YellowCard' | 'SecondYellow' | 'RedCard' | 'Substitution';
 export type VideoAccessLevel = 'None' | 'Locked' | 'Owner' | 'Purchased' | 'Free';
 /** El partido se sube entero o en dos partes, nunca mezclado. */

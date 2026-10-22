@@ -5,6 +5,7 @@ import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import BallIcon from '@/components/ui/BallIcon.vue';
+import BrandMark from '@/components/layout/BrandMark.vue';
 import CardIcon from '@/components/ui/CardIcon.vue';
 import CardMarks from '@/components/sheet/CardMarks.vue';
 import GoalMarks from '@/components/sheet/GoalMarks.vue';
@@ -28,8 +29,8 @@ const error = ref<string | null>(null);
 
 const sheet = computed(() => props.sheet ?? own.value);
 
-async function load(refresh = false) {
-  loading.value = true;
+async function load(refresh = false, quiet = false) {
+  if (!quiet) loading.value = true;
   error.value = null;
   try {
     const result = await api.matches.officialSheet(props.matchId, refresh);
@@ -42,12 +43,19 @@ async function load(refresh = false) {
   }
 }
 
-// Mientras la federación no publique el acta (partido en juego o recién terminado) se vuelve a preguntar cada minuto.
+// Mientras el acta se descarga en segundo plano se pregunta cada 3 s (máximo dos minutos); si la federación aún no la
+// ha publicado (partido recién terminado), cada minuto.
 let timer: ReturnType<typeof setInterval> | null = null;
+let fetchingPolls = 0;
 function schedule() {
   if (timer) clearInterval(timer);
   timer = null;
-  if (sheet.value?.status === 'Pending') timer = setInterval(() => void load(), 60_000);
+  if (sheet.value?.status === 'Fetching' && fetchingPolls < 40) {
+    timer = setInterval(() => { fetchingPolls += 1; void load(false, true); }, 3_000);
+  } else if (sheet.value?.status === 'Pending') {
+    timer = setInterval(() => void load(false, true), 60_000);
+  }
+  if (sheet.value?.status !== 'Fetching') fetchingPolls = 0;
 }
 watch(sheet, schedule, { immediate: true });
 onBeforeUnmount(() => { if (timer) clearInterval(timer); });
@@ -97,6 +105,10 @@ const minutes = (line: OfficialLineDto) => {
         <span>{{ sheet.message ?? 'La federación todavía no ha publicado el acta.' }} Se vuelve a comprobar automáticamente.</span>
       </div>
 
+      <div v-else-if="sheet.status === 'Fetching'" class="flex items-center gap-3 rounded-lg border border-line bg-surface-2 px-4 py-3 text-sm text-slate-700">
+        <BrandMark :size="24" animated class="shrink-0" />
+        <span>{{ sheet.message ?? 'Descargando el acta de la federación…' }} La primera vez se trae de asturfutbol.es; después se lee al instante de Tercer Tiempo.</span>
+      </div>
       <Alert v-else-if="sheet.status === 'Unavailable'" kind="warning">{{ sheet.message ?? 'No se ha encontrado este partido en la federación.' }}</Alert>
 
       <template v-else>
