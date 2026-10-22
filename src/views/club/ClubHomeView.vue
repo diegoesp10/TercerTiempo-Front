@@ -175,6 +175,9 @@ const sortedAppointments = computed(() => {
 <template>
   <PageHeader :title="club?.name ?? auth.displayName" subtitle="Equipos del club y nombramientos de sus técnicos por temporada.">
     <template #actions>
+      <RouterLink to="/ajustes" title="Cambiar el escudo en Ajustes" class="rounded-full ring-offset-2 ring-offset-surface hover:ring-2 hover:ring-brand-400">
+        <TeamCrest :src="auth.clubCrestUrl" :name="club?.name ?? auth.displayName" size="lg" />
+      </RouterLink>
       <button type="button" class="btn-primary" :disabled="busy" @click="addingTeam = !addingTeam">
         {{ addingTeam ? 'Cerrar' : 'Vincular otro equipo' }}
       </button>

@@ -5,6 +5,7 @@ import BrandMark from '@/components/layout/BrandMark.vue';
 import SyncBanner from '@/components/layout/SyncBanner.vue';
 import BackButton from '@/components/ui/BackButton.vue';
 import Badge from '@/components/ui/Badge.vue';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useSettingsStore } from '@/stores/settings';
 import { accountTypeLabels } from '@/utils/format';
@@ -97,6 +98,7 @@ function logout() {
           <div class="hidden items-center gap-2 md:flex">
             <template v-if="auth.isAuthenticated && auth.account">
               <RouterLink to="/ajustes" class="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" title="Ajustes">
+                <TeamCrest v-if="auth.isClub" :src="auth.clubCrestUrl" :name="auth.displayName" size="sm" />
                 <span class="font-medium">{{ auth.displayName }}</span>
                 <Badge :tone="accountTone">{{ accountTypeLabels[auth.account.type] }}</Badge>
                 <span v-if="teamLabel" class="text-slate-400">· {{ teamLabel }}</span>
@@ -131,7 +133,10 @@ function logout() {
         <RouterLink to="/ajustes" class="block rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-2" @click="menuOpen = false">Ajustes</RouterLink>
         <div class="mt-2 border-t border-line pt-2">
           <template v-if="auth.isAuthenticated && auth.account">
-            <p class="px-3 py-1 text-xs text-slate-500">{{ auth.displayName }} · {{ accountTypeLabels[auth.account.type] }}</p>
+            <p class="flex items-center gap-2 px-3 py-1 text-xs text-slate-500">
+              <TeamCrest v-if="auth.isClub" :src="auth.clubCrestUrl" :name="auth.displayName" size="xs" />
+              {{ auth.displayName }} · {{ accountTypeLabels[auth.account.type] }}
+            </p>
             <button type="button" class="btn-ghost w-full" @click="logout">Salir</button>
           </template>
           <template v-else>

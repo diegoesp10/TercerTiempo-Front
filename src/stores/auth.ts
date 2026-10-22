@@ -28,6 +28,8 @@ export const useAuthStore = defineStore('auth', () => {
   const coach = computed(() => account.value?.coach ?? null);
   const club = computed(() => account.value?.club ?? null);
   const displayName = computed(() => player.value?.displayName ?? coach.value?.displayName ?? club.value?.name ?? '');
+  /** Insignia del club: el escudo de su primer equipo con escudo (los filiales comparten el del club). */
+  const clubCrestUrl = computed(() => club.value?.teams.find((t) => t.teamCrestUrl)?.teamCrestUrl ?? null);
 
   /** Plantilla a la que está vinculado el jugador (null si todavía no se ha vinculado). */
   const playerSquad = computed(() => player.value?.squad ?? null);
@@ -103,6 +105,7 @@ export const useAuthStore = defineStore('auth', () => {
     player,
     coach,
     club,
+    clubCrestUrl,
     displayName,
     playerSquad,
     coachSquads,
