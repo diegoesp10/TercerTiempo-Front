@@ -201,11 +201,12 @@ onMounted(async () => {
   const sun = new THREE.DirectionalLight(0xffffff, 1);
   sun.position.set(40, 60, -20);
   scene.add(hemi, sun);
-  scene.fog = new THREE.Fog(0x000000, 20, 150);
+  const fog = new THREE.Fog(0x000000, 20, 150);
+  scene.fog = fog;
 
   applyTheme = (dark) => {
     const canvasColor = getComputedStyle(document.documentElement).getPropertyValue('--t-canvas').trim() || (dark ? '#0a1120' : '#eef1f6');
-    scene.fog!.color.set(canvasColor);
+    fog.color.set(canvasColor);
     scene.background = new THREE.Color(canvasColor);
     if (dark) {
       hemi.color.set(0x90a8d8);
@@ -215,8 +216,8 @@ onMounted(async () => {
       sun.intensity = 2.2;
       sun.position.set(-30, 55, 10);
       renderer.toneMappingExposure = 0.9;
-      scene.fog!.near = 12;
-      scene.fog!.far = 85;
+      fog.near = 12;
+      fog.far = 85;
     } else {
       hemi.color.set(0xd6e6ff);
       hemi.groundColor.set(0x4a6a30);
@@ -225,8 +226,8 @@ onMounted(async () => {
       sun.intensity = 2.4;
       sun.position.set(45, 50, -25);
       renderer.toneMappingExposure = 1.0;
-      scene.fog!.near = 18;
-      scene.fog!.far = 100;
+      fog.near = 18;
+      fog.far = 100;
     }
   };
   applyTheme(settings.isDark);
