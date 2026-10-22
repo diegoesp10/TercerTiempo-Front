@@ -131,9 +131,9 @@ export const api = {
     sheet: (squadId: string, matchId: string) => http<MatchSheetDto>(`/api/squads/${squadId}/matches/${matchId}/sheet`),
     recordSheet: (squadId: string, matchId: string, entries: MatchSheetEntryInput[]) =>
       http<MatchSheetDto>(`/api/squads/${squadId}/matches/${matchId}/sheet`, { method: 'PUT', body: { entries } }),
-    /** Acta interna frente al acta oficial; con refresh se vuelve a pedir a la federación. */
-    compareSheet: (squadId: string, matchId: string, refresh = false) =>
-      http<SheetComparisonDto>(`/api/squads/${squadId}/matches/${matchId}/sheet/comparison${refresh ? '?refresh=true' : ''}`),
+    /** Compara con el acta guardada; las descargas pendientes las gestiona el backend. */
+    compareSheet: (squadId: string, matchId: string) =>
+      http<SheetComparisonDto>(`/api/squads/${squadId}/matches/${matchId}/sheet/comparison`),
     uploadVideo: (squadId: string, matchId: string, file: File, title: string | null, part: VideoPart = 'Full') => {
       const body = new FormData();
       body.append('file', file, file.name);
@@ -188,8 +188,8 @@ export const api = {
   matches: {
     get: (matchId: string) => http<MatchDetailDto>(`/api/matches/${matchId}`),
     /** Acta oficial de la federación (o por qué aún no está). */
-    officialSheet: (matchId: string, refresh = false) =>
-      http<OfficialSheetDto>(`/api/matches/${matchId}/official-sheet${refresh ? '?refresh=true' : ''}`),
+    officialSheet: (matchId: string) =>
+      http<OfficialSheetDto>(`/api/matches/${matchId}/official-sheet`),
     videos: (matchId: string) => http<MatchVideoDto[]>(`/api/matches/${matchId}/videos`),
     /** Previa con probabilidades y análisis del rival (solo cuerpo técnico). */
     preview: (matchId: string) => http<MatchPreviewDto>(`/api/matches/${matchId}/preview`),

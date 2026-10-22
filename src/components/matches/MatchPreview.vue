@@ -33,9 +33,9 @@ const favourite = computed(() => {
 });
 
 const outcomeTone: Record<FormResultDto['outcome'], string> = {
-  W: 'bg-emerald-500 text-white',
-  D: 'bg-slate-400 text-white',
-  L: 'bg-red-500 text-white',
+  W: 'bg-emerald-100 text-emerald-800',
+  D: 'bg-slate-100 text-slate-700',
+  L: 'bg-red-100 text-red-800',
 };
 const outcomeLetter: Record<FormResultDto['outcome'], string> = { W: 'V', D: 'E', L: 'D' };
 
@@ -63,10 +63,10 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
         </div>
       </div>
 
-      <div class="mt-5 flex h-9 w-full overflow-hidden rounded-lg text-xs font-semibold text-white" role="img" :aria-label="`Victoria local ${pct(data.prediction.homeWin)}, empate ${pct(data.prediction.draw)}, victoria visitante ${pct(data.prediction.awayWin)}`">
-        <div class="flex items-center justify-center bg-brand-500" :style="{ width: pct(data.prediction.homeWin) }">{{ pct(data.prediction.homeWin) }}</div>
-        <div class="flex items-center justify-center bg-slate-400" :style="{ width: pct(data.prediction.draw) }">{{ pct(data.prediction.draw) }}</div>
-        <div class="flex items-center justify-center bg-amber-500" :style="{ width: pct(data.prediction.awayWin) }">{{ pct(data.prediction.awayWin) }}</div>
+      <div class="mt-5 flex h-9 w-full overflow-hidden rounded-lg text-xs font-semibold" role="img" :aria-label="`Victoria local ${pct(data.prediction.homeWin)}, empate ${pct(data.prediction.draw)}, victoria visitante ${pct(data.prediction.awayWin)}`">
+        <div class="flex items-center justify-center bg-sky-100 text-sky-800" :style="{ width: pct(data.prediction.homeWin) }">{{ pct(data.prediction.homeWin) }}</div>
+        <div class="flex items-center justify-center bg-slate-100 text-slate-700" :style="{ width: pct(data.prediction.draw) }">{{ pct(data.prediction.draw) }}</div>
+        <div class="flex items-center justify-center bg-amber-100 text-amber-800" :style="{ width: pct(data.prediction.awayWin) }">{{ pct(data.prediction.awayWin) }}</div>
       </div>
       <div class="mt-1 flex justify-between text-xs text-slate-500">
         <span>Gana {{ data.home.team.shortName }}</span><span>Empate</span><span>Gana {{ data.away.team.shortName }}</span>
@@ -164,7 +164,7 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
                 <td class="col-sm px-2 py-1 text-center tabular-nums">{{ perMatch(player) }}'</td>
                 <td class="px-2 py-1 text-center tabular-nums font-semibold">{{ player.goals }}<span v-if="player.penaltyGoals" class="font-normal text-slate-400"> ({{ player.penaltyGoals }}p)</span></td>
                 <td class="col-md px-2 py-1 text-center tabular-nums">{{ player.goalsLastThree }}</td>
-                <td class="px-2 py-1 text-center tabular-nums"><span class="text-amber-600">{{ player.yellowCards }}</span> / <span class="text-red-600">{{ player.redCards }}</span></td>
+                <td class="px-2 py-1 text-center tabular-nums"><span class="text-amber-700">{{ player.yellowCards }}</span> / <span class="text-red-600">{{ player.redCards }}</span></td>
               </tr>
             </tbody>
           </table>
@@ -174,7 +174,7 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
           <div class="rounded-lg border border-line px-2 py-1.5"><dt class="text-slate-500">Penaltis a favor</dt><dd class="font-semibold text-slate-900">{{ side.setPieces.penaltyGoalsFor }}</dd></div>
           <div class="rounded-lg border border-line px-2 py-1.5"><dt class="text-slate-500">Penaltis en contra</dt><dd class="font-semibold text-slate-900">{{ side.setPieces.penaltyGoalsAgainst }}</dd></div>
           <div class="rounded-lg border border-line px-2 py-1.5"><dt class="text-slate-500">Goles en propia (rival)</dt><dd class="font-semibold text-slate-900">{{ side.setPieces.ownGoalsFor }}</dd></div>
-          <div class="rounded-lg border border-line px-2 py-1.5"><dt class="text-slate-500">Tarjetas</dt><dd class="font-semibold text-slate-900">{{ side.setPieces.yellowCards }} <span class="text-amber-600">TA</span> · {{ side.setPieces.redCards }} <span class="text-red-600">TR</span></dd></div>
+          <div class="rounded-lg border border-line px-2 py-1.5"><dt class="text-slate-500">Tarjetas</dt><dd class="font-semibold text-slate-900">{{ side.setPieces.yellowCards }} <span class="text-amber-700">TA</span> · {{ side.setPieces.redCards }} <span class="text-red-600">TR</span></dd></div>
         </dl>
       </section>
     </div>

@@ -10,7 +10,7 @@ const styles = {
 </script>
 
 <template>
-  <div class="rounded-lg border px-4 py-3 text-sm" :class="styles[kind]" role="alert">
+  <div class="rounded-lg border px-4 py-3 text-sm leading-relaxed" :class="styles[kind]" role="alert">
     <slot />
   </div>
 </template>

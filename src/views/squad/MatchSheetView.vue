@@ -375,7 +375,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
         </table>
       </div>
 
-      <p class="mt-3 text-xs text-slate-500">
+      <p class="content-note mt-3">
         Tit = titular · Min = minutos (0-120) · G goles · A asistencias · T tiros · TP tiros a puerta · PC pases clave · Ent entradas ·
         Int intercepciones · Par paradas · TA amarillas (dos implican roja). Con «jugó» desmarcado la línea se elimina del acta al guardar.
       </p>

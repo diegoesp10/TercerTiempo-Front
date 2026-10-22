@@ -83,7 +83,7 @@ la plantilla de tu equipo (se importan las fichas publicadas por futbolasturiano
 un código personal junto al nombre de cada jugador) → *Partidos y actas* → abrir un partido disputado → marcar quién jugó, rellenar sus líneas y
 **«Guardar acta»** (la nota de cada jugador se calcula sola con los datos) → pestaña **«Comparador con la
 federación»** (acta interna frente a la oficial, con las discrepancias marcadas y las líneas oficiales sin ficha; si la
-federación aún no la ha publicado, se reintenta solo) → pestaña **«Vídeo»** (subir el vídeo del partido; los técnicos
+federación aún no la ha publicado, el backend comprueba los datos pendientes como máximo una vez al día) → pestaña **«Vídeo»** (subir el vídeo del partido; los técnicos
 de otras plantillas lo compran) →
 *Estadísticas* (gráficos del equipo: resultados y puntos, nota media por partido, reparto de goles, minutos y ranking de
 nota; cada nombre abre la ficha del jugador con su nota partido a partido, el desglose de la nota y su radar por 90') →

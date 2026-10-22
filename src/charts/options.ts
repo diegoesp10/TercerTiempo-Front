@@ -7,7 +7,7 @@ import type {
   SquadPlayerStatsDto,
   SquadTimelinePointDto,
 } from '@/types/api';
-import { palette, ratingColor, ratingScale, seriesColors } from './theme';
+import { chartPalettes, palette, ratingColor, ratingScale, seriesColors, textOnColor, type ChartTheme } from './theme';
 
 // ------------------------------------------------------------------ utilidades
 
@@ -64,15 +64,16 @@ const visualMapRating = (seriesIndex: number) => ({
 // ------------------------------------------------------------------ jugador
 
 /** Evolución de la nota partido a partido, coloreada por tramos, con su media y la de la plantilla. */
-export function ratingTrendOption(points: PlayerMatchPointDto[], squadAverage?: number | null): EChartsOption {
+export function ratingTrendOption(points: PlayerMatchPointDto[], squadAverage?: number | null, theme: ChartTheme = 'light'): EChartsOption {
+  const colors = chartPalettes[theme];
   const categories = points.map((p) => matchLabel(p.match.matchday, p.opponentShortName));
   const ratings = points.map((p) => p.performance?.rating ?? null);
   const rated = ratings.filter((r): r is number => r !== null);
   const average = rated.length ? rated.reduce((a, b) => a + b, 0) / rated.length : null;
 
   const markData: Array<Record<string, unknown>> = [];
-  if (average !== null) markData.push({ yAxis: average, name: 'Su media', lineStyle: { color: palette.emeraldDark }, label: { formatter: `Media ${n1(average)}`, color: palette.emeraldDark } });
-  if (squadAverage) markData.push({ yAxis: squadAverage, name: 'Media plantilla', lineStyle: { color: palette.slate }, label: { formatter: `Plantilla ${n1(squadAverage)}`, color: palette.slate } });
+  if (average !== null) markData.push({ yAxis: average, name: 'Su media', lineStyle: { color: palette.emerald }, label: { formatter: `Media ${n1(average)}`, color: colors.text } });
+  if (squadAverage) markData.push({ yAxis: squadAverage, name: 'Media plantilla', lineStyle: { color: palette.slate }, label: { formatter: `Plantilla ${n1(squadAverage)}`, color: colors.textMuted } });
 
   return {
     grid: { left: 36, right: 90, top: 24, bottom: 44 },
@@ -85,7 +86,7 @@ export function ratingTrendOption(points: PlayerMatchPointDto[], squadAverage?: 
         const perf = point.performance;
         const head = `<b>J${point.match.matchday}</b> · ${point.home ? 'vs' : '@'} ${point.opponentName}<br/>` +
           `${point.goalsFor ?? '–'}-${point.goalsAgainst ?? '–'} ${dot(outcomeColor[point.outcome])}${outcomeLetter[point.outcome]}`;
-        if (!perf || perf.rating === null) return `${head}<br/><span style="color:#94a3b8">No jugó</span>`;
+        if (!perf || perf.rating === null) return `${head}<br/><span style="color:${colors.textMuted}">No jugó</span>`;
         return `${head}<br/>${dot(ratingColor(perf.rating))}Nota <b>${n1(perf.rating)}</b><br/>` +
           `${perf.minutesPlayed}' · ${perf.goals} G · ${perf.assists} A · ${perf.shotsOnTarget}/${perf.shots} tiros`;
       },
@@ -205,7 +206,8 @@ const radarAxes: Array<{ key: keyof PlayerAxesDto; label: string; per90?: boolea
 ];
 
 /** Radar del perfil por 90' (jugador frente a la media de la plantilla, o varios jugadores en el comparador). */
-export function profileRadarOption(entries: RadarEntry[], best: PlayerAxesDto, includeSaves: boolean): EChartsOption {
+export function profileRadarOption(entries: RadarEntry[], best: PlayerAxesDto, includeSaves: boolean, theme: ChartTheme = 'light'): EChartsOption {
+  const colors = chartPalettes[theme];
   const axes = radarAxes.filter((a) => includeSaves || !a.goalkeeper);
   const value = (e: RadarEntry, key: keyof PlayerAxesDto) => (e.axes[key] as number | null) ?? 0;
 
@@ -249,10 +251,10 @@ export function profileRadarOption(entries: RadarEntry[], best: PlayerAxesDto, i
       center: ['50%', '48%'],
       splitNumber: 4,
       shape: 'polygon',
-      axisName: { color: '#475569', fontSize: 11 },
-      splitArea: { areaStyle: { color: ['#f8fafc', '#f1f5f9'] } },
-      splitLine: { lineStyle: { color: '#e2e8f0' } },
-      axisLine: { lineStyle: { color: '#e2e8f0' } },
+      axisName: { color: colors.text, fontSize: 11 },
+      splitArea: { areaStyle: { color: colors.radarArea } },
+      splitLine: { lineStyle: { color: colors.gridLine } },
+      axisLine: { lineStyle: { color: colors.gridLine } },
     },
     series: [{ type: 'radar', data, emphasis: { lineStyle: { width: 4 } } }],
   } as EChartsOption;
@@ -271,7 +273,7 @@ export function per90BarsOption(entries: RadarEntry[]): EChartsOption {
       name: e.name,
       type: 'bar' as const,
       barMaxWidth: 22,
-      itemStyle: { color: e.reference ? '#cbd5e1' : seriesColors[i % seriesColors.length] },
+      itemStyle: { color: e.reference ? palette.slate : seriesColors[i % seriesColors.length] },
       data: metrics.map((m) => e.axes[m.key] as number),
     })),
   } as EChartsOption;
@@ -382,7 +384,8 @@ export function teamRatingOption(points: SquadTimelinePointDto[]): EChartsOption
 }
 
 /** Reparto de los goles (o goles + asistencias) entre los jugadores. */
-export function goalsDonutOption(rows: SquadPlayerStatsDto[], metric: 'goals' | 'goalContributions'): EChartsOption {
+export function goalsDonutOption(rows: SquadPlayerStatsDto[], metric: 'goals' | 'goalContributions', theme: ChartTheme = 'light'): EChartsOption {
+  const colors = chartPalettes[theme];
   const data = rows
     .map((r) => ({ name: r.player.fullName, value: r.stats[metric] }))
     .filter((d) => d.value > 0)
@@ -404,8 +407,8 @@ export function goalsDonutOption(rows: SquadPlayerStatsDto[], metric: 'goals' | 
       subtext: metric === 'goals' ? 'goles' : 'goles + asist.',
       left: 'center',
       top: '33%',
-      textStyle: { fontSize: 28, fontWeight: 700, color: '#0f172a' },
-      subtextStyle: { fontSize: 12, color: '#64748b' },
+      textStyle: { fontSize: 28, fontWeight: 700, color: colors.textStrong },
+      subtextStyle: { fontSize: 12, color: colors.textMuted },
       itemGap: 2,
     },
     series: [
@@ -414,17 +417,21 @@ export function goalsDonutOption(rows: SquadPlayerStatsDto[], metric: 'goals' | 
         radius: ['46%', '72%'],
         center: ['50%', '42%'],
         padAngle: 2,
-        label: { show: true, position: 'inside', formatter: '{c}', color: '#fff', fontWeight: 700, fontSize: 12 },
+        label: { show: true, position: 'inside', formatter: '{c}', fontWeight: 700, fontSize: 12 },
         labelLine: { show: false },
         emphasis: { scaleSize: 6 },
-        data,
+        data: data.map((item, index) => {
+          const color = seriesColors[index % seriesColors.length];
+          return { ...item, itemStyle: { color }, label: { color: textOnColor(color) } };
+        }),
       },
     ],
   } as EChartsOption;
 }
 
 /** Minutos jugados por jugador (barras horizontales), con el porcentaje de participación. */
-export function minutesBarsOption(rows: SquadPlayerStatsDto[], limit = 16): EChartsOption {
+export function minutesBarsOption(rows: SquadPlayerStatsDto[], limit = 16, theme: ChartTheme = 'light'): EChartsOption {
+  const colors = chartPalettes[theme];
   const top = rows.filter((r) => r.stats.minutes > 0).sort((a, b) => b.stats.minutes - a.stats.minutes).slice(0, limit).reverse();
 
   return {
@@ -439,14 +446,14 @@ export function minutesBarsOption(rows: SquadPlayerStatsDto[], limit = 16): ECha
           `Participación: <b>${Math.round(row.impact.participationPct)} %</b>`;
       },
     },
-    xAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: '#e2e8f0' } } },
+    xAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: colors.gridLine } } },
     yAxis: { type: 'category', data: top.map((r) => r.player.fullName), axisLabel: { width: 130, overflow: 'truncate' } },
     series: [
       {
         type: 'bar',
         barMaxWidth: 16,
         itemStyle: { borderRadius: [0, 6, 6, 0], color: new graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#6ee7b7' }, { offset: 1, color: palette.emerald }]) },
-        label: { show: true, position: 'right', formatter: (p: { dataIndex: number }) => `${Math.round(top[p.dataIndex].impact.participationPct)} %`, color: '#64748b', fontSize: 11 },
+        label: { show: true, position: 'right', formatter: (p: { dataIndex: number }) => `${Math.round(top[p.dataIndex].impact.participationPct)} %`, color: colors.textMuted, fontSize: 11 },
         data: top.map((r) => r.stats.minutes),
       },
     ],
@@ -454,7 +461,8 @@ export function minutesBarsOption(rows: SquadPlayerStatsDto[], limit = 16): ECha
 }
 
 /** Ranking de nota media (jugadores con al menos 90'), cada barra con el color de su nota. */
-export function ratingRankingOption(rows: SquadPlayerStatsDto[], limit = 12): EChartsOption {
+export function ratingRankingOption(rows: SquadPlayerStatsDto[], limit = 12, theme: ChartTheme = 'light'): EChartsOption {
+  const colors = chartPalettes[theme];
   const ranked = rows
     .filter((r) => r.stats.averageRating !== null && r.stats.minutes >= 90)
     .sort((a, b) => b.stats.averageRating! - a.stats.averageRating!)
@@ -464,13 +472,13 @@ export function ratingRankingOption(rows: SquadPlayerStatsDto[], limit = 12): EC
   return {
     grid: { left: 8, right: 40, top: 8, bottom: 8, containLabel: true },
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v) => n1(Number(v)) },
-    xAxis: { type: 'value', min: 3, max: 10, splitLine: { lineStyle: { type: 'dashed', color: '#e2e8f0' } } },
+    xAxis: { type: 'value', min: 3, max: 10, splitLine: { lineStyle: { type: 'dashed', color: colors.gridLine } } },
     yAxis: { type: 'category', data: ranked.map((r) => r.player.fullName), axisLabel: { width: 130, overflow: 'truncate' } },
     series: [
       {
         type: 'bar',
         barMaxWidth: 16,
-        label: { show: true, position: 'right', formatter: (p: { value: number }) => n1(p.value), fontWeight: 600, color: '#334155' },
+        label: { show: true, position: 'right', formatter: (p: { value: number }) => n1(p.value), fontWeight: 600, color: colors.text },
         data: ranked.map((r) => ({ value: r.stats.averageRating!, itemStyle: { color: ratingColor(r.stats.averageRating), borderRadius: [0, 6, 6, 0] } })),
       },
     ],

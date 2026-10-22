@@ -161,7 +161,7 @@ async function remove(player: SquadPlayerDto) {
               role="radio"
               :aria-checked="detail.summary.visibility === option"
               class="rounded-md px-3 py-1 text-sm font-medium transition"
-              :class="detail.summary.visibility === option ? 'bg-brand-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
+              :class="detail.summary.visibility === option ? 'bg-action text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
               v-busy="busy" :disabled="busy"
               @click="setVisibility(option)"
             >

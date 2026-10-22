@@ -59,7 +59,7 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
       <MatchVideos :match-id="data.match.id" :upload-squad-id="mySquad?.squadId ?? null" :can-upload="mySquad !== null" />
     </div>
 
-    <Alert v-if="data.sheets.length === 0" kind="info" class="mt-6">
+    <Alert v-if="data.sheets.length === 0" kind="info" class="mt-6 leading-relaxed">
       Ninguno de los dos equipos tiene todavía plantilla en Tercer Tiempo, así que no hay actas internas que mostrar. El acta oficial de la federación y el vídeo, si lo hay, son públicos.
     </Alert>
 

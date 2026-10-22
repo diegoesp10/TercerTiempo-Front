@@ -16,6 +16,7 @@ import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
 import { useAsync } from '@/composables/useAsync';
+import { useSettingsStore } from '@/stores/settings';
 import { formatNumber, formatPct, positionLabels } from '@/utils/format';
 
 const props = defineProps<{ squadId: string; squadPlayerId: string }>();
@@ -37,7 +38,8 @@ const heroStats = computed(() =>
 );
 const isGoalkeeper = computed(() => data.value?.player.position === 'Goalkeeper');
 
-const trend = computed(() => (data.value ? ratingTrendOption(data.value.matches, data.value.squadAverage.averageRating) : null));
+const settings = useSettingsStore();
+const trend = computed(() => (data.value ? ratingTrendOption(data.value.matches, data.value.squadAverage.averageRating, settings.resolvedTheme) : null));
 const radar = computed(() =>
   data.value
     ? profileRadarOption(
@@ -47,6 +49,7 @@ const radar = computed(() =>
         ],
         data.value.squadBest,
         isGoalkeeper.value,
+        settings.resolvedTheme,
       )
     : null,
 );

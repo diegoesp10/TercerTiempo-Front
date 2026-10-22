@@ -42,7 +42,7 @@ function selectLevel(level: CompetitionLevel) {
         role="tab"
         :aria-selected="group.level === activeLevel"
         class="rounded-full px-4 py-1.5 text-sm font-medium transition"
-        :class="group.level === activeLevel ? 'bg-brand-500 text-white shadow-glow' : 'bg-surface text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100'"
+        :class="group.level === activeLevel ? 'bg-action text-white shadow-glow' : 'bg-surface text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100'"
         @click="selectLevel(group.level)"
       >
         {{ levelLabels[group.level] }}

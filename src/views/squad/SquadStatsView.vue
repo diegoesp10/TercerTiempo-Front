@@ -9,10 +9,12 @@ import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useSquad } from '@/composables/useSquad';
+import { useSettingsStore } from '@/stores/settings';
 import type { SquadPlayerStatsDto } from '@/types/api';
 import { formatNumber, formatPct, positionShortLabels } from '@/utils/format';
 
 const { squadId } = useSquad();
+const settings = useSettingsStore();
 
 const { data, loading, error } = useAsync(() => api.squads.stats(squadId.value));
 const timeline = useAsync(() => api.squads.timeline(squadId.value));
@@ -24,9 +26,9 @@ const teamResults = computed(() => (timeline.data.value?.matches.length ? teamRe
 const teamRating = computed(() =>
   timeline.data.value?.matches.some((m) => m.averageRating !== null) ? teamRatingOption(timeline.data.value.matches) : null,
 );
-const donut = computed(() => (data.value ? goalsDonutOption(data.value.players, donutMetric.value) : null));
-const minutes = computed(() => (data.value ? minutesBarsOption(data.value.players) : null));
-const ranking = computed(() => (data.value ? ratingRankingOption(data.value.players) : null));
+const donut = computed(() => (data.value ? goalsDonutOption(data.value.players, donutMetric.value, settings.resolvedTheme) : null));
+const minutes = computed(() => (data.value ? minutesBarsOption(data.value.players, 16, settings.resolvedTheme) : null));
+const ranking = computed(() => (data.value ? ratingRankingOption(data.value.players, 12, settings.resolvedTheme) : null));
 
 type SortKey = 'name' | 'matches' | 'starts' | 'minutes' | 'goals' | 'assists' | 'contributions' | 'rating' | 'goalsPer90' | 'participation' | 'pointsWith' | 'pointsWithout';
 
@@ -112,7 +114,7 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
               :key="option[0]"
               type="button"
               class="rounded-md px-2 py-0.5 font-medium"
-              :class="donutMetric === option[0] ? 'bg-brand-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
+              :class="donutMetric === option[0] ? 'bg-action text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
               @click="donutMetric = option[0]"
             >
               {{ option[1] }}
@@ -176,7 +178,7 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
       </table>
     </div>
 
-    <p class="mt-3 text-xs text-slate-500">
+    <p class="content-note mt-3">
       Pulsa una columna para ordenar. «Part.» es el porcentaje de los minutos posibles del equipo que ha jugado; «PPP» son los
       puntos por partido del equipo con y sin el jugador en el acta.
     </p>

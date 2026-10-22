@@ -1,6 +1,7 @@
 // Temas visuales de los gráficos (Apache ECharts), uno por tema de la interfaz (claro / oscuro).
 
 export const CHART_THEMES = { light: 'tercer-tiempo-light', dark: 'tercer-tiempo-dark' } as const;
+export type ChartTheme = keyof typeof CHART_THEMES;
 
 export const palette = {
   emerald: '#22a35f',
@@ -17,6 +18,23 @@ export const palette = {
 
 /** Colores de serie por orden (jugadores del comparador, bloques de la nota...). Valen sobre fondo claro y oscuro. */
 export const seriesColors = [palette.sky, palette.emerald, palette.violet, palette.amber, palette.rose, palette.cyan];
+
+/** Tintas para nombres sobre las superficies de la interfaz; conservan el tono de cada serie. */
+export const seriesTextColors = {
+  light: ['#1558c2', '#156e42', '#6d28d9', '#925400', '#ad1f38', '#086f99'],
+  dark: ['#8ab4ff', '#4fe2b6', '#c4b5fd', '#ffd98a', '#ff8597', '#8fe8ff'],
+};
+
+/** Texto negro o blanco con el mayor contraste sobre un color #RRGGBB de la paleta. */
+export function textOnColor(color: string | undefined): string {
+  const hex = (color ?? palette.slate).replace('#', '');
+  const linear = [0, 2, 4].map((offset) => {
+    const value = parseInt(hex.slice(offset, offset + 2), 16) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  const luminance = 0.2126 * linear[0]! + 0.7152 * linear[1]! + 0.0722 * linear[2]!;
+  return (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05) ? '#000000' : '#ffffff';
+}
 
 /** Escala de color de las notas: rojo por debajo de 6, verde a partir de 7, azul a partir de 8. */
 export const ratingScale = [
@@ -59,7 +77,7 @@ function buildTheme(c: ChartPalette) {
     color: seriesColors,
     backgroundColor: 'transparent',
     textStyle: { fontFamily: font, color: c.text },
-    title: { textStyle: { color: c.textStrong, fontWeight: 600, fontSize: 15, fontFamily: display } },
+    title: { textStyle: { color: c.textStrong, fontWeight: 600, fontSize: 15, fontFamily: display }, subtextStyle: { color: c.textMuted } },
     legend: {
       icon: 'roundRect',
       itemWidth: 12,
@@ -104,11 +122,11 @@ function buildTheme(c: ChartPalette) {
   };
 }
 
-export const themeDefinitions = {
-  light: buildTheme({
+export const chartPalettes: Record<ChartTheme, ChartPalette> = {
+  light: {
     text: '#48536a',
     textStrong: '#101828',
-    textMuted: '#8a95a8',
+    textMuted: '#5f6b80',
     axisLine: 'rgba(16, 24, 40, 0.25)',
     gridLine: 'rgba(16, 24, 40, 0.1)',
     tooltipBg: 'rgba(255, 255, 255, 0.98)',
@@ -116,11 +134,11 @@ export const themeDefinitions = {
     tooltipText: '#101828',
     pieBorder: '#ffffff',
     radarArea: ['rgba(31, 111, 232, 0.05)', 'rgba(31, 111, 232, 0.02)'],
-  }),
-  dark: buildTheme({
+  },
+  dark: {
     text: '#c8d1e5',
     textStrong: '#f2f5fb',
-    textMuted: '#7383a3',
+    textMuted: '#98a6c4',
     axisLine: 'rgba(152, 166, 196, 0.35)',
     gridLine: 'rgba(152, 166, 196, 0.16)',
     tooltipBg: 'rgba(14, 23, 41, 0.97)',
@@ -128,5 +146,10 @@ export const themeDefinitions = {
     tooltipText: '#f2f5fb',
     pieBorder: '#111a2c',
     radarArea: ['rgba(47, 123, 255, 0.06)', 'rgba(47, 123, 255, 0.02)'],
-  }),
+  },
+};
+
+export const themeDefinitions = {
+  light: buildTheme(chartPalettes.light),
+  dark: buildTheme(chartPalettes.dark),
 };

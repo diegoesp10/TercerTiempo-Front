@@ -15,6 +15,7 @@ import ChartCard from '@/components/charts/ChartCard.vue';
 import { profileRadarOption, ratingBreakdownOption, ratingTrendOption } from '@/charts/options';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
+import { useSettingsStore } from '@/stores/settings';
 import { confirmDialog } from '@/composables/useConfirm';
 import {
   formatDate,
@@ -31,6 +32,7 @@ import {
 } from '@/utils/format';
 
 const auth = useAuthStore();
+const settings = useSettingsStore();
 const squad = computed(() => auth.playerSquad);
 
 const { data, loading, error, run } = useAsync(async () => {
@@ -45,7 +47,7 @@ const profile = useAsync(() =>
   auth.playerSquad ? api.squads.playerProfile(auth.playerSquad.squadId, auth.playerSquad.squadPlayerId) : Promise.resolve(null),
 );
 const trendChart = computed(() =>
-  profile.data.value ? ratingTrendOption(profile.data.value.matches, profile.data.value.squadAverage.averageRating) : null,
+  profile.data.value ? ratingTrendOption(profile.data.value.matches, profile.data.value.squadAverage.averageRating, settings.resolvedTheme) : null,
 );
 const radarChart = computed(() =>
   profile.data.value
@@ -56,6 +58,7 @@ const radarChart = computed(() =>
         ],
         profile.data.value.squadBest,
         profile.data.value.player.position === 'Goalkeeper',
+        settings.resolvedTheme,
       )
     : null,
 );

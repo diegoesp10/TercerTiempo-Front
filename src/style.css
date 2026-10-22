@@ -24,7 +24,7 @@
   --t-slate-100: #e9edf2;
   --t-slate-200: #d5dbe5;
   --t-slate-300: #b9c2d1;
-  --t-slate-400: #8a95a8;
+  --t-slate-400: #64748b;
   --t-slate-500: #5f6b80;
   --t-slate-600: #48536a;
   --t-slate-700: #333d52;
@@ -36,6 +36,8 @@
   --t-brand-500: #1f6fe8;
   --t-brand-600: #1558c2;
   --t-brand-700: #10459a;
+  --t-action: #1f6fe8;
+  --t-action-hover: #1558c2;
   --t-accent-300: #74c7ea;
   --t-accent-400: #0b86b8;
   --t-accent-500: #086f99;
@@ -91,7 +93,7 @@
   --t-slate-100: #182540;
   --t-slate-200: #243250;
   --t-slate-300: #324468;
-  --t-slate-400: #7383a3;
+  --t-slate-400: #8d9cbc;
   --t-slate-500: #98a6c4;
   --t-slate-600: #b2bdd6;
   --t-slate-700: #c8d1e5;
@@ -103,6 +105,8 @@
   --t-brand-500: #2f7bff;
   --t-brand-600: #2162d6;
   --t-brand-700: #184ba6;
+  --t-action: #2162d6;
+  --t-action-hover: #184ba6;
   --t-accent-300: #8fe8ff;
   --t-accent-400: #35d3ff;
   --t-accent-500: #12b6e6;
@@ -161,6 +165,8 @@
   --color-brand-500: var(--t-brand-500);
   --color-brand-600: var(--t-brand-600);
   --color-brand-700: var(--t-brand-700);
+  --color-action: var(--t-action);
+  --color-action-hover: var(--t-action-hover);
   --color-accent-300: var(--t-accent-300);
   --color-accent-400: var(--t-accent-400);
   --color-accent-500: var(--t-accent-500);
@@ -276,6 +282,14 @@
 }
 
 @layer components {
+  /* Todas las rutas comparten una superficie de lectura opaca: el césped queda en los márgenes. */
+  .page-root {
+    @apply rounded-2xl bg-canvas p-4 sm:p-6;
+  }
+  .content-note {
+    @apply rounded-lg border border-line bg-surface-2 px-4 py-3 text-xs leading-relaxed text-slate-600;
+  }
+
   .btn,
   .btn-primary,
   .btn-secondary,
@@ -285,7 +299,7 @@
       disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-brand-500 text-white hover:bg-brand-600;
+    @apply bg-action text-white hover:bg-action-hover;
     box-shadow: var(--t-shadow-glow);
   }
   .btn-secondary {

@@ -29,38 +29,46 @@ const error = ref<string | null>(null);
 
 const sheet = computed(() => props.sheet ?? own.value);
 
-async function load(refresh = false, quiet = false) {
+let inFlight = false;
+let disposed = false;
+let reloadAfterFlight = false;
+async function load(quiet = false) {
+  if (disposed) return;
+  if (inFlight) { reloadAfterFlight = true; return; }
+  inFlight = true;
+  const matchId = props.matchId;
   if (!quiet) loading.value = true;
   error.value = null;
   try {
-    const result = await api.matches.officialSheet(props.matchId, refresh);
+    const result = await api.matches.officialSheet(matchId);
+    if (disposed || props.matchId !== matchId) return;
     own.value = result;
     emit('refreshed', result);
   } catch (e) {
-    error.value = errorMessage(e);
+    if (!disposed && props.matchId === matchId) error.value = errorMessage(e);
   } finally {
+    inFlight = false;
     loading.value = false;
+    if (!disposed && reloadAfterFlight) { reloadAfterFlight = false; void load(); }
+    else if (!disposed) schedule();
   }
 }
 
-// Mientras el acta se descarga en segundo plano se pregunta cada 3 s (máximo dos minutos); si la federación aún no la
-// ha publicado (partido recién terminado), cada minuto.
-let timer: ReturnType<typeof setInterval> | null = null;
+// Estas consultas solo leen nuestra base de datos. Nunca fuerzan una descarga de la federación.
+let timer: ReturnType<typeof setTimeout> | null = null;
 let fetchingPolls = 0;
 function schedule() {
-  if (timer) clearInterval(timer);
+  if (timer) clearTimeout(timer);
   timer = null;
-  if (sheet.value?.status === 'Fetching' && fetchingPolls < 40) {
-    timer = setInterval(() => { fetchingPolls += 1; void load(false, true); }, 3_000);
-  } else if (sheet.value?.status === 'Pending') {
-    timer = setInterval(() => void load(false, true), 60_000);
+  if (sheet.value?.status === 'Fetching' && fetchingPolls < 24) {
+    timer = setTimeout(() => { fetchingPolls += 1; void load(true); }, 5_000);
   }
   if (sheet.value?.status !== 'Fetching') fetchingPolls = 0;
 }
 watch(sheet, schedule, { immediate: true });
-onBeforeUnmount(() => { if (timer) clearInterval(timer); });
+onBeforeUnmount(() => { disposed = true; if (timer) clearTimeout(timer); });
 
-watch(() => props.matchId, () => { if (props.sheet === undefined) void load(); }, { immediate: true });
+watch(() => props.matchId, () => { fetchingPolls = 0; own.value = null; if (props.sheet === undefined) void load(); }, { immediate: true });
 
 const teams = computed(() => (sheet.value ? [sheet.value.home, sheet.value.away].filter((t): t is OfficialTeamSheetDto => t !== null) : []));
 
@@ -82,14 +90,14 @@ const minutes = (line: OfficialLineDto) => {
         <h2 class="font-semibold text-slate-900">Acta oficial de la federación</h2>
         <p class="text-xs text-slate-500">
           <template v-if="sheet?.status === 'Available'">
-            Publicada por asturfutbol.es<template v-if="sheet.referee"> · árbitro: {{ sheet.referee }}</template><template v-if="sheet.fetchedAt"> · leída el {{ formatKickoff(sheet.fetchedAt) }}</template>
+            Acta guardada en Tercer Tiempo · fuente: asturfutbol.es<template v-if="sheet.referee"> · árbitro: {{ sheet.referee }}</template><template v-if="sheet.fetchedAt"> · descargada el {{ formatKickoff(sheet.fetchedAt) }}</template>
           </template>
           <template v-else>Alineaciones, minutos, goles y tarjetas según el acta del árbitro.</template>
         </p>
       </div>
       <div class="flex items-center gap-2">
         <a v-if="sheet?.sourceUrl" :href="sheet.sourceUrl" target="_blank" rel="noopener" class="text-sm text-accent-400 hover:underline">Ver en asturfutbol.es</a>
-        <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="loading" :disabled="loading" @click="load(true)">{{ loading ? 'Consultando…' : 'Actualizar' }}</button>
+        <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="loading" :disabled="loading" @click="load()">{{ loading ? 'Consultando…' : 'Consultar datos guardados' }}</button>
       </div>
     </div>
 
@@ -102,18 +110,18 @@ const minutes = (line: OfficialLineDto) => {
 
       <div v-else-if="sheet.status === 'Pending'" class="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
         <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" aria-hidden="true"></span>
-        <span>{{ sheet.message ?? 'La federación todavía no ha publicado el acta.' }} Se vuelve a comprobar automáticamente.</span>
+        <span>{{ sheet.message ?? 'El acta guardada sigue pendiente. El sistema comprobará si hay datos nuevos respetando los límites de descarga.' }}</span>
       </div>
 
       <div v-else-if="sheet.status === 'Fetching'" class="flex items-center gap-3 rounded-lg border border-line bg-surface-2 px-4 py-3 text-sm text-slate-700">
         <BrandMark :size="24" animated class="shrink-0" />
-        <span>{{ sheet.message ?? 'Descargando el acta de la federación…' }} La primera vez se trae de asturfutbol.es; después se lee al instante de Tercer Tiempo.</span>
+        <span>{{ sheet.message ?? 'El acta aún no está guardada; su descarga está en cola.' }} Esta pantalla consulta los datos guardados sin forzar nuevas descargas.</span>
       </div>
       <Alert v-else-if="sheet.status === 'Unavailable'" kind="warning">{{ sheet.message ?? 'No se ha encontrado este partido en la federación.' }}</Alert>
 
       <template v-else>
         <div class="grid gap-6 lg:grid-cols-2">
-          <div v-for="team in teams" :key="team.side" class="rounded-xl border p-4" :class="highlightTeamId && team.teamId === highlightTeamId ? 'border-accent-400/40 bg-brand-500/10/40' : 'border-slate-200'">
+          <div v-for="team in teams" :key="team.side" class="rounded-xl border p-4" :class="highlightTeamId && team.teamId === highlightTeamId ? 'border-accent-400/40 bg-brand-500/10' : 'border-slate-200'">
             <div class="mb-2 flex items-center justify-between">
               <h3 class="font-semibold text-slate-900">{{ team.teamName }}</h3>
               <span v-if="team.goals !== null" class="text-xl font-bold tabular-nums text-slate-900">{{ team.goals }}</span>

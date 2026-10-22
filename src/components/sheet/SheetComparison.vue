@@ -17,27 +17,29 @@ const data = shallowRef<SheetComparisonDto | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-async function load(refresh = false) {
+let reloadAfterFlight = false;
+let disposed = false;
+async function load() {
+  if (disposed) return;
+  if (loading.value) { reloadAfterFlight = true; return; }
   loading.value = true;
   error.value = null;
+  const { squadId, matchId } = props;
   try {
-    data.value = await api.squads.compareSheet(props.squadId, props.matchId, refresh);
+    const result = await api.squads.compareSheet(squadId, matchId);
+    if (!disposed && props.squadId === squadId && props.matchId === matchId) data.value = result;
   } catch (e) {
-    error.value = errorMessage(e);
+    if (!disposed && props.squadId === squadId && props.matchId === matchId) error.value = errorMessage(e);
   } finally {
     loading.value = false;
+    if (!disposed && reloadAfterFlight) { reloadAfterFlight = false; void load(); }
   }
 }
 
-watch(() => [props.squadId, props.matchId], () => void load(), { immediate: true });
+onBeforeUnmount(() => { disposed = true; });
+watch(() => [props.squadId, props.matchId], () => { data.value = null; void load(); }, { immediate: true });
 
-// Sin acta oficial todavía: se reintenta cada minuto, igual que el panel.
-let timer: ReturnType<typeof setInterval> | null = null;
-watch(data, (value) => {
-  if (timer) clearInterval(timer);
-  timer = value?.official.status === 'Pending' ? setInterval(() => void load(), 60_000) : null;
-});
-onBeforeUnmount(() => { if (timer) clearInterval(timer); });
+// El panel hijo consulta la copia guardada mientras se completa la descarga y avisa para recalcular la comparación.
 
 const available = computed(() => data.value?.official.status === 'Available');
 const filter = ref<'all' | 'differences'>('all');
@@ -75,10 +77,10 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
         </div>
         <div class="flex items-center gap-2">
           <div v-if="available" class="inline-flex rounded-lg border border-slate-200 p-0.5" role="radiogroup" aria-label="Filtro">
-            <button type="button" role="radio" :aria-checked="filter === 'all'" class="rounded-md px-3 py-1 text-xs font-medium" :class="filter === 'all' ? 'bg-brand-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'" @click="filter = 'all'">Todos</button>
-            <button type="button" role="radio" :aria-checked="filter === 'differences'" class="rounded-md px-3 py-1 text-xs font-medium" :class="filter === 'differences' ? 'bg-brand-500 text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'" @click="filter = 'differences'">Solo discrepancias</button>
+            <button type="button" role="radio" :aria-checked="filter === 'all'" class="rounded-md px-3 py-1 text-xs font-medium" :class="filter === 'all' ? 'bg-action text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'" @click="filter = 'all'">Todos</button>
+            <button type="button" role="radio" :aria-checked="filter === 'differences'" class="rounded-md px-3 py-1 text-xs font-medium" :class="filter === 'differences' ? 'bg-action text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'" @click="filter = 'differences'">Solo discrepancias</button>
           </div>
-          <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="loading" :disabled="loading" @click="load(true)">{{ loading ? 'Consultando…' : 'Actualizar' }}</button>
+          <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="loading" :disabled="loading" @click="load()">{{ loading ? 'Consultando…' : 'Consultar datos guardados' }}</button>
         </div>
       </div>
 

@@ -81,7 +81,7 @@ function logout() {
             :key="link.to"
             :to="link.to"
             class="rounded-md px-3 py-1.5 text-sm font-semibold transition"
-            :class="isActive(link) ? 'bg-brand-500 text-white' : 'text-slate-600 hover:bg-surface-2 hover:text-slate-900'"
+            :class="isActive(link) ? 'bg-action text-white' : 'text-slate-600 hover:bg-surface-2 hover:text-slate-900'"
           >
             {{ link.label }}
           </RouterLink>
@@ -162,7 +162,7 @@ function logout() {
       <slot />
     </main>
 
-    <footer class="border-t border-line py-5 text-center text-xs text-slate-500">
+    <footer class="border-t border-line bg-surface px-4 py-5 text-center text-xs leading-relaxed text-slate-600">
       <p>
         <span class="font-display text-sm font-semibold uppercase tracking-wide text-slate-600">Tercer Tiempo</span> · el rendimiento de cada jugador, partido a partido
       </p>

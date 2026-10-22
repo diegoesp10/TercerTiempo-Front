@@ -5,7 +5,7 @@ import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import { MIN_MINUTES_FOR_REFERENCE, averageAxes, axesFromStats, maxAxes } from '@/charts/axes';
 import { per90BarsOption, profileRadarOption, ratingComparisonOption, type RadarEntry } from '@/charts/options';
-import { seriesColors } from '@/charts/theme';
+import { seriesColors, seriesTextColors, textOnColor } from '@/charts/theme';
 import AppChart from '@/components/charts/AppChart.vue';
 import ChartCard from '@/components/charts/ChartCard.vue';
 import Alert from '@/components/ui/Alert.vue';
@@ -13,12 +13,14 @@ import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useSquad } from '@/composables/useSquad';
+import { useSettingsStore } from '@/stores/settings';
 import type { SquadPlayerProfileDto, SquadPlayerStatsDto } from '@/types/api';
 import { formatNumber, formatPct, positionShortLabels } from '@/utils/format';
 
 const MAX_SELECTED = 4;
 
 const { squadId } = useSquad();
+const settings = useSettingsStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -57,6 +59,7 @@ const rows = computed(() =>
 );
 
 const colorOf = (id: string) => seriesColors[selected.value.indexOf(id) % seriesColors.length];
+const textColorOf = (id: string) => seriesTextColors[settings.resolvedTheme][selected.value.indexOf(id) % seriesColors.length];
 
 // Perfil por 90' de cada jugador y referencias de la plantilla (jugadores con 90' o más).
 const reference = computed(() =>
@@ -68,7 +71,7 @@ const entries = computed<RadarEntry[]>(() => [
 ]);
 const includeSaves = computed(() => rows.value.some((r) => r.player.position === 'Goalkeeper'));
 
-const radar = computed(() => (rows.value.length ? profileRadarOption(entries.value, maxAxes(reference.value), includeSaves.value) : null));
+const radar = computed(() => (rows.value.length ? profileRadarOption(entries.value, maxAxes(reference.value), includeSaves.value, settings.resolvedTheme) : null));
 const bars = computed(() => (rows.value.length ? per90BarsOption(entries.value) : null));
 
 // Nota partido a partido: necesita la serie de cada jugador (ficha completa).
@@ -143,15 +146,15 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
             type="button"
             class="flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition"
             :class="selected.includes(row.player.id)
-              ? 'border-transparent text-white shadow-sm'
+              ? 'border-transparent shadow-sm'
               : 'border-slate-200 bg-surface text-slate-700 hover:border-slate-300 disabled:opacity-50'"
-            :style="selected.includes(row.player.id) ? { backgroundColor: colorOf(row.player.id) } : undefined"
+            :style="selected.includes(row.player.id) ? { backgroundColor: colorOf(row.player.id), color: textOnColor(colorOf(row.player.id)) } : undefined"
             :disabled="!selected.includes(row.player.id) && selected.length >= MAX_SELECTED"
             @click="toggle(row.player.id)"
           >
-            <span v-if="row.player.shirtNumber" class="opacity-70">{{ row.player.shirtNumber }}</span>
+            <span v-if="row.player.shirtNumber">{{ row.player.shirtNumber }}</span>
             {{ row.player.fullName }}
-            <span v-if="row.player.position" class="text-xs opacity-70">{{ positionShortLabels[row.player.position] }}</span>
+            <span v-if="row.player.position" class="text-xs">{{ positionShortLabels[row.player.position] }}</span>
           </button>
         </div>
       </section>
@@ -173,7 +176,7 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
                     <RouterLink
                       :to="{ name: 'squad-player', params: { squadId, squadPlayerId: row.player.id } }"
                       class="block text-xs font-semibold hover:underline"
-                      :style="{ color: colorOf(row.player.id) }"
+                      :style="{ color: textColorOf(row.player.id) }"
                     >
                       {{ row.player.fullName }}
                     </RouterLink>
