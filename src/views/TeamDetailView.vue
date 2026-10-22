@@ -9,6 +9,8 @@ import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import ClubRosterEditor from '@/components/teams/ClubRosterEditor.vue';
+import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
+import RosterStatsSummary from '@/components/teams/RosterStatsSummary.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
@@ -259,22 +261,32 @@ async function linkToClub() {
           El proveedor no publica la plantilla de este equipo. El cuerpo técnico puede añadir las fichas a mano.
         </p>
 
-        <table v-else class="min-w-full text-sm">
-          <thead class="text-xs uppercase tracking-wide text-slate-500">
-            <tr>
-              <th class="py-2 pr-3 text-left">#</th>
-              <th class="py-2 pr-3 text-left">Jugador</th>
-              <th class="py-2 text-left">Posición</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr v-for="entry in data.roster" :key="entry.id">
-              <td class="py-2 pr-3 tabular-nums text-slate-500">{{ entry.shirtNumber ?? '—' }}</td>
-              <td class="py-2 pr-3 font-medium text-slate-800">{{ entry.fullName }}</td>
-              <td class="py-2 text-slate-600">{{ entry.position ? positionLabels[entry.position] : '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-else class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="py-2 pr-3 text-left">#</th>
+                <th class="py-2 pr-3 text-left">Jugador</th>
+                <th class="py-2 text-left" title="Goles, tarjetas y minutos según las actas oficiales">Temporada</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="entry in data.roster" :key="entry.id">
+                <td class="py-2 pr-3 tabular-nums text-slate-500">{{ entry.shirtNumber ?? '—' }}</td>
+                <td class="py-2 pr-3 whitespace-nowrap">
+                  <span class="inline-flex items-center gap-2">
+                    <PlayerAvatar :src="entry.photoUrl" :name="entry.fullName" size="sm" />
+                    <span>
+                      <span class="font-medium text-slate-800">{{ entry.fullName }}</span>
+                      <span class="block text-xs text-slate-500">{{ entry.position ? positionLabels[entry.position] : 'Sin posición' }}</span>
+                    </span>
+                  </span>
+                </td>
+                <td class="py-2 whitespace-nowrap"><RosterStatsSummary :stats="entry.stats" /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   </template>

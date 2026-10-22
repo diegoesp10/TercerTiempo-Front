@@ -5,6 +5,7 @@ import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Badge from '@/components/ui/Badge.vue';
+import InjuryPanel from '@/components/squads/InjuryPanel.vue';
 import { useSquad } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
 import type { Position, SquadPlayerDto, SquadPlayerRequest, SquadVisibility } from '@/types/api';
@@ -15,6 +16,8 @@ const auth = useAuthStore();
 
 const canManage = computed(() => detail.value?.canManage ?? false);
 const active = computed(() => (detail.value?.players ?? []).filter((p) => p.status === 'Active'));
+// Las lesiones solo llegan al cuerpo técnico y a los jugadores vinculados: si la API las manda, se muestra el panel.
+const seesInjuries = computed(() => canManage.value || myEntryId.value !== null);
 const left = computed(() => (detail.value?.players ?? []).filter((p) => p.status !== 'Active'));
 const myEntryId = computed(() => (auth.playerSquad?.squadId === squadId.value ? auth.playerSquad.squadPlayerId : null));
 
@@ -242,7 +245,12 @@ function remove(player: SquadPlayerDto) {
                       :to="{ name: 'squad-player', params: { squadId, squadPlayerId: player.id } }"
                       class="font-medium text-slate-800 hover:text-accent-400 hover:underline"
                     >{{ player.fullName }}</RouterLink>
-                    <p class="text-xs text-slate-400">{{ player.fromRoster ? 'futbolasturiano.es' : 'añadido a mano' }}</p>
+                    <p class="text-xs text-slate-400">
+                      {{ player.fromRoster ? 'futbolasturiano.es' : 'añadido a mano' }}
+                      <Badge v-if="player.injury" tone="red" class="ml-1" :title="[player.injury.typeLabel, player.injury.reason].filter(Boolean).join(': ')">
+                        <Icon icon="user-injured" class="mr-1 h-3 w-3" />Lesionado<template v-if="player.injury.expectedReturnOn"> · hasta {{ formatDate(player.injury.expectedReturnOn) }}</template>
+                      </Badge>
+                    </p>
                   </td>
                   <td class="py-2 pr-3 text-slate-600">{{ player.position ? positionLabels[player.position] : '—' }}</td>
                   <td class="py-2 pr-3">
@@ -293,8 +301,11 @@ function remove(player: SquadPlayerDto) {
         </details>
       </section>
 
+      <div class="space-y-6 self-start">
+      <InjuryPanel v-if="seesInjuries" :squad-id="squadId" :players="detail.players" :can-manage="canManage" @changed="reload" />
+
       <!-- Cuerpo técnico -->
-      <section class="card self-start">
+      <section class="card">
         <h2 class="mb-3 font-semibold text-slate-900">Cuerpo técnico</h2>
         <ul class="divide-y divide-slate-100 text-sm">
           <li v-for="member in detail.staff" :key="member.coachId" class="py-2">
@@ -308,6 +319,7 @@ function remove(player: SquadPlayerDto) {
           Los nombramientos los emite el club: cada técnico entra con su código de acceso y sale cuando caduca o se revoca.
         </p>
       </section>
+      </div>
     </div>
   </template>
 </template>

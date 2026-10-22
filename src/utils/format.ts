@@ -138,9 +138,9 @@ export type Tone = 'green' | 'amber' | 'red' | 'blue' | 'slate';
 export const outcomeTone = (outcome: Outcome): Tone =>
   outcome === 'win' ? 'green' : outcome === 'draw' ? 'amber' : outcome === 'loss' ? 'red' : 'slate';
 
-/** Rival y localía de un partido para un equipo: "vs Rival" en casa, "@ Rival" fuera. */
+/** Rival de un partido para un equipo; siempre "vs Rival" (la localía se indica aparte). */
 export function opponentLabel(match: MatchDto, teamId: string): string {
-  return match.homeTeam.id === teamId ? `vs ${match.awayTeam.name}` : `@ ${match.homeTeam.name}`;
+  return `vs ${match.homeTeam.id === teamId ? match.awayTeam.name : match.homeTeam.name}`;
 }
 
 export const scoreLabel = (match: MatchDto) =>

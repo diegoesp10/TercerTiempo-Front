@@ -5,6 +5,8 @@ import { errorMessage } from '@/api/http';
 import OfficialSheetPanel from '@/components/sheet/OfficialSheetPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import CardMarks from '@/components/sheet/CardMarks.vue';
+import GoalMarks from '@/components/sheet/GoalMarks.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { SheetComparisonDto, SheetComparisonRowDto } from '@/types/api';
 import { positionShortLabels, sheetFieldLabels } from '@/utils/format';
@@ -119,8 +121,8 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
                   <td class="border-l border-slate-200 px-2 py-2 text-center" :class="cell(row, 'played')">{{ yes(row.coach.minutesPlayed > 0) }}</td>
                   <td class="px-2 py-2 text-center" :class="cell(row, 'started')">{{ row.coach.started ? '●' : '' }}</td>
                   <td class="px-2 py-2 text-center tabular-nums" :class="cell(row, 'minutes')">{{ row.coach.minutesPlayed }}</td>
-                  <td class="px-2 py-2 text-center tabular-nums" :class="cell(row, 'goals')">{{ row.coach.goals }}</td>
-                  <td class="px-2 py-2 text-center tabular-nums" :class="hasDifference(row, 'yellowCards') || hasDifference(row, 'redCard') ? cell(row, 'yellowCards') || cell(row, 'redCard') : ''">{{ row.coach.yellowCards }}/{{ row.coach.redCard ? 1 : 0 }}</td>
+                  <td class="px-2 py-2 text-center" :class="cell(row, 'goals')"><GoalMarks :goals="row.coach.goals" /></td>
+                  <td class="px-2 py-2 text-center" :class="hasDifference(row, 'yellowCards') || hasDifference(row, 'redCard') ? cell(row, 'yellowCards') || cell(row, 'redCard') : ''"><CardMarks :yellow-cards="row.coach.yellowCards" :red-card="row.coach.redCard" /></td>
                 </template>
                 <td v-else class="border-l border-slate-200 px-2 py-2 text-center text-xs text-slate-400" colspan="5" :class="cell(row, 'played')">sin línea</td>
 
@@ -128,8 +130,8 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
                   <td class="border-l border-slate-200 px-2 py-2 text-center" :class="cell(row, 'played')">{{ yes(row.official.played) }}</td>
                   <td class="px-2 py-2 text-center" :class="cell(row, 'started')">{{ row.official.started ? '●' : '' }}</td>
                   <td class="px-2 py-2 text-center tabular-nums" :class="cell(row, 'minutes')">{{ row.official.played ? row.official.minutesPlayed : '—' }}</td>
-                  <td class="px-2 py-2 text-center tabular-nums" :class="cell(row, 'goals')">{{ row.official.goals + row.official.penaltyGoals }}</td>
-                  <td class="px-2 py-2 text-center tabular-nums" :class="hasDifference(row, 'yellowCards') || hasDifference(row, 'redCard') ? cell(row, 'yellowCards') || cell(row, 'redCard') : ''">{{ row.official.yellowCards }}/{{ row.official.redCard ? 1 : 0 }}</td>
+                  <td class="px-2 py-2 text-center" :class="cell(row, 'goals')"><GoalMarks :goals="row.official.goals" :penalty-goals="row.official.penaltyGoals" /></td>
+                  <td class="px-2 py-2 text-center" :class="hasDifference(row, 'yellowCards') || hasDifference(row, 'redCard') ? cell(row, 'yellowCards') || cell(row, 'redCard') : ''"><CardMarks :yellow-cards="row.official.yellowCards" :red-card="row.official.redCard" /></td>
                 </template>
                 <td v-else class="border-l border-slate-200 px-2 py-2 text-center text-xs text-slate-400" colspan="5" :class="cell(row, 'played')">no convocado</td>
 

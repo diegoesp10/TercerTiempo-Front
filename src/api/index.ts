@@ -7,6 +7,7 @@ import type {
   ClubDto,
   SyncStatusDto,
   RosterEntryRequest,
+  RosterEntryDetailDto,
   RosterEntryDto,
   MatchPreviewDto,
   TeamCrestImportDto,
@@ -38,6 +39,9 @@ import type {
   SquadSummaryDto,
   SquadTimelineDto,
   SquadVisibility,
+  InjuryDto,
+  InjuryRequest,
+  InjuryTypeDto,
   SyncResultDto,
   TeamDetailDto,
   TeamSummaryDto,
@@ -75,6 +79,12 @@ export const api = {
     updateRosterEntry: (teamId: string, entryId: string, body: RosterEntryRequest) =>
       http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster/${entryId}`, { method: 'PUT', body }),
     removeRosterEntry: (teamId: string, entryId: string) => http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster/${entryId}`, { method: 'DELETE' }),
+    rosterEntry: (teamId: string, entryId: string) => http<RosterEntryDetailDto>(`/api/clubs/me/teams/${teamId}/roster/${entryId}`),
+    uploadRosterPhoto: (teamId: string, entryId: string, file: File) => {
+      const body = new FormData();
+      body.append('file', file);
+      return http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster/${entryId}/photo`, { method: 'PUT', body });
+    },
     uploadTeamCrest: (teamId: string, file: File) => {
       const body = new FormData();
       body.append('file', file);
@@ -117,6 +127,14 @@ export const api = {
     playerProfile: (squadId: string, squadPlayerId: string) =>
       http<SquadPlayerProfileDto>(`/api/squads/${squadId}/players/${squadPlayerId}/profile`),
     timeline: (squadId: string) => http<SquadTimelineDto>(`/api/squads/${squadId}/timeline`),
+    injuryTypes: () => http<InjuryTypeDto[]>('/api/squads/injury-types'),
+    injuries: (squadId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries`),
+    recordInjury: (squadId: string, body: InjuryRequest) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries`, { method: 'POST', body }),
+    updateInjury: (squadId: string, injuryId: string, body: InjuryRequest) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'PUT', body }),
+    closeInjury: (squadId: string, injuryId: string, returnedOn: string | null) =>
+      http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/close`, { method: 'POST', body: { returnedOn } }),
+    reopenInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/reopen`, { method: 'POST' }),
+    deleteInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'DELETE' }),
   },
 
   competitions: {

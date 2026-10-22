@@ -5,6 +5,8 @@ import OfficialSheetPanel from '@/components/sheet/OfficialSheetPanel.vue';
 import MatchVideos from '@/components/videos/MatchVideos.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import CardMarks from '@/components/sheet/CardMarks.vue';
+import GoalMarks from '@/components/sheet/GoalMarks.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
@@ -114,14 +116,14 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
                 </span>
               </td>
               <td class="px-2 py-2 text-center tabular-nums">{{ p.minutesPlayed }}</td>
-              <td class="px-2 py-2 text-center font-semibold tabular-nums">{{ p.goals }}</td>
+              <td class="px-2 py-2 text-center"><GoalMarks :goals="p.goals" /></td>
               <td class="px-2 py-2 text-center tabular-nums">{{ p.assists }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ p.shotsOnTarget }}/{{ p.shots }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ p.keyPasses }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ p.tackles }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ p.interceptions }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ p.saves }}</td>
-              <td class="px-2 py-2 text-center tabular-nums">{{ p.yellowCards }}/{{ p.redCard ? 1 : 0 }}</td>
+              <td class="px-2 py-2 text-center"><CardMarks :yellow-cards="p.yellowCards" :red-card="p.redCard" /></td>
               <td class="px-2 py-2 text-center"><RatingBadge :rating="p.rating" size="sm" /></td>
             </tr>
           </tbody>

@@ -4,6 +4,7 @@ import {
   faArrowRightArrowLeft,
   faArrowUpFromBracket,
   faCalendarCheck,
+  faCamera,
   faChartLine,
   faCheck,
   faChevronDown,
@@ -22,6 +23,7 @@ import {
   faTriangleExclamation,
   faUpRightFromSquare,
   faUserGroup,
+  faUserInjured,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -35,6 +37,7 @@ library.add(
   faArrowRightArrowLeft,
   faArrowUpFromBracket,
   faCalendarCheck,
+  faCamera,
   faChartLine,
   faCheck,
   faChevronDown,
@@ -53,6 +56,7 @@ library.add(
   faTriangleExclamation,
   faUpRightFromSquare,
   faUserGroup,
+  faUserInjured,
   faXmark,
 );
 

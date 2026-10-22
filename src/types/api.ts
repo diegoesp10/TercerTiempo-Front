@@ -228,6 +228,56 @@ export interface SquadPlayerDto {
   linked: boolean;
   linkedPlayerName: string | null;
   status: SquadPlayerStatus;
+  /** Lesión abierta; solo la ven el cuerpo técnico y los jugadores vinculados. */
+  injury: InjuryDto | null;
+}
+
+export type InjuryType =
+  | 'MuscleContracture'
+  | 'MuscleTear'
+  | 'AnkleSprain'
+  | 'KneeSprain'
+  | 'CruciateLigament'
+  | 'Meniscus'
+  | 'Fracture'
+  | 'Contusion'
+  | 'Tendinitis'
+  | 'Pubalgia'
+  | 'Concussion'
+  | 'Illness'
+  | 'Other';
+
+export interface InjuryTypeDto {
+  type: InjuryType;
+  label: string;
+  /** Duración media orientativa en días; null si no hay referencia. */
+  averageDays: number | null;
+}
+
+export interface InjuryDto {
+  id: string;
+  squadPlayerId: string;
+  playerName: string;
+  shirtNumber: number | null;
+  type: InjuryType;
+  typeLabel: string;
+  averageDays: number | null;
+  reason: string | null;
+  /** Fechas en formato YYYY-MM-DD. */
+  startedOn: string;
+  expectedReturnOn: string | null;
+  returnedOn: string | null;
+  active: boolean;
+  /** Días de baja hasta hoy (o hasta el alta). */
+  daysOut: number;
+}
+
+export interface InjuryRequest {
+  squadPlayerId: string | null;
+  type: InjuryType;
+  reason: string | null;
+  startedOn: string;
+  expectedReturnOn: string | null;
 }
 
 export interface SquadDetailDto {
@@ -359,6 +409,58 @@ export interface RosterEntryDto {
   shirtNumber: number | null;
   /** Añadida o corregida por el club: el proveedor ya no la sobrescribe. */
   managedByClub: boolean;
+  /** Foto subida por el club (ruta relativa a la API con versión); null si no hay. */
+  photoUrl: string | null;
+  /** Totales de la temporada según las actas oficiales; null si aún no aparece en ninguna. */
+  stats: RosterEntryStatsDto | null;
+}
+
+export interface RosterEntryStatsDto {
+  appearances: number;
+  started: number;
+  minutesPlayed: number;
+  goals: number;
+  yellowCards: number;
+  redCards: number;
+}
+
+export interface RosterOfficialAppearanceDto {
+  match: MatchDto;
+  home: boolean;
+  line: OfficialLineDto;
+}
+
+export interface RosterInternalAppearanceDto {
+  match: MatchDto;
+  home: boolean;
+  performance: PerformanceDto;
+}
+
+export interface RosterInternalStatsDto {
+  appearances: number;
+  started: number;
+  minutesPlayed: number;
+  goals: number;
+  assists: number;
+  shots: number;
+  shotsOnTarget: number;
+  keyPasses: number;
+  tackles: number;
+  interceptions: number;
+  saves: number;
+  yellowCards: number;
+  redCards: number;
+  averageRating: number | null;
+}
+
+/** Ficha de un jugador de la plantilla con sus actas oficiales y las de Tercer Tiempo (vista del club). */
+export interface RosterEntryDetailDto {
+  entry: RosterEntryDto;
+  official: RosterOfficialAppearanceDto[];
+  internal: RosterInternalAppearanceDto[];
+  internalStats: RosterInternalStatsDto | null;
+  /** El cuerpo técnico lleva la plantilla en Tercer Tiempo y este jugador está en ella. */
+  hasSquad: boolean;
 }
 
 export interface RosterEntryRequest {

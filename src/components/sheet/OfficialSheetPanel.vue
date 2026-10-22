@@ -4,6 +4,10 @@ import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import BallIcon from '@/components/ui/BallIcon.vue';
+import CardIcon from '@/components/ui/CardIcon.vue';
+import CardMarks from '@/components/sheet/CardMarks.vue';
+import GoalMarks from '@/components/sheet/GoalMarks.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { OfficialLineDto, OfficialSheetDto, OfficialTeamSheetDto } from '@/types/api';
 import { formatKickoff, officialEventLabels } from '@/utils/format';
@@ -61,15 +65,6 @@ const minutes = (line: OfficialLineDto) => {
   return `${line.minutesPlayed}'${detail}`;
 };
 
-const eventIcon: Record<string, string> = {
-  Goal: '⚽',
-  PenaltyGoal: '⚽ (p)',
-  OwnGoal: '⚽ (pp)',
-  YellowCard: '🟨',
-  SecondYellow: '🟨🟨',
-  RedCard: '🟥',
-  Substitution: '🔁',
-};
 </script>
 
 <template>
@@ -125,15 +120,13 @@ const eventIcon: Record<string, string> = {
               <tbody class="divide-y divide-slate-100">
                 <tr v-for="line in [...team.starters, ...team.bench]" :key="line.id" :class="line.played ? '' : 'text-slate-400'">
                   <td class="py-1 pr-2 tabular-nums text-slate-500">{{ line.shirtNumber ?? '—' }}</td>
-                  <td class="py-1 pr-2 whitespace-nowrap">
+                  <td class="py-1 pr-2">
                     <span class="font-medium" :class="line.played ? 'text-slate-800' : ''">{{ line.fullName }}</span>
                     <Badge v-if="line.started" class="ml-1">titular</Badge>
                   </td>
                   <td class="py-1 pr-2 text-center tabular-nums whitespace-nowrap">{{ minutes(line) }}</td>
-                  <td class="py-1 pr-2 text-center font-semibold tabular-nums">
-                    {{ line.goals + line.penaltyGoals || '' }}<span v-if="line.ownGoals" class="text-red-600" title="En propia puerta"> ({{ line.ownGoals }} pp)</span>
-                  </td>
-                  <td class="py-1 text-center tabular-nums">{{ line.yellowCards || '' }}<span v-if="line.redCard">🟥</span></td>
+                  <td class="py-1 pr-2 text-center whitespace-nowrap"><GoalMarks :goals="line.goals" :penalty-goals="line.penaltyGoals" :own-goals="line.ownGoals" /></td>
+                  <td class="py-1 text-center whitespace-nowrap"><CardMarks :yellow-cards="line.yellowCards" :red-card="line.redCard" /></td>
                 </tr>
               </tbody>
             </table>
@@ -146,7 +139,15 @@ const eventIcon: Record<string, string> = {
           <ul class="mt-2 grid gap-1 sm:grid-cols-2">
             <li v-for="(event, index) in sheet.events" :key="index" class="flex items-center gap-2 text-slate-700">
               <span class="w-12 shrink-0 text-right tabular-nums text-slate-500">{{ event.minute }}'<template v-if="event.extraMinute">+{{ event.extraMinute }}</template></span>
-              <span class="w-14 shrink-0" :title="officialEventLabels[event.type]">{{ eventIcon[event.type] }}</span>
+              <span class="inline-flex w-14 shrink-0 items-center gap-0.5" :title="officialEventLabels[event.type]">
+                <template v-if="event.type === 'Goal'"><BallIcon /></template>
+                <template v-else-if="event.type === 'PenaltyGoal'"><BallIcon title="Gol de penalti" /><span class="text-xs text-slate-400">(p)</span></template>
+                <template v-else-if="event.type === 'OwnGoal'"><BallIcon title="Gol en propia puerta" own-goal /><span class="text-xs text-slate-400">(pp)</span></template>
+                <template v-else-if="event.type === 'YellowCard'"><CardIcon kind="yellow" /></template>
+                <template v-else-if="event.type === 'SecondYellow'"><CardIcon kind="yellow" /><CardIcon kind="yellow" title="Segunda amarilla" /></template>
+                <template v-else-if="event.type === 'RedCard'"><CardIcon kind="red" /></template>
+                <Icon v-else icon="arrow-right-arrow-left" class="text-slate-400" />
+              </span>
               <span>
                 {{ event.playerName }}<template v-if="event.relatedPlayerName"> <span class="text-slate-400">por</span> {{ event.relatedPlayerName }}</template>
                 <span class="text-xs text-slate-400"> · {{ event.side === 'Home' ? sheet.home?.teamName : sheet.away?.teamName }}</span>

@@ -8,6 +8,8 @@ import MatchVideos from '@/components/videos/MatchVideos.vue';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import CardIcon from '@/components/ui/CardIcon.vue';
+import CardMarks from '@/components/sheet/CardMarks.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
@@ -327,8 +329,8 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
               <td class="px-2 py-2 text-center">{{ row.started ? '●' : '' }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ row.minutesPlayed }}</td>
               <td v-for="column in numericColumns" :key="column.key" class="px-2 py-2 text-center tabular-nums">{{ row[column.key] }}</td>
-              <td class="px-2 py-2 text-center tabular-nums">{{ row.yellowCards }}</td>
-              <td class="px-2 py-2 text-center">{{ row.redCard ? '🟥' : '' }}</td>
+              <td class="px-2 py-2 text-center"><CardMarks :yellow-cards="row.yellowCards" :red-card="false" /></td>
+              <td class="px-2 py-2 text-center"><CardIcon v-if="row.redCard" kind="red" /></td>
               <td class="px-2 py-2 text-center"><RatingBadge :rating="row.rating" size="sm" /></td>
               <td class="px-3 py-2 text-slate-600">{{ row.notes ?? '' }}</td>
             </tr>
