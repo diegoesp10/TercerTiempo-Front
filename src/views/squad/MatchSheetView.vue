@@ -60,6 +60,7 @@ const blank = (player: SquadPlayerDto): Row => ({
   saves: 0,
   yellowCards: 0,
   redCard: false,
+  fouls: 0,
   rating: null,
   notes: null,
   shirtNumber: null,
@@ -83,6 +84,7 @@ const fromSheet = (sheet: MatchSheetDto): Row[] =>
           saves: performance.saves,
           yellowCards: performance.yellowCards,
           redCard: performance.redCard,
+          fouls: performance.fouls ?? 0,
           rating: performance.rating,
           notes: performance.notes,
           shirtNumber: performance.matchShirtNumber,
@@ -105,6 +107,7 @@ const toEntry = (row: Row): MatchSheetEntryInput => ({
   saves: row.saves,
   yellowCards: row.yellowCards,
   redCard: row.redCard,
+  fouls: row.fouls ?? 0,
   notes: row.notes?.trim() ? row.notes.trim() : null,
   shirtNumber: row.shirtNumber || null,
 });
@@ -190,7 +193,7 @@ async function save() {
   }
 }
 
-const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'shotsOnTarget' | 'keyPasses' | 'tackles' | 'interceptions' | 'saves'>; label: string; title: string }[] = [
+const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'shotsOnTarget' | 'keyPasses' | 'tackles' | 'interceptions' | 'saves' | 'fouls'>; label: string; title: string }[] = [
   { key: 'goals', label: 'G', title: 'Goles' },
   { key: 'assists', label: 'A', title: 'Asistencias' },
   { key: 'shots', label: 'T', title: 'Tiros' },
@@ -199,6 +202,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
   { key: 'tackles', label: 'Ent', title: 'Entradas' },
   { key: 'interceptions', label: 'Int', title: 'Intercepciones' },
   { key: 'saves', label: 'Par', title: 'Paradas' },
+  { key: 'fouls', label: 'F', title: 'Faltas cometidas' },
 ];
 </script>
 

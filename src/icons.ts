@@ -11,6 +11,7 @@ import {
   faChevronLeft,
   faChevronRight,
   faCircleInfo,
+  faClipboardList,
   faCloudArrowUp,
   faCreditCard,
   faFutbol,
@@ -27,8 +28,10 @@ import {
   faTrash,
   faTriangleExclamation,
   faUpRightFromSquare,
+  faUser,
   faUserGroup,
   faUserInjured,
+  faVideo,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -49,6 +52,7 @@ library.add(
   faChevronLeft,
   faChevronRight,
   faCircleInfo,
+  faClipboardList,
   faCloudArrowUp,
   faCreditCard,
   faFutbol,
@@ -65,8 +69,10 @@ library.add(
   faTrash,
   faTriangleExclamation,
   faUpRightFromSquare,
+  faUser,
   faUserGroup,
   faUserInjured,
+  faVideo,
   faXmark,
 );
 

@@ -96,7 +96,7 @@ async function submit() {
 </script>
 
 <template>
-  <AuthPanel title="Tu equipo, con datos de verdad" subtitle="Clubes que nombran a su cuerpo técnico, técnicos que registran cada acta y jugadores que siguen su temporada.">
+  <AuthPanel title="Tu equipo, con datos de verdad" subtitle="Para clubes, cuerpos técnicos y jugadores.">
     <div>
       <h1 class="text-3xl font-bold text-slate-900">Darme de alta</h1>
       <p class="mt-1 text-sm text-slate-500">Elige qué papel tienes: la cuenta no se puede cambiar después.</p>

@@ -41,6 +41,7 @@ import type {
   SquadPlayerDto,
   SquadPlayerProfileDto,
   SquadPlayerRequest,
+  SquadSeasonTableDto,
   SquadStatsDto,
   SquadSummaryDto,
   SquadTimelineDto,
@@ -73,6 +74,12 @@ export const api = {
     invite: (inviteCode: string) => http<SquadInviteDto>(`/api/players/me/invite/${encodeURIComponent(inviteCode.trim())}`),
     joinSquad: (body: JoinSquadAsPlayerRequest) => http<PlayerDto>('/api/players/me/squad', { method: 'POST', body }),
     leaveSquad: () => http<PlayerDto>('/api/players/me/squad', { method: 'DELETE' }),
+    uploadPhoto: (file: File) => {
+      const body = new FormData();
+      body.append('file', file, file.name);
+      return http<PlayerDto>('/api/players/me/photo', { method: 'PUT', body });
+    },
+    deletePhoto: () => http<PlayerDto>('/api/players/me/photo', { method: 'DELETE' }),
     dashboard: () => http<PlayerDashboardDto>('/api/players/me/dashboard'),
     performances: () => http<PerformanceWithMatchDto[]>('/api/players/me/performances'),
     /** Propone corregir o crear su línea del acta de un partido; la decide su club o su cuerpo técnico. */
@@ -148,6 +155,7 @@ export const api = {
     completeVideoUpload: (squadId: string, uploadId: string) => http<MatchVideoDto>(`/api/squads/${squadId}/video-uploads/${uploadId}/complete`, { method: 'POST' }),
     cancelVideoUpload: (squadId: string, uploadId: string) => http<boolean>(`/api/squads/${squadId}/video-uploads/${uploadId}`, { method: 'DELETE' }),
     stats: (squadId: string) => http<SquadStatsDto>(`/api/squads/${squadId}/stats`),
+    seasonTable: (squadId: string) => http<SquadSeasonTableDto>(`/api/squads/${squadId}/season-table`),
     suggestions: (squadId: string) => http<SuggestionDto[]>(`/api/squads/${squadId}/suggestions`),
     resolveSuggestion: (squadId: string, suggestionId: string, body: ResolveSuggestionRequest) =>
       http<SuggestionDto[]>(`/api/squads/${squadId}/suggestions/${suggestionId}/resolve`, { method: 'POST', body }),

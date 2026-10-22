@@ -33,7 +33,7 @@ async function submit() {
 </script>
 
 <template>
-  <AuthPanel title="El acta de cada partido, convertida en estadísticas" subtitle="Clubes, cuerpo técnico y jugadores, cada uno con su panel.">
+  <AuthPanel title="El rendimiento de tu equipo, partido a partido" subtitle="Para clubes, cuerpos técnicos y jugadores.">
     <h1 class="text-3xl font-bold text-slate-900">Entrar</h1>
     <p class="mt-1 text-sm text-slate-500">Cuerpo técnico: gestiona tu plantilla y sus actas. Jugadores: consulta tus estadísticas. Clubes: nombra a tus técnicos.</p>
 

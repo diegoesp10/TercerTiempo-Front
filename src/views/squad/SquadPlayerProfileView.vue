@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { api } from '@/api';
 import {
   contributionsOption,
@@ -12,6 +12,10 @@ import ChartCard from '@/components/charts/ChartCard.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
+import PlayerMatchLog from '@/components/players/PlayerMatchLog.vue';
+import PlayerPhotoWizard from '@/components/players/PlayerPhotoWizard.vue';
+import { useAuthStore } from '@/stores/auth';
+import type { PlayerDto } from '@/types/api';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
@@ -20,25 +24,52 @@ import { useSettingsStore } from '@/stores/settings';
 import { formatNumber, formatPct, positionLabels } from '@/utils/format';
 
 const props = defineProps<{ squadId: string; squadPlayerId: string }>();
+const settings = useSettingsStore();
 
 const { data, loading, error, run } = useAsync(() => api.squads.playerProfile(props.squadId, props.squadPlayerId));
 watch(() => props.squadPlayerId, () => void run());
 
 const played = computed(() => data.value?.matches.filter((m) => m.performance) ?? []);
+// Cifras de la cabecera: por partido, el acta interna si existe y, si no, la oficial (así no salen ceros cuando el
+// cuerpo técnico aún no lleva sus actas pero la federación sí ha publicado las suyas).
+const combined = computed(() => {
+  const totals = { matches: 0, minutes: 0, goals: 0, assists: 0, yellow: 0, red: 0 };
+  for (const m of data.value?.matches ?? []) {
+    const p = m.performance;
+    const o = m.official;
+    if (p && p.minutesPlayed > 0) {
+      totals.matches++; totals.minutes += p.minutesPlayed; totals.goals += p.goals; totals.assists += p.assists;
+      totals.yellow += p.yellowCards; if (p.redCard) totals.red++;
+    } else if (o && o.played) {
+      totals.matches++; totals.minutes += o.minutesPlayed; totals.goals += o.goals + o.penaltyGoals;
+      totals.yellow += o.yellowCards; if (o.redCard) totals.red++;
+    }
+  }
+  return totals;
+});
 const heroStats = computed(() =>
   data.value
     ? [
-        { label: 'Partidos', value: data.value.stats.matchesLogged },
-        { label: 'Minutos', value: data.value.stats.minutes },
-        { label: 'Goles', value: data.value.stats.goals },
-        { label: 'Asistencias', value: data.value.stats.assists },
+        { label: 'Partidos', value: combined.value.matches },
+        { label: 'Minutos', value: combined.value.minutes },
+        { label: 'Goles', value: combined.value.goals },
+        { label: 'Asistencias', value: combined.value.assists },
+        { label: 'Tarjetas', value: `${combined.value.yellow} / ${combined.value.red}` },
         { label: 'Nota media', value: data.value.stats.averageRating === null ? '—' : formatNumber(data.value.stats.averageRating, 1) },
       ]
     : [],
 );
+
+// El propio jugador puede subir su foto desde su ficha.
+const auth = useAuthStore();
+const isMe = computed(() => auth.playerSquad?.squadPlayerId === props.squadPlayerId);
+const photoOpen = ref(false);
+function onPhotoSaved(player: PlayerDto) {
+  auth.setPlayer(player);
+  void run();
+}
 const isGoalkeeper = computed(() => data.value?.player.position === 'Goalkeeper');
 
-const settings = useSettingsStore();
 const trend = computed(() => (data.value ? ratingTrendOption(data.value.matches, data.value.squadAverage.averageRating, settings.resolvedTheme) : null));
 const radar = computed(() =>
   data.value
@@ -62,7 +93,7 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">
-    <RouterLink :to="{ name: 'squad-stats', params: { squadId } }" class="text-sm text-slate-500 hover:text-slate-800">← Estadísticas de la plantilla</RouterLink>
+    <RouterLink :to="{ name: 'squad', params: { squadId } }" class="text-sm text-slate-500 hover:text-slate-800">← Plantilla</RouterLink>
 
     <PlayerHeroCard
       class="mt-3 mb-6"
@@ -76,12 +107,16 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
       <template #actions>
         <RatingBadge :rating="data.stats.averageRating" size="lg" />
         <Badge v-if="data.player.linked" tone="green">Cuenta vinculada</Badge>
+        <button v-if="isMe" type="button" class="btn-primary" @click="photoOpen = true"><Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />{{ data.player.photoUrl ? 'Cambiar mi foto' : 'Subir mi foto' }}</button>
         <RouterLink :to="{ name: 'squad-compare', params: { squadId }, query: { ids: squadPlayerId } }" class="btn-secondary">Comparar con…</RouterLink>
       </template>
     </PlayerHeroCard>
 
+    <PlayerMatchLog class="mb-6" :matches="data.matches" :squad-id="squadId" />
+    <PlayerPhotoWizard v-if="isMe" :open="photoOpen" :has-photo="!!auth.player?.photoUrl" @close="photoOpen = false" @saved="onPhotoSaved" />
+
     <Alert v-if="played.length === 0" kind="info" class="mb-6">
-      Todavía no hay ninguna acta con minutos de este jugador. Los gráficos aparecerán cuando el cuerpo técnico registre sus partidos.
+      Los gráficos de nota y perfil aparecerán cuando el cuerpo técnico registre el acta interna de sus partidos.
     </Alert>
 
     <template v-else>

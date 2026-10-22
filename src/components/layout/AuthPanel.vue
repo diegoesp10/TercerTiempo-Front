@@ -1,37 +1,31 @@
 <script setup lang="ts">
 defineProps<{ title: string; subtitle: string }>();
 
-const facts = [
-  { value: '10', label: 'ligas: las semiprofesionales nacionales (1ª, 2ª y 3ª RFEF) y toda la regional asturiana' },
-  { value: '1:1', label: 'tu acta frente a la oficial de la federación' },
-  { value: '3,0 – 10', label: 'nota de cada jugador, solo con datos del acta' },
+const features = [
+  { icon: 'clipboard-list', title: 'Actas de cada partido', text: 'Minutos, goles, tarjetas y nota de cada jugador.' },
+  { icon: 'chart-line', title: 'Rendimiento y comparativas', text: 'La temporada de tu plantilla frente a la liga.' },
+  { icon: 'video', title: 'Vídeo y análisis', text: 'Los partidos de tu equipo, en un solo sitio.' },
 ];
 </script>
 
 <template>
-  <!-- Pantallas de acceso: panel editorial a la izquierda (titular, cifras y el dibujo del área) y el formulario a la derecha. -->
+  <!-- Pantallas de acceso: titular y tres ideas a la izquierda, formulario a la derecha. -->
   <div class="mx-auto mt-4 grid max-w-5xl overflow-hidden rounded-2xl border border-line bg-surface shadow-card lg:grid-cols-5">
-    <aside class="auth-aside relative hidden overflow-hidden p-8 text-white lg:col-span-2 lg:flex lg:flex-col">
-      <p class="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">Rendimiento partido a partido</p>
-      <h2 class="mt-3 text-3xl font-bold leading-[1.05] tracking-tight text-white">{{ title }}</h2>
-      <p class="mt-3 text-sm leading-relaxed text-white/75">{{ subtitle }}</p>
-
-      <dl class="relative z-10 mt-8 space-y-4 border-t border-white/15 pt-6">
-        <div v-for="fact in facts" :key="fact.label" class="flex items-baseline gap-4">
-          <dt class="w-20 shrink-0 font-figures text-2xl font-extrabold leading-none tabular-nums">{{ fact.value }}</dt>
-          <dd class="text-sm text-white/75">{{ fact.label }}</dd>
-        </div>
-      </dl>
-
-      <!-- Dibujo del área grande a línea, como en una pizarra táctica -->
-      <svg class="pointer-events-none absolute -bottom-10 -right-12 h-[62%] w-[120%] text-white/18" viewBox="0 0 400 220" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-        <path d="M0 200 H400" />
-        <path d="M70 200 V60 H330 V200" />
-        <path d="M140 200 V130 H260 V200" />
-        <path d="M150 60 A60 32 0 0 0 250 60" />
-        <circle cx="200" cy="112" r="3" fill="currentColor" stroke="none" />
-        <path d="M170 200 V210 H230 V200" />
-      </svg>
+    <aside class="auth-aside relative hidden overflow-hidden p-10 text-white lg:col-span-2 lg:flex lg:flex-col lg:justify-between">
+      <div>
+        <p class="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">Tercer Tiempo</p>
+        <h2 class="mt-3 text-3xl font-bold leading-[1.05] tracking-tight text-white">{{ title }}</h2>
+        <p class="mt-3 text-sm leading-relaxed text-white/70">{{ subtitle }}</p>
+      </div>
+      <ul class="mt-10 space-y-5">
+        <li v-for="f in features" :key="f.title" class="flex gap-3">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10"><Icon :icon="f.icon" class="h-4 w-4 text-white" /></span>
+          <span>
+            <span class="block text-sm font-semibold text-white">{{ f.title }}</span>
+            <span class="block text-sm text-white/65">{{ f.text }}</span>
+          </span>
+        </li>
+      </ul>
     </aside>
     <div class="p-6 sm:p-8 lg:col-span-3">
       <slot />

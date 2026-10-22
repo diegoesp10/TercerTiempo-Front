@@ -6,6 +6,7 @@ import Alert from '@/components/ui/Alert.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Badge from '@/components/ui/Badge.vue';
 import InjuryPanel from '@/components/squads/InjuryPanel.vue';
+import SquadSeasonTable from '@/components/squads/SquadSeasonTable.vue';
 import { useSquad } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
 import type { Position, SquadPlayerDto, SquadPlayerRequest, SquadVisibility } from '@/types/api';
@@ -182,6 +183,8 @@ async function remove(player: SquadPlayerDto) {
       </div>
     </section>
 
+    <SquadSeasonTable class="mb-6" :squad-id="squadId" :highlight-id="myEntryId" />
+
     <Alert v-if="canInvitePlayers" kind="info" class="mb-6">
       Genera el código personal junto al nombre de cada jugador y entrégaselo solo a él. Con ese código se da de alta sin escribir
       nada más: la cuenta se crea con el nombre de su ficha y el código queda invalidado al utilizarse.
@@ -191,7 +194,7 @@ async function remove(player: SquadPlayerDto) {
       <!-- Jugadores -->
       <section class="card lg:col-span-2">
         <div class="mb-3 flex items-center justify-between">
-          <h2 class="font-semibold text-slate-900">Jugadores</h2>
+          <h2 class="font-semibold text-slate-900">{{ canManage || canInvitePlayers ? 'Fichas e invitaciones' : 'Fichas' }}</h2>
           <span class="text-xs text-slate-500">{{ active.length }} activos</span>
         </div>
 

@@ -6,6 +6,8 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
+import PlayerPhotoWizard from '@/components/players/PlayerPhotoWizard.vue';
+import type { PlayerDto } from '@/types/api';
 import PercentileBar from '@/components/ui/PercentileBar.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
@@ -83,6 +85,12 @@ const hasPercentiles = computed(() => league.value !== null && league.value.play
 
 const suggestions = useAsync(() => (auth.playerSquad ? api.players.suggestions() : Promise.resolve([])));
 
+const photoOpen = ref(false);
+function onPhotoSaved(player: PlayerDto) {
+  auth.setPlayer(player);
+  void profile.run();
+}
+
 const leaveError = ref<string | null>(null);
 
 async function leave() {
@@ -120,17 +128,20 @@ async function leave() {
       :team="`${squad.teamName} · ${data.season ? `${data.season.competitionName} · ${data.season.label}` : 'Sin temporada activa'}`"
       :name="data.player.displayName"
       :number="squad.shirtNumber"
-      :photo-url="profile.data.value?.player.photoUrl ?? null"
+      :photo-url="auth.player?.photoUrl ?? profile.data.value?.player.photoUrl ?? null"
       :meta="`${positionLabels[data.player.position]}${squad.shirtNumber ? ` · dorsal ${squad.shirtNumber}` : ''}`"
       :stats="heroStats"
     >
       <template #actions>
+        <button type="button" class="btn-primary" @click="photoOpen = true"><Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />{{ auth.player?.photoUrl ? 'Cambiar mi foto' : 'Subir mi foto' }}</button>
         <RouterLink :to="{ name: 'squad', params: { squadId: squad.squadId } }" class="btn-secondary">
           {{ squad.teamName }}
           <Badge :tone="squad.visibility === 'Public' ? 'green' : 'slate'">{{ visibilityLabels[squad.visibility] }}</Badge>
         </RouterLink>
       </template>
     </PlayerHeroCard>
+
+    <PlayerPhotoWizard :open="photoOpen" :has-photo="!!auth.player?.photoUrl" @close="photoOpen = false" @saved="onPhotoSaved" />
 
     <Alert v-if="data.individual.matchesLogged === 0" kind="info" class="mb-6">
       Tu cuerpo técnico todavía no ha registrado ninguna acta con tu ficha. En cuanto lo haga, aquí aparecerán tus números.

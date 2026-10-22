@@ -71,6 +71,8 @@ export interface PlayerDto {
   position: Position;
   birthDate: string | null;
   squad: PlayerSquadDto | null;
+  /** Foto subida por el propio jugador (recortada, fondo transparente). */
+  photoUrl: string | null;
 }
 
 export interface SquadSummaryDto {
@@ -391,6 +393,30 @@ export interface SquadPlayerStatsDto {
   impact: TeamImpactDto;
 }
 
+/** Temporada de cada jugador: acta interna si existe; si no, la oficial (sin asistencias, faltas ni nota). */
+export interface SquadSeasonRowDto {
+  player: SquadPlayerDto;
+  matches: number;
+  starts: number;
+  minutes: number;
+  goals: number;
+  assists: number;
+  yellowCards: number;
+  redCards: number;
+  fouls: number;
+  averageRating: number | null;
+  fromInternal: number;
+  fromOfficial: number;
+}
+
+export interface SquadSeasonTableDto {
+  squad: SquadSummaryDto;
+  teamMatchesPlayed: number;
+  internalSheets: number;
+  officialSheets: number;
+  rows: SquadSeasonRowDto[];
+}
+
 export interface SquadStatsDto {
   squad: SquadSummaryDto;
   teamMatchesPlayed: number;
@@ -631,6 +657,8 @@ export interface PerformanceStats {
   yellowCards: number;
   redCard: boolean;
   notes: string | null;
+  /** Faltas cometidas. */
+  fouls?: number;
 }
 
 export interface PerformanceDto extends PerformanceStats {
@@ -909,6 +937,8 @@ export interface PlayerMatchPointDto {
   outcome: MatchOutcome;
   performance: PerformanceDto | null;
   rating: RatingBreakdownDto | null;
+  /** Su línea en el acta oficial de la federación, si está descargada. */
+  official: OfficialLineDto | null;
 }
 
 export interface SquadPlayerProfileDto {

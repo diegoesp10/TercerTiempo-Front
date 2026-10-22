@@ -13,6 +13,7 @@
     "@fortawesome/fontawesome-svg-core": "^7.3.1",
     "@fortawesome/free-solid-svg-icons": "^7.3.1",
     "@fortawesome/vue-fontawesome": "^3.3.3",
+    "@mediapipe/tasks-vision": "0.10.21",
     "@vueuse/core": "^15.0.0",
     "echarts": "^6.1.0",
     "gsap": "^3.15.0",
