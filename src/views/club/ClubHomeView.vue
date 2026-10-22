@@ -66,31 +66,6 @@ function addTeam() {
   });
 }
 
-// --- Escudo: el club puede sustituir el de sus propios equipos (PNG, JPG, WebP, SVG o GIF hasta 2 MB) ---
-const crestInput = ref<HTMLInputElement | null>(null);
-const crestTeamId = ref<string | null>(null);
-
-function pickCrest(teamId: string) {
-  crestTeamId.value = teamId;
-  crestInput.value?.click();
-}
-
-function uploadCrest(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  const teamId = crestTeamId.value;
-  input.value = '';
-  if (!file || !teamId) return;
-  void act(async () => {
-    const result = await api.clubs.uploadTeamCrest(teamId, file);
-    if (data.value) {
-      data.value = { ...data.value, teams: data.value.teams.map((t) => (t.teamId === teamId ? { ...t, teamCrestUrl: result.crestUrl } : t)) };
-    }
-    await auth.refreshAccount();
-    return `Escudo de ${result.teamName} actualizado.`;
-  });
-}
-
 function removeTeam(teamId: string, teamName: string) {
   if (!confirm(`¿Desvincular ${teamName} del club? Los nombramientos ya emitidos no cambian.`)) return;
   void act(async () => {
@@ -219,7 +194,6 @@ const sortedAppointments = computed(() => {
 
     <!-- Equipos -->
     <section class="card mb-6">
-      <input ref="crestInput" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" class="hidden" aria-hidden="true" @change="uploadCrest" />
       <h2 class="font-semibold text-slate-900">Equipos del club</h2>
       <p v-if="club.teams.length === 0" class="mt-2 text-sm text-slate-500">
         Ningún equipo del proveedor se reconoció con el nombre del club. Vincula los tuyos para poder nombrar a sus técnicos.
@@ -238,7 +212,6 @@ const sortedAppointments = computed(() => {
             <Badge :tone="team.activeAppointments > 0 ? 'green' : 'amber'">{{ team.activeAppointments }} {{ team.activeAppointments === 1 ? 'técnico vigente' : 'técnicos vigentes' }}</Badge>
             <RouterLink v-if="team.squadId" :to="{ name: 'squad', params: { squadId: team.squadId } }" class="text-accent-400 hover:underline">Plantilla</RouterLink>
             <span v-else>Sin plantilla todavía</span>
-            <button type="button" class="btn-ghost px-2 py-1 text-xs" :disabled="busy" @click="pickCrest(team.teamId)">Cambiar escudo</button>
             <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy" @click="removeTeam(team.teamId, team.teamName)">Desvincular</button>
           </div>
         </li>
