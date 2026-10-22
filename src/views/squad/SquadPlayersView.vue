@@ -205,8 +205,8 @@ async function remove(player: SquadPlayerDto) {
               <tr>
                 <th class="py-2 pr-3 text-left">#</th>
                 <th class="py-2 pr-3 text-left">Jugador</th>
-                <th class="py-2 pr-3 text-left">Posición</th>
-                <th class="py-2 pr-3 text-left">Cuenta</th>
+                <th class="col-sm py-2 pr-3 text-left">Posición</th>
+                <th class="col-md py-2 pr-3 text-left">Cuenta</th>
                 <th v-if="canInvitePlayers" class="py-2 pr-3 text-left">Invitación personal</th>
                 <th v-if="canManage" class="py-2 text-right"></th>
               </tr>
@@ -220,7 +220,7 @@ async function remove(player: SquadPlayerDto) {
                   <td class="py-2 pr-3">
                     <input v-model="edit.fullName" type="text" required maxlength="150" class="input px-2 py-1" aria-label="Nombre" />
                   </td>
-                  <td class="py-2 pr-3">
+                  <td class="col-sm py-2 pr-3">
                     <SearchSelect
                       size="sm"
                       aria-label="Posición"
@@ -231,7 +231,7 @@ async function remove(player: SquadPlayerDto) {
                       @update:model-value="edit.position = ($event as Position | null) ?? ''"
                     />
                   </td>
-                  <td class="py-2 pr-3 text-xs text-slate-500">{{ player.linked ? player.linkedPlayerName : '—' }}</td>
+                  <td class="col-md py-2 pr-3 text-xs text-slate-500">{{ player.linked ? player.linkedPlayerName : '—' }}</td>
                   <td v-if="canInvitePlayers" class="py-2 pr-3 text-xs text-slate-500">{{ player.linked ? 'Vinculado' : '—' }}</td>
                   <td class="py-2 text-right whitespace-nowrap">
                     <button type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="saveEdit">Guardar</button>
@@ -252,8 +252,8 @@ async function remove(player: SquadPlayerDto) {
                       </Badge>
                     </p>
                   </td>
-                  <td class="py-2 pr-3 text-slate-600">{{ player.position ? positionLabels[player.position] : '—' }}</td>
-                  <td class="py-2 pr-3">
+                  <td class="col-sm py-2 pr-3 text-slate-600">{{ player.position ? positionLabels[player.position] : '—' }}</td>
+                  <td class="col-md py-2 pr-3">
                     <Badge v-if="player.linked" tone="green">{{ player.id === myEntryId ? 'Eres tú' : 'Vinculado' }}</Badge>
                     <span v-else class="text-xs text-slate-400">Sin vincular</span>
                   </td>

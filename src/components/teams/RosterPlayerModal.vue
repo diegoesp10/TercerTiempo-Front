@@ -202,7 +202,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
             <tr>
               <th class="py-1 pr-3 text-left">J</th>
               <th class="py-1 pr-3 text-left">Partido</th>
-              <th class="py-1 pr-3 text-center">Resultado</th>
+              <th class="col-sm py-1 pr-3 text-center">Resultado</th>
               <th class="py-1 pr-3 text-center">Min</th>
               <th class="py-1 pr-3 text-center">G</th>
               <th class="py-1 text-center">TA/TR</th>
@@ -215,7 +215,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
                 <RouterLink :to="{ name: 'match', params: { matchId: row.match.id } }" class="font-medium text-slate-800 hover:underline">{{ opponentLabel(row.match, teamId) }}</RouterLink>
                 <span class="ml-1 text-xs text-slate-400">{{ row.home ? 'en casa' : 'fuera' }} · {{ formatDate(row.match.kickoffAt) }}</span>
               </td>
-              <td class="py-1.5 pr-3 text-center tabular-nums whitespace-nowrap">
+              <td class="col-sm py-1.5 pr-3 text-center tabular-nums whitespace-nowrap">
                 {{ matchInfo(row.match).score ?? '—' }}
                 <Badge v-if="matchInfo(row.match).outcome" :tone="matchInfo(row.match).tone" class="ml-1">{{ matchInfo(row.match).label }}</Badge>
               </td>
@@ -249,12 +249,12 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
                   <th class="py-1 pr-3 text-left">Partido</th>
                   <th class="py-1 pr-2 text-center">Min</th>
                   <th class="py-1 pr-2 text-center">G</th>
-                  <th class="py-1 pr-2 text-center">A</th>
-                  <th class="py-1 pr-2 text-center" title="Tiros a puerta / tiros">Tiros</th>
-                  <th class="py-1 pr-2 text-center" title="Pases clave">PC</th>
-                  <th class="py-1 pr-2 text-center" title="Entradas">Ent</th>
-                  <th class="py-1 pr-2 text-center" title="Intercepciones">Int</th>
-                  <th class="py-1 pr-2 text-center" title="Paradas">Par</th>
+                  <th class="col-sm py-1 pr-2 text-center">A</th>
+                  <th class="col-sm py-1 pr-2 text-center" title="Tiros a puerta / tiros">Tiros</th>
+                  <th class="col-md py-1 pr-2 text-center" title="Pases clave">PC</th>
+                  <th class="col-md py-1 pr-2 text-center" title="Entradas">Ent</th>
+                  <th class="col-md py-1 pr-2 text-center" title="Intercepciones">Int</th>
+                  <th class="col-md py-1 pr-2 text-center" title="Paradas">Par</th>
                   <th class="py-1 pr-2 text-center">TA/TR</th>
                   <th class="py-1 text-center">Nota</th>
                 </tr>
@@ -268,12 +268,12 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
                   </td>
                   <td class="py-1.5 pr-2 text-center tabular-nums">{{ row.performance.minutesPlayed }}'</td>
                   <td class="py-1.5 pr-2 text-center whitespace-nowrap"><GoalMarks :goals="row.performance.goals" /></td>
-                  <td class="py-1.5 pr-2 text-center tabular-nums">{{ row.performance.assists }}</td>
-                  <td class="py-1.5 pr-2 text-center tabular-nums">{{ row.performance.shotsOnTarget }}/{{ row.performance.shots }}</td>
-                  <td class="py-1.5 pr-2 text-center tabular-nums">{{ row.performance.keyPasses }}</td>
-                  <td class="py-1.5 pr-2 text-center tabular-nums">{{ row.performance.tackles }}</td>
-                  <td class="py-1.5 pr-2 text-center tabular-nums">{{ row.performance.interceptions }}</td>
-                  <td class="py-1.5 pr-2 text-center tabular-nums">{{ row.performance.saves }}</td>
+                  <td class="col-sm py-1.5 pr-2 text-center tabular-nums">{{ row.performance.assists }}</td>
+                  <td class="col-sm py-1.5 pr-2 text-center tabular-nums">{{ row.performance.shotsOnTarget }}/{{ row.performance.shots }}</td>
+                  <td class="col-md py-1.5 pr-2 text-center tabular-nums">{{ row.performance.keyPasses }}</td>
+                  <td class="col-md py-1.5 pr-2 text-center tabular-nums">{{ row.performance.tackles }}</td>
+                  <td class="col-md py-1.5 pr-2 text-center tabular-nums">{{ row.performance.interceptions }}</td>
+                  <td class="col-md py-1.5 pr-2 text-center tabular-nums">{{ row.performance.saves }}</td>
                   <td class="py-1.5 pr-2 text-center whitespace-nowrap"><CardMarks :yellow-cards="row.performance.yellowCards" :red-card="row.performance.redCard" /></td>
                   <td class="py-1.5 text-center"><RatingBadge :rating="row.performance.rating" size="sm" /></td>
                 </tr>

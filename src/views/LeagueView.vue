@@ -87,15 +87,15 @@ watch(selectedId, (id) => {
         <table class="min-w-full text-sm">
           <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
-              <th class="px-3 py-2 text-left">#</th>
+              <th class="px-2 py-2 text-left sm:px-3">#</th>
               <th class="px-3 py-2 text-left">Equipo</th>
               <th class="px-3 py-2 text-center">PJ</th>
               <th class="px-3 py-2 text-center">G</th>
               <th class="px-3 py-2 text-center">E</th>
               <th class="px-3 py-2 text-center">P</th>
-              <th class="px-3 py-2 text-center">GF</th>
-              <th class="px-3 py-2 text-center">GC</th>
-              <th class="px-3 py-2 text-center">DG</th>
+              <th class="col-md px-3 py-2 text-center">GF</th>
+              <th class="col-md px-3 py-2 text-center">GC</th>
+              <th class="col-sm px-3 py-2 text-center">DG</th>
               <th class="px-3 py-2 text-center font-semibold">Pts</th>
             </tr>
           </thead>
@@ -116,9 +116,9 @@ watch(selectedId, (id) => {
               <td class="px-3 py-2 text-center tabular-nums">{{ row.won }}</td>
               <td class="px-3 py-2 text-center tabular-nums">{{ row.drawn }}</td>
               <td class="px-3 py-2 text-center tabular-nums">{{ row.lost }}</td>
-              <td class="px-3 py-2 text-center tabular-nums">{{ row.goalsFor }}</td>
-              <td class="px-3 py-2 text-center tabular-nums">{{ row.goalsAgainst }}</td>
-              <td class="px-3 py-2 text-center tabular-nums">{{ row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference }}</td>
+              <td class="col-md px-3 py-2 text-center tabular-nums">{{ row.goalsFor }}</td>
+              <td class="col-md px-3 py-2 text-center tabular-nums">{{ row.goalsAgainst }}</td>
+              <td class="col-sm px-3 py-2 text-center tabular-nums">{{ row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference }}</td>
               <td class="px-3 py-2 text-center font-semibold tabular-nums">{{ row.points }}</td>
             </tr>
           </tbody>

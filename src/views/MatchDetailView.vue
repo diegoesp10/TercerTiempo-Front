@@ -100,12 +100,12 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
               <th class="py-2 pr-3 text-left">Jugador</th>
               <th class="px-2 py-2 text-center">Min</th>
               <th class="px-2 py-2 text-center">G</th>
-              <th class="px-2 py-2 text-center">A</th>
-              <th class="px-2 py-2 text-center">Tiros</th>
-              <th class="px-2 py-2 text-center">PC</th>
-              <th class="px-2 py-2 text-center">Ent</th>
-              <th class="px-2 py-2 text-center">Int</th>
-              <th class="px-2 py-2 text-center">Par</th>
+              <th class="col-sm px-2 py-2 text-center">A</th>
+              <th class="col-sm px-2 py-2 text-center">Tiros</th>
+              <th class="col-md px-2 py-2 text-center">PC</th>
+              <th class="col-md px-2 py-2 text-center">Ent</th>
+              <th class="col-md px-2 py-2 text-center">Int</th>
+              <th class="col-md px-2 py-2 text-center">Par</th>
               <th class="px-2 py-2 text-center">TA/TR</th>
               <th class="px-2 py-2 text-center">Nota</th>
             </tr>
@@ -122,12 +122,12 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
               </td>
               <td class="px-2 py-2 text-center tabular-nums">{{ p.minutesPlayed }}</td>
               <td class="px-2 py-2 text-center"><GoalMarks :goals="p.goals" /></td>
-              <td class="px-2 py-2 text-center tabular-nums">{{ p.assists }}</td>
-              <td class="px-2 py-2 text-center tabular-nums">{{ p.shotsOnTarget }}/{{ p.shots }}</td>
-              <td class="px-2 py-2 text-center tabular-nums">{{ p.keyPasses }}</td>
-              <td class="px-2 py-2 text-center tabular-nums">{{ p.tackles }}</td>
-              <td class="px-2 py-2 text-center tabular-nums">{{ p.interceptions }}</td>
-              <td class="px-2 py-2 text-center tabular-nums">{{ p.saves }}</td>
+              <td class="col-sm px-2 py-2 text-center tabular-nums">{{ p.assists }}</td>
+              <td class="col-sm px-2 py-2 text-center tabular-nums">{{ p.shotsOnTarget }}/{{ p.shots }}</td>
+              <td class="col-md px-2 py-2 text-center tabular-nums">{{ p.keyPasses }}</td>
+              <td class="col-md px-2 py-2 text-center tabular-nums">{{ p.tackles }}</td>
+              <td class="col-md px-2 py-2 text-center tabular-nums">{{ p.interceptions }}</td>
+              <td class="col-md px-2 py-2 text-center tabular-nums">{{ p.saves }}</td>
               <td class="px-2 py-2 text-center"><CardMarks :yellow-cards="p.yellowCards" :red-card="p.redCard" /></td>
               <td class="px-2 py-2 text-center"><RatingBadge :rating="p.rating" size="sm" /></td>
             </tr>

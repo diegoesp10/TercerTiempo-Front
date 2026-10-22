@@ -19,9 +19,12 @@ onMounted(() => {
 <template>
   <GrassField />
   <AppShell>
-    <RouterView v-slot="{ Component }">
+    <RouterView v-slot="{ Component, route }">
+      <!-- Un único nodo raíz por página para que la transición pueda animarlo (las vistas tienen varias raíces). -->
       <Transition name="page" mode="out-in">
-        <component :is="Component" />
+        <div :key="route.path" class="page-root">
+          <component :is="Component" />
+        </div>
       </Transition>
     </RouterView>
   </AppShell>

@@ -30,19 +30,21 @@ const ranking = computed(() => (data.value ? ratingRankingOption(data.value.play
 
 type SortKey = 'name' | 'matches' | 'starts' | 'minutes' | 'goals' | 'assists' | 'contributions' | 'rating' | 'goalsPer90' | 'participation' | 'pointsWith' | 'pointsWithout';
 
-const columns: { key: SortKey; label: string; title: string }[] = [
+// `from`: ancho mínimo de pantalla en el que se ve la columna (ver .col-sm/.col-md/.col-lg en style.css).
+const columns: { key: SortKey; label: string; title: string; from?: 'sm' | 'md' | 'lg' }[] = [
   { key: 'matches', label: 'PJ', title: 'Partidos con línea en el acta' },
-  { key: 'starts', label: 'Tit', title: 'Titularidades' },
-  { key: 'minutes', label: 'Min', title: 'Minutos jugados' },
+  { key: 'starts', label: 'Tit', title: 'Titularidades', from: 'md' },
+  { key: 'minutes', label: 'Min', title: 'Minutos jugados', from: 'sm' },
   { key: 'goals', label: 'G', title: 'Goles' },
   { key: 'assists', label: 'A', title: 'Asistencias' },
-  { key: 'contributions', label: 'G+A', title: 'Goles más asistencias' },
+  { key: 'contributions', label: 'G+A', title: 'Goles más asistencias', from: 'md' },
   { key: 'rating', label: 'Nota', title: 'Nota media calculada con los datos de las actas' },
-  { key: 'goalsPer90', label: "G/90'", title: 'Goles por 90 minutos' },
-  { key: 'participation', label: 'Part.', title: 'Porcentaje de los minutos posibles del equipo' },
-  { key: 'pointsWith', label: 'PPP con', title: 'Puntos por partido del equipo cuando juega' },
-  { key: 'pointsWithout', label: 'PPP sin', title: 'Puntos por partido del equipo cuando no juega' },
+  { key: 'goalsPer90', label: "G/90'", title: 'Goles por 90 minutos', from: 'lg' },
+  { key: 'participation', label: 'Part.', title: 'Porcentaje de los minutos posibles del equipo', from: 'lg' },
+  { key: 'pointsWith', label: 'PPP con', title: 'Puntos por partido del equipo cuando juega', from: 'lg' },
+  { key: 'pointsWithout', label: 'PPP sin', title: 'Puntos por partido del equipo cuando no juega', from: 'lg' },
 ];
+const colClass = (from?: 'sm' | 'md' | 'lg') => (from ? `col-${from}` : '');
 
 const getters: Record<SortKey, (row: SquadPlayerStatsDto) => number | string> = {
   name: (r) => r.player.fullName,
@@ -142,7 +144,7 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
             <th class="px-3 py-2 text-left">
               <button type="button" class="hover:text-slate-800" @click="sortBy('name')">Jugador{{ arrow('name') }}</button>
             </th>
-            <th v-for="column in columns" :key="column.key" class="px-2 py-2 text-center" :title="column.title">
+            <th v-for="column in columns" :key="column.key" class="px-2 py-2 text-center" :class="colClass(column.from)" :title="column.title">
               <button type="button" class="whitespace-nowrap hover:text-slate-800" @click="sortBy(column.key)">{{ column.label }}{{ arrow(column.key) }}</button>
             </th>
           </tr>
@@ -159,16 +161,16 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
               <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
             </td>
             <td class="px-2 py-2 text-center tabular-nums">{{ row.stats.matchesLogged }}</td>
-            <td class="px-2 py-2 text-center tabular-nums">{{ row.stats.starts }}</td>
-            <td class="px-2 py-2 text-center tabular-nums">{{ row.stats.minutes }}</td>
+            <td class="col-md px-2 py-2 text-center tabular-nums">{{ row.stats.starts }}</td>
+            <td class="col-sm px-2 py-2 text-center tabular-nums">{{ row.stats.minutes }}</td>
             <td class="px-2 py-2 text-center font-semibold tabular-nums">{{ row.stats.goals }}</td>
             <td class="px-2 py-2 text-center tabular-nums">{{ row.stats.assists }}</td>
-            <td class="px-2 py-2 text-center tabular-nums">{{ row.stats.goalContributions }}</td>
+            <td class="col-md px-2 py-2 text-center tabular-nums">{{ row.stats.goalContributions }}</td>
             <td class="px-2 py-2 text-center"><RatingBadge :rating="row.stats.averageRating" size="sm" /></td>
-            <td class="px-2 py-2 text-center tabular-nums">{{ formatNumber(row.stats.goalsPer90) }}</td>
-            <td class="px-2 py-2 text-center tabular-nums">{{ formatPct(row.impact.participationPct) }}</td>
-            <td class="px-2 py-2 text-center tabular-nums">{{ formatNumber(row.impact.pointsPerMatchWithPlayer) }}</td>
-            <td class="px-2 py-2 text-center tabular-nums">{{ formatNumber(row.impact.pointsPerMatchWithoutPlayer) }}</td>
+            <td class="col-lg px-2 py-2 text-center tabular-nums">{{ formatNumber(row.stats.goalsPer90) }}</td>
+            <td class="col-lg px-2 py-2 text-center tabular-nums">{{ formatPct(row.impact.participationPct) }}</td>
+            <td class="col-lg px-2 py-2 text-center tabular-nums">{{ formatNumber(row.impact.pointsPerMatchWithPlayer) }}</td>
+            <td class="col-lg px-2 py-2 text-center tabular-nums">{{ formatNumber(row.impact.pointsPerMatchWithoutPlayer) }}</td>
           </tr>
         </tbody>
       </table>

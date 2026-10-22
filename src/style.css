@@ -251,6 +251,25 @@
     filter: invert(0.8);
   }
 
+  /* Tablas: siempre a todo el ancho de su contenedor; el contenedor (.overflow-x-auto) evita que desborden la página.
+     Las columnas secundarias llevan .col-sm / .col-md / .col-lg y solo aparecen a partir de ese ancho, así en el
+     móvil se ven las que importan sin tener que desplazar. */
+  table {
+    width: 100%;
+  }
+  .col-sm, .col-md, .col-lg {
+    display: none;
+  }
+  @media (min-width: 640px) {
+    .col-sm { display: table-cell; }
+  }
+  @media (min-width: 768px) {
+    .col-md { display: table-cell; }
+  }
+  @media (min-width: 1024px) {
+    .col-lg { display: table-cell; }
+  }
+
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: var(--t-canvas); }
   ::-webkit-scrollbar-thumb { background: var(--t-slate-300); border-radius: 999px; border: 2px solid var(--t-canvas); }

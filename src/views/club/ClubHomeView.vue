@@ -295,9 +295,9 @@ const sortedAppointments = computed(() => {
             <thead class="text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th class="py-2 pr-3 text-left">Técnico</th>
-                <th class="py-2 pr-3 text-left">Equipo</th>
+                <th class="col-sm py-2 pr-3 text-left">Equipo</th>
                 <th class="py-2 pr-3 text-left">Estado</th>
-                <th class="py-2 pr-3 text-left">Validez</th>
+                <th class="col-md py-2 pr-3 text-left">Validez</th>
                 <th class="py-2 text-right"></th>
               </tr>
             </thead>
@@ -309,7 +309,7 @@ const sortedAppointments = computed(() => {
                     {{ staffRoleLabels[appointment.role] }}<template v-if="appointment.coachDisplayName"> · cuenta: {{ appointment.coachDisplayName }}</template><template v-else-if="appointment.email"> · {{ appointment.email }}</template>
                   </p>
                 </td>
-                <td class="py-2 pr-3">
+                <td class="col-sm py-2 pr-3">
                   <p>{{ appointment.teamName }}</p>
                   <p class="text-xs text-slate-500">{{ appointment.seasonLabel }}</p>
                 </td>
@@ -321,7 +321,7 @@ const sortedAppointments = computed(() => {
                   </div>
                   <p v-else-if="appointment.redeemedAt" class="mt-1 text-xs text-slate-500">Canjeado el {{ formatKickoff(appointment.redeemedAt) }}</p>
                 </td>
-                <td class="py-2 pr-3 whitespace-nowrap">
+                <td class="col-md py-2 pr-3 whitespace-nowrap">
                   <template v-if="editingId === appointment.id">
                     <input v-model="editValidUntil" type="date" class="input w-40 px-2 py-1" aria-label="Válido hasta" />
                   </template>

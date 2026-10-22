@@ -148,9 +148,9 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
               <tr>
                 <th class="py-1 pr-2 text-left">Jugador</th>
                 <th class="px-2 py-1 text-center" title="Partidos (titular)">PJ</th>
-                <th class="px-2 py-1 text-center" title="Minutos por partido">Min/PJ</th>
+                <th class="col-sm px-2 py-1 text-center" title="Minutos por partido">Min/PJ</th>
                 <th class="px-2 py-1 text-center" title="Goles (de penalti)">Goles</th>
-                <th class="px-2 py-1 text-center" title="Goles en los tres últimos partidos">Últ. 3</th>
+                <th class="col-md px-2 py-1 text-center" title="Goles en los tres últimos partidos">Últ. 3</th>
                 <th class="px-2 py-1 text-center" title="Tarjetas amarillas / rojas">TA/TR</th>
               </tr>
             </thead>
@@ -161,9 +161,9 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
                   <span class="font-medium text-slate-800">{{ player.name }}</span>
                 </td>
                 <td class="px-2 py-1 text-center tabular-nums">{{ player.matches }} <span class="text-slate-400">({{ player.started }})</span></td>
-                <td class="px-2 py-1 text-center tabular-nums">{{ perMatch(player) }}'</td>
+                <td class="col-sm px-2 py-1 text-center tabular-nums">{{ perMatch(player) }}'</td>
                 <td class="px-2 py-1 text-center tabular-nums font-semibold">{{ player.goals }}<span v-if="player.penaltyGoals" class="font-normal text-slate-400"> ({{ player.penaltyGoals }}p)</span></td>
-                <td class="px-2 py-1 text-center tabular-nums">{{ player.goalsLastThree }}</td>
+                <td class="col-md px-2 py-1 text-center tabular-nums">{{ player.goalsLastThree }}</td>
                 <td class="px-2 py-1 text-center tabular-nums"><span class="text-amber-600">{{ player.yellowCards }}</span> / <span class="text-red-600">{{ player.redCards }}</span></td>
               </tr>
             </tbody>

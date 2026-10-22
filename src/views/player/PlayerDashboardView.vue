@@ -272,9 +272,9 @@ async function leave() {
             <tr>
               <th class="px-3 py-2 text-left">Partido</th>
               <th class="px-3 py-2 text-center">Resultado</th>
-              <th class="px-3 py-2 text-center">Min</th>
+              <th class="col-sm px-3 py-2 text-center">Min</th>
               <th class="px-3 py-2 text-center">G</th>
-              <th class="px-3 py-2 text-center">A</th>
+              <th class="col-sm px-3 py-2 text-center">A</th>
               <th class="px-3 py-2 text-center">Nota</th>
             </tr>
           </thead>
@@ -292,9 +292,9 @@ async function leave() {
                   {{ outcomeLabels[outcomeFor(item.match, squad.teamId)!] }}
                 </Badge>
               </td>
-              <td class="px-3 py-2 text-center tabular-nums">{{ item.performance.minutesPlayed }}</td>
+              <td class="col-sm px-3 py-2 text-center tabular-nums">{{ item.performance.minutesPlayed }}</td>
               <td class="px-3 py-2 text-center tabular-nums">{{ item.performance.goals }}</td>
-              <td class="px-3 py-2 text-center tabular-nums">{{ item.performance.assists }}</td>
+              <td class="col-sm px-3 py-2 text-center tabular-nums">{{ item.performance.assists }}</td>
               <td class="px-3 py-2 text-center"><RatingBadge :rating="item.performance.rating" size="sm" /></td>
             </tr>
           </tbody>
