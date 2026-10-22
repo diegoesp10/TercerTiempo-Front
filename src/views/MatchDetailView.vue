@@ -30,7 +30,11 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
   <template v-else-if="data">
     <div class="card">
       <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-        <span>Jornada {{ data.match.matchday }} · {{ formatKickoff(data.match.kickoffAt) }}<span v-if="data.match.venue"> · {{ data.match.venue }}</span></span>
+        <span>
+          <strong v-if="data.competitionName" class="text-slate-700">{{ data.competitionName }}</strong>
+          <template v-if="data.seasonLabel"> · temporada {{ data.seasonLabel }}</template>
+          · Jornada {{ data.match.matchday }} · {{ formatKickoff(data.match.kickoffAt) }}<span v-if="data.match.venue"> · {{ data.match.venue }}</span>
+        </span>
         <Badge :tone="data.match.status === 'Played' ? 'slate' : 'blue'">{{ matchStatusLabels[data.match.status] }}</Badge>
       </div>
       <div class="mt-4 grid grid-cols-3 items-center text-center">
@@ -56,7 +60,7 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
     </div>
 
     <Alert v-if="data.sheets.length === 0" kind="info" class="mt-6">
-      Ninguno de los dos equipos tiene todavía plantilla en Tercer Tiempo, así que no hay actas internas que mostrar.
+      Ninguno de los dos equipos tiene todavía plantilla en Tercer Tiempo, así que no hay actas internas que mostrar. El acta oficial de la federación y el vídeo, si lo hay, son públicos.
     </Alert>
 
     <section v-for="sheet in data.sheets" :key="sheet.squadId" class="card mt-6">
@@ -85,7 +89,7 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
       </div>
 
       <p v-if="!sheet.visible" class="text-sm text-slate-500">
-        Acta privada: solo el cuerpo técnico y los jugadores vinculados a la plantilla pueden verla.
+        Acta privada: solo su club, su cuerpo técnico y sus jugadores vinculados pueden verla. Será pública cuando la plantilla decida compartirla.
       </p>
       <p v-else-if="sheet.entries.length === 0" class="text-sm text-slate-500">El cuerpo técnico todavía no ha registrado el acta de este partido.</p>
 

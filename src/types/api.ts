@@ -702,7 +702,55 @@ export interface MatchSquadSheetDto {
 
 export interface MatchDetailDto {
   match: MatchDto;
+  competitionName: string | null;
+  seasonLabel: string | null;
   sheets: MatchSquadSheetDto[];
+}
+
+// --- Sugerencias de los jugadores sobre su línea del acta ---
+
+export type SuggestionStatus = 'Pending' | 'Approved' | 'Declined';
+
+export interface SuggestedStatsDto {
+  started: boolean;
+  minutesPlayed: number;
+  goals: number;
+  assists: number;
+  shots: number;
+  shotsOnTarget: number;
+  keyPasses: number;
+  tackles: number;
+  interceptions: number;
+  saves: number;
+  yellowCards: number;
+  redCard: boolean;
+}
+
+export interface SuggestionDto {
+  id: string;
+  squadId: string;
+  player: SquadPlayerDto;
+  match: MatchDto;
+  /** Línea que propone el jugador. */
+  proposed: SuggestedStatsDto;
+  /** Línea actual del acta; null si propone una entrada nueva. */
+  current: PerformanceDto | null;
+  message: string | null;
+  status: SuggestionStatus;
+  createdAt: string;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  resolutionNote: string | null;
+}
+
+export interface SuggestPerformanceRequest extends SuggestedStatsDto {
+  matchId: string;
+  message: string | null;
+}
+
+export interface ResolveSuggestionRequest {
+  approve: boolean;
+  note: string | null;
 }
 
 export interface PerformanceWithMatchDto {

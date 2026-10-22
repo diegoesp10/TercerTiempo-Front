@@ -25,6 +25,8 @@ import {
   outcomeLabels,
   outcomeTone,
   positionLabels,
+  suggestionStatusLabels,
+  suggestionStatusTone,
   visibilityLabels,
 } from '@/utils/format';
 
@@ -75,6 +77,8 @@ const heroStats = computed(() =>
 const impact = computed(() => data.value?.teamImpact ?? null);
 const league = computed(() => data.value?.league ?? null);
 const hasPercentiles = computed(() => league.value !== null && league.value.playersCompared >= 2);
+
+const suggestions = useAsync(() => (auth.playerSquad ? api.players.suggestions() : Promise.resolve([])));
 
 const leaveError = ref<string | null>(null);
 
@@ -228,6 +232,32 @@ async function leave() {
           <AppChart v-if="breakdownChart" :option="breakdownChart" :height="320" label="Desglose de tu nota" />
         </ChartCard>
       </div>
+    </section>
+
+    <!-- Sugerencias enviadas -->
+    <section class="mt-8">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Tus sugerencias al acta</h2>
+        <RouterLink :to="{ name: 'squad-matches', params: { squadId: squad.squadId } }" class="text-sm text-accent-400 hover:underline">Entra en un partido para sugerir una corrección</RouterLink>
+      </div>
+      <p v-if="!suggestions.data.value?.length" class="text-sm text-slate-500">
+        Si llevas la cuenta de lo que hiciste y el acta no coincide, abre el partido y pulsa «Sugerir una corrección»: tu club o tu entrenador lo revisarán.
+      </p>
+      <ul v-else class="divide-y divide-line rounded-xl border border-line bg-surface shadow-sm">
+        <li v-for="s in suggestions.data.value" :key="s.id" class="flex flex-wrap items-start justify-between gap-2 px-4 py-3 text-sm">
+          <div class="min-w-0">
+            <RouterLink :to="{ name: 'sheet', params: { squadId: squad.squadId, matchId: s.match.id } }" class="font-medium text-slate-800 hover:text-accent-400">
+              J{{ s.match.matchday }} · {{ opponentLabel(s.match, squad.teamId) }}
+            </RouterLink>
+            <p class="text-xs text-slate-500">
+              {{ s.current ? 'Corrección' : 'Entrada nueva' }} · {{ s.proposed.minutesPlayed }}' · {{ s.proposed.goals }} G · {{ s.proposed.assists }} A · enviada el {{ formatDate(s.createdAt) }}
+              <template v-if="s.resolvedBy"> · {{ suggestionStatusLabels[s.status].toLowerCase() }} por {{ s.resolvedBy }}</template>
+              <template v-if="s.resolutionNote">: “{{ s.resolutionNote }}”</template>
+            </p>
+          </div>
+          <Badge :tone="suggestionStatusTone[s.status]">{{ suggestionStatusLabels[s.status] }}</Badge>
+        </li>
+      </ul>
     </section>
 
     <!-- Últimos partidos -->

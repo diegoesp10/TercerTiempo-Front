@@ -6,10 +6,9 @@ import { ApiError, errorMessage } from '@/api/http';
 import ClubPicker from '@/components/clubs/ClubPicker.vue';
 import AuthPanel from '@/components/layout/AuthPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
-import SearchSelect from '@/components/ui/SearchSelect.vue';
 import { useAuthStore } from '@/stores/auth';
-import type { AccountType, Position, SquadInviteDto } from '@/types/api';
-import { positionOptions } from '@/utils/format';
+import type { AccountType, SquadInviteDto } from '@/types/api';
+import { positionLabels } from '@/utils/format';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -20,16 +19,12 @@ const form = reactive<{
   email: string;
   password: string;
   displayName: string;
-  position: Position;
-  birthDate: string;
   accessCode: string;
 }>({
   accountType: typeof route.query.invite === 'string' ? 'Player' : 'Coach',
   email: '',
   password: '',
   displayName: '',
-  position: 'Midfielder',
-  birthDate: '',
   accessCode: typeof route.query.invite === 'string' ? route.query.invite.toUpperCase() : typeof route.query.code === 'string' ? route.query.code.toUpperCase() : '',
 });
 
@@ -67,7 +62,6 @@ watch(
       const result = await api.auth.invite(code);
       if (inviteCode.value !== code) return;
       invite.value = result;
-      if (result.player.position) form.position = result.player.position;
     } catch (e) {
       if (inviteCode.value === code) inviteError.value = errorMessage(e);
     } finally {
@@ -87,8 +81,8 @@ async function submit() {
       password: form.password,
       displayName: isPlayer.value ? null : form.displayName,
       accountType: form.accountType,
-      position: isPlayer.value ? form.position : null,
-      birthDate: isPlayer.value && form.birthDate ? form.birthDate : null,
+      position: null,
+      birthDate: null,
       accessCode: isPlayer.value || isCoach.value ? inviteCode.value : null,
     });
     await router.push({ name: 'home' });
@@ -171,6 +165,7 @@ async function submit() {
             <p class="mt-1 text-lg font-semibold text-slate-900">{{ invite.player.fullName }}</p>
             <p class="mt-1 text-sm text-slate-500">
               {{ invite.teamName }} · {{ invite.competitionName }} · {{ invite.seasonLabel }}
+              <template v-if="invite.player.position"> · {{ positionLabels[invite.player.position] }}</template>
               <template v-if="invite.player.shirtNumber"> · dorsal {{ invite.player.shirtNumber }}</template>
             </p>
             <p class="mt-2 text-xs text-slate-500">Si esta no es tu ficha, no sigas: avisa a quien te dio el código.</p>
@@ -189,24 +184,6 @@ async function submit() {
           <label class="label" for="displayName">Nombre y apellidos</label>
           <input id="displayName" v-model="form.displayName" type="text" required maxlength="120" class="input" />
           <p v-if="fieldErrors.displayName" class="field-error">{{ fieldErrors.displayName[0] }}</p>
-        </div>
-
-        <div v-if="isPlayer" class="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label class="label" for="position">Posición <span class="font-normal text-slate-400">(opcional)</span></label>
-            <SearchSelect
-              id="position"
-              :model-value="form.position"
-              :options="positionOptions"
-              @update:model-value="form.position = ($event as Position | null) ?? 'Midfielder'"
-            />
-            <p v-if="fieldErrors.position" class="field-error">{{ fieldErrors.position[0] }}</p>
-          </div>
-          <div>
-            <label class="label" for="birthDate">Fecha de nacimiento <span class="font-normal text-slate-400">(opcional)</span></label>
-            <input id="birthDate" v-model="form.birthDate" type="date" class="input" />
-            <p v-if="fieldErrors.birthDate" class="field-error">{{ fieldErrors.birthDate[0] }}</p>
-          </div>
         </div>
 
         <div>

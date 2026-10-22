@@ -5,6 +5,7 @@ import { api } from '@/api';
 import SheetComparison from '@/components/sheet/SheetComparison.vue';
 import MatchPreview from '@/components/matches/MatchPreview.vue';
 import MatchVideos from '@/components/videos/MatchVideos.vue';
+import SuggestPerformanceModal from '@/components/suggestions/SuggestPerformanceModal.vue';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -14,8 +15,8 @@ import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
-import type { MatchSheetDto, MatchSheetEntryInput, SquadPlayerDto } from '@/types/api';
-import { formatKickoff, matchStatusLabels, outcomeFor, outcomeLabels, outcomeTone, positionShortLabels } from '@/utils/format';
+import type { MatchSheetDto, MatchSheetEntryInput, SquadPlayerDto, SuggestionDto } from '@/types/api';
+import { formatKickoff, matchStatusLabels, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, positionShortLabels, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
 
 const props = defineProps<{ squadId: string; matchId: string }>();
 
@@ -113,6 +114,27 @@ watch(data, (sheet) => { if (sheet) rows.value = fromSheet(sheet); }, { immediat
 
 const canEdit = computed(() => data.value?.canEdit ?? false);
 const teamId = computed(() => data.value?.squad.teamId ?? '');
+
+// Jugador vinculado a esta plantilla: puede proponer su línea (corregirla o crearla) y ver qué pasó con lo que envió.
+const myEntryId = computed(() => (auth.playerSquad?.squadId === props.squadId ? auth.playerSquad.squadPlayerId : null));
+const myPerformance = computed(() => data.value?.entries.find((e) => e.player.id === myEntryId.value)?.performance ?? null);
+const canSuggest = computed(() => myEntryId.value !== null && !canEdit.value && data.value?.match.status === 'Played');
+const mySuggestions = ref<SuggestionDto[]>([]);
+const suggesting = ref(false);
+const sentNotice = ref(false);
+watch(canSuggest, async (can) => {
+  if (!can) return;
+  try {
+    mySuggestions.value = (await api.players.suggestions()).filter((s) => s.match.id === props.matchId);
+  } catch { /* sin lista de sugerencias no pasa nada: el botón sigue disponible */ }
+}, { immediate: true });
+const pendingSuggestion = computed(() => mySuggestions.value.find((s) => s.status === 'Pending') ?? null);
+const lastResolved = computed(() => mySuggestions.value.find((s) => s.status !== 'Pending') ?? null);
+function onSuggestionSent(suggestion: SuggestionDto) {
+  mySuggestions.value = [suggestion, ...mySuggestions.value];
+  suggesting.value = false;
+  sentNotice.value = true;
+}
 const playedRows = computed(() => rows.value.filter((r) => r.played));
 const outcome = computed(() => (data.value ? outcomeFor(data.value.match, teamId.value) : null));
 
@@ -229,6 +251,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
       <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="data.canEdit || data.squad.myRole !== null || !!auth.club?.teams.some((team) => team.teamId === data!.squad.teamId)" />
     </div>
 
+
     <div v-else-if="tab === 'previa'" class="mt-6">
       <MatchPreview :match-id="matchId" :my-team-id="teamId" />
     </div>
@@ -241,6 +264,12 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
             <template v-if="canEdit">Marca quién jugó y rellena su línea. {{ playedRows.length }} de {{ rows.length }} jugadores en el acta.</template>
             <template v-else>{{ playedRows.length }} jugadores en el acta.</template>
           </p>
+        </div>
+        <div v-if="canSuggest" class="flex flex-wrap items-center gap-2">
+          <Badge v-if="pendingSuggestion" tone="amber">Sugerencia pendiente de revisión</Badge>
+          <button v-else type="button" class="btn-secondary" @click="suggesting = true">
+            <Icon icon="pen" class="mr-1.5 h-3.5 w-3.5" />{{ myPerformance ? 'Sugerir una corrección' : 'Sugerir mi línea' }}
+          </button>
         </div>
         <div v-if="canEdit" class="flex flex-wrap gap-2">
           <button type="button" class="btn-ghost" v-busy="saving" :disabled="saving" @click="everyoneFullMatch">Todos 90'</button>
@@ -256,6 +285,12 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
         </ul>
       </Alert>
       <Alert v-if="saved" kind="success" class="mb-3">Acta guardada.</Alert>
+      <Alert v-if="sentNotice" kind="success" class="mb-3">Sugerencia enviada: tu club o tu entrenador la verán con tu mensaje y decidirán si cambian el acta.</Alert>
+      <Alert v-else-if="canSuggest && lastResolved && !pendingSuggestion" :kind="lastResolved.status === 'Approved' ? 'success' : 'info'" class="mb-3">
+        Tu última sugerencia de este partido fue <strong>{{ suggestionStatusLabels[lastResolved.status].toLowerCase() }}</strong>
+        <template v-if="lastResolved.resolvedBy"> por {{ lastResolved.resolvedBy }}</template><template v-if="lastResolved.resolutionNote">: “{{ lastResolved.resolutionNote }}”</template>.
+        <Badge :tone="suggestionStatusTone[lastResolved.status]" class="ml-1">{{ suggestionStatusLabels[lastResolved.status] }}</Badge>
+      </Alert>
 
       <p v-if="!canEdit && playedRows.length === 0" class="text-sm text-slate-500">El cuerpo técnico todavía no ha registrado el acta de este partido.</p>
 
@@ -351,5 +386,14 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
         resultado (según los minutos jugados). Escala de 3,0 a 10,0.
       </p>
     </section>
+    <SuggestPerformanceModal
+      v-if="canSuggest"
+      :open="suggesting"
+      :match="data.match"
+      :current="myPerformance"
+      :opponent-label="opponentLabel(data.match, teamId)"
+      @close="suggesting = false"
+      @sent="onSuggestionSent"
+    />
   </template>
 </template>

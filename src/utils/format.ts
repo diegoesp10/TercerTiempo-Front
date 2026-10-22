@@ -10,6 +10,7 @@ import type {
   SheetDifferenceDto,
   SquadVisibility,
   StaffRole,
+  SuggestionStatus,
   VideoAccessLevel,
   VideoPart,
 } from '@/types/api';
@@ -69,7 +70,7 @@ export const matchStatusLabels: Record<MatchStatus, string> = {
 export const levelLabels: Record<CompetitionLevel, string> = {
   Professional: 'Profesional',
   National: 'Nacional',
-  Regional: 'Regional',
+  Regional: 'Regional · Asturias',
   Cup: 'Copas',
   Youth: 'Fútbol base',
   Other: 'Otras',
@@ -153,6 +154,14 @@ export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
   Expired: 'Caducado',
   Revoked: 'Revocado',
 };
+
+export const suggestionStatusLabels: Record<SuggestionStatus, string> = {
+  Pending: 'Pendiente',
+  Approved: 'Aprobada',
+  Declined: 'Rechazada',
+};
+
+export const suggestionStatusTone: Record<SuggestionStatus, Tone> = { Pending: 'amber', Approved: 'green', Declined: 'red' };
 
 export const appointmentStatusTone = (status: AppointmentStatus): Tone =>
   status === 'Active' ? 'green' : status === 'Pending' ? 'amber' : status === 'Revoked' ? 'red' : 'slate';

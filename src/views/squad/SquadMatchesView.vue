@@ -5,15 +5,18 @@ import MatchRow from '@/components/matches/MatchRow.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import SuggestionsPanel from '@/components/suggestions/SuggestionsPanel.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useSquad } from '@/composables/useSquad';
 
 const { squadId, detail } = useSquad();
 
-const { data, loading, error } = useAsync(() => api.squads.matches(squadId.value));
+const { data, loading, error, run } = useAsync(() => api.squads.matches(squadId.value));
 
 const teamId = computed(() => detail.value?.summary.teamId ?? '');
 const canManage = computed(() => detail.value?.canManage ?? false);
+// El club propietario y el cuerpo técnico revisan las sugerencias de los jugadores.
+const canReview = computed(() => detail.value?.canInvitePlayers ?? false);
 
 const played = computed(() => (data.value ?? []).filter((m) => m.match.status === 'Played').reverse());
 const upcoming = computed(() => (data.value ?? []).filter((m) => m.match.status !== 'Played'));
@@ -28,6 +31,8 @@ const pending = computed(() => played.value.filter((m) => m.entriesRecorded === 
     <Alert v-if="canManage && pending > 0" kind="warning" class="mb-4">
       <strong>{{ pending }}</strong> {{ pending === 1 ? 'partido disputado sin acta' : 'partidos disputados sin acta' }}. Entra en cada uno para registrarla.
     </Alert>
+
+    <SuggestionsPanel v-if="canReview" class="mb-8" :squad-id="squadId" :team-id="teamId" @changed="run" />
 
     <section class="mb-8">
       <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Disputados</h2>
