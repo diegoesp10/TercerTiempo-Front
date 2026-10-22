@@ -83,9 +83,9 @@ async function leave() {
     <div class="card max-w-2xl">
       <h2 class="font-semibold text-slate-900">Vincúlate a tu ficha</h2>
       <p class="mt-2 text-sm text-slate-600">
-        Tu cuerpo técnico gestiona la plantilla en Tercer Tiempo y registra el acta de cada partido. Pide a tu club o entrenador un
-        <strong>código personal de invitación</strong> para vincular tu ficha: desde ese momento verás tus estadísticas, lo que aportas al
-        equipo y cómo te comparas con la liga.
+        Tu cuerpo técnico gestiona la plantilla en Tercer Tiempo y registra el acta de cada partido. Pide a tu club o entrenador el
+        <strong>código personal</strong> de tu ficha: al introducirlo, tu cuenta pasa a ser esa ficha y verás tus estadísticas, lo que
+        aportas al equipo y cómo te comparas con la liga.
       </p>
       <RouterLink to="/invitacion" class="btn-primary mt-4">Tengo un código de invitación</RouterLink>
     </div>

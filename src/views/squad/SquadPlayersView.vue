@@ -43,13 +43,14 @@ async function act(fn: () => Promise<string | void>) {
 // --- Invitaciones personales ---
 const copied = ref<string | null>(null);
 
-async function copyCode(player: SquadPlayerDto) {
+// Copia el código o el enlace de alta (/registro?invite=CODIGO) que lo lleva ya puesto.
+async function copyCode(player: SquadPlayerDto, asLink = false) {
   const code = player.inviteCode;
   if (!code) return;
   try {
-    await navigator.clipboard.writeText(code);
-    copied.value = player.id;
-    setTimeout(() => { if (copied.value === player.id) copied.value = null; }, 2000);
+    await navigator.clipboard.writeText(asLink ? `${window.location.origin}/registro?invite=${code}` : code);
+    copied.value = `${player.id}${asLink ? ':link' : ''}`;
+    setTimeout(() => { if (copied.value?.startsWith(player.id)) copied.value = null; }, 2000);
   } catch {
     /* portapapeles no disponible: el código queda visible para copiarlo a mano */
   }
@@ -182,8 +183,8 @@ async function remove(player: SquadPlayerDto) {
     </section>
 
     <Alert v-if="canInvitePlayers" kind="info" class="mb-6">
-      Genera el código personal junto al nombre de cada jugador y entrégaselo solo a él. Cada código vincula únicamente su ficha,
-      exige el mismo nombre y apellidos y queda invalidado al utilizarse.
+      Genera el código personal junto al nombre de cada jugador y entrégaselo solo a él. Con ese código se da de alta sin escribir
+      nada más: la cuenta se crea con el nombre de su ficha y el código queda invalidado al utilizarse.
     </Alert>
 
     <div class="grid gap-6 lg:grid-cols-3">
@@ -262,6 +263,7 @@ async function remove(player: SquadPlayerDto) {
                       <p v-if="player.inviteCode" class="mb-1 font-mono text-sm tracking-widest text-slate-900">{{ player.inviteCode }}</p>
                       <div class="flex flex-wrap gap-1">
                         <button v-if="player.inviteCode" type="button" class="btn-secondary px-2 py-1 text-xs" :aria-label="`Copiar código de ${player.fullName}`" @click="copyCode(player)">{{ copied === player.id ? 'Copiado ✓' : 'Copiar' }}</button>
+                        <button v-if="player.inviteCode" type="button" class="btn-ghost px-2 py-1 text-xs" :aria-label="`Copiar enlace de alta de ${player.fullName}`" title="Enlace a la página de alta con el código ya puesto" @click="copyCode(player, true)"><Icon icon="link" class="mr-1 h-3 w-3" />{{ copied === `${player.id}:link` ? 'Copiado ✓' : 'Enlace de alta' }}</button>
                         <button type="button" class="btn-ghost px-2 py-1 text-xs" :aria-label="`Generar código para ${player.fullName}`" v-busy="busy" :disabled="busy" @click="generateCode(player)">{{ player.inviteCode ? 'Generar otro' : 'Generar código' }}</button>
                       </div>
                     </template>

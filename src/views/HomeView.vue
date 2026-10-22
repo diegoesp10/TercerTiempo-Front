@@ -35,7 +35,7 @@ const roles = [
     title: 'Sigue tu temporada',
     steps: [
       'Date de alta con el nombre con el que apareces en la plantilla.',
-      'Vincúlate a tu ficha con el código de tu cuerpo técnico.',
+      'Date de alta con el código personal que te da tu club o entrenador: ya es tu ficha.',
       'Tus estadísticas, tu impacto en los resultados y tu posición en la liga.',
     ],
   },

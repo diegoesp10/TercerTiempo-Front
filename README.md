@@ -90,7 +90,7 @@ nota; cada nombre abre la ficha del jugador con su nota partido a partido, el de
 *Comparador* (hasta 4 jugadores: radar superpuesto, cara a cara, nota por partido y acciones por 90'). En *Plantilla* se añaden o editan fichas, se regenera
 el código personal de cada jugador y se cambia la visibilidad.
 
-Flujo de prueba como **jugador**: *Darme de alta* (Jugador, con el nombre con el que apareces en la plantilla) →
+Flujo de prueba como **jugador**: *Darme de alta* (Jugador, solo con el código personal que te generó el técnico: la cuenta se crea con el nombre de la ficha y ya vinculada) →
 pedir al club o entrenador su código personal → introducirlo → comprobar la única ficha que autoriza el código → **«Vincular mi ficha»** → *Mi panel*. El nombre de la cuenta debe coincidir con la ficha y el código solo se usa una vez. *Mi plantilla* y *Partidos* muestran
 la plantilla y las actas de tu equipo.
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, shallowRef, watch } from 'vue';
+import { api } from '@/api';
 import { useRoute, useRouter } from 'vue-router';
 import { ApiError, errorMessage } from '@/api/http';
 import ClubPicker from '@/components/clubs/ClubPicker.vue';
@@ -7,7 +8,7 @@ import AuthPanel from '@/components/layout/AuthPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import { useAuthStore } from '@/stores/auth';
-import type { AccountType, Position } from '@/types/api';
+import type { AccountType, Position, SquadInviteDto } from '@/types/api';
 import { positionOptions } from '@/utils/format';
 
 const auth = useAuthStore();
@@ -23,13 +24,13 @@ const form = reactive<{
   birthDate: string;
   accessCode: string;
 }>({
-  accountType: typeof route.query.code === 'string' ? 'Coach' : 'Coach',
+  accountType: typeof route.query.invite === 'string' ? 'Player' : 'Coach',
   email: '',
   password: '',
   displayName: '',
   position: 'Midfielder',
   birthDate: '',
-  accessCode: typeof route.query.code === 'string' ? route.query.code.toUpperCase() : '',
+  accessCode: typeof route.query.invite === 'string' ? route.query.invite.toUpperCase() : typeof route.query.code === 'string' ? route.query.code.toUpperCase() : '',
 });
 
 // Aceptación expresa de las condiciones y la política de privacidad: sin ella no se envía el formulario.
@@ -41,13 +42,40 @@ const isClub = computed(() => form.accountType === 'Club');
 
 const accountTypes: { value: AccountType; title: string; description: string }[] = [
   { value: 'Coach', title: 'Cuerpo técnico', description: 'Entrenador, ayudante, delegado… Con el código de acceso de tu club registras las actas de tu plantilla.' },
-  { value: 'Player', title: 'Jugador', description: 'Te vinculas a tu ficha con el código de invitación de tu cuerpo técnico y sigues tus números.' },
+  { value: 'Player', title: 'Jugador', description: 'Entras con el código personal que te da tu club o entrenador: ya es tu ficha, sin escribir nada más.' },
   { value: 'Club', title: 'Club', description: 'Das de alta a los técnicos de tus equipos cada temporada con un código de acceso.' },
 ];
 
 const loading = ref(false);
 const error = ref<string | null>(null);
 const fieldErrors = ref<Record<string, string[]>>({});
+
+// El jugador no escribe su nombre: el código personal identifica su ficha y la cuenta se llama como ella.
+const invite = shallowRef<SquadInviteDto | null>(null);
+const inviteError = ref<string | null>(null);
+const checkingInvite = ref(false);
+const inviteCode = computed(() => form.accessCode.trim());
+
+watch(
+  () => [form.accountType, inviteCode.value] as const,
+  async ([type, code]) => {
+    invite.value = null;
+    inviteError.value = null;
+    if (type !== 'Player' || code.length < 12) return;
+    checkingInvite.value = true;
+    try {
+      const result = await api.auth.invite(code);
+      if (inviteCode.value !== code) return;
+      invite.value = result;
+      if (result.player.position) form.position = result.player.position;
+    } catch (e) {
+      if (inviteCode.value === code) inviteError.value = errorMessage(e);
+    } finally {
+      if (inviteCode.value === code) checkingInvite.value = false;
+    }
+  },
+  { immediate: true },
+);
 
 async function submit() {
   loading.value = true;
@@ -57,13 +85,13 @@ async function submit() {
     await auth.register({
       email: form.email,
       password: form.password,
-      displayName: form.displayName,
+      displayName: isPlayer.value ? null : form.displayName,
       accountType: form.accountType,
       position: isPlayer.value ? form.position : null,
       birthDate: isPlayer.value && form.birthDate ? form.birthDate : null,
-      accessCode: isCoach.value ? form.accessCode.trim() : null,
+      accessCode: isPlayer.value || isCoach.value ? inviteCode.value : null,
     });
-    await router.push(isPlayer.value ? { name: 'join' } : { name: 'home' });
+    await router.push({ name: 'home' });
   } catch (e) {
     error.value = errorMessage(e);
     if (e instanceof ApiError) fieldErrors.value = e.fieldErrors;
@@ -118,6 +146,37 @@ async function submit() {
           <p v-if="fieldErrors.accessCode" class="field-error">{{ fieldErrors.accessCode[0] }}</p>
         </div>
 
+        <div v-if="isPlayer">
+          <label class="label" for="inviteCode">Tu código personal de invitación</label>
+          <input
+            id="inviteCode"
+            v-model="form.accessCode"
+            type="text"
+            required
+            maxlength="20"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="ABCD2345EFGH"
+            class="input font-mono uppercase tracking-widest"
+            @input="form.accessCode = form.accessCode.toUpperCase()"
+          />
+          <p v-if="fieldErrors.accessCode" class="field-error">{{ fieldErrors.accessCode[0] }}</p>
+          <p v-else-if="inviteError" class="field-error">{{ inviteError }}</p>
+          <p v-else-if="checkingInvite" class="mt-1 flex items-center gap-2 text-xs text-slate-400"><span class="busy-spinner"></span>Comprobando el código…</p>
+          <p v-else-if="!invite" class="mt-1 text-xs text-slate-400">
+            Te lo genera tu club o tu entrenador para tu ficha. No tienes que escribir tu nombre: la cuenta se crea con el de la ficha.
+          </p>
+          <div v-if="invite" class="mt-3 rounded-xl border border-accent-400/40 bg-brand-500/10 p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Tu ficha de jugador</p>
+            <p class="mt-1 text-lg font-semibold text-slate-900">{{ invite.player.fullName }}</p>
+            <p class="mt-1 text-sm text-slate-500">
+              {{ invite.teamName }} · {{ invite.competitionName }} · {{ invite.seasonLabel }}
+              <template v-if="invite.player.shirtNumber"> · dorsal {{ invite.player.shirtNumber }}</template>
+            </p>
+            <p class="mt-2 text-xs text-slate-500">Si esta no es tu ficha, no sigas: avisa a quien te dio el código.</p>
+          </div>
+        </div>
+
         <div v-if="isClub">
           <label class="label" for="displayName">Club</label>
           <ClubPicker id="displayName" v-model="form.displayName" />
@@ -126,16 +185,15 @@ async function submit() {
           </p>
           <p v-if="fieldErrors.displayName" class="field-error">{{ fieldErrors.displayName[0] }}</p>
         </div>
-        <div v-else>
+        <div v-else-if="isCoach">
           <label class="label" for="displayName">Nombre y apellidos</label>
           <input id="displayName" v-model="form.displayName" type="text" required maxlength="120" class="input" />
-          <p v-if="isPlayer" class="mt-1 text-xs text-slate-400">Debe coincidir con el nombre y apellidos de tu ficha. Tu club o entrenador te entregará un código personal para vincularla.</p>
           <p v-if="fieldErrors.displayName" class="field-error">{{ fieldErrors.displayName[0] }}</p>
         </div>
 
         <div v-if="isPlayer" class="grid gap-4 sm:grid-cols-2">
           <div>
-            <label class="label" for="position">Posición</label>
+            <label class="label" for="position">Posición <span class="font-normal text-slate-400">(opcional)</span></label>
             <SearchSelect
               id="position"
               :model-value="form.position"
@@ -145,7 +203,7 @@ async function submit() {
             <p v-if="fieldErrors.position" class="field-error">{{ fieldErrors.position[0] }}</p>
           </div>
           <div>
-            <label class="label" for="birthDate">Fecha de nacimiento</label>
+            <label class="label" for="birthDate">Fecha de nacimiento <span class="font-normal text-slate-400">(opcional)</span></label>
             <input id="birthDate" v-model="form.birthDate" type="date" class="input" />
             <p v-if="fieldErrors.birthDate" class="field-error">{{ fieldErrors.birthDate[0] }}</p>
           </div>
@@ -176,8 +234,8 @@ async function submit() {
           </span>
         </label>
 
-        <button type="submit" class="btn-primary w-full" v-busy="loading" :disabled="loading || !acceptsTerms || (isClub && !form.displayName)">
-          {{ loading ? 'Creando cuenta…' : isPlayer ? 'Crear cuenta de jugador' : isClub ? 'Crear cuenta de club' : 'Crear cuenta y canjear el código' }}
+        <button type="submit" class="btn-primary w-full" v-busy="loading" :disabled="loading || !acceptsTerms || (isClub && !form.displayName) || (isPlayer && !invite)">
+          {{ loading ? 'Creando cuenta…' : isPlayer ? 'Crear mi cuenta y vincular mi ficha' : isClub ? 'Crear cuenta de club' : 'Crear cuenta y canjear el código' }}
         </button>
       </form>
 

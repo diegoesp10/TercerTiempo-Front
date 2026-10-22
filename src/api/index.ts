@@ -57,6 +57,7 @@ import type {
 export const api = {
   auth: {
     register: (body: RegisterRequest) => http<AuthResponse>('/api/auth/register', { method: 'POST', body }),
+    invite: (inviteCode: string) => http<SquadInviteDto>(`/api/auth/invite/${encodeURIComponent(inviteCode.trim())}`),
     login: (body: LoginRequest) => http<AuthResponse>('/api/auth/login', { method: 'POST', body }),
     me: () => http<AccountDto>('/api/auth/me'),
   },

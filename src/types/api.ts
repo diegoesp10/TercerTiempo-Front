@@ -31,11 +31,13 @@ export interface ProblemDetails {
 export interface RegisterRequest {
   email: string;
   password: string;
-  displayName: string;
+  /** Cuerpo técnico y club. Los jugadores no lo mandan: su nombre es el de la ficha del código. */
+  displayName: string | null;
   accountType: AccountType;
+  /** Jugadores, opcional: si falta se toma la posición de la ficha. */
   position: Position | null;
   birthDate: string | null;
-  /** Solo cuerpo técnico: código de acceso entregado por el club. */
+  /** Cuerpo técnico: código de acceso del club. Jugadores: código personal de su ficha. */
   accessCode: string | null;
 }
 

@@ -50,6 +50,7 @@ async function joinAsPlayer() {
   error.value = null;
   try {
     auth.setPlayer(await api.players.joinSquad({ inviteCode: checkedCode.value }));
+    await auth.refreshAccount();
     await router.push({ name: 'home' });
   } catch (e) {
     error.value = errorMessage(e);
@@ -67,7 +68,7 @@ onMounted(() => {
 
 <template>
   <div class="mx-auto max-w-2xl">
-    <PageHeader title="Vincula tu ficha de jugador" subtitle="Tu club o entrenador debe generar un código personal para ti y facilitártelo." />
+    <PageHeader title="Vincula tu ficha de jugador" subtitle="Tu club o entrenador genera un código personal para tu ficha y te lo entrega. Con él, tu cuenta pasa a ser esa ficha." />
 
     <Alert v-if="auth.isCoach" kind="info">
       Los códigos personales de jugador son para los jugadores. Tu club te entrega un
@@ -91,7 +92,7 @@ onMounted(() => {
           {{ loading ? 'Comprobando…' : 'Comprobar mi código' }}
         </button>
       </form>
-      <p class="mt-3 text-xs text-slate-500">El código solo sirve para tu ficha y se usa una vez. El nombre y apellidos de tu cuenta deben coincidir con los de la plantilla.</p>
+      <p class="mt-3 text-xs text-slate-500">El código solo sirve para una ficha y se usa una vez. Tu cuenta pasará a llamarse como la ficha.</p>
 
       <template v-if="invite">
         <div class="mt-6 rounded-lg bg-slate-50 p-4">
