@@ -1,6 +1,7 @@
 import type { ProblemDetails } from '@/types/api';
 import { useAuthStore } from '@/stores/auth';
 import { useLoadingStore } from '@/stores/loading';
+import { describeRequest } from '@/api/loadingLabels';
 
 const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:5080').replace(/\/$/, '');
 
@@ -43,7 +44,7 @@ export async function http<T>(path: string, options: RequestOptions = {}): Promi
   if (auth.token) headers.Authorization = `Bearer ${auth.token}`;
 
   const loading = useLoadingStore();
-  loading.start();
+  const task = loading.start(describeRequest(options.method ?? 'GET', path));
   try {
     let response: Response;
     let text: string;
@@ -69,7 +70,7 @@ export async function http<T>(path: string, options: RequestOptions = {}): Promi
     }
     return data as T;
   } finally {
-    loading.finish();
+    loading.finish(task);
   }
 }
 

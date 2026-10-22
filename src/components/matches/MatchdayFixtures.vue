@@ -177,7 +177,7 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
             >
               <span class="min-w-0 truncate text-right text-slate-800" :title="match.homeTeam.name">{{ match.homeTeam.name }}</span>
               <span class="min-w-16 text-center">
-                <span v-if="hasScore(match)" class="rounded bg-slate-900 px-2 py-0.5 font-semibold tabular-nums text-white">
+                <span v-if="hasScore(match)" class="rounded bg-brand-500 px-2 py-0.5 font-semibold tabular-nums text-white">
                   {{ match.homeGoals }} - {{ match.awayGoals }}
                 </span>
                 <span v-else-if="match.status === 'Scheduled'" class="tabular-nums text-slate-600">{{ formatTime(match.kickoffAt) }}</span>
