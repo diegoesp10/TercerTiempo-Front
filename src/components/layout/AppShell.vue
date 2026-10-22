@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BrandMark from '@/components/layout/BrandMark.vue';
+import SyncBanner from '@/components/layout/SyncBanner.vue';
 import BackButton from '@/components/ui/BackButton.vue';
 import Badge from '@/components/ui/Badge.vue';
 import { useAuthStore } from '@/stores/auth';
@@ -140,6 +141,8 @@ function logout() {
         </div>
       </div>
     </header>
+
+    <SyncBanner />
 
     <main class="mx-auto w-full max-w-[1760px] flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
       <div v-if="!route.meta.root && !route.meta.error" class="mb-4">

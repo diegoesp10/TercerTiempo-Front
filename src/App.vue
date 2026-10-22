@@ -3,12 +3,16 @@ import { onMounted } from 'vue';
 import PitchBackground from '@/components/backgrounds/PitchBackground.vue';
 import AppShell from '@/components/layout/AppShell.vue';
 import { useAuthStore } from '@/stores/auth';
+import { useSyncStore } from '@/stores/sync';
 
 const auth = useAuthStore();
+const sync = useSyncStore();
 
-// Al arrancar con sesión guardada, refrescamos la cuenta (plantillas, vínculos, visibilidad) sin bloquear la UI.
+// Al arrancar con sesión guardada, refrescamos la cuenta (plantillas, vínculos, visibilidad) sin bloquear la UI,
+// y empezamos a sondear la sincronización de la API para avisar mientras actualiza datos.
 onMounted(() => {
   if (auth.isAuthenticated) void auth.refreshAccount().catch(() => undefined);
+  sync.start();
 });
 </script>
 

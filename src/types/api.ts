@@ -187,6 +187,20 @@ export interface AccountDto {
   club: ClubDto | null;
 }
 
+/** Estado de la sincronización con los proveedores (GET /api/sync/status). */
+export interface SyncStatusDto {
+  running: boolean;
+  phase: 'datos' | 'fichas' | null;
+  current: string | null;
+  done: number;
+  total: number;
+  startedAt: string | null;
+  lastFinishedAt: string | null;
+  lastSummary: string | null;
+  lastErrors: string[];
+  nextRunAt: string | null;
+}
+
 export interface AuthResponse {
   accessToken: string;
   expiresAt: string;

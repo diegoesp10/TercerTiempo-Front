@@ -5,6 +5,7 @@ import type {
   AuthResponse,
   ClubCatalogDto,
   ClubDto,
+  SyncStatusDto,
   RosterEntryRequest,
   RosterEntryDto,
   MatchPreviewDto,
@@ -148,6 +149,9 @@ export const api = {
   stats: {
     leagueTable: (competitionId?: string | null) =>
       http<LeagueTableDto>(competitionId ? `/api/league/table?competitionId=${encodeURIComponent(competitionId)}` : '/api/league/table'),
+  },
+  sync: {
+    status: () => http<SyncStatusDto>('/api/sync/status'),
   },
   admin: {
     sync: () => http<SyncResultDto>('/api/admin/sync', { method: 'POST' }),

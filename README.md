@@ -29,7 +29,9 @@ La API vive en su propio repositorio: [TercerTiempo-Back](https://github.com/die
 
 ## Diseño
 
-Navegación: toda página que no es principal (`meta.root`) muestra un botón **Atrás** (`BackButton`, historial del
+Sincronización: `stores/sync.ts` sondea `GET /api/sync/status` (cada minuto; cada 5 s mientras corre) y `SyncBanner`
+muestra bajo la cabecera «Actualizando partidos…» con el logo animado, la liga en curso y la barra de progreso, y un
+aviso breve de «Datos actualizados» al terminar. Navegación: toda página que no es principal (`meta.root`) muestra un botón **Atrás** (`BackButton`, historial del
 router o la ruta padre si se entró por URL). Errores: `useAsync` lleva a `/error/servidor` cuando la API no responde o
 falla (5xx) y a la página 404 cuando el recurso no existe; ambas (`ErrorPage`) usan el logotipo animado y ofrecen
 reintentar, volver o ir al inicio. Iconos de **Font Awesome** (`src/icons.ts` registra solo los que se usan; `<Icon icon="chevron-down" />`). Todos los
