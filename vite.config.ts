@@ -17,10 +17,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Librerías pesadas en chunks propios con nombre estable: se cachean entre despliegues y solo se descargan
-        // en las páginas que las usan (ECharts en estadísticas y comparador, Three.js en la portada y el acceso).
+        // en las páginas que las usan (ECharts en estadísticas y comparador, Plyr en los vídeos).
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
-          if (id.includes('/three/')) return 'three';
           if (id.includes('/echarts/') || id.includes('/zrender/') || id.includes('/vue-echarts/')) return 'echarts';
           if (id.includes('/gsap/')) return 'gsap';
           if (id.includes('/vue/') || id.includes('/@vue/') || id.includes('/vue-router/') || id.includes('/pinia/')) return 'vue';
@@ -28,7 +27,7 @@ export default defineConfig({
         },
       },
     },
-    // ECharts y Three.js superan los 500 kB sin comprimir por naturaleza; el aviso por defecto no aporta nada aquí.
+    // ECharts supera los 500 kB sin comprimir por naturaleza; el aviso por defecto no aporta nada aquí.
     chunkSizeWarningLimit: 750,
   },
 });

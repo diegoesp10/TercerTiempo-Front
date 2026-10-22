@@ -11,6 +11,7 @@ import AppChart from '@/components/charts/AppChart.vue';
 import ChartCard from '@/components/charts/ChartCard.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
@@ -23,6 +24,17 @@ const { data, loading, error, run } = useAsync(() => api.squads.playerProfile(pr
 watch(() => props.squadPlayerId, () => void run());
 
 const played = computed(() => data.value?.matches.filter((m) => m.performance) ?? []);
+const heroStats = computed(() =>
+  data.value
+    ? [
+        { label: 'Partidos', value: data.value.stats.matchesLogged },
+        { label: 'Minutos', value: data.value.stats.minutes },
+        { label: 'Goles', value: data.value.stats.goals },
+        { label: 'Asistencias', value: data.value.stats.assists },
+        { label: 'Nota media', value: data.value.stats.averageRating === null ? '—' : formatNumber(data.value.stats.averageRating, 1) },
+      ]
+    : [],
+);
 const isGoalkeeper = computed(() => data.value?.player.position === 'Goalkeeper');
 
 const trend = computed(() => (data.value ? ratingTrendOption(data.value.matches, data.value.squadAverage.averageRating) : null));
@@ -49,21 +61,21 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
   <template v-else-if="data">
     <RouterLink :to="{ name: 'squad-stats', params: { squadId } }" class="text-sm text-slate-500 hover:text-slate-800">← Estadísticas de la plantilla</RouterLink>
 
-    <div class="mt-3 mb-6 flex flex-wrap items-center gap-4">
-      <RatingBadge :rating="data.stats.averageRating" size="lg" />
-      <div class="min-w-0 flex-1">
-        <h2 class="text-xl font-semibold text-slate-900">
-          <span v-if="data.player.shirtNumber" class="mr-1 text-slate-400">{{ data.player.shirtNumber }}</span>{{ data.player.fullName }}
-        </h2>
-        <p class="text-sm text-slate-500">
-          {{ data.player.position ? positionLabels[data.player.position] : 'Posición sin indicar' }} · nota media calculada con los datos de sus actas
-        </p>
-      </div>
-      <div class="flex flex-wrap gap-2">
+    <PlayerHeroCard
+      class="mt-3 mb-6"
+      :team="`${data.squad.teamName} · ${data.squad.seasonLabel}`"
+      :name="data.player.fullName"
+      :number="data.player.shirtNumber"
+      :photo-url="data.player.photoUrl"
+      :meta="`${data.player.position ? positionLabels[data.player.position] : 'Posición sin indicar'}${data.player.shirtNumber ? ` · dorsal ${data.player.shirtNumber}` : ''} · nota media calculada con los datos de sus actas`"
+      :stats="heroStats"
+    >
+      <template #actions>
+        <RatingBadge :rating="data.stats.averageRating" size="lg" />
         <Badge v-if="data.player.linked" tone="green">Cuenta vinculada</Badge>
         <RouterLink :to="{ name: 'squad-compare', params: { squadId }, query: { ids: squadPlayerId } }" class="btn-secondary">Comparar con…</RouterLink>
-      </div>
-    </div>
+      </template>
+    </PlayerHeroCard>
 
     <Alert v-if="played.length === 0" kind="info" class="mb-6">
       Todavía no hay ninguna acta con minutos de este jugador. Los gráficos aparecerán cuando el cuerpo técnico registre sus partidos.

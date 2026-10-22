@@ -238,6 +238,8 @@ export interface SquadPlayerDto {
   injury: InjuryDto | null;
   /** Código personal pendiente; solo lo reciben el club y el cuerpo técnico. */
   inviteCode: string | null;
+  /** Foto de la ficha publicada por el club, si la ha subido. */
+  photoUrl: string | null;
 }
 
 export type InjuryType =

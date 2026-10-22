@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue';
+import HeroMatchday from '@/components/matches/HeroMatchday.vue';
 import { useAuthStore } from '@/stores/auth';
-import { whenIdle } from '@/utils/idle';
 import ClubHomeView from '@/views/club/ClubHomeView.vue';
 import CoachHomeView from '@/views/coach/CoachHomeView.vue';
 import PlayerDashboardView from '@/views/player/PlayerDashboardView.vue';
 
 const auth = useAuthStore();
-
-// El balón 3D (Three.js) solo se descarga en la portada pública, y cuando el navegador ya ha pintado lo importante.
-const BallScene = defineAsyncComponent(() => whenIdle().then(() => import('@/components/three/BallScene.vue')));
 
 const roles = [
   {
@@ -34,8 +30,8 @@ const roles = [
     eyebrow: 'Jugador',
     title: 'Sigue tu temporada',
     steps: [
-      'Date de alta con el nombre con el que apareces en la plantilla.',
-      'Date de alta con el código personal que te da tu club o entrenador: ya es tu ficha.',
+      'Pide a tu club o entrenador el código personal de tu ficha.',
+      'Date de alta con ese código: la cuenta se crea con tu nombre y ya es tu ficha.',
       'Tus estadísticas, tu impacto en los resultados y tu posición en la liga.',
     ],
   },
@@ -58,7 +54,7 @@ const highlights = [
     <section class="grid items-center gap-10 py-6 lg:grid-cols-12 lg:py-12">
       <div class="lg:col-span-7">
         <p class="eyebrow">Rendimiento partido a partido</p>
-        <h1 class="mt-3 text-5xl font-bold leading-none tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
+        <h1 class="mt-3 text-5xl font-extrabold leading-[0.95] text-slate-900 sm:text-6xl lg:text-7xl">
           El acta de cada partido,<br />convertida en estadísticas.
         </h1>
         <p class="mt-6 max-w-xl text-lg text-slate-600">
@@ -71,14 +67,14 @@ const highlights = [
         </div>
         <dl class="mt-10 grid max-w-xl grid-cols-3 gap-3">
           <div v-for="item in highlights" :key="item.label" class="rounded-lg border border-line bg-surface px-4 py-3">
-            <dt class="font-display text-2xl font-bold text-slate-900 sm:text-3xl">{{ item.value }}</dt>
+            <dt class="font-figures text-2xl font-extrabold text-slate-900 sm:text-3xl">{{ item.value }}</dt>
             <dd class="mt-0.5 text-xs text-slate-500">{{ item.label }}</dd>
           </div>
         </dl>
       </div>
 
-      <div class="mx-auto aspect-square w-full max-w-sm lg:col-span-5 lg:max-w-md">
-        <BallScene :zoom="1" />
+      <div class="w-full lg:col-span-5">
+        <HeroMatchday />
       </div>
     </section>
 

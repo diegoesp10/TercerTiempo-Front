@@ -38,8 +38,8 @@ export function ratingColor(rating: number | null | undefined): string {
   return '#8b5cf6';
 }
 
-const font = 'Barlow, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-const display = '"Barlow Condensed", Barlow, ui-sans-serif, system-ui, sans-serif';
+const font = 'Archivo, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const display = font;
 
 interface ChartPalette {
   text: string;

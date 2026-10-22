@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import PitchBackground from '@/components/backgrounds/PitchBackground.vue';
+import GrassField from '@/components/backgrounds/GrassField.vue';
 import AppShell from '@/components/layout/AppShell.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useSyncStore } from '@/stores/sync';
@@ -17,7 +17,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <PitchBackground />
+  <GrassField />
   <AppShell>
     <RouterView v-slot="{ Component }">
       <Transition name="page" mode="out-in">

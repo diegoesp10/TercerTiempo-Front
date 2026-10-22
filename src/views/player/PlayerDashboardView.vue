@@ -5,6 +5,7 @@ import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
+import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
 import PercentileBar from '@/components/ui/PercentileBar.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
@@ -59,6 +60,18 @@ const radarChart = computed(() =>
 const breakdownChart = computed(() => (profile.data.value ? ratingBreakdownOption(profile.data.value.matches) : null));
 const hasCharts = computed(() => profile.data.value?.matches.some((m) => m.performance) ?? false);
 
+const heroStats = computed(() =>
+  data.value
+    ? [
+        { label: 'Partidos', value: data.value.individual.matchesLogged },
+        { label: 'Minutos', value: data.value.individual.minutes },
+        { label: 'Goles', value: data.value.individual.goals },
+        { label: 'Asistencias', value: data.value.individual.assists },
+        { label: 'Nota media', value: data.value.individual.averageRating === null ? '—' : formatNumber(data.value.individual.averageRating, 1) },
+      ]
+    : [],
+);
+
 const impact = computed(() => data.value?.teamImpact ?? null);
 const league = computed(() => data.value?.league ?? null);
 const hasPercentiles = computed(() => league.value !== null && league.value.playersCompared >= 2);
@@ -95,19 +108,22 @@ async function leave() {
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">
-    <PageHeader
-      :title="`Hola, ${data.player.displayName}`"
-      :subtitle="data.season ? `${data.season.competitionName} · ${data.season.label}` : 'Sin temporada activa'"
+    <PlayerHeroCard
+      class="mb-8"
+      :team="`${squad.teamName} · ${data.season ? `${data.season.competitionName} · ${data.season.label}` : 'Sin temporada activa'}`"
+      :name="data.player.displayName"
+      :number="squad.shirtNumber"
+      :photo-url="profile.data.value?.player.photoUrl ?? null"
+      :meta="`${positionLabels[data.player.position]}${squad.shirtNumber ? ` · dorsal ${squad.shirtNumber}` : ''}`"
+      :stats="heroStats"
     >
       <template #actions>
-        <Badge>{{ positionLabels[data.player.position] }}</Badge>
         <RouterLink :to="{ name: 'squad', params: { squadId: squad.squadId } }" class="btn-secondary">
-          <span v-if="squad.shirtNumber" class="text-slate-400">{{ squad.shirtNumber }}</span>
           {{ squad.teamName }}
           <Badge :tone="squad.visibility === 'Public' ? 'green' : 'slate'">{{ visibilityLabels[squad.visibility] }}</Badge>
         </RouterLink>
       </template>
-    </PageHeader>
+    </PlayerHeroCard>
 
     <Alert v-if="data.individual.matchesLogged === 0" kind="info" class="mb-6">
       Tu cuerpo técnico todavía no ha registrado ninguna acta con tu ficha. En cuanto lo haga, aquí aparecerán tus números.
