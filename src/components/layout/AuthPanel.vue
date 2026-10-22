@@ -2,7 +2,7 @@
 defineProps<{ title: string; subtitle: string }>();
 
 const facts = [
-  { value: '10', label: 'ligas asturianas, de 1ª RFEF a 3ª AsturFútbol' },
+  { value: '10', label: 'ligas: las semiprofesionales nacionales (1ª, 2ª y 3ª RFEF) y toda la regional asturiana' },
   { value: '1:1', label: 'tu acta frente a la oficial de la federación' },
   { value: '3,0 – 10', label: 'nota de cada jugador, solo con datos del acta' },
 ];

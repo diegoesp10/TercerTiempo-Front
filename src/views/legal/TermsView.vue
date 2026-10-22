@@ -19,7 +19,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
     <section>
       <h2>2. Qué ofrece el servicio</h2>
       <ul>
-        <li>Consulta pública de calendarios, resultados, clasificaciones y actas oficiales de las ligas asturianas, a partir de fuentes públicas (apartado 7).</li>
+        <li>Consulta pública de calendarios, resultados, clasificaciones y actas oficiales de las ligas semiprofesionales nacionales (RFEF) y de la regional asturiana, a partir de fuentes públicas (apartado 7).</li>
         <li>Para clubes: vinculación de sus equipos y nombramiento de su cuerpo técnico por temporada mediante códigos de acceso.</li>
         <li>Para el cuerpo técnico: gestión de la plantilla, registro del acta interna de cada partido, comparación con el acta oficial, estadísticas, gráficos y subida del vídeo del partido.</li>
         <li>Para jugadores: vinculación a su ficha y consulta de sus estadísticas.</li>

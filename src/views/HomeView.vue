@@ -38,7 +38,7 @@ const roles = [
 ];
 
 const highlights = [
-  { value: '10', label: 'ligas asturianas sincronizadas' },
+  { value: '10', label: 'ligas: semiprofesionales nacionales y toda la regional asturiana' },
   { value: '3,0 – 10', label: 'nota calculada solo con datos' },
   { value: '1:1', label: 'acta interna frente a la oficial' },
 ];
