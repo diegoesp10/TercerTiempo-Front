@@ -3,268 +3,296 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
 
 /**
- * Fondo de toda la aplicación: un campo de césped medio largo, visto desde la banda a ras de suelo, con el viento
- * peinándolo a rachas. Se dibuja entero en un shader (un solo plano a pantalla completa): cada píxel lanza un rayo
- * desde la cámara hasta el suelo y calcula allí la hierba (ruido anisótropo, las briznas se estiran hacia la cámara),
- * las bandas de siega, las líneas de cal y la racha de viento que recorre el campo. Sin texturas ni modelos.
+ * Fondo de toda la aplicación: un campo de fútbol real visto desde la banda a ras de césped, renderizado con
+ * Three.js e iluminación física sobre un juego de texturas fotográficas de hierba (color, normales, rugosidad y
+ * oclusión; ambientCG Grass004, CC0, en public/textures/grass). Encima van las bandas de siega y las líneas de cal,
+ * y el viento peina la hierba a rachas (ondas de brillo y un leve vaivén de las normales).
  *
- * Va a media resolución y a 30 fps como máximo, se para cuando la pestaña no está visible y, con animaciones
- * reducidas o sin WebGL, se queda en un fotograma fijo (o en un degradado CSS). WebGL sin librerías: un programa y
- * un triángulo que cubre la pantalla.
+ * Tema claro = tarde de sol; tema oscuro = noche bajo los focos. 30 fps como máximo, se para con la pestaña oculta,
+ * con animaciones reducidas se queda quieto y sin WebGL se ve un degradado.
  */
 const settings = useSettingsStore();
 const host = ref<HTMLDivElement | null>(null);
 const fallback = ref(false);
+const ready = ref(false);
 
 let dispose: (() => void) | null = null;
-let setTheme: ((dark: boolean) => void) | null = null;
+let applyTheme: ((dark: boolean) => void) | null = null;
 
-const vertexShader = `
-  attribute vec2 position;
-  void main() {
-    gl_Position = vec4(position, 0.0, 1.0);
+const TILE_METERS = 2.2;
+const FIELD_W = 160;
+const FIELD_D = 120;
+
+const noiseGlsl = `
+  float ttHash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+  float ttNoise(vec2 p) {
+    vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(ttHash(i), ttHash(i + vec2(1.0, 0.0)), u.x), mix(ttHash(i + vec2(0.0, 1.0)), ttHash(i + vec2(1.0, 1.0)), u.x), u.y);
   }
+  float ttFbm(vec2 p) { float v = 0.0; float a = 0.5; for (int i = 0; i < 3; i++) { v += a * ttNoise(p); p = p * 2.1 + 7.0; a *= 0.5; } return v; }
 `;
 
-const fragmentShader = `
-  precision highp float;
+function drawOverlay(): HTMLCanvasElement {
+  // Bandas de siega (alternan el brillo) y líneas de cal, pintadas una vez sobre un lienzo que cubre el campo.
+  const w = 2048;
+  const h = Math.round((w * FIELD_D) / FIELD_W);
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+  const px = w / FIELD_W;
 
-  uniform vec2 uResolution;
-  uniform float uTime;
-  uniform float uDark;
-  uniform float uStrength;
-
-  // --- ruido -------------------------------------------------------------------------------------------------
-  float hash(vec2 p) {
-    p = fract(p * vec2(123.34, 456.21));
-    p += dot(p, p + 45.32);
-    return fract(p.x * p.y);
+  const bands = 22;
+  for (let i = 0; i < bands; i++) {
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.075)' : 'rgba(0,0,0,0.10)';
+    ctx.fillRect(0, (h / bands) * i, w, h / bands + 1);
   }
 
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    vec2 u = f * f * (3.0 - 2.0 * f);
-    float a = hash(i);
-    float b = hash(i + vec2(1.0, 0.0));
-    float c = hash(i + vec2(0.0, 1.0));
-    float d = hash(i + vec2(1.0, 1.0));
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  // Campo reglamentario (105 x 68) centrado, con el área grande, el área pequeña, el círculo y el punto central.
+  const L = 105 * px;
+  const W = 68 * px;
+  const x0 = (w - L) / 2;
+  const y0 = (h - W) / 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+  ctx.lineWidth = 0.12 * px;
+  ctx.lineJoin = 'round';
+  ctx.strokeRect(x0, y0, L, W);
+  ctx.beginPath();
+  ctx.moveTo(x0 + L / 2, y0);
+  ctx.lineTo(x0 + L / 2, y0 + W);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x0 + L / 2, y0 + W / 2, 9.15 * px, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.beginPath();
+  ctx.arc(x0 + L / 2, y0 + W / 2, 0.3 * px, 0, Math.PI * 2);
+  ctx.fill();
+  for (const side of [0, 1]) {
+    const dir = side === 0 ? 1 : -1;
+    const gx = side === 0 ? x0 : x0 + L;
+    ctx.strokeRect(side === 0 ? gx : gx - 16.5 * px, y0 + (W - 40.32 * px) / 2, 16.5 * px, 40.32 * px);
+    ctx.strokeRect(side === 0 ? gx : gx - 5.5 * px, y0 + (W - 18.32 * px) / 2, 5.5 * px, 18.32 * px);
+    ctx.beginPath();
+    ctx.arc(gx + dir * 11 * px, y0 + W / 2, 0.3 * px, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(gx + dir * 11 * px, y0 + W / 2, 9.15 * px, side === 0 ? -0.93 : Math.PI - 0.93, side === 0 ? 0.93 : Math.PI + 0.93);
+    ctx.stroke();
   }
+  return canvas;
+}
 
-  float fbm(vec2 p) {
-    float v = 0.0;
-    float a = 0.5;
-    for (int i = 0; i < 4; i++) {
-      v += a * noise(p);
-      p = p * 2.03 + vec2(17.0, 9.0);
-      a *= 0.5;
-    }
-    return v;
-  }
-
-  // --- líneas de cal: una banda y el círculo central, en coordenadas del campo (metros) ---------------------------
-  float chalk(vec2 w, float px) {
-    float width = 0.12 + px * 1.5;
-    float side = smoothstep(width, 0.0, abs(w.y - 34.0));
-    float mid = smoothstep(width, 0.0, abs(w.x));
-    float circle = smoothstep(width, 0.0, abs(length(w - vec2(0.0, 0.0)) - 9.15));
-    float spot = smoothstep(0.35 + px, 0.0, length(w));
-    return clamp(side + mid + circle + spot, 0.0, 1.0);
-  }
-
-  void main() {
-    vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution) / uResolution.y;
-
-    // Cámara a 1,1 m del suelo mirando ligeramente hacia abajo, hacia el centro del campo.
-    vec3 ro = vec3(-7.0, 1.1, -24.0);
-    float pitch = -0.085;
-    vec3 rd = normalize(vec3(uv.x, uv.y * cos(pitch) - 0.62 * sin(pitch) - 0.07, 0.62 * cos(pitch) + uv.y * sin(pitch)));
-
-    float horizon = smoothstep(-0.02, 0.06, rd.y);
-    vec3 skyDark = vec3(0.039, 0.067, 0.125);
-    vec3 skyLight = vec3(0.93, 0.95, 0.97);
-    vec3 sky = mix(skyLight, skyDark, uDark);
-
-    vec3 col = sky;
-    if (rd.y < 0.0) {
-      float t = -ro.y / rd.y;
-      vec3 w = ro + rd * t;
-      float dist = t;
-      float px = dist * 0.004;
-
-      // Racha de viento: un campo de ruido lento que viaja en diagonal; donde pasa, las briznas se tumban y brillan,
-      // y por encima corre una ondulación más rápida, como las olas que levanta el viento en la hierba alta.
-      float gust = fbm(w.xz * 0.04 + vec2(-uTime * 0.14, uTime * 0.04));
-      gust = smoothstep(0.38, 0.72, gust);
-      float wave = 0.5 + 0.5 * sin(w.z * 0.9 - w.x * 0.25 - uTime * 2.2 + fbm(w.xz * 0.15) * 5.0);
-      float sway = (fbm(w.xz * 0.3 + uTime * 0.4) - 0.5) * 0.6 * (0.35 + gust) + wave * gust * 0.25;
-
-      // Briznas: ruido muy fino a lo ancho y laxo en profundidad (en pantalla, trazos verticales cortos), inclinado
-      // por el viento. Dos capas con umbral para que se distingan tallos claros y sombra entre ellos; se funden con
-      // la distancia para no chisporrotear en el horizonte.
-      float detail = exp(-dist * 0.045);
-      vec2 bladeUv = vec2(w.x * 16.0 + sway * 6.0, w.z * 2.2 + sway * 1.5);
-      float tall = smoothstep(0.28, 0.82, noise(bladeUv));
-      float fine = smoothstep(0.35, 0.8, noise(bladeUv * 2.7 + vec2(11.0, 3.0)));
-      float blades = mix(0.5, tall * 0.65 + fine * 0.35, detail);
-      float clumps = fbm(w.xz * 0.5);
-
-      // Bandas de siega a lo ancho: la hierba peinada en sentidos alternos refleja la luz de forma distinta.
-      float band = step(0.5, fract(w.z / 5.5 + 0.25)) * 2.0 - 1.0;
-      float stripe = 0.5 + 0.5 * band * (0.11 + 0.05 * gust);
-
-      vec3 deep = mix(vec3(0.13, 0.38, 0.17), vec3(0.045, 0.15, 0.07), uDark);
-      vec3 bright = mix(vec3(0.38, 0.68, 0.30), vec3(0.17, 0.40, 0.17), uDark);
-      vec3 grass = mix(deep, bright, blades * 0.7 + clumps * 0.3);
-      grass *= 0.8 + 0.4 * stripe;
-
-      // Reflejo de la luz sobre las briznas que tumba el viento, siguiendo la ondulación.
-      float sheen = gust * (0.45 + 0.55 * wave) * (0.5 + 0.5 * blades) * detail;
-      grass += vec3(0.16, 0.20, 0.09) * sheen * mix(1.0, 0.7, uDark);
-
-      // Cal
-      float lines = chalk(w.xz, px) * exp(-dist * 0.02);
-      vec3 chalkColor = mix(vec3(0.97), vec3(0.78, 0.82, 0.86), uDark);
-      grass = mix(grass, chalkColor, lines * mix(0.9, 0.55, uDark));
-
-      // Bruma hacia el horizonte: el campo se funde con el fondo de la aplicación.
-      float fog = 1.0 - exp(-dist * mix(0.012, 0.02, uDark));
-      col = mix(grass, sky, fog);
-    }
-
-    col = mix(col, sky, horizon);
-
-    // Viñeta y atenuación general para que el contenido mande sobre el fondo.
-    float vignette = smoothstep(1.35, 0.35, length(uv * vec2(0.9, 1.3)));
-    col = mix(sky, col, mix(0.65, 1.0, vignette) * uStrength);
-
-    gl_FragColor = vec4(col, 1.0);
-  }
-`;
-
-onMounted(() => {
+onMounted(async () => {
   const el = host.value;
   if (!el) return;
-
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const canvas = document.createElement('canvas');
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
-  canvas.style.display = 'block';
-  let gl: WebGLRenderingContext | null = null;
+
   try {
-    gl = (canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'low-power' }) ??
-      canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
+    const probe = document.createElement('canvas');
+    if (!(probe.getContext('webgl2') ?? probe.getContext('webgl'))) throw new Error('no webgl');
   } catch {
-    gl = null;
-  }
-  if (!gl) {
     fallback.value = true;
     return;
   }
-  el.appendChild(canvas);
 
-  // WebGL a pelo: un programa, un triángulo que cubre la pantalla y cuatro uniformes. Sin librerías.
-  const compile = (type: number, source: string) => {
-    const shader = gl.createShader(type)!;
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader) ?? 'shader');
-    return shader;
+  const THREE = await import('three');
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.domElement.style.width = '100%';
+  renderer.domElement.style.height = '100%';
+  renderer.domElement.style.display = 'block';
+  el.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 400);
+  camera.position.set(-9, 1.35, -34);
+  camera.lookAt(2, 0.4, 12);
+
+  // Texturas: 2K siempre; en pantallas grandes y densas, color y normales a 4K.
+  const big = (window.screen.width ?? 0) * window.devicePixelRatio >= 3000 && !(navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
+  const loader = new THREE.TextureLoader();
+  const maxAniso = renderer.capabilities.getMaxAnisotropy();
+  const tile = (texture: InstanceType<typeof THREE.Texture>, srgb = false) => {
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(FIELD_W / TILE_METERS, FIELD_D / TILE_METERS);
+    texture.anisotropy = maxAniso;
+    if (srgb) texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
   };
-  const program = gl.createProgram()!;
+  const load = (name: string, srgb = false) =>
+    new Promise<InstanceType<typeof THREE.Texture>>((resolve, reject) => loader.load(`/textures/grass/${name}.webp`, (t) => resolve(tile(t, srgb)), undefined, reject));
+
+  let map: InstanceType<typeof THREE.Texture>;
+  let normalMap: InstanceType<typeof THREE.Texture>;
+  let roughnessMap: InstanceType<typeof THREE.Texture>;
+  let aoMap: InstanceType<typeof THREE.Texture>;
   try {
-    gl.attachShader(program, compile(gl.VERTEX_SHADER, vertexShader));
-    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentShader));
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program) ?? 'program');
+    [map, normalMap, roughnessMap, aoMap] = await Promise.all([
+      load(big ? 'color-4k' : 'color-2k', true),
+      load(big ? 'normal-4k' : 'normal-2k'),
+      load('roughness-2k'),
+      load('ao-2k'),
+    ]);
   } catch {
-    canvas.remove();
+    renderer.dispose();
+    renderer.domElement.remove();
     fallback.value = true;
     return;
   }
-  gl.useProgram(program);
+  aoMap.channel = 0;
 
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-  const position = gl.getAttribLocation(program, 'position');
-  gl.enableVertexAttribArray(position);
-  gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-
-  const uniforms = {
-    uResolution: gl.getUniformLocation(program, 'uResolution'),
-    uTime: gl.getUniformLocation(program, 'uTime'),
-    uDark: gl.getUniformLocation(program, 'uDark'),
-    uStrength: gl.getUniformLocation(program, 'uStrength'),
+  const uniforms = { uTime: { value: 0 }, uWind: { value: 1 } };
+  const material = new THREE.MeshStandardMaterial({
+    map,
+    normalMap,
+    normalScale: new THREE.Vector2(0.9, 0.9),
+    roughnessMap,
+    roughness: 1,
+    aoMap,
+    aoMapIntensity: 0.7,
+    metalness: 0,
+  });
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = uniforms.uTime;
+    shader.uniforms.uWind = uniforms.uWind;
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\n varying vec3 ttWorld;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n ttWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>\n uniform float uTime; uniform float uWind; varying vec3 ttWorld;\n${noiseGlsl}`)
+      // Rachas de viento: un campo lento que recorre el campo y, dentro, ondas rápidas de brillo (la hierba tumbada refleja más luz).
+      .replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+        float ttGust = smoothstep(0.42, 0.75, ttFbm(ttWorld.xz * 0.035 + vec2(-uTime * 0.18, uTime * 0.05)));
+        float ttWave = 0.5 + 0.5 * sin(ttWorld.z * 0.6 - ttWorld.x * 0.2 - uTime * 2.4 + ttFbm(ttWorld.xz * 0.12) * 6.0);
+        float ttSheen = ttGust * (0.35 + 0.65 * ttWave) * uWind;
+        diffuseColor.rgb *= 1.0 + 0.22 * ttSheen;
+        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.03, 1.05, 0.95), ttSheen);`,
+      )
+      // Vaivén: las normales se inclinan un poco con la racha, como briznas que se mueven.
+      .replace(
+        '#include <normal_fragment_maps>',
+        `#include <normal_fragment_maps>
+        normal = normalize(normal + vec3(0.12 * (ttWave - 0.5) * ttGust * uWind, 0.0, 0.08 * (ttWave - 0.5) * ttGust * uWind));`,
+      );
   };
-  const state = {
-    dark: settings.isDark ? 1 : 0,
-    strength: settings.isDark ? 0.62 : 0.8,
-  };
-  if (import.meta.env.DEV) (window as unknown as { __ttGrass?: typeof state }).__ttGrass = state;
 
-  // Media resolución: el césped es suave por naturaleza y así cuesta poco en portátiles.
-  const ratio = Math.min(window.devicePixelRatio, 1.5) * 0.8;
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(FIELD_W, FIELD_D), material);
+  ground.rotation.x = -Math.PI / 2;
+  scene.add(ground);
+
+  const overlayTexture = new THREE.CanvasTexture(drawOverlay());
+  overlayTexture.colorSpace = THREE.SRGBColorSpace;
+  overlayTexture.anisotropy = maxAniso;
+  const overlay = new THREE.Mesh(
+    new THREE.PlaneGeometry(FIELD_W, FIELD_D),
+    new THREE.MeshBasicMaterial({ map: overlayTexture, transparent: true, depthWrite: false, toneMapped: false }),
+  );
+  overlay.rotation.x = -Math.PI / 2;
+  overlay.position.y = 0.012;
+  scene.add(overlay);
+
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x3a5a2a, 1);
+  const sun = new THREE.DirectionalLight(0xffffff, 1);
+  sun.position.set(40, 60, -20);
+  scene.add(hemi, sun);
+  scene.fog = new THREE.Fog(0x000000, 20, 150);
+
+  applyTheme = (dark) => {
+    const canvasColor = getComputedStyle(document.documentElement).getPropertyValue('--t-canvas').trim() || (dark ? '#0a1120' : '#eef1f6');
+    scene.fog!.color.set(canvasColor);
+    scene.background = new THREE.Color(canvasColor);
+    if (dark) {
+      hemi.color.set(0x90a8d8);
+      hemi.groundColor.set(0x0c1a10);
+      hemi.intensity = 0.7;
+      sun.color.set(0xd8e6ff);
+      sun.intensity = 2.2;
+      sun.position.set(-30, 55, 10);
+      renderer.toneMappingExposure = 0.9;
+      scene.fog!.near = 12;
+      scene.fog!.far = 85;
+    } else {
+      hemi.color.set(0xd6e6ff);
+      hemi.groundColor.set(0x4a6a30);
+      hemi.intensity = 0.95;
+      sun.color.set(0xfff0d6);
+      sun.intensity = 2.4;
+      sun.position.set(45, 50, -25);
+      renderer.toneMappingExposure = 1.0;
+      scene.fog!.near = 18;
+      scene.fog!.far = 100;
+    }
+  };
+  applyTheme(settings.isDark);
+
   const resize = () => {
-    canvas.width = Math.max(1, Math.round(window.innerWidth * ratio));
-    canvas.height = Math.max(1, Math.round(window.innerHeight * ratio));
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.uniform2f(uniforms.uResolution, canvas.width, canvas.height);
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.fov = w < 768 ? 46 : 36;
+    camera.updateProjectionMatrix();
   };
   resize();
   window.addEventListener('resize', resize);
 
-  const draw = (time: number) => {
-    gl.uniform1f(uniforms.uTime, time);
-    gl.uniform1f(uniforms.uDark, state.dark);
-    gl.uniform1f(uniforms.uStrength, state.strength);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-  };
-
-  // El tema cambia el tinte en caliente, con una transición corta entre claro y oscuro.
-  let target = state.dark;
-  setTheme = (dark) => { target = dark ? 1 : 0; state.strength = dark ? 0.62 : 0.8; };
-
   const start = performance.now();
   let frame = 0;
   let last = 0;
+  const draw = (now: number) => {
+    uniforms.uTime.value = reduced ? 0 : (now - start) / 1000;
+    renderer.render(scene, camera);
+  };
   const loop = (now: number) => {
     frame = requestAnimationFrame(loop);
-    if (document.hidden) return;
-    const needsTint = Math.abs(state.dark - target) > 0.001;
-    if (!needsTint && (reduced || now - last < 1000 / 30)) return;
+    if (document.hidden || reduced || now - last < 1000 / 30) return;
     last = now;
-    state.dark += (target - state.dark) * 0.12;
-    if (Math.abs(state.dark - target) < 0.002) state.dark = target;
-    draw(reduced ? 0 : (now - start) / 1000);
+    draw(now);
   };
-  draw(0);
+  draw(start);
+  ready.value = true;
   frame = requestAnimationFrame(loop);
 
   dispose = () => {
     cancelAnimationFrame(frame);
     window.removeEventListener('resize', resize);
-    gl.deleteBuffer(buffer);
-    gl.deleteProgram(program);
-    gl.getExtension('WEBGL_lose_context')?.loseContext();
-    canvas.remove();
+    ground.geometry.dispose();
+    overlay.geometry.dispose();
+    material.dispose();
+    overlay.material.dispose();
+    for (const t of [map, normalMap, roughnessMap, aoMap, overlayTexture]) t.dispose();
+    renderer.dispose();
+    renderer.domElement.remove();
   };
 });
 
-watch(() => settings.isDark, (dark) => setTheme?.(dark));
+watch(() => settings.isDark, (dark) => applyTheme?.(dark));
 onBeforeUnmount(() => dispose?.());
 </script>
 
 <template>
-  <div ref="host" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-canvas" :class="{ 'grass-fallback': fallback }" aria-hidden="true" />
+  <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-canvas" aria-hidden="true">
+    <div ref="host" class="absolute inset-0 transition-opacity duration-700" :class="[ready ? 'opacity-100' : 'opacity-0', { 'grass-fallback': fallback }]" />
+    <!-- Velo: el contenido manda; el campo asoma más abajo y en los márgenes. -->
+    <div class="grass-veil absolute inset-0" />
+  </div>
 </template>
 
 <style scoped>
+.grass-veil {
+  background: linear-gradient(to bottom, var(--t-canvas) 0%, color-mix(in srgb, var(--t-canvas) 85%, transparent) 28%, color-mix(in srgb, var(--t-canvas) 30%, transparent) 58%, color-mix(in srgb, var(--t-canvas) 8%, transparent) 100%);
+}
+:root[data-theme="dark"] .grass-veil {
+  background: linear-gradient(to bottom, var(--t-canvas) 0%, color-mix(in srgb, var(--t-canvas) 85%, transparent) 30%, color-mix(in srgb, var(--t-canvas) 30%, transparent) 60%, color-mix(in srgb, var(--t-canvas) 10%, transparent) 100%);
+}
 .grass-fallback {
-  background:
-    linear-gradient(to bottom, var(--t-canvas) 0%, var(--t-canvas) 45%, transparent 100%),
-    linear-gradient(to bottom, #1d4a27, #0d2a16);
+  opacity: 1;
+  background: linear-gradient(to bottom, var(--t-canvas) 0%, var(--t-canvas) 45%, #1d4a27 70%, #0d2a16 100%);
 }
 </style>
