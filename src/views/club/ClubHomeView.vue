@@ -245,8 +245,6 @@ const sortedAppointments = computed(() => {
           <div class="flex items-center gap-2 text-xs text-slate-500">
             <Badge :tone="licenseStatusTone[team.license]" :title="`Licencia ${licenseStatusLabels[team.license].toLowerCase()} · hasta el ${formatDate(team.licenseValidUntil)}`">Licencia {{ licenseStatusLabels[team.license].toLowerCase() }}</Badge>
             <Badge :tone="team.activeAppointments > 0 ? 'green' : 'amber'">{{ team.activeAppointments }} {{ team.activeAppointments === 1 ? 'técnico vigente' : 'técnicos vigentes' }}</Badge>
-            <RouterLink v-if="team.squadId" :to="{ name: 'squad', params: { squadId: team.squadId } }" class="text-accent-400 hover:underline">Plantilla</RouterLink>
-            <span v-else>Sin plantilla todavía</span>
             <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" @click="removeTeam(team.teamId, team.teamName)">Desvincular</button>
           </div>
         </li>
