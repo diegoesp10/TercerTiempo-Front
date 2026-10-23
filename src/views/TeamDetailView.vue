@@ -7,6 +7,7 @@ import MatchRow from '@/components/matches/MatchRow.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
+import Skeleton from '@/components/ui/Skeleton.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import ClubRosterEditor from '@/components/teams/ClubRosterEditor.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
@@ -76,6 +77,20 @@ function onRosterUpdated(roster: typeof data.value extends infer T ? (T extends 
   if (data.value) data.value = { ...data.value, roster, rosterPublished: roster.length > 0 };
 }
 
+/** Cifras de la clasificación: la posición, destacada, y el resto en la misma fila. */
+const standingFigures = computed(() => {
+  const st = data.value?.standing;
+  if (!st) return [];
+  return [
+    { label: 'Posición', value: `${st.position}º` },
+    { label: 'Puntos', value: st.points },
+    { label: 'Jugados', value: st.played },
+    { label: 'G-E-P', value: `${st.won}-${st.drawn}-${st.lost}` },
+    { label: 'Goles', value: `${st.goalsFor}:${st.goalsAgainst}` },
+    { label: 'Diferencia', value: st.goalDifference > 0 ? `+${st.goalDifference}` : st.goalDifference },
+  ];
+});
+
 const isMyClubTeam = computed(() => auth.club?.teams.some((t) => t.teamId === props.teamId) ?? false);
 const linking = ref(false);
 const linkError = ref<string | null>(null);
@@ -120,13 +135,12 @@ async function linkToClub() {
 
     <Alert v-if="linkError" kind="error" class="mb-4">{{ linkError }}</Alert>
 
-    <div v-if="data.standing" class="mb-6 grid grid-cols-3 gap-3 sm:grid-cols-6">
-      <div class="card py-3 text-center"><p class="text-xs text-slate-500">Posición</p><p class="text-xl font-semibold">{{ data.standing.position }}º</p></div>
-      <div class="card py-3 text-center"><p class="text-xs text-slate-500">Puntos</p><p class="text-xl font-semibold">{{ data.standing.points }}</p></div>
-      <div class="card py-3 text-center"><p class="text-xs text-slate-500">Jugados</p><p class="text-xl font-semibold">{{ data.standing.played }}</p></div>
-      <div class="card py-3 text-center"><p class="text-xs text-slate-500">G-E-P</p><p class="text-xl font-semibold">{{ data.standing.won }}-{{ data.standing.drawn }}-{{ data.standing.lost }}</p></div>
-      <div class="card py-3 text-center"><p class="text-xs text-slate-500">Goles</p><p class="text-xl font-semibold">{{ data.standing.goalsFor }}:{{ data.standing.goalsAgainst }}</p></div>
-      <div class="card py-3 text-center"><p class="text-xs text-slate-500">Diferencia</p><p class="text-xl font-semibold">{{ data.standing.goalDifference > 0 ? '+' : '' }}{{ data.standing.goalDifference }}</p></div>
+    <div v-if="standingFigures.length" class="mb-6 grid grid-cols-3 gap-3 sm:grid-cols-6">
+      <div v-for="(figure, i) in standingFigures" :key="figure.label" class="relative rounded-xl border border-line bg-surface px-3 pb-3 pt-2.5 text-center shadow-card">
+        <span v-if="i === 0" class="absolute inset-x-3 top-0 h-0.5 rounded-b bg-brand-500" aria-hidden="true" />
+        <p class="font-display text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{{ figure.label }}</p>
+        <p class="mt-1 font-figures text-2xl font-extrabold leading-none tabular-nums text-slate-900">{{ figure.value }}</p>
+      </div>
     </div>
 
     <!-- Ficha del club según la federación: campo donde juega de local, sede y equipación -->
@@ -233,7 +247,7 @@ async function linkToClub() {
     <div class="grid gap-6 lg:grid-cols-5">
       <section class="lg:col-span-3">
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Resultados</h2>
-        <Spinner v-if="matches.loading.value" />
+        <Skeleton v-if="matches.loading.value && !matches.data.value" :count="6" label="Cargando el calendario…" />
         <Alert v-else-if="matches.error.value" kind="error">{{ matches.error.value }}</Alert>
         <template v-else>
           <p v-if="played.length === 0" class="text-sm text-slate-500">Aún no se ha disputado ningún partido.</p>

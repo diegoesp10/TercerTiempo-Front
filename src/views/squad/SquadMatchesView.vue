@@ -4,7 +4,7 @@ import { api } from '@/api';
 import MatchRow from '@/components/matches/MatchRow.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
-import Spinner from '@/components/ui/Spinner.vue';
+import Skeleton from '@/components/ui/Skeleton.vue';
 import SuggestionsPanel from '@/components/suggestions/SuggestionsPanel.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useSquad } from '@/composables/useSquad';
@@ -24,7 +24,8 @@ const pending = computed(() => played.value.filter((m) => m.entriesRecorded === 
 </script>
 
 <template>
-  <Spinner v-if="loading" />
+  <!-- Al recargar (tras resolver una sugerencia) se mantiene la lista: el panel de sugerencias no se vuelve a montar. -->
+  <Skeleton v-if="loading && !data" :count="8" label="Cargando partidos y actas…" />
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">

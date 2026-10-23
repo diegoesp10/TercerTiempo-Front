@@ -6,7 +6,7 @@ import MatchdayFixtures from '@/components/matches/MatchdayFixtures.vue';
 import Alert from '@/components/ui/Alert.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
-import Spinner from '@/components/ui/Spinner.vue';
+import Skeleton from '@/components/ui/Skeleton.vue';
 import MyClubBadge from '@/components/teams/MyClubBadge.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
@@ -61,7 +61,7 @@ watch(selectedId, (id) => {
     </template>
   </PageHeader>
 
-  <Spinner v-if="competitions.loading.value" />
+  <Skeleton v-if="competitions.loading.value && !competitions.data.value" variant="table" :count="12" label="Cargando las competiciones…" />
   <Alert v-else-if="competitions.error.value" kind="error">{{ competitions.error.value }}</Alert>
   <Alert v-else-if="groups.length === 0" kind="warning">Todavía no hay ligas sincronizadas.</Alert>
 
@@ -72,13 +72,13 @@ watch(selectedId, (id) => {
     <!-- Clasificación -->
     <div class="lg:col-span-3">
       <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Clasificación</h2>
-      <Spinner v-if="table.loading.value" />
+      <Skeleton v-if="table.loading.value && !table.data.value" variant="table" :count="12" label="Cargando la clasificación…" />
       <Alert v-else-if="table.error.value" kind="error">{{ table.error.value }}</Alert>
       <Alert v-else-if="table.data.value && table.data.value.standings.length === 0" kind="info">
         {{ table.data.value.notice ?? 'Todavía no hay partidos jugados esta temporada.' }}
       </Alert>
 
-      <template v-else-if="table.data.value">
+      <div v-else-if="table.data.value" :class="{ 'is-refreshing': table.loading.value }" :aria-busy="table.loading.value">
       <!-- Tu club siempre a la vista, aunque esté abajo en la tabla -->
       <RouterLink
         v-for="row in myRows"
@@ -141,7 +141,7 @@ watch(selectedId, (id) => {
         </table>
         <p v-if="table.data.value.standings.length === 0" class="p-4 text-sm text-slate-500">El proveedor aún no publica clasificación para esta liga.</p>
       </div>
-      </template>
+      </div>
     </div>
   </div>
 </template>

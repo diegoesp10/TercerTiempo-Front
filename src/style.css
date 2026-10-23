@@ -353,6 +353,63 @@
   .page-leave-active {
     animation: page-out 0.14s ease-in;
   }
+  /* Pestañas de la plantilla: solo un fundido, la cabecera no se mueve. */
+  .tab-enter-active {
+    animation: tab-in 0.16s ease-out;
+  }
+  .tab-leave-active {
+    animation: tab-out 0.1s ease-in;
+  }
+
+  /* Contenido que se está recargando con datos anteriores a la vista: se atenúa en lugar de desaparecer. */
+  .is-refreshing {
+    @apply pointer-events-none opacity-60 transition-opacity duration-200;
+  }
+
+  /* Esqueleto de carga: la forma de lo que viene, con un brillo que la recorre. */
+  .skeleton {
+    @apply rounded-md bg-surface-3;
+    background-image: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--t-surface) 55%, transparent) 50%, transparent 100%);
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    animation: skeleton-shine 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-shine {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+@keyframes tab-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes tab-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Foco visible con teclado en enlaces y controles que no son botones de la casa. */
+:where(a, summary, [role="radio"], [role="tab"]):focus-visible {
+  outline: 2px solid var(--t-brand-400);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Quien pide menos movimiento no ve deslizamientos ni brillos (el césped de fondo ya se queda quieto). */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @keyframes page-in {

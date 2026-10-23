@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
+import { whenIdle } from '@/utils/idle';
 
 /**
  * Fondo de toda la aplicación: un campo de fútbol real visto desde la banda a ras de césped, renderizado con
@@ -17,6 +18,7 @@ const fallback = ref(false);
 const ready = ref(false);
 
 let dispose: (() => void) | null = null;
+let unmounted = false;
 let applyTheme: ((dark: boolean) => void) | null = null;
 
 const TILE_METERS = 2.2;
@@ -96,7 +98,11 @@ onMounted(async () => {
     return;
   }
 
+  // Three.js y las texturas (~1 MB) esperan a que la página y sus datos hayan llegado: el fondo es lo último.
+  await whenIdle(2500);
+  if (unmounted) return;
   const THREE = await import('three');
+  if (unmounted) return;
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
@@ -141,6 +147,12 @@ onMounted(async () => {
     renderer.dispose();
     renderer.domElement.remove();
     fallback.value = true;
+    return;
+  }
+  if (unmounted) {
+    for (const t of [map, normalMap, roughnessMap, aoMap]) t.dispose();
+    renderer.dispose();
+    renderer.domElement.remove();
     return;
   }
   aoMap.channel = 0;
@@ -229,6 +241,8 @@ onMounted(async () => {
       fog.near = 18;
       fog.far = 100;
     }
+    // Sin animación no hay bucle que repinte: el cambio de tema se dibuja aquí.
+    if (reduced) renderer.render(scene, camera);
   };
   applyTheme(settings.isDark);
 
@@ -239,6 +253,7 @@ onMounted(async () => {
     camera.aspect = w / h;
     camera.fov = w < 768 ? 46 : 36;
     camera.updateProjectionMatrix();
+    if (reduced) renderer.render(scene, camera);
   };
   resize();
   window.addEventListener('resize', resize);
@@ -252,13 +267,14 @@ onMounted(async () => {
   };
   const loop = (now: number) => {
     frame = requestAnimationFrame(loop);
-    if (document.hidden || reduced || now - last < 1000 / 30) return;
+    if (document.hidden || now - last < 1000 / 30) return;
     last = now;
     draw(now);
   };
   draw(start);
   ready.value = true;
-  frame = requestAnimationFrame(loop);
+  // Con animaciones reducidas el campo se queda quieto: ni siquiera se programa el bucle.
+  if (!reduced) frame = requestAnimationFrame(loop);
 
   dispose = () => {
     cancelAnimationFrame(frame);
@@ -274,7 +290,7 @@ onMounted(async () => {
 });
 
 watch(() => settings.isDark, (dark) => applyTheme?.(dark));
-onBeforeUnmount(() => dispose?.());
+onBeforeUnmount(() => { unmounted = true; dispose?.(); });
 </script>
 
 <template>

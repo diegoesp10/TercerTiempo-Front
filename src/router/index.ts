@@ -13,8 +13,21 @@ declare module 'vue-router' {
   }
 }
 
+// Lo que dura la salida de la página anterior (.page-leave-active en style.css): el scroll se mueve cuando ya no se ve.
+const PAGE_LEAVE_MS = 150;
+
 const router = createRouter({
   history: createWebHistory(),
+  // Página nueva: arriba del todo. «Atrás»: donde estaba. Mismo path (filtros en la query) o cambio de pestaña dentro
+  // de la plantilla: no se mueve.
+  scrollBehavior(to, from, savedPosition) {
+    if (to.path === from.path) return false;
+    if (to.hash) return { el: to.hash, top: 80 };
+    const sameLayout = to.matched.length > 1 && to.matched[0] === from.matched[0] && to.params.squadId === from.params.squadId;
+    if (sameLayout && !savedPosition) return false;
+    const target = savedPosition ?? { top: 0 };
+    return new Promise((resolve) => setTimeout(() => resolve({ ...target, behavior: 'instant' }), PAGE_LEAVE_MS));
+  },
   routes: [
     { path: '/', name: 'home', component: () => import('@/views/HomeView.vue'), meta: { root: true } },
     { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { guestOnly: true, root: true } },

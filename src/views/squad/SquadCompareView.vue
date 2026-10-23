@@ -121,7 +121,7 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
 </script>
 
 <template>
-  <Spinner v-if="loading" />
+  <Spinner v-if="loading && !data" />
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">

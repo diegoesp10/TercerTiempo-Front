@@ -96,13 +96,21 @@ const tabs = [
         v-for="tab in tabs"
         :key="tab.name"
         :to="{ name: tab.name, params: { squadId } }"
-        class="-mb-px border-b-2 px-4 py-2 text-sm font-medium transition"
-        :class="route.name === tab.name ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'"
+        class="-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition"
+        :class="route.name === tab.name ? 'border-brand-500 text-brand-500' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'"
+        :aria-current="route.name === tab.name ? 'page' : undefined"
       >
         {{ tab.label }}
       </RouterLink>
     </nav>
 
-    <RouterView />
+    <!-- Las pestañas se cambian con un fundido corto; la cabecera de la plantilla se queda montada. -->
+    <RouterView v-slot="{ Component, route: tabRoute }">
+      <Transition name="tab" mode="out-in">
+        <div :key="tabRoute.path">
+          <component :is="Component" />
+        </div>
+      </Transition>
+    </RouterView>
   </template>
 </template>

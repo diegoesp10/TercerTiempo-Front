@@ -5,7 +5,7 @@ import { api } from '@/api';
 import CompetitionPicker from '@/components/competitions/CompetitionPicker.vue';
 import Alert from '@/components/ui/Alert.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
-import Spinner from '@/components/ui/Spinner.vue';
+import Skeleton from '@/components/ui/Skeleton.vue';
 import MyClubBadge from '@/components/teams/MyClubBadge.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
@@ -56,7 +56,7 @@ const subtitle = computed(() =>
     miembro del cuerpo técnico, <RouterLink to="/invitacion" class="font-medium underline">únete con su código</RouterLink>.
   </Alert>
 
-  <Spinner v-if="competitions.loading.value" />
+  <Skeleton v-if="competitions.loading.value && !competitions.data.value" variant="cards" label="Cargando las competiciones…" />
   <Alert v-else-if="competitions.error.value" kind="error">{{ competitions.error.value }}</Alert>
   <Alert v-else-if="!competitions.data.value || competitions.data.value.length === 0" kind="warning">
     Todavía no hay ligas sincronizadas. Si acabas de arrancar la API, espera a que termine la primera sincronización.
@@ -69,10 +69,10 @@ const subtitle = computed(() =>
       {{ selected.name }} · {{ selected.currentSeasonLabel ?? 'sin temporada' }}
     </h2>
 
-    <Spinner v-if="teams.loading.value" />
+    <Skeleton v-if="teams.loading.value && !teams.data.value" variant="cards" :count="9" label="Cargando los equipos…" />
     <Alert v-else-if="teams.error.value" kind="error">{{ teams.error.value }}</Alert>
 
-    <div v-else-if="teams.data.value" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-else-if="teams.data.value" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" :class="{ 'is-refreshing': teams.loading.value }" :aria-busy="teams.loading.value">
       <RouterLink
         v-for="team in orderedTeams"
         :key="team.id"

@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue';
 import HeroMatchday from '@/components/matches/HeroMatchday.vue';
 import { useAuthStore } from '@/stores/auth';
-import ClubHomeView from '@/views/club/ClubHomeView.vue';
-import CoachHomeView from '@/views/coach/CoachHomeView.vue';
-import PlayerDashboardView from '@/views/player/PlayerDashboardView.vue';
+
+// Cada cuenta solo descarga su panel: el del jugador trae ECharts y la portada sin sesión no lo necesita.
+const ClubHomeView = defineAsyncComponent(() => import('@/views/club/ClubHomeView.vue'));
+const CoachHomeView = defineAsyncComponent(() => import('@/views/coach/CoachHomeView.vue'));
+const PlayerDashboardView = defineAsyncComponent(() => import('@/views/player/PlayerDashboardView.vue'));
 
 const auth = useAuthStore();
 

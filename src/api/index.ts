@@ -61,6 +61,11 @@ import type {
   VideoVisibility,
 } from '@/types/api';
 
+/** Listas de referencia (competiciones, catálogo de clubes): cambian con la sincronización diaria, no al navegar. */
+const REFERENCE_CACHE_MS = 5 * 60_000;
+/** Cálculos de una plantilla que comparten varias pestañas (estadísticas y comparador): cualquier cambio guardado los invalida. */
+const SQUAD_READ_CACHE_MS = 30_000;
+
 export const api = {
   auth: {
     register: (body: RegisterRequest) => http<AuthResponse>('/api/auth/register', { method: 'POST', body }),
@@ -94,7 +99,7 @@ export const api = {
 
   /** Clubes: sus equipos y los nombramientos de sus técnicos. */
   clubs: {
-    catalog: (search?: string) => http<ClubCatalogDto[]>(`/api/clubs/catalog${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+    catalog: (search?: string) => http<ClubCatalogDto[]>(`/api/clubs/catalog${search ? `?search=${encodeURIComponent(search)}` : ''}`, { cacheMs: REFERENCE_CACHE_MS }),
     me: () => http<ClubDto>('/api/clubs/me'),
     addTeam: (teamId: string) => http<ClubDto>('/api/clubs/me/teams', { method: 'POST', body: { teamId } }),
     removeTeam: (teamId: string) => http<ClubDto>(`/api/clubs/me/teams/${teamId}`, { method: 'DELETE' }),
@@ -154,15 +159,15 @@ export const api = {
     videoUpload: (squadId: string, uploadId: string) => http<VideoUploadDto>(`/api/squads/${squadId}/video-uploads/${uploadId}`),
     completeVideoUpload: (squadId: string, uploadId: string) => http<MatchVideoDto>(`/api/squads/${squadId}/video-uploads/${uploadId}/complete`, { method: 'POST' }),
     cancelVideoUpload: (squadId: string, uploadId: string) => http<boolean>(`/api/squads/${squadId}/video-uploads/${uploadId}`, { method: 'DELETE' }),
-    stats: (squadId: string) => http<SquadStatsDto>(`/api/squads/${squadId}/stats`),
-    seasonTable: (squadId: string) => http<SquadSeasonTableDto>(`/api/squads/${squadId}/season-table`),
+    stats: (squadId: string) => http<SquadStatsDto>(`/api/squads/${squadId}/stats`, { cacheMs: SQUAD_READ_CACHE_MS }),
+    seasonTable: (squadId: string) => http<SquadSeasonTableDto>(`/api/squads/${squadId}/season-table`, { cacheMs: SQUAD_READ_CACHE_MS }),
     suggestions: (squadId: string) => http<SuggestionDto[]>(`/api/squads/${squadId}/suggestions`),
     resolveSuggestion: (squadId: string, suggestionId: string, body: ResolveSuggestionRequest) =>
       http<SuggestionDto[]>(`/api/squads/${squadId}/suggestions/${suggestionId}/resolve`, { method: 'POST', body }),
     playerProfile: (squadId: string, squadPlayerId: string) =>
       http<SquadPlayerProfileDto>(`/api/squads/${squadId}/players/${squadPlayerId}/profile`),
-    timeline: (squadId: string) => http<SquadTimelineDto>(`/api/squads/${squadId}/timeline`),
-    injuryTypes: () => http<InjuryTypeDto[]>('/api/squads/injury-types'),
+    timeline: (squadId: string) => http<SquadTimelineDto>(`/api/squads/${squadId}/timeline`, { cacheMs: SQUAD_READ_CACHE_MS }),
+    injuryTypes: () => http<InjuryTypeDto[]>('/api/squads/injury-types', { cacheMs: 60 * 60_000 }),
     injuries: (squadId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries`),
     recordInjury: (squadId: string, body: InjuryRequest) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries`, { method: 'POST', body }),
     updateInjury: (squadId: string, injuryId: string, body: InjuryRequest) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'PUT', body }),
@@ -174,7 +179,7 @@ export const api = {
 
   /** Licencias por equipo: estado de la cuenta, licencias del club y pago (simulado de momento). */
   licensing: {
-    status: () => http<LicensingStatusDto>('/api/licensing/status'),
+    status: () => http<LicensingStatusDto>('/api/licensing/status', { silent: true }),
     club: () => http<TeamLicenseDto[]>('/api/licensing/club'),
     beginCheckout: (teamId: string, months: number) =>
       http<LicenseCheckoutDto>(`/api/licensing/club/${teamId}/checkout`, { method: 'POST', body: { months } }),
@@ -183,7 +188,7 @@ export const api = {
   },
 
   competitions: {
-    list: () => http<CompetitionDto[]>('/api/competitions'),
+    list: () => http<CompetitionDto[]>('/api/competitions', { cacheMs: REFERENCE_CACHE_MS }),
     /** Partidos de una jornada; sin número, la jornada en curso o la próxima. */
     matchday: (competitionId: string, matchday?: number | null) =>
       http<CompetitionMatchdayDto>(`/api/competitions/${competitionId}/matchdays/${matchday ?? 'current'}`),
@@ -221,7 +226,8 @@ export const api = {
       http<LeagueTableDto>(competitionId ? `/api/league/table?competitionId=${encodeURIComponent(competitionId)}` : '/api/league/table'),
   },
   sync: {
-    status: () => http<SyncStatusDto>('/api/sync/status'),
+    /** Sondeo en segundo plano: no enciende la barra de carga. */
+    status: () => http<SyncStatusDto>('/api/sync/status', { silent: true }),
   },
   admin: {
     sync: () => http<SyncResultDto>('/api/admin/sync', { method: 'POST' }),

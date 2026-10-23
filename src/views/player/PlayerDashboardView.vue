@@ -119,7 +119,7 @@ async function leave() {
     </div>
   </template>
 
-  <Spinner v-else-if="loading" />
+  <Spinner v-else-if="loading && !data" />
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">
