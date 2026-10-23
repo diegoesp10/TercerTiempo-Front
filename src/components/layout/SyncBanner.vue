@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import BrandMark from '@/components/layout/BrandMark.vue';
 import { useSyncStore } from '@/stores/sync';
 import { formatKickoff } from '@/utils/format';
 
-/** Banda bajo la cabecera mientras la API sincroniza datos (al arrancar, cada día): fase, liga en curso y progreso. */
+/** Banda bajo la cabecera mientras la API sincroniza datos (al arrancar, cada día): liga en curso y progreso. */
 const sync = useSyncStore();
-
-const phaseLabel = computed(() => (sync.status?.phase === 'fichas' ? 'Actualizando fichas y escudos de la federación' : 'Actualizando partidos, resultados y plantillas'));
 </script>
 
 <template>
@@ -17,7 +14,7 @@ const phaseLabel = computed(() => (sync.status?.phase === 'fichas' ? 'Actualizan
         <BrandMark :size="30" animated />
         <div class="min-w-0 flex-1">
           <p class="truncate text-sm font-medium text-slate-900">
-            {{ phaseLabel }}<span v-if="sync.status?.current" class="text-slate-500"> · {{ sync.status.current }}</span>
+            Actualizando partidos, resultados y plantillas<span v-if="sync.status?.current" class="text-slate-500"> · {{ sync.status.current }}</span>
           </p>
           <div class="mt-1 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-line">
             <div class="h-full rounded-full bg-brand-500 transition-[width] duration-700" :style="{ width: `${Math.max(4, sync.progress)}%` }"></div>

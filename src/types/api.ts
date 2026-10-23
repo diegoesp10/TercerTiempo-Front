@@ -242,7 +242,7 @@ export interface AccountDto {
 /** Estado de la sincronización con los proveedores (GET /api/sync/status). */
 export interface SyncStatusDto {
   running: boolean;
-  phase: 'datos' | 'fichas' | null;
+  phase: 'datos' | null;
   current: string | null;
   done: number;
   total: number;
