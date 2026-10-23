@@ -107,7 +107,7 @@ async function resolve(s: SuggestionDto, approve: boolean) {
               <span class="font-normal text-slate-500">ha sugerido {{ s.current ? 'una corrección' : 'una entrada nueva' }}</span>
             </p>
             <p class="text-xs text-slate-500">
-              <RouterLink :to="{ name: 'sheet', params: { squadId, matchId: s.match.id } }" class="hover:underline">J{{ s.match.matchday }} · {{ opponentLabel(s.match, teamId) }}</RouterLink>
+              <RouterLink :to="{ name: 'sheet', params: { squadId, matchId: s.match.id }, query: { tab: 'interna' } }" class="hover:underline">J{{ s.match.matchday }} · {{ opponentLabel(s.match, teamId) }}</RouterLink>
               · {{ formatKickoff(s.match.kickoffAt) }} · enviada el {{ formatKickoff(s.createdAt) }}
             </p>
           </div>

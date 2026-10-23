@@ -260,7 +260,7 @@ async function leave() {
       <ul v-else class="divide-y divide-line rounded-xl border border-line bg-surface shadow-sm">
         <li v-for="s in suggestions.data.value" :key="s.id" class="flex flex-wrap items-start justify-between gap-2 px-4 py-3 text-sm">
           <div class="min-w-0">
-            <RouterLink :to="{ name: 'sheet', params: { squadId: squad.squadId, matchId: s.match.id } }" class="font-medium text-slate-800 hover:text-accent-400">
+            <RouterLink :to="{ name: 'sheet', params: { squadId: squad.squadId, matchId: s.match.id }, query: { tab: 'interna' } }" class="font-medium text-slate-800 hover:text-accent-400">
               J{{ s.match.matchday }} · {{ opponentLabel(s.match, squad.teamId) }}
             </RouterLink>
             <p class="text-xs text-slate-500">

@@ -73,7 +73,7 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
           <RouterLink v-if="sheet.visible" :to="{ name: 'squad', params: { squadId: sheet.squadId } }" class="text-accent-400 hover:underline">Ver plantilla</RouterLink>
           <RouterLink
             v-if="auth.isStaffOf(sheet.squadId) && data.match.status === 'Played'"
-            :to="{ name: 'sheet', params: { squadId: sheet.squadId, matchId: data.match.id } }"
+            :to="{ name: 'sheet', params: { squadId: sheet.squadId, matchId: data.match.id }, query: { tab: 'interna' } }"
             class="font-medium text-accent-400 hover:underline"
           >
             Editar acta

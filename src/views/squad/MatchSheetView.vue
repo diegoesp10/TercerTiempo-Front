@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
+import OfficialSheetPanel from '@/components/sheet/OfficialSheetPanel.vue';
 import SheetComparison from '@/components/sheet/SheetComparison.vue';
 import MatchPreview from '@/components/matches/MatchPreview.vue';
 import MatchVideos from '@/components/videos/MatchVideos.vue';
@@ -26,17 +27,17 @@ const auth = useAuthStore();
 
 const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, props.matchId));
 
-type Tab = 'acta' | 'comparador' | 'video' | 'previa';
+/** «partido» es el acta pública (federación o BeSoccer); «interna», la que rellena el cuerpo técnico. */
+type Tab = 'partido' | 'interna' | 'comparador' | 'video' | 'previa';
 const tabs: { id: Tab; label: string }[] = [
-  { id: 'acta', label: 'Acta interna' },
-  { id: 'comparador', label: 'Comparador con el acta pública' },
+  { id: 'partido', label: 'Acta del partido' },
+  { id: 'interna', label: 'Acta interna' },
+  { id: 'comparador', label: 'Comparador' },
   { id: 'video', label: 'Vídeo' },
-  { id: 'previa', label: 'Previa y rival' },
+  { id: 'previa', label: 'Previa' },
 ];
-const tab = computed<Tab>(() =>
-  route.query.tab === 'comparador' || route.query.tab === 'video' || route.query.tab === 'previa' ? route.query.tab : 'acta',
-);
-const selectTab = (id: Tab) => void router.replace({ query: { ...route.query, tab: id === 'acta' ? undefined : id } });
+const tab = computed<Tab>(() => tabs.find((t) => t.id === route.query.tab)?.id ?? 'partido');
+const selectTab = (id: Tab) => void router.replace({ query: { ...route.query, tab: id === 'partido' ? undefined : id } });
 
 interface Row extends MatchSheetEntryInput {
   player: SquadPlayerDto;
@@ -221,7 +222,6 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
         <span class="flex items-center gap-2">
           <Badge v-if="outcome" :tone="outcomeTone(outcome)">{{ outcomeLabels[outcome] }}</Badge>
           <Badge :tone="data.match.status === 'Played' ? 'slate' : 'blue'">{{ matchStatusLabels[data.match.status] }}</Badge>
-          <RouterLink :to="{ name: 'match', params: { matchId: data.match.id } }" class="text-accent-400 hover:underline">Ver partido</RouterLink>
         </span>
       </div>
       <div class="mt-3 grid grid-cols-3 items-center text-center">
@@ -247,7 +247,11 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
       </button>
     </nav>
 
-    <div v-if="tab === 'comparador'" class="mt-6">
+    <div v-if="tab === 'partido'" class="mt-6">
+      <OfficialSheetPanel :match-id="matchId" :highlight-team-id="teamId" />
+    </div>
+
+    <div v-else-if="tab === 'comparador'" class="mt-6">
       <SheetComparison :squad-id="squadId" :match-id="matchId" />
     </div>
 
