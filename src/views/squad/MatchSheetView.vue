@@ -19,6 +19,7 @@ import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import type { MatchSheetDto, MatchSheetEntryInput, SquadPlayerDto, SuggestionDto } from '@/types/api';
 import { formatKickoff, matchStatusLabels, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, positionShortLabels, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
+import { downloadPaperSheet } from '@/utils/paperSheet';
 
 const props = defineProps<{ squadId: string; matchId: string }>();
 
@@ -136,6 +137,13 @@ watch(data, (sheet) => { if (sheet) rows.value = fromSheet(sheet); }, { immediat
 
 const canEdit = computed(() => data.value?.canEdit ?? false);
 const teamId = computed(() => data.value?.squad.teamId ?? '');
+
+/** Acta en papel de este partido para apuntar en directo (cabecera rellena; jugadores y datos, a mano). */
+function downloadPaper() {
+  if (!data.value) return;
+  const { squad, match } = data.value;
+  void downloadPaperSheet({ teamName: squad.teamName, teamId: squad.teamId, competition: squad.competitionName, season: squad.seasonLabel, match });
+}
 
 // Jugador vinculado a esta plantilla: puede proponer su línea (corregirla o crearla) y ver qué pasó con lo que envió.
 const myEntryId = computed(() => (auth.playerSquad?.squadId === props.squadId ? auth.playerSquad.squadPlayerId : null));
@@ -315,6 +323,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
           </button>
         </div>
         <div v-if="canEdit" class="flex flex-wrap gap-2">
+          <button type="button" class="btn-ghost" title="PDF para imprimir y apuntar el partido a mano" @click="downloadPaper"><Icon icon="file-pdf" class="mr-1.5 h-3.5 w-3.5" />Acta en papel</button>
           <button type="button" class="btn-ghost" v-busy="saving" :disabled="saving" @click="everyoneFullMatch">Todos 90'</button>
           <button type="button" class="btn-secondary" v-busy="saving" :disabled="saving" @click="reset">Deshacer cambios</button>
           <button type="button" class="btn-primary" v-busy="saving" :disabled="saving" @click="save">{{ saving ? 'Guardando…' : 'Guardar acta' }}</button>
