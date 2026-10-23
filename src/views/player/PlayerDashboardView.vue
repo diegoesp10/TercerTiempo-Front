@@ -158,6 +158,12 @@ async function leave() {
         <StatCard label="Nota media" :value="formatNumber(data.individual.averageRating, 1)" hint="calculada con los datos del acta" />
         <StatCard label="Precisión tiro" :value="formatPct(data.individual.shotAccuracyPct)" :hint="`${data.individual.shotsOnTarget}/${data.individual.shots} a puerta`" />
       </div>
+      <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Acierto en el pase" :value="formatPct(data.individual.passAccuracyPct)" :hint="`${data.individual.passesCompleted}/${data.individual.passesAttempted} completados`" />
+        <StatCard label="Recuperaciones" :value="data.individual.recoveries" :hint="`${formatNumber(data.individual.recoveriesPer90)} por 90'`" />
+        <StatCard label="Pérdidas de balón" :value="data.individual.ballLosses" :hint="`${data.individual.fouls} faltas cometidas`" />
+        <StatCard label="Pases clave" :value="data.individual.keyPasses" :hint="`${data.individual.tackles} entradas · ${data.individual.interceptions} intercepciones`" />
+      </div>
     </section>
 
     <div class="grid gap-6 lg:grid-cols-2">

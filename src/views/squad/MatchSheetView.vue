@@ -67,6 +67,10 @@ const blank = (player: SquadPlayerDto): Row => ({
   yellowCards: 0,
   redCard: false,
   fouls: 0,
+  ballLosses: 0,
+  recoveries: 0,
+  passesCompleted: 0,
+  passesAttempted: 0,
   rating: null,
   notes: null,
   shirtNumber: null,
@@ -91,6 +95,10 @@ const fromSheet = (sheet: MatchSheetDto): Row[] =>
           yellowCards: performance.yellowCards,
           redCard: performance.redCard,
           fouls: performance.fouls ?? 0,
+          ballLosses: performance.ballLosses ?? 0,
+          recoveries: performance.recoveries ?? 0,
+          passesCompleted: performance.passesCompleted ?? 0,
+          passesAttempted: performance.passesAttempted ?? 0,
           rating: performance.rating,
           notes: performance.notes,
           shirtNumber: performance.matchShirtNumber,
@@ -114,6 +122,10 @@ const toEntry = (row: Row): MatchSheetEntryInput => ({
   yellowCards: row.yellowCards,
   redCard: row.redCard,
   fouls: row.fouls ?? 0,
+  ballLosses: row.ballLosses ?? 0,
+  recoveries: row.recoveries ?? 0,
+  passesCompleted: row.passesCompleted ?? 0,
+  passesAttempted: row.passesAttempted ?? 0,
   notes: row.notes?.trim() ? row.notes.trim() : null,
   shirtNumber: row.shirtNumber || null,
 });
@@ -199,12 +211,16 @@ async function save() {
   }
 }
 
-const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'shotsOnTarget' | 'keyPasses' | 'tackles' | 'interceptions' | 'saves' | 'fouls'>; label: string; title: string }[] = [
+const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'shotsOnTarget' | 'keyPasses' | 'passesCompleted' | 'passesAttempted' | 'ballLosses' | 'recoveries' | 'tackles' | 'interceptions' | 'saves' | 'fouls'>; label: string; title: string }[] = [
   { key: 'goals', label: 'G', title: 'Goles' },
   { key: 'assists', label: 'A', title: 'Asistencias' },
   { key: 'shots', label: 'T', title: 'Tiros' },
   { key: 'shotsOnTarget', label: 'TP', title: 'Tiros a puerta' },
   { key: 'keyPasses', label: 'PC', title: 'Pases clave' },
+  { key: 'passesCompleted', label: 'PasC', title: 'Pases completados' },
+  { key: 'passesAttempted', label: 'PasI', title: 'Pases intentados' },
+  { key: 'ballLosses', label: 'Pér', title: 'Pérdidas de balón' },
+  { key: 'recoveries', label: 'Rec', title: 'Recuperaciones de balón' },
   { key: 'tackles', label: 'Ent', title: 'Entradas' },
   { key: 'interceptions', label: 'Int', title: 'Intercepciones' },
   { key: 'saves', label: 'Par', title: 'Paradas' },
@@ -389,13 +405,15 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
       </div>
 
       <p class="content-note mt-3">
-        Tit = titular · Min = minutos (0-120) · G goles · A asistencias · T tiros · TP tiros a puerta · PC pases clave · Ent entradas ·
-        Int intercepciones · Par paradas · TA amarillas (dos implican roja). Con «jugó» desmarcado la línea se elimina del acta al guardar.
+        Tit = titular · Min = minutos (0-120) · G goles · A asistencias · T tiros · TP tiros a puerta · PC pases clave · PasC pases
+        completados · PasI pases intentados · Pér pérdidas de balón · Rec recuperaciones · Ent entradas · Int intercepciones ·
+        Par paradas · F faltas · TA amarillas (dos implican roja). Con «jugó» desmarcado la línea se elimina del acta al guardar.
       </p>
       <p class="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
         <strong>La nota no se pone a mano:</strong> se calcula al guardar con los datos de cada línea, la posición del jugador y el
-        resultado. Parte de 6,0 y suma o resta por ataque (goles, tiros a puerta), creación (asistencias, pases clave), defensa
-        (entradas, intercepciones, portería a cero y goles encajados para defensas), portería (paradas), disciplina (tarjetas) y
+        resultado. Parte de 6,0 y suma o resta por ataque (goles, tiros a puerta), creación (asistencias, pases clave, acierto en el
+        pase con 10 o más intentados y pérdidas de balón), defensa (entradas, intercepciones, recuperaciones, portería a cero y
+        goles encajados para defensas), portería (paradas), disciplina (tarjetas) y
         resultado (según los minutos jugados). Escala de 3,0 a 10,0.
       </p>
     </section>

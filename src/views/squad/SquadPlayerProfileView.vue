@@ -132,6 +132,12 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
         />
         <StatCard label="Precisión tiro" :value="formatPct(data.stats.shotAccuracyPct)" :hint="`${data.stats.shotsOnTarget}/${data.stats.shots} a puerta`" />
       </div>
+      <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Acierto en el pase" :value="formatPct(data.stats.passAccuracyPct)" :hint="`${data.stats.passesCompleted}/${data.stats.passesAttempted} completados`" />
+        <StatCard label="Recuperaciones" :value="data.stats.recoveries" :hint="`${formatNumber(data.stats.recoveriesPer90)} por 90'`" />
+        <StatCard label="Pérdidas de balón" :value="data.stats.ballLosses" :hint="`${data.stats.fouls} faltas cometidas`" />
+        <StatCard label="Pases clave" :value="data.stats.keyPasses" :hint="`${data.stats.tackles} entradas · ${data.stats.interceptions} intercepciones`" />
+      </div>
 
       <div class="grid gap-6 lg:grid-cols-2">
         <ChartCard

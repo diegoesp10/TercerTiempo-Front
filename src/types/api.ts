@@ -659,6 +659,13 @@ export interface PerformanceStats {
   notes: string | null;
   /** Faltas cometidas. */
   fouls?: number;
+  /** Pérdidas de balón. */
+  ballLosses?: number;
+  /** Recuperaciones de balón. */
+  recoveries?: number;
+  /** Pases completados (no más que los intentados). */
+  passesCompleted?: number;
+  passesAttempted?: number;
 }
 
 export interface PerformanceDto extends PerformanceStats {
@@ -852,6 +859,14 @@ export interface IndividualStatsDto {
   assistsPer90: number | null;
   goalContributionsPer90: number | null;
   shotAccuracyPct: number | null;
+  fouls: number;
+  ballLosses: number;
+  recoveries: number;
+  passesCompleted: number;
+  passesAttempted: number;
+  /** Pases completados sobre intentados; null sin pases apuntados. */
+  passAccuracyPct: number | null;
+  recoveriesPer90: number | null;
 }
 
 export interface TeamImpactDto {

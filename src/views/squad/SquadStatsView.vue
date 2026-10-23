@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { api } from '@/api';
 import { goalsDonutOption, minutesBarsOption, ratingRankingOption, teamRatingOption, teamResultsOption } from '@/charts/options';
 import AppChart from '@/components/charts/AppChart.vue';
@@ -30,43 +30,85 @@ const donut = computed(() => (data.value ? goalsDonutOption(data.value.players, 
 const minutes = computed(() => (data.value ? minutesBarsOption(data.value.players, 16, settings.resolvedTheme) : null));
 const ranking = computed(() => (data.value ? ratingRankingOption(data.value.players, 12, settings.resolvedTheme) : null));
 
-type SortKey = 'name' | 'matches' | 'starts' | 'minutes' | 'goals' | 'assists' | 'contributions' | 'rating' | 'goalsPer90' | 'participation' | 'pointsWith' | 'pointsWithout';
-
-// `from`: ancho mínimo de pantalla en el que se ve la columna (ver .col-sm/.col-md/.col-lg en style.css).
-const columns: { key: SortKey; label: string; title: string; from?: 'sm' | 'md' | 'lg' }[] = [
-  { key: 'matches', label: 'PJ', title: 'Partidos con línea en el acta' },
-  { key: 'starts', label: 'Tit', title: 'Titularidades', from: 'md' },
-  { key: 'minutes', label: 'Min', title: 'Minutos jugados', from: 'sm' },
-  { key: 'goals', label: 'G', title: 'Goles' },
-  { key: 'assists', label: 'A', title: 'Asistencias' },
-  { key: 'contributions', label: 'G+A', title: 'Goles más asistencias', from: 'md' },
-  { key: 'rating', label: 'Nota', title: 'Nota media calculada con los datos de las actas' },
-  { key: 'goalsPer90', label: "G/90'", title: 'Goles por 90 minutos', from: 'lg' },
-  { key: 'participation', label: 'Part.', title: 'Porcentaje de los minutos posibles del equipo', from: 'lg' },
-  { key: 'pointsWith', label: 'PPP con', title: 'Puntos por partido del equipo cuando juega', from: 'lg' },
-  { key: 'pointsWithout', label: 'PPP sin', title: 'Puntos por partido del equipo cuando no juega', from: 'lg' },
+/** Vistas de la tabla: cada una agrupa las estadísticas de una faceta para que la tabla siga siendo legible. */
+type View = 'general' | 'ataque' | 'pases' | 'defensa';
+const views: { id: View; label: string }[] = [
+  { id: 'general', label: 'General' },
+  { id: 'ataque', label: 'Ataque' },
+  { id: 'pases', label: 'Pases' },
+  { id: 'defensa', label: 'Defensa' },
 ];
+const view = ref<View>('general');
+
+type Format = 'int' | 'decimal' | 'pct' | 'rating';
+interface Column {
+  key: string;
+  label: string;
+  title: string;
+  /** Ancho mínimo de pantalla en el que se ve la columna (ver .col-sm/.col-md/.col-lg en style.css). */
+  from?: 'sm' | 'md' | 'lg';
+  value: (row: SquadPlayerStatsDto) => number | null;
+  format?: Format;
+  strong?: boolean;
+}
+
+const s = (row: SquadPlayerStatsDto) => row.stats;
+const columnsByView: Record<View, Column[]> = {
+  general: [
+    { key: 'matches', label: 'PJ', title: 'Partidos con línea en el acta', value: (r) => s(r).matchesLogged },
+    { key: 'starts', label: 'Tit', title: 'Titularidades', from: 'md', value: (r) => s(r).starts },
+    { key: 'minutes', label: 'Min', title: 'Minutos jugados', from: 'sm', value: (r) => s(r).minutes },
+    { key: 'goals', label: 'G', title: 'Goles', value: (r) => s(r).goals, strong: true },
+    { key: 'assists', label: 'A', title: 'Asistencias', value: (r) => s(r).assists },
+    { key: 'contributions', label: 'G+A', title: 'Goles más asistencias', from: 'md', value: (r) => s(r).goalContributions },
+    { key: 'rating', label: 'Nota', title: 'Nota media calculada con los datos de las actas', value: (r) => s(r).averageRating, format: 'rating' },
+    { key: 'participation', label: 'Part.', title: 'Porcentaje de los minutos posibles del equipo', from: 'lg', value: (r) => r.impact.participationPct, format: 'pct' },
+    { key: 'pointsWith', label: 'PPP con', title: 'Puntos por partido del equipo cuando juega', from: 'lg', value: (r) => r.impact.pointsPerMatchWithPlayer, format: 'decimal' },
+    { key: 'pointsWithout', label: 'PPP sin', title: 'Puntos por partido del equipo cuando no juega', from: 'lg', value: (r) => r.impact.pointsPerMatchWithoutPlayer, format: 'decimal' },
+  ],
+  ataque: [
+    { key: 'goals', label: 'G', title: 'Goles', value: (r) => s(r).goals, strong: true },
+    { key: 'assists', label: 'A', title: 'Asistencias', value: (r) => s(r).assists, strong: true },
+    { key: 'shots', label: 'Tiros', title: 'Tiros totales', value: (r) => s(r).shots },
+    { key: 'shotsOnTarget', label: 'TP', title: 'Tiros a puerta', value: (r) => s(r).shotsOnTarget },
+    { key: 'shotAccuracy', label: '% TP', title: 'Tiros a puerta sobre tiros totales', from: 'sm', value: (r) => s(r).shotAccuracyPct, format: 'pct' },
+    { key: 'goalsPer90', label: "G/90'", title: 'Goles por 90 minutos', from: 'md', value: (r) => s(r).goalsPer90, format: 'decimal' },
+    { key: 'assistsPer90', label: "A/90'", title: 'Asistencias por 90 minutos', from: 'md', value: (r) => s(r).assistsPer90, format: 'decimal' },
+    { key: 'contributionsPer90', label: "G+A/90'", title: 'Goles más asistencias por 90 minutos', from: 'lg', value: (r) => s(r).goalContributionsPer90, format: 'decimal' },
+  ],
+  pases: [
+    { key: 'passesCompleted', label: 'Compl.', title: 'Pases completados', value: (r) => s(r).passesCompleted, strong: true },
+    { key: 'passesAttempted', label: 'Intent.', title: 'Pases intentados', value: (r) => s(r).passesAttempted },
+    { key: 'passAccuracy', label: '% Acierto', title: 'Pases completados sobre intentados', value: (r) => s(r).passAccuracyPct, format: 'pct' },
+    { key: 'keyPasses', label: 'PC', title: 'Pases clave', value: (r) => s(r).keyPasses },
+    { key: 'assists', label: 'A', title: 'Asistencias', from: 'sm', value: (r) => s(r).assists },
+    { key: 'ballLosses', label: 'Pérdidas', title: 'Pérdidas de balón', value: (r) => s(r).ballLosses },
+  ],
+  defensa: [
+    { key: 'recoveries', label: 'Recup.', title: 'Recuperaciones de balón', value: (r) => s(r).recoveries, strong: true },
+    { key: 'recoveriesPer90', label: "Rec/90'", title: 'Recuperaciones por 90 minutos', from: 'sm', value: (r) => s(r).recoveriesPer90, format: 'decimal' },
+    { key: 'tackles', label: 'Ent', title: 'Entradas', value: (r) => s(r).tackles },
+    { key: 'interceptions', label: 'Int', title: 'Intercepciones', value: (r) => s(r).interceptions },
+    { key: 'saves', label: 'Par', title: 'Paradas', from: 'sm', value: (r) => s(r).saves },
+    { key: 'fouls', label: 'F', title: 'Faltas cometidas', from: 'md', value: (r) => s(r).fouls },
+    { key: 'yellow', label: 'TA', title: 'Tarjetas amarillas', from: 'md', value: (r) => s(r).yellowCards },
+    { key: 'red', label: 'TR', title: 'Tarjetas rojas', from: 'md', value: (r) => s(r).redCards },
+  ],
+};
+const columns = computed(() => columnsByView[view.value]);
 const colClass = (from?: 'sm' | 'md' | 'lg') => (from ? `col-${from}` : '');
 
-const getters: Record<SortKey, (row: SquadPlayerStatsDto) => number | string> = {
-  name: (r) => r.player.fullName,
-  matches: (r) => r.stats.matchesLogged,
-  starts: (r) => r.stats.starts,
-  minutes: (r) => r.stats.minutes,
-  goals: (r) => r.stats.goals,
-  assists: (r) => r.stats.assists,
-  contributions: (r) => r.stats.goalContributions,
-  rating: (r) => r.stats.averageRating ?? -1,
-  goalsPer90: (r) => r.stats.goalsPer90 ?? -1,
-  participation: (r) => r.impact.participationPct,
-  pointsWith: (r) => r.impact.pointsPerMatchWithPlayer ?? -1,
-  pointsWithout: (r) => r.impact.pointsPerMatchWithoutPlayer ?? -1,
+const display = (column: Column, row: SquadPlayerStatsDto) => {
+  const v = column.value(row);
+  if (column.format === 'pct') return formatPct(v);
+  if (column.format === 'decimal') return formatNumber(v);
+  return v ?? '—';
 };
 
-const sortKey = ref<SortKey>('minutes');
+const sortKey = ref<string>('minutes');
 const sortAsc = ref(false);
 
-function sortBy(key: SortKey) {
+function sortBy(key: string) {
   if (sortKey.value === key) {
     sortAsc.value = !sortAsc.value;
   } else {
@@ -75,19 +117,27 @@ function sortBy(key: SortKey) {
   }
 }
 
+// Al cambiar de vista se ordena por su primera columna si la que había no existe en ella.
+watch(view, () => {
+  if (sortKey.value !== 'name' && !columns.value.some((c) => c.key === sortKey.value)) {
+    sortKey.value = columns.value[0].key;
+    sortAsc.value = false;
+  }
+});
+
 const sorted = computed(() => {
   const rows = [...(data.value?.players ?? [])];
-  const get = getters[sortKey.value];
+  const column = columns.value.find((c) => c.key === sortKey.value);
   rows.sort((a, b) => {
-    const x = get(a);
-    const y = get(b);
-    const cmp = typeof x === 'string' && typeof y === 'string' ? x.localeCompare(y, 'es') : Number(x) - Number(y);
+    const cmp = !column
+      ? a.player.fullName.localeCompare(b.player.fullName, 'es')
+      : (column.value(a) ?? -1) - (column.value(b) ?? -1);
     return sortAsc.value ? cmp : -cmp;
   });
   return rows;
 });
 
-const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲' : ' ▼') : '');
+const arrow = (key: string) => (sortKey.value === key ? (sortAsc.value ? ' ▲' : ' ▼') : '');
 </script>
 
 <template>
@@ -139,7 +189,25 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
 
     <p v-if="data.players.length === 0" class="text-sm text-slate-500">La plantilla no tiene jugadores todavía.</p>
 
-    <div v-else class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
+    <div v-else class="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Estadísticas por jugador</h2>
+      <div class="inline-flex rounded-lg border border-slate-200 p-0.5 text-sm" role="tablist" aria-label="Estadísticas">
+        <button
+          v-for="item in views"
+          :key="item.id"
+          type="button"
+          role="tab"
+          :aria-selected="view === item.id"
+          class="rounded-md px-3 py-1 font-medium"
+          :class="view === item.id ? 'bg-action text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
+          @click="view = item.id"
+        >
+          {{ item.label }}
+        </button>
+      </div>
+    </div>
+
+    <div v-if="data.players.length > 0" class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
       <table class="min-w-full text-sm">
         <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
@@ -162,17 +230,15 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
               >{{ row.player.fullName }}</RouterLink>
               <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
             </td>
-            <td class="px-2 py-2 text-center tabular-nums">{{ row.stats.matchesLogged }}</td>
-            <td class="col-md px-2 py-2 text-center tabular-nums">{{ row.stats.starts }}</td>
-            <td class="col-sm px-2 py-2 text-center tabular-nums">{{ row.stats.minutes }}</td>
-            <td class="px-2 py-2 text-center font-semibold tabular-nums">{{ row.stats.goals }}</td>
-            <td class="px-2 py-2 text-center tabular-nums">{{ row.stats.assists }}</td>
-            <td class="col-md px-2 py-2 text-center tabular-nums">{{ row.stats.goalContributions }}</td>
-            <td class="px-2 py-2 text-center"><RatingBadge :rating="row.stats.averageRating" size="sm" /></td>
-            <td class="col-lg px-2 py-2 text-center tabular-nums">{{ formatNumber(row.stats.goalsPer90) }}</td>
-            <td class="col-lg px-2 py-2 text-center tabular-nums">{{ formatPct(row.impact.participationPct) }}</td>
-            <td class="col-lg px-2 py-2 text-center tabular-nums">{{ formatNumber(row.impact.pointsPerMatchWithPlayer) }}</td>
-            <td class="col-lg px-2 py-2 text-center tabular-nums">{{ formatNumber(row.impact.pointsPerMatchWithoutPlayer) }}</td>
+            <td
+              v-for="column in columns"
+              :key="column.key"
+              class="px-2 py-2 text-center tabular-nums"
+              :class="[colClass(column.from), column.strong ? 'font-semibold' : '']"
+            >
+              <RatingBadge v-if="column.format === 'rating'" :rating="column.value(row)" size="sm" />
+              <template v-else>{{ display(column, row) }}</template>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -180,7 +246,8 @@ const arrow = (key: SortKey) => (sortKey.value === key ? (sortAsc.value ? ' ▲'
 
     <p class="content-note mt-3">
       Pulsa una columna para ordenar. «Part.» es el porcentaje de los minutos posibles del equipo que ha jugado; «PPP» son los
-      puntos por partido del equipo con y sin el jugador en el acta.
+      puntos por partido del equipo con y sin el jugador en el acta. Tiros, pases, pérdidas, recuperaciones, entradas y faltas
+      salen de lo que el cuerpo técnico apunta en el acta interna de cada partido.
     </p>
   </template>
 </template>

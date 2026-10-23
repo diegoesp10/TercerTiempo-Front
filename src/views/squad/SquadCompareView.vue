@@ -111,6 +111,8 @@ const metrics: MetricRow[] = [
   { label: 'Asistencias', value: (r) => r.stats.assists, format: (v) => String(v ?? '—') },
   { label: "Goles + asist. por 90'", value: (r) => r.stats.goalContributionsPer90, format: (v) => formatNumber(v) },
   { label: 'Precisión de tiro', value: (r) => r.stats.shotAccuracyPct, format: (v) => formatPct(v) },
+  { label: 'Acierto en el pase', value: (r) => r.stats.passAccuracyPct, format: (v) => formatPct(v) },
+  { label: "Recuperaciones por 90'", value: (r) => r.stats.recoveriesPer90, format: (v) => formatNumber(v) },
   { label: 'Participación', value: (r) => r.impact.participationPct, format: (v) => formatPct(v) },
   { label: 'Puntos/partido con él', value: (r) => r.impact.pointsPerMatchWithPlayer, format: (v) => formatNumber(v) },
 ];
