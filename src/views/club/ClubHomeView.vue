@@ -9,6 +9,7 @@ import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import SquadAccessCard from '@/components/squads/SquadAccessCard.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useMyClub } from '@/composables/useMyClub';
@@ -171,6 +172,33 @@ const sortedAppointments = computed(() => {
   <template v-else-if="club">
     <Alert v-if="actionError" kind="error" class="mb-4">{{ actionError }}</Alert>
     <Alert v-if="notice" kind="success" class="mb-4">{{ notice }}</Alert>
+
+    <!-- Lo primero al entrar: la plantilla de cada equipo, que es donde se trabaja -->
+    <div v-if="club.teams.length > 0" class="mb-6 grid gap-4" :class="club.teams.length > 1 ? 'lg:grid-cols-2' : ''">
+      <template v-for="team in club.teams" :key="`access-${team.teamId}`">
+        <SquadAccessCard
+          v-if="team.squadId"
+          :squad-id="team.squadId"
+          :team-name="team.teamName"
+          :team-short-name="team.teamShortName"
+          :crest-url="team.teamCrestUrl"
+          :subtitle="team.competitionName ? `${team.competitionName} · ${team.seasonLabel}` : null"
+        >
+          <template #badges>
+            <Badge :tone="licenseStatusTone[team.license]">Licencia {{ licenseStatusLabels[team.license].toLowerCase() }}</Badge>
+            <Badge :tone="team.activeAppointments > 0 ? 'green' : 'amber'">{{ team.activeAppointments }} {{ team.activeAppointments === 1 ? 'técnico vigente' : 'técnicos vigentes' }}</Badge>
+          </template>
+        </SquadAccessCard>
+        <article v-else class="card flex items-center gap-4">
+          <TeamCrest :src="team.teamCrestUrl" :name="team.teamName" :short-name="team.teamShortName" size="lg" />
+          <div class="min-w-0 flex-1">
+            <p class="eyebrow">Gestión de plantilla</p>
+            <h2 class="truncate text-lg font-semibold text-slate-900">{{ team.teamName }}</h2>
+            <p class="text-sm text-slate-500">Todavía no tiene plantilla: se crea cuando un técnico canjea su nombramiento. Nómbralo más abajo.</p>
+          </div>
+        </article>
+      </template>
+    </div>
 
     <!-- Vincular equipo -->
     <section v-if="addingTeam" class="card mb-6">

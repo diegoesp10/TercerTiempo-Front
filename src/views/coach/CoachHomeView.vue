@@ -4,7 +4,7 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
-import TeamCrest from '@/components/teams/TeamCrest.vue';
+import SquadAccessCard from '@/components/squads/SquadAccessCard.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, staffRoleLabels, visibilityLabels } from '@/utils/format';
@@ -22,7 +22,7 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
 <template>
   <PageHeader :title="`Hola, ${auth.displayName}`" subtitle="Plantillas en las que formas parte del cuerpo técnico esta temporada.">
     <template #actions>
-      <RouterLink to="/codigo-acceso" class="btn-primary">Canjear un código de acceso</RouterLink>
+      <RouterLink to="/codigo-acceso" :class="squads.length > 0 ? 'btn-secondary' : 'btn-primary'">Canjear un código de acceso</RouterLink>
     </template>
   </PageHeader>
 
@@ -39,26 +39,23 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
       </p>
     </div>
 
-    <div v-else class="grid gap-4 md:grid-cols-2">
-      <article v-for="squad in squads" :key="squad.id" class="card flex flex-col gap-4">
-        <div class="flex items-start gap-4">
-          <TeamCrest :src="squad.teamCrestUrl" :name="squad.teamName" :short-name="squad.teamShortName" size="lg" />
-          <div class="min-w-0 flex-1">
-            <h2 class="truncate text-lg font-semibold text-slate-900">{{ squad.teamName }}</h2>
-            <p class="text-sm text-slate-500">{{ squad.competitionName }} · {{ squad.seasonLabel }}</p>
-            <div class="mt-2 flex flex-wrap gap-2">
-              <Badge :tone="squad.visibility === 'Public' ? 'green' : 'slate'">{{ visibilityLabels[squad.visibility] }}</Badge>
-              <Badge v-if="squad.myRole" tone="blue">{{ staffRoleLabels[squad.myRole] }}</Badge>
-              <span class="text-xs text-slate-500">{{ squad.playersCount }} jugadores · {{ squad.staffCount }} en el staff</span>
-            </div>
-          </div>
-        </div>
-        <div class="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-          <RouterLink :to="{ name: 'squad', params: { squadId: squad.id } }" class="btn-secondary">Plantilla</RouterLink>
-          <RouterLink :to="{ name: 'squad-matches', params: { squadId: squad.id } }" class="btn-primary">Partidos y actas</RouterLink>
-          <RouterLink :to="{ name: 'squad-stats', params: { squadId: squad.id } }" class="btn-ghost">Estadísticas</RouterLink>
-        </div>
-      </article>
+    <!-- Lo primero al entrar: la plantilla, que es donde trabaja el cuerpo técnico -->
+    <div v-else class="grid gap-4" :class="squads.length > 1 ? 'lg:grid-cols-2' : ''">
+      <SquadAccessCard
+        v-for="squad in squads"
+        :key="squad.id"
+        :squad-id="squad.id"
+        :team-name="squad.teamName"
+        :team-short-name="squad.teamShortName"
+        :crest-url="squad.teamCrestUrl"
+        :subtitle="`${squad.competitionName} · ${squad.seasonLabel}`"
+      >
+        <template #badges>
+          <Badge v-if="squad.myRole" tone="blue">{{ staffRoleLabels[squad.myRole] }}</Badge>
+          <Badge :tone="squad.visibility === 'Public' ? 'green' : 'slate'">{{ visibilityLabels[squad.visibility] }}</Badge>
+          <span class="text-xs text-slate-500">{{ squad.playersCount }} jugadores · {{ squad.staffCount }} en el staff</span>
+        </template>
+      </SquadAccessCard>
     </div>
 
     <section v-if="appointments.length > 0" class="card mt-6">
