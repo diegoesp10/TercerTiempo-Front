@@ -18,6 +18,24 @@ const { data, loading, error } = useAsync(() => api.matches.preview(props.matchI
 
 const pct = (value: number) => `${Math.round(value * 100)}%`;
 
+/**
+ * Tramos de la barra de probabilidades. El ancho sale de la proporción exacta (normalizada a 100 %, sin redondeos que
+ * la desborden) y la cifra solo va dentro si el tramo cabe; si no, se lee en la leyenda de debajo.
+ */
+const MIN_LABEL_SHARE = 0.12;
+const segments = computed(() => {
+  if (!data.value) return [];
+  const p = data.value.prediction;
+  const values = [Math.max(0, p.homeWin), Math.max(0, p.draw), Math.max(0, p.awayWin)];
+  const total = values.reduce((sum, v) => sum + v, 0) || 1;
+  const labels = [`Gana ${data.value.home.team.shortName}`, 'Empate', `Gana ${data.value.away.team.shortName}`];
+  const tones = ['bg-sky-100 text-sky-800', 'bg-slate-100 text-slate-700', 'bg-amber-100 text-amber-800'];
+  return values.map((value, i) => {
+    const share = value / total;
+    return { key: i, label: labels[i], tone: tones[i], share, width: `${(share * 100).toFixed(3)}%`, text: pct(value), inside: share >= MIN_LABEL_SHARE };
+  });
+});
+
 const sides = computed(() => {
   if (!data.value) return [];
   const { home, away } = data.value;
@@ -64,12 +82,23 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
       </div>
 
       <div class="mt-5 flex h-9 w-full overflow-hidden rounded-lg text-xs font-semibold" role="img" :aria-label="`Victoria local ${pct(data.prediction.homeWin)}, empate ${pct(data.prediction.draw)}, victoria visitante ${pct(data.prediction.awayWin)}`">
-        <div class="flex items-center justify-center bg-sky-100 text-sky-800" :style="{ width: pct(data.prediction.homeWin) }">{{ pct(data.prediction.homeWin) }}</div>
-        <div class="flex items-center justify-center bg-slate-100 text-slate-700" :style="{ width: pct(data.prediction.draw) }">{{ pct(data.prediction.draw) }}</div>
-        <div class="flex items-center justify-center bg-amber-100 text-amber-800" :style="{ width: pct(data.prediction.awayWin) }">{{ pct(data.prediction.awayWin) }}</div>
+        <div
+          v-for="segment in segments"
+          :key="segment.key"
+          class="flex min-w-0 shrink-0 items-center justify-center overflow-hidden whitespace-nowrap"
+          :class="segment.tone"
+          :style="{ width: segment.width }"
+          :title="`${segment.label}: ${segment.text}`"
+        >
+          <span v-if="segment.inside" class="truncate px-1">{{ segment.text }}</span>
+        </div>
       </div>
-      <div class="mt-1 flex justify-between text-xs text-slate-500">
-        <span>Gana {{ data.home.team.shortName }}</span><span>Empate</span><span>Gana {{ data.away.team.shortName }}</span>
+      <div class="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-500 sm:grid-cols-3 sm:gap-2">
+        <span v-for="(segment, i) in segments" :key="segment.key" class="flex min-w-0 items-center gap-1.5" :class="i === 1 ? 'sm:justify-center' : i === 2 ? 'sm:justify-end' : ''">
+          <span class="h-2.5 w-2.5 shrink-0 rounded-sm" :class="segment.tone" aria-hidden="true" />
+          <span class="truncate">{{ segment.label }}</span>
+          <strong class="tabular-nums text-slate-700">{{ segment.text }}</strong>
+        </span>
       </div>
 
       <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-3">
@@ -82,7 +111,7 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
           <dd class="font-display text-xl font-bold text-slate-900">{{ data.prediction.mostLikelyScore }}</dd>
         </div>
         <div class="rounded-lg border border-line bg-surface-2 px-3 py-2">
-          <dt class="text-xs text-slate-500">Actas oficiales analizadas</dt>
+          <dt class="text-xs text-slate-500">Actas públicas analizadas</dt>
           <dd class="font-display text-xl font-bold text-slate-900">{{ data.home.officialSheets }} / {{ data.away.officialSheets }}</dd>
         </div>
       </dl>
@@ -137,11 +166,11 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
           </div>
         </div>
 
-        <!-- Jugadores en forma (actas oficiales) -->
+        <!-- Jugadores en forma (actas públicas) -->
         <h4 class="mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Jugadores en forma <span class="font-normal normal-case">· según {{ side.officialSheets }} actas oficiales</span>
+          Jugadores en forma <span class="font-normal normal-case">· según {{ side.officialSheets }} actas públicas</span>
         </h4>
-        <p v-if="side.inFormPlayers.length === 0" class="mt-2 text-sm text-slate-500">Todavía no hay actas oficiales descargadas de sus partidos.</p>
+        <p v-if="side.inFormPlayers.length === 0" class="mt-2 text-sm text-slate-500">Todavía no hay actas públicas guardadas de sus partidos.</p>
         <div v-else class="mt-2 overflow-x-auto">
           <table class="min-w-full text-sm">
             <thead class="text-xs uppercase tracking-wide text-slate-500">
