@@ -48,8 +48,6 @@ import type {
   SquadVisibility,
   SuggestionDto,
   SuggestPerformanceRequest,
-  SyncResultDto,
-  SyncStatusDto,
   TeamCrestImportDto,
   TeamDetailDto,
   TeamLicenseDto,
@@ -224,12 +222,5 @@ export const api = {
   stats: {
     leagueTable: (competitionId?: string | null) =>
       http<LeagueTableDto>(competitionId ? `/api/league/table?competitionId=${encodeURIComponent(competitionId)}` : '/api/league/table'),
-  },
-  sync: {
-    /** Sondeo en segundo plano: no enciende la barra de carga. */
-    status: () => http<SyncStatusDto>('/api/sync/status', { silent: true }),
-  },
-  admin: {
-    sync: () => http<SyncResultDto>('/api/admin/sync', { method: 'POST' }),
   },
 };

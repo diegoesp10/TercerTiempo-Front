@@ -35,6 +35,8 @@ interface RequestOptions {
   silent?: boolean;
   /** Solo GET: reutiliza la respuesta durante estos milisegundos (datos de referencia que casi no cambian). */
   cacheMs?: number;
+  /** Token propio en lugar del de la sesión (página de administración): un 401 no cierra la sesión del usuario. */
+  token?: string;
 }
 
 export const apiBaseUrl = baseUrl;
@@ -53,7 +55,7 @@ export function http<T>(path: string, options: RequestOptions = {}): Promise<T> 
   const method = options.method ?? 'GET';
   if (method !== 'GET') return request<T>(path, options).finally(clearHttpCache);
 
-  const key = `${useAuthStore().token ?? ''}|${path}`;
+  const key = `${options.token ?? useAuthStore().token ?? ''}|${path}`;
   const cached = cache.get(key);
   if (cached && cached.expires > Date.now()) return Promise.resolve(cached.data as T);
 
@@ -76,7 +78,8 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
 
   const isForm = options.body instanceof FormData;
   if (options.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
-  if (auth.token) headers.Authorization = `Bearer ${auth.token}`;
+  const token = options.token ?? auth.token;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const loading = useLoadingStore();
   const task = options.silent ? null : loading.start(describeRequest(options.method ?? 'GET', path));
@@ -99,7 +102,7 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
     }
 
     if (!response.ok) {
-      if (response.status === 401 && auth.token) auth.logout();
+      if (response.status === 401 && auth.token && !options.token) auth.logout();
       const problem = (data as ProblemDetails | null) ?? { status: response.status, title: response.statusText };
       throw new ApiError(response.status, problem);
     }

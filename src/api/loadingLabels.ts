@@ -8,7 +8,9 @@ const rules: { test: RegExp; method?: string; label: string }[] = [
   { test: /^\/api\/licensing\/checkout\/.*\/confirm/, label: 'Confirmando el pago' },
   { test: /^\/api\/licensing\/.*checkout/, label: 'Preparando el pago' },
   { test: /^\/api\/licensing/, label: 'Comprobando la licencia' },
-  { test: /^\/api\/sync\/status/, label: 'Comprobando la sincronización' },
+  { test: /^\/api\/admin\/login/, label: 'Entrando' },
+  { test: /^\/api\/admin\/jobs\/[^/]+\/run/, label: 'Lanzando el trabajo' },
+  { test: /^\/api\/admin\/jobs/, label: 'Cargando los trabajos' },
   { test: /^\/api\/competitions\/[^/]+\/matchdays/, label: 'Cargando la jornada' },
   { test: /^\/api\/competitions/, label: 'Cargando las competiciones' },
   { test: /^\/api\/league\/table/, label: 'Cargando la clasificación' },
@@ -68,7 +70,6 @@ const rules: { test: RegExp; method?: string; label: string }[] = [
   { test: /^\/api\/videos\/shared/, label: 'Abriendo el vídeo compartido' },
   { test: /^\/api\/videos\/[^/]+/, method: 'DELETE', label: 'Eliminando el vídeo' },
   { test: /^\/api\/stats/, label: 'Calculando estadísticas' },
-  { test: /^\/api\/sync/, label: 'Sincronizando datos' },
 ];
 
 export function describeRequest(method: string, path: string): string {

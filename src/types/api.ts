@@ -239,20 +239,6 @@ export interface AccountDto {
   club: ClubDto | null;
 }
 
-/** Estado de la sincronización con los proveedores (GET /api/sync/status). */
-export interface SyncStatusDto {
-  running: boolean;
-  phase: 'datos' | null;
-  current: string | null;
-  done: number;
-  total: number;
-  startedAt: string | null;
-  lastFinishedAt: string | null;
-  lastSummary: string | null;
-  lastErrors: string[];
-  nextRunAt: string | null;
-}
-
 export interface AuthResponse {
   accessToken: string;
   expiresAt: string;
@@ -1036,17 +1022,6 @@ export interface SquadTimelineDto {
   matches: SquadTimelinePointDto[];
 }
 
-export interface SyncResultDto {
-  provider: string;
-  competitions: number;
-  teams: number;
-  matches: number;
-  standings: number;
-  rosterEntries: number;
-  errors: string[];
-  syncedAt: string;
-}
-
 // --- Acta oficial (federación) y comparador ---
 
 export interface OfficialLineDto {
@@ -1204,4 +1179,71 @@ export interface VideoTicketDto {
   videoId: string;
   ticket: string;
   expiresAt: string;
+}
+
+// --- Administración: trabajos en segundo plano y llamadas a webs externas (/jobs) ---
+
+export interface AdminAuthResponse {
+  accessToken: string;
+  expiresAt: string;
+  userName: string;
+}
+
+export type JobRunStatus = 'running' | 'succeeded' | 'partial' | 'failed' | 'paused' | 'interrupted';
+
+export interface JobRunDto {
+  id: string;
+  job: string;
+  manual: boolean;
+  status: JobRunStatus;
+  startedAt: string;
+  finishedAt: string | null;
+  summary: string | null;
+  errors: string[];
+  requests: number;
+}
+
+export interface JobDto {
+  name: string;
+  title: string;
+  description: string;
+  intervalMinutes: number | null;
+  enabled: boolean;
+  running: boolean;
+  nextRunAt: string | null;
+  progress: { current: string | null; done: number; total: number } | null;
+  lastRun: JobRunDto | null;
+}
+
+export interface ScrapeSourceDto {
+  provider: string;
+  hourRequests: number | null;
+  maxPerHour: number | null;
+  dayRequests: number | null;
+  maxPerDay: number | null;
+  pausedUntil: string | null;
+  nextRequestAt: string | null;
+  last24h: number;
+  failed24h: number;
+  lastRequestAt: string | null;
+}
+
+export interface ScrapeRequestDto {
+  id: number;
+  at: string;
+  provider: string;
+  method: string;
+  url: string;
+  statusCode: number | null;
+  durationMs: number;
+  error: string | null;
+  jobRunId: string | null;
+}
+
+export interface JobsOverviewDto {
+  jobs: JobDto[];
+  sources: ScrapeSourceDto[];
+  runs: JobRunDto[];
+  requests: ScrapeRequestDto[];
+  generatedAt: string;
 }

@@ -36,6 +36,8 @@ const router = createRouter({
     { path: '/codigo-acceso', name: 'redeem', component: () => import('@/views/coach/RedeemView.vue'), meta: { requiresAuth: true } },
     { path: '/pago/:sessionId', name: 'license-checkout', component: () => import('@/views/club/LicenseCheckoutView.vue'), props: true, meta: { requiresAuth: true } },
     { path: '/ajustes', name: 'settings', component: () => import('@/views/SettingsView.vue'), meta: { root: true } },
+    // Página oculta del administrador (sin enlace en el menú; pide su propio usuario y contraseña).
+    { path: '/jobs', alias: '/cargatrabajo', name: 'jobs', component: () => import('@/views/admin/JobsView.vue'), meta: { root: true } },
     { path: '/equipos', name: 'teams', component: () => import('@/views/TeamsView.vue'), meta: { root: true } },
     { path: '/equipos/:teamId', name: 'team', component: () => import('@/views/TeamDetailView.vue'), props: true },
     {

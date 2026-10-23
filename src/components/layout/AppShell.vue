@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BrandMark from '@/components/layout/BrandMark.vue';
-import SyncBanner from '@/components/layout/SyncBanner.vue';
 import LicenseBanner from '@/components/licensing/LicenseBanner.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import LoadingBar from '@/components/layout/LoadingBar.vue';
@@ -151,7 +150,6 @@ function logout() {
     </header>
 
     <LoadingBar />
-    <SyncBanner />
     <LicenseBanner />
     <ConfirmDialog />
 

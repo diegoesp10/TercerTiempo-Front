@@ -4,16 +4,13 @@ import type { RouteLocationNormalizedLoaded } from 'vue-router';
 import GrassField from '@/components/backgrounds/GrassField.vue';
 import AppShell from '@/components/layout/AppShell.vue';
 import { useAuthStore } from '@/stores/auth';
-import { useSyncStore } from '@/stores/sync';
 
 const auth = useAuthStore();
-const sync = useSyncStore();
 
-// Al arrancar con sesión guardada, refrescamos la cuenta (plantillas, vínculos, visibilidad) sin bloquear la UI,
-// y empezamos a sondear la sincronización de la API para avisar mientras actualiza datos.
+// Al arrancar con sesión guardada, refrescamos la cuenta (plantillas, vínculos, visibilidad) sin bloquear la UI.
+// Las actualizaciones de datos de la API no se anuncian aquí: se siguen en la página oculta /jobs.
 onMounted(() => {
   if (auth.isAuthenticated) void auth.refreshAccount().catch(() => undefined);
-  sync.start();
 });
 
 /**
