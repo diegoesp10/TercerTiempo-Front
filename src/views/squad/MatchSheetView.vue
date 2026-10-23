@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
 import OfficialSheetPanel from '@/components/sheet/OfficialSheetPanel.vue';
 import SheetComparison from '@/components/sheet/SheetComparison.vue';
+import TeamMatchStatsCard from '@/components/sheet/TeamMatchStatsCard.vue';
 import MatchPreview from '@/components/matches/MatchPreview.vue';
 import MatchVideos from '@/components/videos/MatchVideos.vue';
 import SuggestPerformanceModal from '@/components/suggestions/SuggestPerformanceModal.vue';
@@ -282,10 +283,23 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
 
 
     <div v-else-if="tab === 'previa'" class="mt-6">
-      <MatchPreview :match-id="matchId" :my-team-id="teamId" />
+      <MatchPreview :match-id="matchId" :my-team-id="teamId" :squad-id="squadId" />
     </div>
 
     <section v-else class="mt-6">
+      <!-- Datos del equipo: lo colectivo que no trae el acta pública -->
+      <TeamMatchStatsCard
+        v-if="data.match.status === 'Played'"
+        class="mb-6"
+        :squad-id="squadId"
+        :match-id="matchId"
+        :stats="data.teamStats"
+        :can-edit="canEdit"
+        :team-name="data.squad.teamName"
+        :opponent-name="data.match.homeTeam.id === teamId ? data.match.awayTeam.name : data.match.homeTeam.name"
+        @saved="(stats) => { if (data) data.teamStats = stats; }"
+      />
+
       <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="font-semibold text-slate-900">Acta interna del partido</h2>

@@ -6,6 +6,7 @@ import AppChart from '@/components/charts/AppChart.vue';
 import ChartCard from '@/components/charts/ChartCard.vue';
 import Alert from '@/components/ui/Alert.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
+import TeamSeasonStats from '@/components/squads/TeamSeasonStats.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useSquad } from '@/composables/useSquad';
@@ -141,7 +142,7 @@ const arrow = (key: string) => (sortKey.value === key ? (sortAsc.value ? ' ▲' 
 </script>
 
 <template>
-  <Spinner v-if="loading" />
+  <Spinner v-if="loading && !data" />
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">
@@ -186,6 +187,9 @@ const arrow = (key: string) => (sortKey.value === key ? (sortAsc.value ? ' ▲' 
         <AppChart v-if="minutes" :option="minutes" :height="Math.max(220, data.players.filter((r) => r.stats.minutes > 0).slice(0, 16).length * 26)" label="Minutos jugados por jugador" />
       </ChartCard>
     </div>
+
+    <!-- Datos del equipo por partido (córners, posesión, tiros…) que apunta el cuerpo técnico -->
+    <TeamSeasonStats class="mb-8" :squad-id="squadId" :team-id="data.squad.teamId" />
 
     <p v-if="data.players.length === 0" class="text-sm text-slate-500">La plantilla no tiene jugadores todavía.</p>
 

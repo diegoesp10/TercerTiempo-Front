@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { api } from '@/api';
+import TeamSeasonStats from '@/components/squads/TeamSeasonStats.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -12,7 +13,8 @@ import type { FormResultDto, PreviewPlayerDto, TeamPreviewDto } from '@/types/ap
  * Previa del partido para el cuerpo técnico y el club: probabilidades con sus razones, forma y balance de cada equipo
  * y los jugadores en forma del rival según las actas públicas. `myTeamId` orienta la lectura (quién es el rival).
  */
-const props = defineProps<{ matchId: string; myTeamId?: string }>();
+/** `squadId`: plantilla desde la que se abre; con ella se muestran también los datos del equipo de su cuerpo técnico. */
+const props = defineProps<{ matchId: string; myTeamId?: string; squadId?: string }>();
 
 const { data, loading, error } = useAsync(() => api.matches.preview(props.matchId));
 
@@ -207,6 +209,9 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
         </dl>
       </section>
     </div>
+
+    <!-- Lo que apunta tu cuerpo técnico (córners, posesión, tiros…), que no está en ninguna fuente pública -->
+    <TeamSeasonStats v-if="squadId && myTeamId" compact :squad-id="squadId" :team-id="myTeamId" />
 
     <section class="rounded-xl border border-line bg-surface-2 p-4 text-xs text-slate-500">
       <p v-for="note in data.dataNotes" :key="note" class="flex gap-2"><Icon icon="triangle-exclamation" class="mt-0.5 h-3 w-3 shrink-0 text-amber-500" /><span>{{ note }}</span></p>

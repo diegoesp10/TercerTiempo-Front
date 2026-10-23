@@ -377,6 +377,53 @@ export interface MatchSheetDto {
   match: MatchDto;
   canEdit: boolean;
   entries: MatchSheetEntryDto[];
+  /** Datos del equipo en el partido; null si el cuerpo técnico no los ha apuntado. */
+  teamStats?: TeamMatchStatsDto | null;
+}
+
+/** Datos colectivos del partido que no trae el acta pública; «for» es el equipo de la plantilla y «against» el rival. */
+export interface TeamMatchStatsInput {
+  possessionPct: number | null;
+  cornersFor: number;
+  cornersAgainst: number;
+  shotsFor: number;
+  shotsAgainst: number;
+  shotsOnTargetFor: number;
+  shotsOnTargetAgainst: number;
+  offsidesFor: number;
+  offsidesAgainst: number;
+  foulsCommitted: number;
+  foulsReceived: number;
+  setPieceGoalsFor: number;
+  setPieceGoalsAgainst: number;
+  notes: string | null;
+}
+
+export interface TeamMatchStatsDto extends TeamMatchStatsInput {
+  updatedAt: string;
+}
+
+/** Medias por partido con datos apuntados (la posesión, sobre los partidos en que se apuntó). */
+export interface TeamStatsAveragesDto {
+  possessionPct: number | null;
+  cornersFor: number;
+  cornersAgainst: number;
+  shotsFor: number;
+  shotsAgainst: number;
+  shotsOnTargetFor: number;
+  shotsOnTargetAgainst: number;
+  offsidesFor: number;
+  offsidesAgainst: number;
+  foulsCommitted: number;
+  foulsReceived: number;
+  setPieceGoalsFor: number;
+  setPieceGoalsAgainst: number;
+}
+
+export interface SquadTeamStatsDto {
+  matchesRecorded: number;
+  averages: TeamStatsAveragesDto | null;
+  matches: { match: MatchDto; stats: TeamMatchStatsDto }[];
 }
 
 /** Línea del acta tal y como se envía: con played = false se borra la línea si existía. */
