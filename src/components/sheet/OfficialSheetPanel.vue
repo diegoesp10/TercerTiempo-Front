@@ -11,7 +11,7 @@ import CardMarks from '@/components/sheet/CardMarks.vue';
 import GoalMarks from '@/components/sheet/GoalMarks.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { OfficialLineDto, OfficialSheetDto, OfficialTeamSheetDto } from '@/types/api';
-import { formatKickoff, officialEventLabels } from '@/utils/format';
+import { formatKickoff, officialEventLabels, sheetSourceLabel } from '@/utils/format';
 
 const props = defineProps<{
   matchId: string;
@@ -54,7 +54,7 @@ async function load(quiet = false) {
   }
 }
 
-// Estas consultas solo leen nuestra base de datos. Nunca fuerzan una descarga de la federación.
+// Estas consultas solo leen nuestra base de datos. Nunca fuerzan una descarga de las webs de actas.
 let timer: ReturnType<typeof setTimeout> | null = null;
 let fetchingPolls = 0;
 function schedule() {
@@ -87,16 +87,16 @@ const minutes = (line: OfficialLineDto) => {
   <section class="card">
     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
       <div>
-        <h2 class="font-semibold text-slate-900">Acta oficial de la federación</h2>
+        <h2 class="font-semibold text-slate-900">Acta pública</h2>
         <p class="text-xs text-slate-500">
           <template v-if="sheet?.status === 'Available'">
-            Acta guardada en Tercer Tiempo · fuente: asturfutbol.es<template v-if="sheet.referee"> · árbitro: {{ sheet.referee }}</template><template v-if="sheet.fetchedAt"> · descargada el {{ formatKickoff(sheet.fetchedAt) }}</template>
+            Acta guardada en Tercer Tiempo · fuente: {{ sheetSourceLabel(sheet.provider) }}<template v-if="sheet.referee"> · árbitro: {{ sheet.referee }}</template><template v-if="sheet.fetchedAt"> · descargada el {{ formatKickoff(sheet.fetchedAt) }}</template>
           </template>
-          <template v-else>Alineaciones, minutos, goles y tarjetas según el acta del árbitro.</template>
+          <template v-else>Alineaciones, minutos, goles y tarjetas publicados tras el partido por la federación o BeSoccer.</template>
         </p>
       </div>
       <div class="flex items-center gap-2">
-        <a v-if="sheet?.sourceUrl" :href="sheet.sourceUrl" target="_blank" rel="noopener" class="text-sm text-accent-400 hover:underline">Ver en asturfutbol.es</a>
+        <a v-if="sheet?.sourceUrl" :href="sheet.sourceUrl" target="_blank" rel="noopener" class="text-sm text-accent-400 hover:underline">Ver en {{ sheetSourceLabel(sheet.provider) }}</a>
         <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="loading" :disabled="loading" @click="load()">{{ loading ? 'Consultando…' : 'Consultar datos guardados' }}</button>
       </div>
     </div>
@@ -106,7 +106,7 @@ const minutes = (line: OfficialLineDto) => {
     <Spinner v-if="loading && !sheet" />
 
     <template v-else-if="sheet">
-      <Alert v-if="sheet.status === 'NotPlayed'" kind="info">Todavía no se ha jugado: el acta oficial aparecerá cuando la federación la publique tras el partido.</Alert>
+      <Alert v-if="sheet.status === 'NotPlayed'" kind="info">Todavía no se ha jugado: el acta pública aparecerá cuando se publique tras el partido.</Alert>
 
       <div v-else-if="sheet.status === 'Pending'" class="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
         <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" aria-hidden="true"></span>
@@ -117,7 +117,7 @@ const minutes = (line: OfficialLineDto) => {
         <BrandMark :size="24" animated class="shrink-0" />
         <span>{{ sheet.message ?? 'El acta aún no está guardada; su descarga está en cola.' }} Esta pantalla consulta los datos guardados sin forzar nuevas descargas.</span>
       </div>
-      <Alert v-else-if="sheet.status === 'Unavailable'" kind="warning">{{ sheet.message ?? 'No se ha encontrado este partido en la federación.' }}</Alert>
+      <Alert v-else-if="sheet.status === 'Unavailable'" kind="warning">{{ sheet.message ?? 'No se ha encontrado este partido en ninguna web de actas.' }}</Alert>
 
       <template v-else>
         <div class="grid gap-6 lg:grid-cols-2">

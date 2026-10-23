@@ -170,12 +170,12 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
     <Alert v-else-if="loadError" kind="error" class="mt-4">{{ loadError }}</Alert>
 
     <template v-else-if="detail">
-      <!-- Totales de temporada según las actas oficiales -->
+      <!-- Totales de temporada según las actas públicas -->
       <div class="mt-5 flex items-baseline justify-between">
-        <h3 class="font-semibold text-slate-900">Temporada según las actas oficiales</h3>
-        <span class="text-xs text-slate-500">asturfutbol.es</span>
+        <h3 class="font-semibold text-slate-900">Temporada según las actas públicas</h3>
+        <span class="text-xs text-slate-500">federación o BeSoccer</span>
       </div>
-      <p v-if="!detail.entry.stats" class="mt-2 text-sm text-slate-500">Todavía no aparece en ningún acta oficial.</p>
+      <p v-if="!detail.entry.stats" class="mt-2 text-sm text-slate-500">Todavía no aparece en ningún acta pública.</p>
       <dl v-else class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
         <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Partidos</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.appearances }}</dd></div>
         <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Titular</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.started }}</dd></div>

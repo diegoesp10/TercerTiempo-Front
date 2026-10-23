@@ -72,7 +72,7 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
                 {{ data.summary.differences === 0 ? 'sin discrepancias' : `${data.summary.differences} ${data.summary.differences === 1 ? 'discrepancia' : 'discrepancias'}` }}
               </strong>
             </template>
-            <template v-else>Cuando la federación publique el acta se compara con la tuya jugador a jugador.</template>
+            <template v-else>Cuando se publique el acta pública se compara con la tuya jugador a jugador.</template>
           </p>
         </div>
         <div class="flex items-center gap-2">
@@ -141,7 +141,7 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
                   <span v-if="row.differences.length === 0" class="text-xs text-emerald-700">✓ coincide</span>
                   <ul v-else class="space-y-0.5 text-xs text-red-700">
                     <li v-for="difference in row.differences" :key="difference.field">
-                      <strong>{{ sheetFieldLabels[difference.field] }}:</strong> tú {{ difference.coach ?? '—' }} · federación {{ difference.official ?? '—' }}
+                      <strong>{{ sheetFieldLabels[difference.field] }}:</strong> tú {{ difference.coach ?? '—' }} · acta pública {{ difference.official ?? '—' }}
                     </li>
                   </ul>
                 </td>
@@ -163,7 +163,7 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
         </div>
 
         <p class="mt-3 text-xs text-slate-500">
-          Las líneas se emparejan por nombre (la federación escribe «APELLIDOS, NOMBRE» y a veces solo el nombre de pila) y por dorsal.
+          Las líneas se emparejan por nombre (la federación escribe «APELLIDOS, NOMBRE»; BeSoccer, nombres cortos como «M. Huelga» o «Guille») y por dorsal.
           Se comparan presencia, titularidad, minutos, goles y tarjetas; el acta oficial no recoge asistencias, tiros ni paradas.
         </p>
       </template>

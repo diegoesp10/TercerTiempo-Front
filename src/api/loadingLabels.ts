@@ -22,7 +22,7 @@ const rules: { test: RegExp; method?: string; label: string }[] = [
   { test: /^\/api\/matches\/[^/]+\/preview/, label: 'Calculando la previa' },
   { test: /^\/api\/matches\/[^/]+/, label: 'Cargando el partido' },
   { test: /^\/api\/squads\/mine/, label: 'Cargando tus plantillas' },
-  { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/sheet\/comparison/, label: 'Comparando con la federación' },
+  { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/sheet\/comparison/, label: 'Comparando con el acta pública' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/sheet/, method: 'PUT', label: 'Guardando el acta' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/sheet/, label: 'Cargando el acta' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/video\/uploads/, label: 'Preparando la subida' },

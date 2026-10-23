@@ -9,7 +9,7 @@ import type { MatchOutcome } from '@/types/api';
 
 /**
  * Partido a partido de un jugador: la línea del acta interna si el cuerpo técnico la registró y, si no, la del acta
- * oficial de la federación. Indica de cuál sale cada fila.
+ * pública (federación o BeSoccer). Indica de cuál sale cada fila.
  */
 const toOutcome = (o: MatchOutcome): Outcome => (o === 'Win' ? 'win' : o === 'Draw' ? 'draw' : o === 'Loss' ? 'loss' : null);
 
@@ -47,7 +47,7 @@ const rows = computed<Row[]>(() =>
 <template>
   <section class="card">
     <h2 class="font-semibold text-slate-900">Partido a partido</h2>
-    <p class="text-xs text-slate-500">Acta interna del cuerpo técnico cuando existe; si no, el acta oficial de la federación (sin asistencias, faltas ni nota).</p>
+    <p class="text-xs text-slate-500">Acta interna del cuerpo técnico cuando existe; si no, el acta pública de la federación o BeSoccer (sin asistencias, faltas ni nota).</p>
     <p v-if="rows.length === 0" class="mt-3 text-sm text-slate-500">El equipo todavía no ha jugado ningún partido esta temporada.</p>
     <div v-else class="mt-3 overflow-x-auto">
       <table class="min-w-full text-sm">

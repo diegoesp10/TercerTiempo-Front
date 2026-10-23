@@ -22,7 +22,7 @@ const roles = [
     title: 'Lleva la plantilla de tu equipo',
     steps: [
       'Entra con el código de acceso de tu club: tu plantilla te espera.',
-      'Tras cada partido rellena el acta y compárala con la de la federación.',
+      'Tras cada partido rellena el acta interna y compárala con la pública.',
       'Sube el vídeo del partido; genera un código personal para cada jugador.',
     ],
   },

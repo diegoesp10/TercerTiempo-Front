@@ -63,7 +63,7 @@ const tabs = [
       <template v-else> Pídeselo a tu club.</template>
     </Alert>
     <Alert v-else-if="licenseCode === 'license.viewer_required'" kind="warning">
-      Para ver las actas internas de otros equipos tu cuenta debe pertenecer a un equipo con licencia vigente. Los datos oficiales de la federación siguen siendo públicos.
+      Para ver las actas internas de otros equipos tu cuenta debe pertenecer a un equipo con licencia vigente. Los resultados y las actas públicas siguen visibles.
     </Alert>
     <Alert v-else-if="forbidden" kind="warning">
       Esta plantilla es <strong>privada</strong>: solo su cuerpo técnico y sus jugadores vinculados pueden ver sus actas y estadísticas.

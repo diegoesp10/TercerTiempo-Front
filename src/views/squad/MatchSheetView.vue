@@ -29,7 +29,7 @@ const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, 
 type Tab = 'acta' | 'comparador' | 'video' | 'previa';
 const tabs: { id: Tab; label: string }[] = [
   { id: 'acta', label: 'Acta interna' },
-  { id: 'comparador', label: 'Comparador con la federación' },
+  { id: 'comparador', label: 'Comparador con el acta pública' },
   { id: 'video', label: 'Vídeo' },
   { id: 'previa', label: 'Previa y rival' },
 ];

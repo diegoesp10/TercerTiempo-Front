@@ -195,7 +195,7 @@ export const api = {
   },
   matches: {
     get: (matchId: string) => http<MatchDetailDto>(`/api/matches/${matchId}`),
-    /** Acta oficial de la federación (o por qué aún no está). */
+    /** Acta pública del partido, de la federación o de BeSoccer (o por qué aún no está). */
     officialSheet: (matchId: string) =>
       http<OfficialSheetDto>(`/api/matches/${matchId}/official-sheet`),
     videos: (matchId: string) => http<MatchVideoDto[]>(`/api/matches/${matchId}/videos`),
