@@ -7,40 +7,35 @@ import Alert from '@/components/ui/Alert.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import MyClubBadge from '@/components/teams/MyClubBadge.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
-import { useAuthStore } from '@/stores/auth';
+import { useMyClub } from '@/composables/useMyClub';
 import { groupByLevel, levelLabels } from '@/utils/format';
 
-const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
 const competitions = useAsync(() => api.competitions.list());
 const groups = computed(() => groupByLevel(competitions.data.value ?? []));
 
-/** Opciones del desplegable: una por competición, agrupadas por nivel. */
+const { preferredCompetition, withMyClubFirst, isMine, myTeamIds } = useMyClub();
+
+/** Opciones del desplegable: una por competición, agrupadas por nivel, con las de tu club arriba. */
 const competitionOptions = computed(() =>
-  groups.value.flatMap((group) => group.competitions.map((c) => ({ value: c.id, label: c.name, group: levelLabels[group.level] }))),
+  withMyClubFirst(groups.value.flatMap((group) => group.competitions.map((c) => ({ value: c.id, label: c.name, group: levelLabels[group.level] })))),
 );
 
 const selectedId = ref<string | null>(typeof route.query.competition === 'string' ? route.query.competition : null);
 
-const preferredCompetitionId = computed(() => auth.playerSquad?.competitionId ?? auth.coachSquads[0]?.competitionId ?? null);
-
 watch(competitions.data, (list) => {
   if (!list || list.length === 0) return;
   if (selectedId.value && list.some((c) => c.id === selectedId.value)) return;
-  selectedId.value = preferredCompetitionId.value ?? list.find((c) => c.level === 'National')?.id ?? list[0]?.id ?? null;
+  selectedId.value = preferredCompetition(list) ?? list.find((c) => c.level === 'National')?.id ?? list[0]?.id ?? null;
 });
 
 const table = useAsync(() => api.stats.leagueTable(selectedId.value), { immediate: false });
-
-/** Equipos del usuario (sus plantillas como técnico o la suya como jugador), para resaltarlos. */
-const myTeamIds = computed(() => [
-  ...auth.coachSquads.map((s) => s.teamId),
-  ...(auth.playerSquad ? [auth.playerSquad.teamId] : []),
-]);
+const myRows = computed(() => (table.data.value?.standings ?? []).filter((row) => isMine(row.teamId)));
 
 watch(selectedId, (id) => {
   if (!id) return;
@@ -83,7 +78,27 @@ watch(selectedId, (id) => {
         {{ table.data.value.notice ?? 'Todavía no hay partidos jugados esta temporada.' }}
       </Alert>
 
-      <div v-else-if="table.data.value" class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
+      <template v-else-if="table.data.value">
+      <!-- Tu club siempre a la vista, aunque esté abajo en la tabla -->
+      <RouterLink
+        v-for="row in myRows"
+        :key="`mine-${row.teamId}`"
+        :to="{ name: 'team', params: { teamId: row.teamId } }"
+        class="my-club-row mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-accent-400/40 px-4 py-3 text-sm hover:underline"
+      >
+        <MyClubBadge />
+        <span class="flex min-w-0 items-center gap-2 font-semibold">
+          <TeamCrest :src="row.crestUrl" :name="row.teamName" size="xs" />{{ row.teamName }}
+        </span>
+        <span class="ml-auto flex gap-4 tabular-nums text-slate-600">
+          <span><strong class="text-slate-900">{{ row.position }}º</strong></span>
+          <span><strong class="text-slate-900">{{ row.points }}</strong> pts</span>
+          <span>{{ row.played }} PJ</span>
+          <span>{{ row.won }}-{{ row.drawn }}-{{ row.lost }}</span>
+        </span>
+      </RouterLink>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
@@ -103,13 +118,14 @@ watch(selectedId, (id) => {
             <tr
               v-for="row in table.data.value.standings"
               :key="row.teamId"
-              :class="auth.isMyTeam(row.teamId) ? 'bg-brand-500/10 font-medium' : 'hover:bg-slate-50'"
+              :class="isMine(row.teamId) ? 'my-club-row font-semibold' : 'hover:bg-slate-50'"
             >
               <td class="px-3 py-2 tabular-nums text-slate-500">{{ row.position }}</td>
               <td class="px-3 py-2">
                 <RouterLink :to="{ name: 'team', params: { teamId: row.teamId } }" class="flex items-center gap-2 hover:text-accent-400 hover:underline">
                   <TeamCrest :src="row.crestUrl" :name="row.teamName" size="xs" />
                   {{ row.teamName }}
+                  <MyClubBadge v-if="isMine(row.teamId)" />
                 </RouterLink>
               </td>
               <td class="px-3 py-2 text-center tabular-nums">{{ row.played }}</td>
@@ -125,6 +141,7 @@ watch(selectedId, (id) => {
         </table>
         <p v-if="table.data.value.standings.length === 0" class="p-4 text-sm text-slate-500">El proveedor aún no publica clasificación para esta liga.</p>
       </div>
+      </template>
     </div>
   </div>
 </template>

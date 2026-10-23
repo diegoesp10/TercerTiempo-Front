@@ -5,6 +5,15 @@ export type ThemePreference = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
 
 const THEME_KEY = 'tt.theme';
+const MY_CLUB_FIRST_KEY = 'tt.my-club-first';
+
+function readMyClubFirst(): boolean {
+  try {
+    return localStorage.getItem(MY_CLUB_FIRST_KEY) !== 'false';
+  } catch {
+    return true;
+  }
+}
 
 function readPreference(): ThemePreference {
   try {
@@ -48,7 +57,19 @@ export const useSettingsStore = defineStore('settings', () => {
     setTheme(isDark.value ? 'light' : 'dark');
   }
 
+  /** Tu club primero: buscadores y clasificaciones abren su competición y la ponen arriba. Activado por defecto. */
+  const myClubFirst = ref(readMyClubFirst());
+
+  function setMyClubFirst(value: boolean) {
+    myClubFirst.value = value;
+    try {
+      localStorage.setItem(MY_CLUB_FIRST_KEY, String(value));
+    } catch {
+      /* sin almacenamiento: dura lo que la sesión */
+    }
+  }
+
   watch(resolvedTheme, apply, { immediate: true });
 
-  return { theme, resolvedTheme, isDark, setTheme, toggleTheme };
+  return { theme, resolvedTheme, isDark, setTheme, toggleTheme, myClubFirst, setMyClubFirst };
 });

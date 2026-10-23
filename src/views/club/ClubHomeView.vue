@@ -11,6 +11,7 @@ import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
+import { useMyClub } from '@/composables/useMyClub';
 import { useAuthStore } from '@/stores/auth';
 import type { AppointmentDto, ClubDto, StaffRole, TeamSummaryDto } from '@/types/api';
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, formatKickoff, licenseStatusLabels, licenseStatusTone, staffRoleLabels, staffRoleOptions } from '@/utils/format';
@@ -46,6 +47,9 @@ const addingTeam = ref(false);
 const competitions = useAsync(() => api.competitions.list(), { immediate: false });
 const competitionId = ref<string | null>(null);
 watch(addingTeam, (open) => { if (open && !competitions.data.value) void competitions.run(); });
+// El buscador se abre en la liga de tu club (ajuste «Mi club primero»).
+const { preferredCompetition } = useMyClub();
+watch(competitions.data, (list) => { if (list && !competitionId.value) competitionId.value = preferredCompetition(list); });
 const teams = shallowRef<TeamSummaryDto[]>([]);
 const teamToAdd = ref('');
 

@@ -36,10 +36,21 @@ export const useAuthStore = defineStore('auth', () => {
   /** Plantillas en cuyo cuerpo técnico está el técnico. */
   const coachSquads = computed<SquadSummaryDto[]>(() => coach.value?.squads ?? []);
 
+  /** Equipos propios: los de las plantillas del técnico, el del jugador y los del club. */
   const myTeamIds = computed(() => {
     const ids = coachSquads.value.map((s) => s.teamId);
     if (playerSquad.value) ids.push(playerSquad.value.teamId);
-    return ids;
+    for (const team of club.value?.teams ?? []) ids.push(team.teamId);
+    return [...new Set(ids)];
+  });
+
+  /** Competiciones de esos equipos, la principal primero: es la que se abre por defecto en buscadores y clasificaciones. */
+  const myCompetitionIds = computed(() => {
+    const ids: string[] = [];
+    if (playerSquad.value) ids.push(playerSquad.value.competitionId);
+    ids.push(...coachSquads.value.map((s) => s.competitionId));
+    ids.push(...(club.value?.teams ?? []).map((t) => t.competitionId).filter((id): id is string => !!id));
+    return [...new Set(ids)];
   });
 
   const mySquadIds = computed(() => {
@@ -109,6 +120,8 @@ export const useAuthStore = defineStore('auth', () => {
     displayName,
     playerSquad,
     coachSquads,
+    myTeamIds,
+    myCompetitionIds,
     isMyTeam,
     isMySquad,
     isStaffOf,

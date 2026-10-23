@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { MY_CLUB_GROUP } from '@/composables/useMyClub';
+import { useAuthStore } from '@/stores/auth';
 import type { CompetitionDto, CompetitionLevel } from '@/types/api';
 import { groupByLevel, levelLabels } from '@/utils/format';
+
+const auth = useAuthStore();
 
 const props = defineProps<{
   competitions: CompetitionDto[];
@@ -60,6 +64,7 @@ function selectLevel(level: CompetitionLevel) {
           : 'border-slate-200 bg-surface text-slate-700 hover:border-brand-400/60'"
         @click="emit('update:modelValue', competition.id)"
       >
+        <Icon v-if="auth.myCompetitionIds.includes(competition.id)" icon="star" class="mr-1 h-3 w-3 text-accent-400" :title="MY_CLUB_GROUP" />
         <span class="font-medium">{{ competition.category }}</span>
         <span v-if="competition.group" class="ml-1 text-slate-500">· Grupo {{ competition.group }}</span>
         <span class="ml-2 text-xs text-slate-400">{{ competition.teamsCount }} equipos</span>

@@ -289,6 +289,11 @@
   .content-note {
     @apply rounded-lg border border-line bg-surface-2 px-4 py-3 text-xs leading-relaxed text-slate-600;
   }
+  /* Fila de tu club en clasificaciones y jornadas: fondo y franja de color a la izquierda. */
+  .my-club-row {
+    @apply bg-brand-500/15 text-slate-900;
+    box-shadow: inset 3px 0 0 var(--color-accent-400);
+  }
 
   .btn,
   .btn-primary,

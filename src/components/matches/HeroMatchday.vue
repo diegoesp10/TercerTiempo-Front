@@ -3,6 +3,7 @@ import { computed, onMounted, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
+import { useMyClub } from '@/composables/useMyClub';
 import type { CompetitionDto, CompetitionMatchdayDto, MatchDto } from '@/types/api';
 import { formatTime, groupByLevel, levelLabels } from '@/utils/format';
 
@@ -16,16 +17,22 @@ const selectedId = ref<string | null>(null);
 const matchday = shallowRef<CompetitionMatchdayDto | null>(null);
 const loading = ref(true);
 
+const { preferredCompetition, withMyClubFirst, isMine } = useMyClub();
+
 const options = computed(() =>
-  groupByLevel(competitions.value).flatMap((group) => group.competitions.map((c) => ({ value: c.id, label: c.name, group: levelLabels[group.level] }))),
+  withMyClubFirst(groupByLevel(competitions.value).flatMap((group) => group.competitions.map((c) => ({ value: c.id, label: c.name, group: levelLabels[group.level] })))),
 );
 const competition = computed(() => competitions.value.find((c) => c.id === selectedId.value) ?? null);
 
+// Al abrir, la competición de tu club (si el ajuste está activo); si no, la última que se vio en este dispositivo.
 onMounted(async () => {
   try {
     competitions.value = await api.competitions.list();
     const saved = localStorage.getItem('tt.home-competition');
-    selectedId.value = competitions.value.find((c) => c.id === saved)?.id ?? [...competitions.value].sort((a, b) => a.sortOrder - b.sortOrder)[0]?.id ?? null;
+    selectedId.value = preferredCompetition(competitions.value)
+      ?? competitions.value.find((c) => c.id === saved)?.id
+      ?? [...competitions.value].sort((a, b) => a.sortOrder - b.sortOrder)[0]?.id
+      ?? null;
   } catch {
     loading.value = false;
   }
@@ -48,7 +55,11 @@ watch(selectedId, async (id) => {
   }
 });
 
-const matches = computed<MatchDto[]>(() => (matchday.value?.matches ?? []).slice(0, 6));
+/** Los partidos de tu club, los primeros. */
+const isMyMatch = (m: MatchDto) => isMine(m.homeTeam.id) || isMine(m.awayTeam.id);
+const matches = computed<MatchDto[]>(() =>
+  [...(matchday.value?.matches ?? [])].sort((a, b) => Number(isMyMatch(b)) - Number(isMyMatch(a))).slice(0, 6),
+);
 
 const score = (m: MatchDto) => (m.homeGoals === null || m.awayGoals === null ? null : `${m.homeGoals} – ${m.awayGoals}`);
 const outcomeClass = (m: MatchDto, side: 'home' | 'away') => {
@@ -89,7 +100,12 @@ const outcomeClass = (m: MatchDto, side: 'home' | 'away') => {
 
     <ul v-if="matches.length" class="divide-y divide-line">
       <li v-for="m in matches" :key="m.id">
-        <RouterLink :to="{ name: 'match', params: { matchId: m.id } }" class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-5 py-3 text-sm transition hover:bg-surface-2" title="Acta oficial y datos públicos del partido">
+        <RouterLink
+          :to="{ name: 'match', params: { matchId: m.id } }"
+          class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-5 py-3 text-sm transition hover:bg-surface-2"
+          :class="isMyMatch(m) ? 'my-club-row' : ''"
+          title="Acta pública y datos del partido"
+        >
           <span class="flex min-w-0 items-center justify-end gap-2 text-right" :class="outcomeClass(m, 'home')">
             <span class="truncate">{{ m.homeTeam.shortName }}</span>
             <TeamCrest :src="m.homeTeam.crestUrl" :name="m.homeTeam.name" :short-name="m.homeTeam.shortName" size="xs" />
@@ -109,7 +125,7 @@ const outcomeClass = (m: MatchDto, side: 'home' | 'away') => {
     <p v-else class="px-5 py-8 text-center text-sm text-slate-500">{{ matchday?.notice ?? 'Todavía no hay partidos de esta temporada.' }}</p>
 
     <footer class="flex flex-wrap items-center justify-between gap-2 border-t border-line px-5 py-3 text-xs text-slate-500">
-      <span>Acta oficial y comparadores gratis; las actas internas, si la plantilla las hace públicas.</span>
+      <span>Acta pública y comparadores gratis; las actas internas, si la plantilla las hace públicas.</span>
       <RouterLink :to="selectedId ? { name: 'league', query: { competition: selectedId } } : { name: 'league' }" class="text-sm font-semibold text-brand-500 hover:underline">Jornada completa y clasificación →</RouterLink>
     </footer>
   </section>
