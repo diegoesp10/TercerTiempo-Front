@@ -9,8 +9,8 @@ import { useAsync } from '@/composables/useAsync';
 import type { FormResultDto, PreviewPlayerDto, TeamPreviewDto } from '@/types/api';
 
 /**
- * Previa del partido para el cuerpo técnico: probabilidades con sus razones, forma y balance de cada equipo y los
- * jugadores en forma del rival según las actas oficiales. `myTeamId` orienta la lectura (quién es el rival).
+ * Previa del partido para el cuerpo técnico y el club: probabilidades con sus razones, forma y balance de cada equipo
+ * y los jugadores en forma del rival según las actas públicas. `myTeamId` orienta la lectura (quién es el rival).
  */
 const props = defineProps<{ matchId: string; myTeamId?: string }>();
 

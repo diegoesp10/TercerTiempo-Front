@@ -36,7 +36,12 @@ const tabs: { id: Tab; label: string }[] = [
   { id: 'video', label: 'Vídeo' },
   { id: 'previa', label: 'Previa' },
 ];
-const tab = computed<Tab>(() => tabs.find((t) => t.id === route.query.tab)?.id ?? 'partido');
+// La previa es para el cuerpo técnico y el club del equipo; los jugadores no la ven.
+const canPrepare = computed(() =>
+  !!data.value && (data.value.canEdit || data.value.squad.myRole !== null || !!auth.club?.teams.some((team) => team.teamId === data.value!.squad.teamId)),
+);
+const visibleTabs = computed(() => tabs.filter((t) => t.id !== 'previa' || canPrepare.value));
+const tab = computed<Tab>(() => visibleTabs.value.find((t) => t.id === route.query.tab)?.id ?? 'partido');
 const selectTab = (id: Tab) => void router.replace({ query: { ...route.query, tab: id === 'partido' ? undefined : id } });
 
 interface Row extends MatchSheetEntryInput {
@@ -236,7 +241,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
 
     <nav class="mt-6 flex gap-1 overflow-x-auto border-b border-slate-200 whitespace-nowrap" aria-label="Secciones del partido">
       <button
-        v-for="item in tabs"
+        v-for="item in visibleTabs"
         :key="item.id"
         type="button"
         class="-mb-px border-b-2 px-4 py-2 text-sm font-medium transition"
@@ -256,7 +261,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
     </div>
 
     <div v-else-if="tab === 'video'" class="mt-6">
-      <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="data.canEdit || data.squad.myRole !== null || !!auth.club?.teams.some((team) => team.teamId === data!.squad.teamId)" />
+      <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="canPrepare" />
     </div>
 
 

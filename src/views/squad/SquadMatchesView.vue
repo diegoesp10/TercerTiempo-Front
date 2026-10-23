@@ -15,7 +15,7 @@ const { data, loading, error, run } = useAsync(() => api.squads.matches(squadId.
 
 const teamId = computed(() => detail.value?.summary.teamId ?? '');
 const canManage = computed(() => detail.value?.canManage ?? false);
-// El club propietario y el cuerpo técnico revisan las sugerencias de los jugadores.
+// El club propietario y el cuerpo técnico revisan las sugerencias de los jugadores y preparan los partidos (previa).
 const canReview = computed(() => detail.value?.canInvitePlayers ?? false);
 
 const played = computed(() => (data.value ?? []).filter((m) => m.match.status === 'Played').reverse());
@@ -62,9 +62,9 @@ const pending = computed(() => played.value.filter((m) => m.entriesRecorded === 
           :key="item.match.id"
           :match="item.match"
           :team-id="teamId"
-          :to="canManage ? { name: 'sheet', params: { squadId, matchId: item.match.id }, query: { tab: 'previa' } } : undefined"
+          :to="canReview ? { name: 'sheet', params: { squadId, matchId: item.match.id }, query: { tab: 'previa' } } : undefined"
         >
-          <template v-if="canManage" #badge>
+          <template v-if="canReview" #badge>
             <span class="inline-flex items-center gap-1 text-xs font-medium text-brand-500"><Icon icon="chart-line" class="h-3 w-3" />Previa</span>
           </template>
         </MatchRow>
