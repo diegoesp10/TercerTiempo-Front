@@ -196,9 +196,9 @@ export const officialEventLabels: Record<OfficialEventType, string> = {
   Substitution: 'Cambio',
 };
 
-/** Web de la que sale el acta pública: la federación o BeSoccer, según cuál la tuviera completa antes. */
+/** Web de la que sale el acta pública (hoy solo la federación). */
 export const sheetSourceLabel = (provider: string | null | undefined) =>
-  provider === 'besoccer' ? 'BeSoccer' : provider === 'asturfutbol' ? 'asturfutbol.es (federación)' : provider ?? 'web de actas';
+  provider === 'asturfutbol' ? 'asturfutbol.es (federación)' : provider ?? 'web de actas';
 
 export const sheetFieldLabels: Record<SheetDifferenceDto['field'], string> = {
   played: 'Jugó',

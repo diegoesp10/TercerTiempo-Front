@@ -29,7 +29,7 @@ const auth = useAuthStore();
 
 const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, props.matchId));
 
-/** «partido» es el acta pública (federación o BeSoccer); «interna», la que rellena el cuerpo técnico. */
+/** «partido» es el acta pública (federación); «interna», la que rellena el cuerpo técnico. */
 type Tab = 'partido' | 'interna' | 'comparador' | 'video' | 'previa';
 const tabs: { id: Tab; label: string }[] = [
   { id: 'partido', label: 'Acta del partido' },

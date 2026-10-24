@@ -9,7 +9,7 @@ import type { MatchOutcome } from '@/types/api';
 
 /**
  * Partido a partido de un jugador: la línea del acta interna si el cuerpo técnico la registró y, si no, la del acta
- * pública (federación o BeSoccer). Indica de cuál sale cada fila.
+ * pública de la federación. Indica de cuál sale cada fila.
  */
 const toOutcome = (o: MatchOutcome): Outcome => (o === 'Win' ? 'win' : o === 'Draw' ? 'draw' : o === 'Loss' ? 'loss' : null);
 
