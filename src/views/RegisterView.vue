@@ -40,6 +40,27 @@ onMounted(async () => {
   }
 });
 
+// La invitación es para un club concreto: en cuanto el código vale, ese club queda elegido y no se puede cambiar.
+const invitedClub = ref<string | null>(null);
+const inviteInvalid = ref(false);
+let inviteLookup = 0;
+watch(clubInvite, async (value) => {
+  const code = value.trim();
+  const lookup = ++inviteLookup;
+  inviteInvalid.value = false;
+  if (invitedClub.value && form.displayName === invitedClub.value) form.displayName = '';
+  invitedClub.value = null;
+  if (code.length < 10) return;
+  try {
+    const result = await api.auth.clubInvitation(code);
+    if (lookup !== inviteLookup) return;
+    invitedClub.value = result.clubName;
+    if (result.clubName) form.displayName = result.clubName;
+  } catch {
+    if (lookup === inviteLookup) inviteInvalid.value = true;
+  }
+}, { immediate: true });
+
 // Aceptación expresa de las condiciones y la política de privacidad: sin ella no se envía el formulario.
 const acceptsTerms = ref(false);
 
@@ -202,12 +223,16 @@ async function submit() {
             Tercer Tiempo está en beta cerrada: los clubes entran con una invitación. Si quieres una, escríbenos a {{ legalEntity.email }}.
           </p>
           <p v-if="fieldErrors.accessCode" class="field-error">{{ fieldErrors.accessCode[0] }}</p>
+          <p v-else-if="inviteInvalid" class="field-error">La invitación no existe, ha caducado o ya se ha usado.</p>
         </div>
 
         <div v-if="isClub">
           <label class="label" for="displayName">Club</label>
-          <ClubPicker id="displayName" v-model="form.displayName" />
-          <p class="mt-1 text-xs text-slate-400">
+          <ClubPicker id="displayName" v-model="form.displayName" :locked="!!invitedClub" />
+          <p v-if="invitedClub" class="mt-1 text-xs text-slate-400">
+            Tu invitación es para {{ invitedClub }}: el club va fijado y no se puede cambiar.
+          </p>
+          <p v-else class="mt-1 text-xs text-slate-400">
             Elige tu club de la lista: solo puede haber una cuenta por club y al crearla quedan vinculados todos sus equipos (primero y filiales).
           </p>
           <p v-if="fieldErrors.displayName" class="field-error">{{ fieldErrors.displayName[0] }}</p>

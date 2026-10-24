@@ -6,9 +6,10 @@ import type { ClubCatalogDto } from '@/types/api';
 
 /**
  * Desplegable con búsqueda sobre el catálogo de clubes (GET /api/clubs/catalog): se escribe para filtrar y se elige
- * uno de la lista. El valor es el nombre canónico del club elegido o '' si no hay ninguno elegido.
+ * uno de la lista. El valor es el nombre canónico del club elegido o '' si no hay ninguno elegido. Con locked (el club
+ * que trae una invitación) se muestra fijado y no se puede cambiar.
  */
-const props = defineProps<{ modelValue: string; id?: string }>();
+const props = defineProps<{ modelValue: string; id?: string; locked?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
 
 const catalog = ref<ClubCatalogDto[]>([]);
@@ -44,7 +45,14 @@ const selected = computed(() => catalog.value.find((club) => club.name === props
 
 watch(matches, () => { highlighted.value = 0; });
 
+// El club puede llegar de fuera (la invitación): el texto del campo lo sigue.
+watch(() => props.modelValue, (value) => {
+  if (value && value !== query.value) query.value = value;
+  if (props.locked) open.value = false;
+});
+
 function onInput() {
+  if (props.locked) return;
   open.value = true;
   // Escribir deshace la elección: solo vale un club de la lista.
   if (props.modelValue && query.value !== props.modelValue) emit('update:modelValue', '');
@@ -58,6 +66,7 @@ function choose(club: ClubCatalogDto) {
 }
 
 function onKeydown(event: KeyboardEvent) {
+  if (props.locked) return;
   if (!open.value && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
     open.value = true;
     event.preventDefault();
@@ -98,13 +107,17 @@ function onBlur() {
       :aria-controls="listId"
       :aria-activedescendant="open && matches[highlighted] ? `${listId}-${highlighted}` : undefined"
       :placeholder="loading ? 'Cargando clubes…' : 'Escribe para buscar tu club'"
+      :readonly="locked"
+      :aria-readonly="locked"
       class="input pr-9"
-      @focus="open = true"
+      :class="locked ? 'cursor-not-allowed opacity-90' : ''"
+      @focus="open = !locked"
       @input="onInput"
       @keydown="onKeydown"
       @blur="onBlur"
     />
-    <Icon icon="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" />
+    <Icon v-if="locked" icon="lock" class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+    <Icon v-else icon="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" />
 
     <ul
       v-if="open && !loading"

@@ -1329,13 +1329,19 @@ export interface ClubInvitationDto {
   teamId: string | null;
 }
 
-/** Equipo del buscador de invitaciones, con su liga, el club que ya lo gestiona y su invitación. */
-export interface InvitationTeamDto {
-  teamId: string;
+/** Club del buscador de invitaciones: sus equipos, la cuenta si ya la tiene y su invitación. teamId se manda al crearla. */
+export interface InvitationClubDto {
   name: string;
-  competition: string | null;
-  clubName: string | null;
+  teamId: string;
+  teams: { id: string; name: string; competitionName: string | null }[];
+  registeredAs: string | null;
   invitation: ClubInvitationDto | null;
+}
+
+/** Para qué club es una invitación de la beta (en el alta va fijado). */
+export interface ClubInvitationLookupDto {
+  code: string;
+  clubName: string | null;
 }
 
 // --- Administración: planes, precios y prueba de las licencias (en la base de datos) ---

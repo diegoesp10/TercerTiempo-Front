@@ -3,7 +3,7 @@ import type {
   AdminAuthResponse,
   ClubInvitationDto,
   FootballSyncSettingsDto,
-  InvitationTeamDto,
+  InvitationClubDto,
   JobDto,
   JobsOverviewDto,
   LicensesOverviewDto,
@@ -30,9 +30,9 @@ export const adminApi = {
   updateLicensingSettings: (token: string, body: UpdateLicensingSettingsRequest) =>
     http<LicensingSettingsDto>('/api/admin/licensing-settings', { method: 'PUT', token, body }),
   invitations: (token: string) => http<ClubInvitationDto[]>('/api/admin/club-invitations', { token, silent: true }),
-  invitationTeams: (token: string, q: string) =>
-    http<InvitationTeamDto[]>(`/api/admin/club-invitations/teams?q=${encodeURIComponent(q)}`, { token, silent: true }),
-  createInvitation: (token: string, note: string | null, expiresInDays: number | null, teamId: string | null) =>
+  invitationClubs: (token: string, q: string) =>
+    http<InvitationClubDto[]>(`/api/admin/club-invitations/clubs?q=${encodeURIComponent(q)}`, { token, silent: true }),
+  createInvitation: (token: string, note: string | null, expiresInDays: number | null, teamId: string) =>
     http<ClubInvitationDto>('/api/admin/club-invitations', { method: 'POST', token, body: { note, expiresInDays, teamId } }),
   revokeInvitation: (token: string, id: string) => http<ClubInvitationDto>(`/api/admin/club-invitations/${id}/revoke`, { method: 'POST', token }),
 };

@@ -5,13 +5,13 @@ import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import { confirmDialog } from '@/composables/useConfirm';
-import type { ClubInvitationDto, ClubInvitationStatus, InvitationTeamDto } from '@/types/api';
+import type { ClubInvitationDto, ClubInvitationStatus, InvitationClubDto } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
 
 /**
  * Invitaciones de la beta cerrada: cada código sirve para que un club se dé de alta una sola vez. Se comparte el enlace
- * /registro?beta=CODIGO, que abre el alta de club con el código puesto. Al escribir en «Para quién» se buscan los
- * equipos y se ve cuáles tienen ya invitación o club; también vale texto libre.
+ * /registro?beta=CODIGO, que abre el alta de club con el código puesto y el club fijado: cada invitación es para un club
+ * del catálogo, que se busca al escribir viendo cuáles tienen ya invitación o cuenta.
  */
 const props = defineProps<{ token: string }>();
 const emit = defineEmits<{ unauthorized: [] }>();
@@ -24,11 +24,11 @@ const days = ref<number | null>(30);
 const creating = ref(false);
 const copied = ref<string | null>(null);
 
-const suggestions = ref<InvitationTeamDto[]>([]);
+const suggestions = ref<InvitationClubDto[]>([]);
 const open = ref(false);
 const active = ref(-1);
 const searching = ref(false);
-const selected = ref<InvitationTeamDto | null>(null);
+const selected = ref<InvitationClubDto | null>(null);
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 let searchId = 0;
 
@@ -46,13 +46,16 @@ async function guard<T>(action: () => Promise<T>): Promise<T | undefined> {
   }
 }
 
-/** Lo que tiene cada equipo: club dado de alta, invitación (y en qué estado) o nada. */
-function teamState(team: InvitationTeamDto): { label: string; tone: 'green' | 'blue' | 'slate' | 'red' | 'amber' } {
-  if (team.clubName) return { label: `Club dado de alta: ${team.clubName}`, tone: 'blue' };
-  if (!team.invitation) return { label: 'Sin invitación', tone: 'amber' };
-  const state = statusLabels[team.invitation.status];
-  return { label: team.invitation.status === 'available' ? `${state} · ${team.invitation.code}` : state, tone: statusTone[team.invitation.status] };
+/** Lo que tiene cada club: cuenta dada de alta, invitación (y en qué estado) o nada. */
+function clubState(club: InvitationClubDto): { label: string; tone: 'green' | 'blue' | 'slate' | 'red' | 'amber' } {
+  if (club.registeredAs) return { label: 'Ya tiene cuenta', tone: 'blue' };
+  if (!club.invitation) return { label: 'Sin invitación', tone: 'amber' };
+  const state = statusLabels[club.invitation.status];
+  return { label: club.invitation.status === 'available' ? `${state} · ${club.invitation.code}` : state, tone: statusTone[club.invitation.status] };
 }
+
+const teamsLine = (club: InvitationClubDto) =>
+  club.teams.map((t) => (t.competitionName ? `${t.name} (${t.competitionName})` : t.name)).join(' · ');
 
 function onNoteInput() {
   if (selected.value && note.value !== selected.value.name) selected.value = null;
@@ -69,7 +72,7 @@ function onNoteInput() {
 async function search(text: string) {
   const id = ++searchId;
   searching.value = true;
-  const found = await guard(() => adminApi.invitationTeams(props.token, text));
+  const found = await guard(() => adminApi.invitationClubs(props.token, text));
   // Solo vale la respuesta de lo último escrito.
   if (id !== searchId) return;
   searching.value = false;
@@ -78,9 +81,11 @@ async function search(text: string) {
   open.value = true;
 }
 
-function choose(team: InvitationTeamDto) {
-  selected.value = team;
-  note.value = team.name;
+function choose(club: InvitationClubDto) {
+  // Un club con cuenta ya no necesita invitación.
+  if (club.registeredAs) return;
+  selected.value = club;
+  note.value = club.name;
   open.value = false;
 }
 
@@ -114,7 +119,9 @@ async function load() {
 
 async function create() {
   creating.value = true;
-  const created = await guard(() => adminApi.createInvitation(props.token, note.value.trim() || null, days.value || null, selected.value?.teamId ?? null));
+  const club = selected.value;
+  if (!club) return;
+  const created = await guard(() => adminApi.createInvitation(props.token, null, days.value || null, club.teamId));
   if (created) {
     invitations.value = [created, ...invitations.value];
     note.value = '';
@@ -163,7 +170,7 @@ onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer); });
 
     <form class="mb-4 flex flex-wrap items-end gap-3" @submit.prevent="create">
       <div class="relative min-w-[14rem] flex-1">
-        <label class="label" for="invite-note">Para quién (solo lo ves tú)</label>
+        <label class="label" for="invite-note">Club</label>
         <input
           id="invite-note"
           v-model="note"
@@ -187,36 +194,37 @@ onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer); });
           class="absolute inset-x-0 top-full z-20 mt-1 max-h-80 overflow-y-auto rounded-lg border border-line bg-surface py-1 shadow-card"
         >
           <li v-if="suggestions.length === 0" class="px-3 py-2 text-sm text-slate-500">
-            Ningún equipo se llama así: la invitación se creará con este texto.
+            Ningún club ni equipo se llama así: solo se puede invitar a los clubes de las ligas que sigue Tercer Tiempo.
           </li>
           <li
-            v-for="(team, i) in suggestions"
-            :key="team.teamId"
+            v-for="(club, i) in suggestions"
+            :key="club.teamId"
             role="option"
             :aria-selected="i === active"
-            class="flex cursor-pointer items-center justify-between gap-3 px-3 py-2 text-sm"
-            :class="i === active ? 'bg-brand-500/15' : 'hover:bg-surface-2'"
-            @mousedown.prevent="choose(team)"
+            :aria-disabled="!!club.registeredAs"
+            class="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+            :class="[i === active ? 'bg-brand-500/15' : 'hover:bg-surface-2', club.registeredAs ? 'cursor-not-allowed opacity-60' : 'cursor-pointer']"
+            @mousedown.prevent="choose(club)"
             @mouseenter="active = i"
           >
             <span class="min-w-0">
-              <span class="block truncate text-slate-900">{{ team.name }}</span>
-              <span v-if="team.competition" class="block truncate text-xs text-slate-500">{{ team.competition }}</span>
+              <span class="block truncate text-slate-900">{{ club.name }}</span>
+              <span class="block truncate text-xs text-slate-500">{{ teamsLine(club) }}</span>
             </span>
-            <Badge :tone="teamState(team).tone" class="shrink-0">{{ teamState(team).label }}</Badge>
+            <Badge :tone="clubState(club).tone" class="shrink-0">{{ clubState(club).label }}</Badge>
           </li>
         </ul>
         <p v-if="selected" class="mt-1 text-xs text-slate-500">
-          Para el equipo {{ selected.name }}<template v-if="selected.competition"> ({{ selected.competition }})</template>.
-          <span v-if="selected.clubName" class="text-amber-700">Su club ya está dado de alta como {{ selected.clubName }}.</span>
-          <span v-else-if="selected.invitation?.status === 'available'" class="text-amber-700">Ya tiene una invitación disponible ({{ selected.invitation.code }}); la nueva será otra más.</span>
+          La invitación será solo para {{ selected.name }}: en el alta irá fijado y no se podrá cambiar.
+          <span v-if="selected.invitation?.status === 'available'" class="text-amber-700">Ya tiene una disponible ({{ selected.invitation.code }}); la nueva será otra más.</span>
         </p>
+        <p v-else-if="note.trim().length >= 2 && !open" class="mt-1 text-xs text-amber-700">Elige el club de la lista.</p>
       </div>
       <label class="w-36">
         <span class="label">Caduca en (días)</span>
         <input v-model.number="days" type="number" min="1" max="365" placeholder="Nunca" class="input" />
       </label>
-      <button type="submit" class="btn-primary" v-busy="creating" :disabled="creating">Crear invitación</button>
+      <button type="submit" class="btn-primary" v-busy="creating" :disabled="creating || !selected">Crear invitación</button>
     </form>
 
     <Alert v-if="error" kind="error" class="mb-3">{{ error }}</Alert>
@@ -227,7 +235,7 @@ onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer); });
         <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th class="px-3 py-2 text-left">Código</th>
-            <th class="px-3 py-2 text-left">Para</th>
+            <th class="px-3 py-2 text-left">Club</th>
             <th class="px-3 py-2 text-left">Estado</th>
             <th class="px-3 py-2 text-left">Creada</th>
             <th class="px-3 py-2 text-left">Caduca</th>

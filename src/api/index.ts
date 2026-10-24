@@ -40,6 +40,7 @@ import type {
   SheetComparisonDto,
   SquadDetailDto,
   RegistrationOptionsDto,
+  ClubInvitationLookupDto,
   SquadInviteDto,
   SquadMatchDto,
   SquadPlayerDto,
@@ -76,6 +77,9 @@ export const api = {
     me: () => http<AccountDto>('/api/auth/me'),
     /** Si el alta de clubes exige invitación (beta cerrada). */
     registrationOptions: () => http<RegistrationOptionsDto>('/api/auth/registration-options', { silent: true, cacheMs: 300_000 }),
+    /** Para qué club es una invitación de la beta (404 si no vale). */
+    clubInvitation: (code: string) =>
+      http<ClubInvitationLookupDto>(`/api/auth/club-invitation/${encodeURIComponent(code.trim())}`, { silent: true }),
   },
 
   /** Lo que puede hacer un jugador: vincularse a su ficha y consultar sus números. */
