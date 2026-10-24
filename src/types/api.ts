@@ -1281,3 +1281,21 @@ export interface JobsOverviewDto {
   requests: ScrapeRequestDto[];
   generatedAt: string;
 }
+
+export interface RegistrationOptionsDto {
+  clubInviteRequired: boolean;
+}
+
+export type ClubInvitationStatus = 'available' | 'used' | 'expired' | 'revoked';
+
+export interface ClubInvitationDto {
+  id: string;
+  code: string;
+  note: string | null;
+  status: ClubInvitationStatus;
+  createdAt: string;
+  expiresAt: string | null;
+  usedAt: string | null;
+  clubName: string | null;
+  revokedAt: string | null;
+}

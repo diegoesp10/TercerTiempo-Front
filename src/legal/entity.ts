@@ -22,5 +22,4 @@ export const legalVersion = '21 de octubre de 2026';
 export const dataSources = [
   { name: 'futbolasturiano.es', url: 'https://www.futbolasturiano.es', what: 'calendarios, resultados, clasificaciones y plantillas publicadas de las ligas asturianas' },
   { name: 'asturfutbol.es (Real Federación de Fútbol del Principado de Asturias)', url: 'https://www.asturfutbol.es', what: 'actas oficiales de los partidos: alineaciones, sustituciones, goles, tarjetas y árbitros' },
-  { name: 'BeSoccer', url: 'https://es.besoccer.com', what: 'actas públicas de los partidos cuando la federación no las tiene o limita las consultas: alineaciones, cambios, goles y tarjetas' },
 ];

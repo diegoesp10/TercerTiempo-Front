@@ -121,7 +121,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <ul>
         <li>Cada plantilla es <strong>privada</strong> al crearse: sus actas internas, notas y estadísticas solo las ven su cuerpo técnico vigente y los jugadores vinculados a ella.</li>
         <li>El cuerpo técnico puede hacer pública la plantilla; en ese caso sus actas y estadísticas son visibles para cualquier visitante. El club y su cuerpo técnico son responsables de esa decisión y de informar a sus jugadores.</li>
-        <li>Los calendarios, resultados, clasificaciones y actas públicas (de la federación o de BeSoccer) son públicos, como lo son en sus fuentes.</li>
+        <li>Los calendarios, resultados, clasificaciones y actas públicas de la federación son públicos, como lo son en sus fuentes.</li>
         <li>Las estadísticas comparativas «frente a la liga» se calculan únicamente con actas visibles para quien las consulta.</li>
         <li>Un jugador vinculado puede desvincularse de su ficha en cualquier momento desde su panel.</li>
       </ul>

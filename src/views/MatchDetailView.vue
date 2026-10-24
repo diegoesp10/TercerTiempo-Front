@@ -60,7 +60,7 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
     </div>
 
     <Alert v-if="data.sheets.length === 0" kind="info" class="mt-6 leading-relaxed">
-      Ninguno de los dos equipos tiene todavía plantilla en Tercer Tiempo, así que no hay actas internas que mostrar. El acta pública (federación o BeSoccer) y el vídeo, si lo hay, son públicos.
+      Ninguno de los dos equipos tiene todavía plantilla en Tercer Tiempo, así que no hay actas internas que mostrar. El acta pública de la federación y el vídeo, si lo hay, son públicos.
     </Alert>
 
     <section v-for="sheet in data.sheets" :key="sheet.squadId" class="card mt-6">

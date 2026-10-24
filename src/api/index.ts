@@ -39,6 +39,7 @@ import type {
   SharedVideoDto,
   SheetComparisonDto,
   SquadDetailDto,
+  RegistrationOptionsDto,
   SquadInviteDto,
   SquadMatchDto,
   SquadPlayerDto,
@@ -73,6 +74,8 @@ export const api = {
     invite: (inviteCode: string) => http<SquadInviteDto>(`/api/auth/invite/${encodeURIComponent(inviteCode.trim())}`),
     login: (body: LoginRequest) => http<AuthResponse>('/api/auth/login', { method: 'POST', body }),
     me: () => http<AccountDto>('/api/auth/me'),
+    /** Si el alta de clubes exige invitación (beta cerrada). */
+    registrationOptions: () => http<RegistrationOptionsDto>('/api/auth/registration-options', { silent: true, cacheMs: 300_000 }),
   },
 
   /** Lo que puede hacer un jugador: vincularse a su ficha y consultar sus números. */

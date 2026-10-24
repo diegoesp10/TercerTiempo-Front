@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { adminApi } from '@/api/admin';
 import { ApiError, errorMessage } from '@/api/http';
+import ClubInvitationsPanel from '@/components/admin/ClubInvitationsPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
@@ -271,6 +272,8 @@ const sourceTitle = (source: ScrapeSourceDto) =>
           </button>
         </article>
       </div>
+
+      <ClubInvitationsPanel :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
 
       <section class="card">
         <h2 class="font-semibold text-slate-900">Webs externas</h2>

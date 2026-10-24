@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, shallowRef, watch } from 'vue';
+import { computed, onMounted, reactive, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import { useRoute, useRouter } from 'vue-router';
 import { ApiError, errorMessage } from '@/api/http';
@@ -8,6 +8,7 @@ import AuthPanel from '@/components/layout/AuthPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import { useAuthStore } from '@/stores/auth';
 import type { AccountType, SquadInviteDto } from '@/types/api';
+import { legalEntity } from '@/legal/entity';
 import { positionLabels } from '@/utils/format';
 
 const auth = useAuthStore();
@@ -21,11 +22,22 @@ const form = reactive<{
   displayName: string;
   accessCode: string;
 }>({
-  accountType: typeof route.query.invite === 'string' ? 'Player' : 'Coach',
+  accountType: typeof route.query.invite === 'string' ? 'Player' : typeof route.query.beta === 'string' ? 'Club' : 'Coach',
   email: '',
   password: '',
   displayName: '',
   accessCode: typeof route.query.invite === 'string' ? route.query.invite.toUpperCase() : typeof route.query.code === 'string' ? route.query.code.toUpperCase() : '',
+});
+
+// Beta cerrada: el alta de un club exige la invitación del administrador (enlace /registro?beta=CODIGO).
+const clubInvite = ref(typeof route.query.beta === 'string' ? route.query.beta.toUpperCase() : '');
+const clubInviteRequired = ref(false);
+onMounted(async () => {
+  try {
+    clubInviteRequired.value = (await api.auth.registrationOptions()).clubInviteRequired;
+  } catch {
+    /* sin respuesta: el servidor lo exigirá igualmente si hace falta */
+  }
 });
 
 // Aceptación expresa de las condiciones y la política de privacidad: sin ella no se envía el formulario.
@@ -83,7 +95,7 @@ async function submit() {
       accountType: form.accountType,
       position: null,
       birthDate: null,
-      accessCode: isPlayer.value || isCoach.value ? inviteCode.value : null,
+      accessCode: isPlayer.value || isCoach.value ? inviteCode.value : isClub.value && clubInvite.value.trim() ? clubInvite.value.trim() : null,
     });
     await router.push({ name: 'home' });
   } catch (e) {
@@ -172,6 +184,26 @@ async function submit() {
           </div>
         </div>
 
+        <div v-if="isClub && (clubInviteRequired || clubInvite)">
+          <label class="label" for="clubInvite">Invitación a la beta</label>
+          <input
+            id="clubInvite"
+            v-model="clubInvite"
+            type="text"
+            :required="clubInviteRequired"
+            maxlength="20"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="ABCDE23456"
+            class="input font-mono uppercase tracking-widest"
+            @input="clubInvite = clubInvite.toUpperCase()"
+          />
+          <p class="mt-1 text-xs text-slate-400">
+            Tercer Tiempo está en beta cerrada: los clubes entran con una invitación. Si quieres una, escríbenos a {{ legalEntity.email }}.
+          </p>
+          <p v-if="fieldErrors.accessCode" class="field-error">{{ fieldErrors.accessCode[0] }}</p>
+        </div>
+
         <div v-if="isClub">
           <label class="label" for="displayName">Club</label>
           <ClubPicker id="displayName" v-model="form.displayName" />
@@ -211,7 +243,7 @@ async function submit() {
           </span>
         </label>
 
-        <button type="submit" class="btn-primary w-full" v-busy="loading" :disabled="loading || !acceptsTerms || (isClub && !form.displayName) || (isPlayer && !invite)">
+        <button type="submit" class="btn-primary w-full" v-busy="loading" :disabled="loading || !acceptsTerms || (isClub && !form.displayName) || (isClub && clubInviteRequired && !clubInvite.trim()) || (isPlayer && !invite)">
           {{ loading ? 'Creando cuenta…' : isPlayer ? 'Crear mi cuenta y vincular mi ficha' : isClub ? 'Crear cuenta de club' : 'Crear cuenta y canjear el código' }}
         </button>
       </form>

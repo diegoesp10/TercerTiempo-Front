@@ -173,7 +173,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
       <!-- Totales de temporada según las actas públicas -->
       <div class="mt-5 flex items-baseline justify-between">
         <h3 class="font-semibold text-slate-900">Temporada según las actas públicas</h3>
-        <span class="text-xs text-slate-500">federación o BeSoccer</span>
+        <span class="text-xs text-slate-500">federación</span>
       </div>
       <p v-if="!detail.entry.stats" class="mt-2 text-sm text-slate-500">Todavía no aparece en ningún acta pública.</p>
       <dl v-else class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">

@@ -167,7 +167,7 @@ function logout() {
       <nav class="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1" aria-label="Información legal">
         <RouterLink to="/privacidad" class="hover:text-slate-700 hover:underline">Política de privacidad</RouterLink>
         <RouterLink to="/condiciones" class="hover:text-slate-700 hover:underline">Condiciones de uso</RouterLink>
-        <span>Datos de <a href="https://www.futbolasturiano.es" target="_blank" rel="noopener" class="hover:underline">futbolasturiano.es</a> , <a href="https://www.asturfutbol.es" target="_blank" rel="noopener" class="hover:underline">asturfutbol.es</a> y <a href="https://es.besoccer.com" target="_blank" rel="noopener" class="hover:underline">BeSoccer</a></span>
+        <span>Datos de <a href="https://www.futbolasturiano.es" target="_blank" rel="noopener" class="hover:underline">futbolasturiano.es</a> y <a href="https://www.asturfutbol.es" target="_blank" rel="noopener" class="hover:underline">asturfutbol.es</a></span>
       </nav>
     </footer>
   </div>

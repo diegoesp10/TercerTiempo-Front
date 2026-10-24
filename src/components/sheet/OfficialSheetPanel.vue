@@ -92,7 +92,7 @@ const minutes = (line: OfficialLineDto) => {
           <template v-if="sheet?.status === 'Available'">
             Acta guardada en Tercer Tiempo · fuente: {{ sheetSourceLabel(sheet.provider) }}<template v-if="sheet.referee"> · árbitro: {{ sheet.referee }}</template><template v-if="sheet.fetchedAt"> · descargada el {{ formatKickoff(sheet.fetchedAt) }}</template>
           </template>
-          <template v-else>Alineaciones, minutos, goles y tarjetas publicados tras el partido por la federación o BeSoccer.</template>
+          <template v-else>Alineaciones, minutos, goles y tarjetas publicados tras el partido por la federación.</template>
         </p>
       </div>
       <div class="flex items-center gap-2">

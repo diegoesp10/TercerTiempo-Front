@@ -163,7 +163,7 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
         </div>
 
         <p class="mt-3 text-xs text-slate-500">
-          Las líneas se emparejan por nombre (la federación escribe «APELLIDOS, NOMBRE»; BeSoccer, nombres cortos como «M. Huelga» o «Guille») y por dorsal.
+          Las líneas se emparejan por nombre (la federación escribe «APELLIDOS, NOMBRE») y por dorsal.
           Se comparan presencia, titularidad, minutos, goles y tarjetas; el acta oficial no recoge asistencias, tiros ni paradas.
         </p>
       </template>
