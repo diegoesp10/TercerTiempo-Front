@@ -12,7 +12,9 @@ import RatingBadge from '@/components/ui/RatingBadge.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { MatchDto, Position, RosterEntryDetailDto, RosterEntryDto } from '@/types/api';
-import { formatDate, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, positionLabels, positionOptions, scoreLabel } from '@/utils/format';
+import { formatDate, outcomeFor, outcomeLabels, outcomeTone, positionLabels, positionOptions, scoreLabel } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import { opponentOf } from '@/utils/crests';
 
 // Ficha completa de un jugador de la plantilla para la cuenta de club: foto, datos editables y sus actas.
 const props = defineProps<{ teamId: string; entry: RosterEntryDto | null }>();
@@ -212,7 +214,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
             <tr v-for="row in detail.official" :key="row.match.id" :class="row.line.played ? '' : 'text-slate-400'">
               <td class="py-1.5 pr-3 tabular-nums text-slate-500">{{ row.match.matchday }}</td>
               <td class="py-1.5 pr-3">
-                <RouterLink :to="{ name: 'match', params: { matchId: row.match.id } }" class="font-medium text-slate-800 hover:underline">{{ opponentLabel(row.match, teamId) }}</RouterLink>
+                <RouterLink :to="{ name: 'match', params: { matchId: row.match.id } }" class="font-medium text-slate-800 hover:underline"><TeamName prefix="vs" :name="opponentOf(row.match, teamId).name" :crest-url="opponentOf(row.match, teamId).crestUrl" /></RouterLink>
                 <span class="ml-1 text-xs text-slate-400">{{ row.home ? 'en casa' : 'fuera' }} · {{ formatDate(row.match.kickoffAt) }}</span>
               </td>
               <td class="col-sm py-1.5 pr-3 text-center tabular-nums whitespace-nowrap">
@@ -263,7 +265,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
                 <tr v-for="row in detail.internal" :key="row.performance.id" :class="row.performance.minutesPlayed > 0 ? '' : 'text-slate-400'">
                   <td class="py-1.5 pr-3 tabular-nums text-slate-500">{{ row.match.matchday }}</td>
                   <td class="py-1.5 pr-3 whitespace-nowrap">
-                    <RouterLink :to="{ name: 'match', params: { matchId: row.match.id } }" class="font-medium text-slate-800 hover:underline">{{ opponentLabel(row.match, teamId) }}</RouterLink>
+                    <RouterLink :to="{ name: 'match', params: { matchId: row.match.id } }" class="font-medium text-slate-800 hover:underline"><TeamName prefix="vs" :name="opponentOf(row.match, teamId).name" :crest-url="opponentOf(row.match, teamId).crestUrl" /></RouterLink>
                     <span class="ml-1 text-xs text-slate-400">{{ row.home ? 'en casa' : 'fuera' }}<template v-if="row.performance.started"> · titular</template></span>
                   </td>
                   <td class="py-1.5 pr-2 text-center tabular-nums">{{ row.performance.minutesPlayed }}'</td>

@@ -22,6 +22,7 @@ import {
   licenseStatusTone,
   staffCountLabel,
 } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
 
 /**
  * Planes y precios. Para cualquiera explica qué incluye cada plan, cuánto cuesta y cómo funcionan la prueba y la
@@ -210,9 +211,9 @@ const faqs = computed(() => {
                 class="rounded-lg border px-3 py-1.5 text-sm font-semibold transition"
                 :class="t.teamId === teamId ? 'border-brand-500 bg-brand-500/10 text-slate-900' : 'border-line text-slate-600 hover:border-brand-400'"
                 @click="teamId = t.teamId"
-              >{{ t.teamName }}</button>
+              ><TeamName :name="t.teamName" :team-id="t.teamId" /></button>
             </div>
-            <h2 v-else class="text-lg font-bold text-slate-900">{{ team.teamName }}</h2>
+            <h2 v-else class="text-lg font-bold text-slate-900"><TeamName :name="team.teamName" :team-id="team.teamId" size="sm" /></h2>
           </div>
           <Badge :tone="licenseStatusTone[team.status]">{{ licenseStatusLabels[team.status] }}</Badge>
         </div>
@@ -362,7 +363,7 @@ const faqs = computed(() => {
     <!-- Resumen antes de ir a la pasarela -->
     <Modal :open="choosing !== null && team !== null" size="md" :title="choosing ? `Licencia ${licensePlanLabels[choosing]}` : ''" @close="choosing = null">
       <template v-if="choosing && team">
-        <p class="text-sm text-slate-500">Para <strong class="text-slate-800">{{ team.teamName }}</strong> · {{ planOf(choosing).maxStaff === 1 ? '1 técnico' : `hasta ${planOf(choosing).maxStaff} técnicos` }} y la plantilla entera.</p>
+        <p class="text-sm text-slate-500">Para <strong class="text-slate-800"><TeamName :name="team.teamName" :team-id="team.teamId" /></strong> · {{ planOf(choosing).maxStaff === 1 ? '1 técnico' : `hasta ${planOf(choosing).maxStaff} técnicos` }} y la plantilla entera.</p>
 
         <div class="mt-4 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Facturación">
           <button

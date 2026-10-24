@@ -9,6 +9,7 @@ import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import type { TeamLicenseDto } from '@/types/api';
 import { billingIntervalLabels, billingIntervalSuffix, formatDate, formatMoney, formatPrice, licensePlanLabels, staffCountLabel } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
 
 /**
  * Pago de una licencia. Con la pasarela simulada es la página de pago: resumen del pedido y una tarjeta de prueba que
@@ -76,7 +77,7 @@ watch(data, async (checkout) => {
           <div class="mt-3 flex items-start justify-between gap-3">
             <div>
               <p class="text-lg font-bold text-slate-900">Licencia {{ licensePlanLabels[data.plan] }}</p>
-              <p class="text-sm text-slate-500">{{ data.teamName }}</p>
+              <p class="text-sm text-slate-500"><TeamName :name="data.teamName" :team-id="data.teamId" /></p>
             </div>
             <span class="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">{{ billingIntervalLabels[data.interval] }}</span>
           </div>

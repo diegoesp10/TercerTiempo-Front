@@ -5,15 +5,19 @@ import BrandMark from '@/components/layout/BrandMark.vue';
 import LicenseBanner from '@/components/licensing/LicenseBanner.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import LoadingBar from '@/components/layout/LoadingBar.vue';
+import SeasonSwitcher from '@/components/layout/SeasonSwitcher.vue';
 import BackButton from '@/components/ui/BackButton.vue';
 import Badge from '@/components/ui/Badge.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAuthStore } from '@/stores/auth';
+import { useSeasonStore } from '@/stores/season';
 import { useSettingsStore } from '@/stores/settings';
 import { accountTypeLabels } from '@/utils/format';
+import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
+const season = useSeasonStore();
 const router = useRouter();
 const route = useRoute();
 const menuOpen = ref(false);
@@ -55,6 +59,13 @@ const teamLabel = computed(() => {
   return squads.length > 1 ? `${squads.length} plantillas` : null;
 });
 
+// Escudo del equipo de quien entra (jugador o técnico de una sola plantilla).
+const teamCrest = computed(() => {
+  if (auth.playerSquad) return auth.playerSquad.teamCrestUrl ?? null;
+  const squads = auth.coachSquads;
+  return !auth.isClub && squads.length === 1 ? squads[0]?.teamCrestUrl ?? null : undefined;
+});
+
 const accountTone = computed(() => (auth.isCoach ? 'blue' : auth.isClub ? 'amber' : 'green'));
 const themeLabel = computed(() => (settings.isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'));
 
@@ -87,6 +98,7 @@ function logout() {
         </nav>
 
         <div class="flex items-center gap-2">
+          <SeasonSwitcher />
           <button type="button" class="btn-ghost px-2" :title="themeLabel" :aria-label="themeLabel" @click="settings.toggleTheme()">
             <svg v-if="settings.isDark" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
               <circle cx="12" cy="12" r="4" />
@@ -101,9 +113,12 @@ function logout() {
             <template v-if="auth.isAuthenticated && auth.account">
               <RouterLink to="/ajustes" class="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" title="Ajustes">
                 <TeamCrest v-if="auth.isClub" :src="auth.clubCrestUrl" :name="auth.displayName" size="sm" />
+                <PlayerAvatar v-else-if="auth.isPlayer" :src="auth.player?.photoUrl" :name="auth.displayName" size="xs" />
                 <span class="font-medium">{{ auth.displayName }}</span>
                 <Badge :tone="accountTone">{{ accountTypeLabels[auth.account.type] }}</Badge>
-                <span v-if="teamLabel" class="text-slate-400">· {{ teamLabel }}</span>
+                <span v-if="teamLabel" class="flex items-center gap-1 text-slate-400">
+                  · <TeamCrest v-if="teamCrest !== undefined" :src="teamCrest" :name="teamLabel" size="xs" /> {{ teamLabel }}
+                </span>
               </RouterLink>
               <button type="button" class="btn-ghost" @click="logout">Salir</button>
             </template>
@@ -150,6 +165,12 @@ function logout() {
     </header>
 
     <LoadingBar />
+    <div v-if="!season.isCurrent && season.selected" class="border-b border-amber-400/40 bg-amber-500/10 px-4 py-2 text-center text-sm text-amber-700">
+      Estás viendo la temporada <strong class="tabular-nums">{{ season.selected.label }}</strong>: solo consulta.
+      <button type="button" class="ml-1 font-semibold underline hover:no-underline" @click="season.select(null)">
+        Volver a la actual{{ season.current ? ` (${season.current.label})` : '' }}
+      </button>
+    </div>
     <LicenseBanner />
     <ConfirmDialog />
 

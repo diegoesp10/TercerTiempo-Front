@@ -40,6 +40,7 @@ import type {
   SheetComparisonDto,
   SquadDetailDto,
   RegistrationOptionsDto,
+  SeasonYearDto,
   ClubInvitationLookupDto,
   SquadInviteDto,
   SquadMatchDto,
@@ -70,6 +71,10 @@ const REFERENCE_CACHE_MS = 5 * 60_000;
 const SQUAD_READ_CACHE_MS = 30_000;
 
 export const api = {
+  seasons: {
+    /** Temporadas de la app, de la más reciente a la más antigua (la actual marcada). */
+    list: () => http<SeasonYearDto[]>('/api/seasons', { silent: true, cacheMs: 300_000 }),
+  },
   auth: {
     register: (body: RegisterRequest) => http<AuthResponse>('/api/auth/register', { method: 'POST', body }),
     invite: (inviteCode: string) => http<SquadInviteDto>(`/api/auth/invite/${encodeURIComponent(inviteCode.trim())}`),

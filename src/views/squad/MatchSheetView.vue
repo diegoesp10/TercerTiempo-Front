@@ -20,6 +20,9 @@ import { useAuthStore } from '@/stores/auth';
 import type { MatchSheetDto, MatchSheetEntryInput, SquadPlayerDto, SuggestionDto } from '@/types/api';
 import { formatKickoff, matchStatusLabels, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, positionShortLabels, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
 import { downloadPaperSheet } from '@/utils/paperSheet';
+import TeamName from '@/components/teams/TeamName.vue';
+import PlayerName from '@/components/players/PlayerName.vue';
+import { opponentOf } from '@/utils/crests';
 
 const props = defineProps<{ squadId: string; matchId: string }>();
 
@@ -142,7 +145,7 @@ const teamId = computed(() => data.value?.squad.teamId ?? '');
 function downloadPaper() {
   if (!data.value) return;
   const { squad, match } = data.value;
-  void downloadPaperSheet({ teamName: squad.teamName, teamId: squad.teamId, competition: squad.competitionName, season: squad.seasonLabel, match });
+  void downloadPaperSheet({ teamName: squad.teamName, teamId: squad.teamId, teamCrestUrl: squad.teamCrestUrl, competition: squad.competitionName, season: squad.seasonLabel, match });
 }
 
 // Jugador vinculado a esta plantilla: puede proponer su línea (corregirla o crearla) y ver qué pasó con lo que envió.
@@ -243,7 +246,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
 
   <template v-else-if="data">
     <RouterLink :to="{ name: 'squad-matches', params: { squadId } }" class="text-sm text-slate-500 hover:text-slate-800">
-      ← Partidos de {{ data.squad.teamName }}
+      ← Partidos de <TeamName :name="data.squad.teamName" :crest-url="data.squad.teamCrestUrl" :team-id="data.squad.teamId" />
     </RouterLink>
 
     <div class="card mt-3">
@@ -255,12 +258,16 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
         </span>
       </div>
       <div class="mt-3 grid grid-cols-3 items-center text-center">
-        <p class="text-lg font-semibold" :class="data.match.homeTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">{{ data.match.homeTeam.name }}</p>
+        <p class="text-lg font-semibold" :class="data.match.homeTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">
+          <TeamName :name="data.match.homeTeam.name" :crest-url="data.match.homeTeam.crestUrl" :short-name="data.match.homeTeam.shortName" size="sm" />
+        </p>
         <p class="text-3xl font-bold tabular-nums text-slate-900">
           <template v-if="data.match.status === 'Played'">{{ data.match.homeGoals }} - {{ data.match.awayGoals }}</template>
           <span v-else class="text-slate-300">vs</span>
         </p>
-        <p class="text-lg font-semibold" :class="data.match.awayTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">{{ data.match.awayTeam.name }}</p>
+        <p class="text-lg font-semibold" :class="data.match.awayTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">
+          <TeamName :name="data.match.awayTeam.name" :crest-url="data.match.awayTeam.crestUrl" :short-name="data.match.awayTeam.shortName" size="sm" />
+        </p>
       </div>
     </div>
 
@@ -304,7 +311,9 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
         :stats="data.teamStats"
         :can-edit="canEdit"
         :team-name="data.squad.teamName"
-        :opponent-name="data.match.homeTeam.id === teamId ? data.match.awayTeam.name : data.match.homeTeam.name"
+        :team-crest-url="data.squad.teamCrestUrl"
+        :opponent-name="opponentOf(data.match, teamId).name"
+        :opponent-crest-url="opponentOf(data.match, teamId).crestUrl"
         @saved="(stats) => { if (data) data.teamStats = stats; }"
       />
 
@@ -381,7 +390,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
                 />
               </td>
               <td class="px-3 py-1 whitespace-nowrap">
-                <span class="font-medium" :class="row.played ? 'text-slate-800' : ''">{{ row.player.fullName }}</span>
+                <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium" :class="row.played ? 'text-slate-800' : ''" />
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
               </td>
               <td class="px-2 py-1 text-center">
@@ -412,7 +421,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
             <tr v-for="row in playedRows" :key="row.squadPlayerId">
               <td class="px-3 py-2 whitespace-nowrap">
                 <span v-if="row.shirtNumber ?? row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.shirtNumber ?? row.player.shirtNumber }}</span>
-                <span class="font-medium text-slate-800">{{ row.player.fullName }}</span>
+                <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium text-slate-800" />
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
               </td>
               <td class="px-2 py-2 text-center">{{ row.started ? '●' : '' }}</td>

@@ -6,6 +6,7 @@ import RatingBadge from '@/components/ui/RatingBadge.vue';
 import type { PlayerMatchPointDto } from '@/types/api';
 import { formatDate, outcomeLabels, outcomeTone, type Outcome } from '@/utils/format';
 import type { MatchOutcome } from '@/types/api';
+import TeamName from '@/components/teams/TeamName.vue';
 
 /**
  * Partido a partido de un jugador: la línea del acta interna si el cuerpo técnico la registró y, si no, la del acta
@@ -68,7 +69,12 @@ const rows = computed<Row[]>(() =>
           <tr v-for="r in rows" :key="r.point.match.id" :class="r.source ? '' : 'text-slate-400'">
             <td class="py-2 pr-3">
               <RouterLink :to="{ name: 'sheet', params: { squadId, matchId: r.point.match.id } }" class="font-medium hover:text-brand-500 hover:underline" :class="r.source ? 'text-slate-900' : ''">
-                J{{ r.point.match.matchday }} · {{ r.point.home ? 'vs' : 'en' }} {{ r.point.opponentName }}
+                J{{ r.point.match.matchday }} ·
+                <TeamName
+                  :prefix="r.point.home ? 'vs' : 'en'"
+                  :name="r.point.opponentName"
+                  :crest-url="(r.point.home ? r.point.match.awayTeam : r.point.match.homeTeam).crestUrl"
+                />
               </RouterLink>
               <p class="text-xs text-slate-400">{{ formatDate(r.point.match.kickoffAt) }}<template v-if="r.source && r.started"> · titular</template><template v-else-if="r.source"> · suplente</template><template v-else> · no jugó</template></p>
             </td>

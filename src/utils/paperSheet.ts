@@ -1,5 +1,7 @@
 import type { jsPDF as JsPdf } from 'jspdf';
+import { apiBaseUrl } from '@/api/http';
 import type { MatchDto } from '@/types/api';
+import { crestFor } from '@/utils/crests';
 
 /**
  * Acta interna en papel (PDF A4 apaisado) para apuntar en directo y pasarla luego a la app. Mismas columnas y en el
@@ -9,6 +11,7 @@ import type { MatchDto } from '@/types/api';
 export interface PaperSheetContext {
   teamName: string;
   teamId?: string;
+  teamCrestUrl?: string | null;
   competition?: string;
   season?: string;
   match?: MatchDto | null;
@@ -67,16 +70,47 @@ export async function buildPaperSheet(context: PaperSheetContext): Promise<JsPdf
   doc.setDrawColor(...GRID);
   doc.setTextColor(...INK);
 
-  const top = header(doc, context, 1);
+  const crests = await loadCrests(context);
+  const top = header(doc, context, 1, crests);
   playerGrid(doc, top);
 
   doc.addPage();
-  const top2 = header(doc, context, 2);
+  const top2 = header(doc, context, 2, crests);
   teamAndIncidents(doc, context, top2);
   return doc;
 }
 
-function header(doc: JsPdf, context: PaperSheetContext, page: number): number {
+interface Crests { team: string | null; opponent: string | null }
+
+// Los escudos se pasan por un canvas a PNG: así valen aunque la imagen original sea SVG o WebP. Sin escudo, solo texto.
+async function loadCrests(context: PaperSheetContext): Promise<Crests> {
+  const match = context.match ?? null;
+  const opponent = match && context.teamId ? (match.homeTeam.id === context.teamId ? match.awayTeam : match.homeTeam) : null;
+  const [team, rival] = await Promise.all([
+    crestImage(crestFor(context.teamCrestUrl, context.teamId)),
+    crestImage(opponent ? crestFor(opponent.crestUrl, opponent.id) : null),
+  ]);
+  return { team, opponent: rival };
+}
+
+async function crestImage(src: string | null): Promise<string | null> {
+  if (!src) return null;
+  try {
+    const response = await fetch(src.startsWith('/') ? `${apiBaseUrl}${src}` : src);
+    if (!response.ok) return null;
+    const bitmap = await createImageBitmap(await response.blob());
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const scale = Math.min(128 / bitmap.width, 128 / bitmap.height);
+    canvas.getContext('2d')?.drawImage(bitmap, (128 - bitmap.width * scale) / 2, (128 - bitmap.height * scale) / 2, bitmap.width * scale, bitmap.height * scale);
+    return canvas.toDataURL('image/png');
+  } catch {
+    return null;
+  }
+}
+
+function header(doc: JsPdf, context: PaperSheetContext, page: number, crests: Crests): number {
   const { margin, width } = PAGE;
   const match = context.match ?? null;
   const home = match && context.teamId ? match.homeTeam.id === context.teamId : null;
@@ -93,9 +127,9 @@ function header(doc: JsPdf, context: PaperSheetContext, page: number): number {
   doc.setTextColor(...INK);
 
   // Campos de la cabecera: el valor sale impreso si se conoce; si no, queda la línea para escribirlo.
-  const fields: { label: string; value: string; width: number }[] = [
-    { label: 'Equipo', value: context.teamName, width: 44 },
-    { label: 'Rival', value: opponent, width: 44 },
+  const fields: { label: string; value: string; width: number; crest?: string | null }[] = [
+    { label: 'Equipo', value: context.teamName, width: 44, crest: crests.team },
+    { label: 'Rival', value: opponent, width: 44, crest: opponent ? crests.opponent : null },
     { label: 'Fecha', value: match ? formatDate(match.kickoffAt) : '', width: 32 },
     { label: 'Jornada', value: match ? String(match.matchday) : '', width: 14 },
     { label: 'L / V', value: home === null ? '' : home ? 'Local' : 'Visitante', width: 16 },
@@ -110,7 +144,10 @@ function header(doc: JsPdf, context: PaperSheetContext, page: number): number {
     doc.setTextColor(...INK);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    if (field.value) doc.text(fit(doc, field.value, field.width - 1), x, y + 8);
+    // Escudo delante del nombre del equipo y del rival.
+    const offset = field.crest ? 6.5 : 0;
+    if (field.crest) doc.addImage(field.crest, 'PNG', x, y + 3.2, 5.5, 5.5);
+    if (field.value) doc.text(fit(doc, field.value, field.width - 1 - offset), x + offset, y + 8);
     doc.setFont('helvetica', 'normal');
     doc.line(x, y + 9.5, x + field.width, y + 9.5);
     x += field.width + 3;

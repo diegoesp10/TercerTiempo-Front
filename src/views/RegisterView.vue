@@ -10,6 +10,8 @@ import { useAuthStore } from '@/stores/auth';
 import type { AccountType, SquadInviteDto } from '@/types/api';
 import { legalEntity } from '@/legal/entity';
 import { positionLabels } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import PlayerName from '@/components/players/PlayerName.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -195,9 +197,9 @@ async function submit() {
           </p>
           <div v-if="invite" class="mt-3 rounded-xl border border-accent-400/40 bg-brand-500/10 p-4">
             <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Tu ficha de jugador</p>
-            <p class="mt-1 text-lg font-semibold text-slate-900">{{ invite.player.fullName }}</p>
+            <p class="mt-1 text-lg font-semibold text-slate-900"><PlayerName :name="invite.player.fullName" :photo-url="invite.player.photoUrl" size="sm" /></p>
             <p class="mt-1 text-sm text-slate-500">
-              {{ invite.teamName }} · {{ invite.competitionName }} · {{ invite.seasonLabel }}
+              <TeamName :name="invite.teamName" :crest-url="invite.teamCrestUrl" :team-id="invite.teamId" /> · {{ invite.competitionName }} · {{ invite.seasonLabel }}
               <template v-if="invite.player.position"> · {{ positionLabels[invite.player.position] }}</template>
               <template v-if="invite.player.shirtNumber"> · dorsal {{ invite.player.shirtNumber }}</template>
             </p>

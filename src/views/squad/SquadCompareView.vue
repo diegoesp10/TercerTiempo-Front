@@ -16,6 +16,7 @@ import { useSquad } from '@/composables/useSquad';
 import { useSettingsStore } from '@/stores/settings';
 import type { SquadPlayerProfileDto, SquadPlayerStatsDto } from '@/types/api';
 import { formatNumber, formatPct, positionShortLabels } from '@/utils/format';
+import PlayerName from '@/components/players/PlayerName.vue';
 
 const MAX_SELECTED = 4;
 
@@ -155,7 +156,7 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
             @click="toggle(row.player.id)"
           >
             <span v-if="row.player.shirtNumber">{{ row.player.shirtNumber }}</span>
-            {{ row.player.fullName }}
+            <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" />
             <span v-if="row.player.position" class="text-xs">{{ positionShortLabels[row.player.position] }}</span>
           </button>
         </div>
@@ -180,7 +181,7 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
                       class="block text-xs font-semibold hover:underline"
                       :style="{ color: textColorOf(row.player.id) }"
                     >
-                      {{ row.player.fullName }}
+                      <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" />
                     </RouterLink>
                   </th>
                 </tr>

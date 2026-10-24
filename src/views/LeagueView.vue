@@ -12,6 +12,9 @@ import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useMyClub } from '@/composables/useMyClub';
 import { groupByLevel, levelLabels } from '@/utils/format';
+import { useSeasonStore } from '@/stores/season';
+
+const season = useSeasonStore();
 
 const route = useRoute();
 const router = useRouter();
@@ -63,7 +66,9 @@ watch(selectedId, (id) => {
 
   <Skeleton v-if="competitions.loading.value && !competitions.data.value" variant="table" :count="12" label="Cargando las competiciones…" />
   <Alert v-else-if="competitions.error.value" kind="error">{{ competitions.error.value }}</Alert>
-  <Alert v-else-if="groups.length === 0" kind="warning">Todavía no hay ligas sincronizadas.</Alert>
+  <Alert v-else-if="groups.length === 0" kind="warning">
+    {{ season.isCurrent ? 'Todavía no hay ligas sincronizadas.' : `No hay ligas guardadas de la temporada ${season.selected?.label}.` }}
+  </Alert>
 
   <div v-else class="grid items-start gap-6 lg:grid-cols-5">
     <!-- Jornada en curso (o la elegida) -->

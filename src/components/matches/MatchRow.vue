@@ -4,6 +4,7 @@ import type { RouteLocationRaw } from 'vue-router';
 import Badge from '@/components/ui/Badge.vue';
 import type { MatchDto } from '@/types/api';
 import { formatKickoff, matchStatusLabels, outcomeFor, outcomeLabels, outcomeTone, scoreLabel } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
 
 const props = defineProps<{
   match: MatchDto;
@@ -32,8 +33,9 @@ const target = computed<RouteLocationRaw>(() => props.to ?? { name: 'match', par
 
     <div class="min-w-0 flex-1">
       <p class="truncate font-medium text-slate-900">
-        <span class="text-slate-400">vs</span>
-        {{ opponent.name }}
+        <TeamName :name="opponent.name" :team-id="opponent.id" :crest-url="opponent.crestUrl" :short-name="opponent.shortName" size="sm">
+          <span class="text-slate-400">vs</span> {{ opponent.name }}
+        </TeamName>
       </p>
       <p class="text-xs text-slate-500">
         {{ formatKickoff(match.kickoffAt) }} · <span :class="isHome ? 'text-emerald-700' : 'text-slate-500'">{{ isHome ? 'en casa' : 'fuera' }}</span><span v-if="match.venue"> · {{ match.venue }}</span>

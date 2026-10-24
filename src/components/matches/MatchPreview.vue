@@ -8,6 +8,8 @@ import Badge from '@/components/ui/Badge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import type { FormResultDto, PreviewPlayerDto, TeamPreviewDto } from '@/types/api';
+import TeamName from '@/components/teams/TeamName.vue';
+import PlayerName from '@/components/players/PlayerName.vue';
 
 /**
  * Previa del partido para el cuerpo técnico y el club: probabilidades con sus razones, forma y balance de cada equipo
@@ -47,9 +49,9 @@ const sides = computed(() => {
 const favourite = computed(() => {
   if (!data.value) return null;
   const p = data.value.prediction;
-  if (p.homeWin >= p.draw && p.homeWin >= p.awayWin) return { name: data.value.home.team.name, value: p.homeWin };
-  if (p.awayWin >= p.draw) return { name: data.value.away.team.name, value: p.awayWin };
-  return { name: 'Empate', value: p.draw };
+  if (p.homeWin >= p.draw && p.homeWin >= p.awayWin) return { name: data.value.home.team.name, team: data.value.home.team, value: p.homeWin };
+  if (p.awayWin >= p.draw) return { name: data.value.away.team.name, team: data.value.away.team, value: p.awayWin };
+  return { name: 'Empate', team: null, value: p.draw };
 });
 
 const outcomeTone: Record<FormResultDto['outcome'], string> = {
@@ -73,13 +75,18 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p class="eyebrow">Previa · {{ data.competitionName }} · jornada {{ data.match.matchday }}</p>
-          <h2 class="mt-1 text-2xl font-bold text-slate-900">
-            {{ data.home.team.name }} <span class="text-slate-400">vs</span> {{ data.away.team.name }}
+          <h2 class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-2xl font-bold text-slate-900">
+            <TeamName :name="data.home.team.name" :crest-url="data.home.team.crestUrl" :short-name="data.home.team.shortName" size="sm" />
+            <span class="text-slate-400">vs</span>
+            <TeamName :name="data.away.team.name" :crest-url="data.away.team.crestUrl" :short-name="data.away.team.shortName" size="sm" />
           </h2>
         </div>
         <div v-if="favourite" class="text-right">
           <p class="text-xs uppercase tracking-wide text-slate-500">Favorito según los datos</p>
-          <p class="font-display text-3xl font-bold text-slate-900">{{ favourite.name }} <span class="text-brand-500">{{ pct(favourite.value) }}</span></p>
+          <p class="flex items-center justify-end gap-2 font-display text-3xl font-bold text-slate-900">
+            <TeamCrest v-if="favourite.team" :src="favourite.team.crestUrl" :name="favourite.team.name" :short-name="favourite.team.shortName" size="md" />
+            {{ favourite.name }} <span class="text-brand-500">{{ pct(favourite.value) }}</span>
+          </p>
         </div>
       </div>
 
@@ -155,10 +162,12 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
               <span
                 v-for="result in side.form"
                 :key="result.matchId"
-                class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
-                :class="outcomeTone[result.outcome]"
+                class="flex flex-col items-center gap-0.5"
                 :title="`J${result.matchday} ${result.home ? 'vs' : 'en'} ${result.opponentName}: ${result.goalsFor}-${result.goalsAgainst}`"
-              >{{ outcomeLetter[result.outcome] }}</span>
+              >
+                <TeamCrest :src="result.opponentCrestUrl ?? `/api/teams/${result.opponentId}/crest`" :name="result.opponentName" size="xs" />
+                <span class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold" :class="outcomeTone[result.outcome]">{{ outcomeLetter[result.outcome] }}</span>
+              </span>
               <span v-if="side.form.length === 0" class="text-xs text-slate-400">sin partidos</span>
             </div>
           </div>
@@ -189,7 +198,7 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
               <tr v-for="player in side.inFormPlayers" :key="player.name">
                 <td class="py-1 pr-2 whitespace-nowrap">
                   <span v-if="player.shirtNumber" class="mr-1 text-slate-400">{{ player.shirtNumber }}</span>
-                  <span class="font-medium text-slate-800">{{ player.name }}</span>
+                  <PlayerName :name="player.name" :photo-url="player.photoUrl" class="font-medium text-slate-800" />
                 </td>
                 <td class="px-2 py-1 text-center tabular-nums">{{ player.matches }} <span class="text-slate-400">({{ player.started }})</span></td>
                 <td class="col-sm px-2 py-1 text-center tabular-nums">{{ perMatch(player) }}'</td>

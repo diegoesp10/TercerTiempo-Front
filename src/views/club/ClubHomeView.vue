@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores/auth';
 import type { AppointmentDto, ClubDto, StaffRole, TeamSummaryDto } from '@/types/api';
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, formatKickoff, licenseStatusLabels, licenseStatusTone, staffRoleLabels, staffRoleOptions } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
+import TeamName from '@/components/teams/TeamName.vue';
 
 const auth = useAuthStore();
 
@@ -218,7 +219,7 @@ const sortedAppointments = computed(() => {
             id="team-to-add"
             :model-value="teamToAdd || null"
             placeholder="— Elige un equipo —"
-            :options="availableTeams.map((t) => ({ value: t.id, label: t.name }))"
+            :options="availableTeams.map((t) => ({ value: t.id, label: t.name, crest: t.crestUrl ?? `/api/teams/${t.id}/crest` }))"
             @update:model-value="teamToAdd = String($event ?? '')"
           />
         </div>
@@ -268,7 +269,7 @@ const sortedAppointments = computed(() => {
               id="ap-team"
               :model-value="appointmentForm.teamId || null"
               placeholder="— Elige un equipo —"
-              :options="club.teams.map((t) => ({ value: t.teamId, label: t.teamName, hint: t.competitionName ?? undefined, disabled: !t.seasonId }))"
+              :options="club.teams.map((t) => ({ value: t.teamId, label: t.teamName, hint: t.competitionName ?? undefined, disabled: !t.seasonId, crest: t.teamCrestUrl ?? `/api/teams/${t.teamId}/crest` }))"
               @update:model-value="appointmentForm.teamId = String($event ?? '')"
             />
             <p v-if="fieldErrors.teamId" class="field-error">{{ fieldErrors.teamId[0] }}</p>
@@ -308,7 +309,7 @@ const sortedAppointments = computed(() => {
           <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Código de acceso para {{ lastCreated.coachName }}</p>
           <p class="mt-1 font-mono text-2xl font-semibold tracking-[0.3em] text-slate-900">{{ lastCreated.accessCode }}</p>
           <p class="mt-1 text-xs text-slate-600">
-            {{ lastCreated.teamName }} · {{ lastCreated.seasonLabel }} · hasta {{ formatDate(lastCreated.validUntil) }}. Con él se da de alta en
+            <TeamName :name="lastCreated.teamName" :team-id="lastCreated.teamId" /> · {{ lastCreated.seasonLabel }} · hasta {{ formatDate(lastCreated.validUntil) }}. Con él se da de alta en
             <RouterLink :to="{ name: 'register', query: { code: lastCreated.accessCode } }" class="font-medium underline">Darme de alta</RouterLink>
             o, si ya tiene cuenta, lo canjea desde su panel.
           </p>
@@ -340,7 +341,7 @@ const sortedAppointments = computed(() => {
                   </p>
                 </td>
                 <td class="col-sm py-2 pr-3">
-                  <p>{{ appointment.teamName }}</p>
+                  <p><TeamName :name="appointment.teamName" :team-id="appointment.teamId" /></p>
                   <p class="text-xs text-slate-500">{{ appointment.seasonLabel }}</p>
                 </td>
                 <td class="py-2 pr-3">

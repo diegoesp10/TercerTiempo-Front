@@ -16,6 +16,7 @@ import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import { formatKickoff, levelLabels, positionLabels, visibilityLabels } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
 
 const props = defineProps<{ teamId: string }>();
 
@@ -234,7 +235,9 @@ async function linkToClub() {
       <div class="min-w-0 flex-1 basis-56">
         <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Próximo partido</p>
         <RouterLink :to="{ name: 'match', params: { matchId: nextMatch.id } }" class="block truncate text-lg font-semibold text-slate-900 hover:text-accent-400">
-          <span class="text-slate-400">vs</span> {{ nextOpponent.team.name }}
+          <TeamName :name="nextOpponent.team.name" :crest-url="nextOpponent.team.crestUrl" :short-name="nextOpponent.team.shortName" size="sm">
+            <span class="text-slate-400">vs</span> {{ nextOpponent.team.name }}
+          </TeamName>
           <span class="ml-1 text-sm font-normal" :class="nextOpponent.home ? 'text-emerald-700' : 'text-slate-500'">{{ nextOpponent.home ? 'en casa' : 'fuera' }}</span>
         </RouterLink>
         <p class="text-sm text-slate-600">{{ formatKickoff(nextMatch.kickoffAt) }}<span v-if="nextMatch.venue"> · {{ nextMatch.venue }}</span></p>

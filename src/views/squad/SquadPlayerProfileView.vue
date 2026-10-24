@@ -98,6 +98,8 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
     <PlayerHeroCard
       class="mt-3 mb-6"
       :team="`${data.squad.teamName} · ${data.squad.seasonLabel}`"
+      :team-crest-url="data.squad.teamCrestUrl"
+      :team-id="data.squad.teamId"
       :name="data.player.fullName"
       :number="data.player.shirtNumber"
       :photo-url="data.player.photoUrl"

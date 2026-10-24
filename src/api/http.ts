@@ -1,6 +1,7 @@
 import type { ProblemDetails } from '@/types/api';
 import { useAuthStore } from '@/stores/auth';
 import { useLoadingStore } from '@/stores/loading';
+import { useSeasonStore } from '@/stores/season';
 import { describeRequest } from '@/api/loadingLabels';
 
 const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:5080').replace(/\/$/, '');
@@ -55,7 +56,7 @@ export function http<T>(path: string, options: RequestOptions = {}): Promise<T> 
   const method = options.method ?? 'GET';
   if (method !== 'GET') return request<T>(path, options).finally(clearHttpCache);
 
-  const key = `${options.token ?? useAuthStore().token ?? ''}|${path}`;
+  const key = `${options.token ?? useAuthStore().token ?? ''}|${useSeasonStore().selectedId ?? ''}|${path}`;
   const cached = cache.get(key);
   if (cached && cached.expires > Date.now()) return Promise.resolve(cached.data as T);
 
@@ -80,6 +81,9 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
   if (options.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   const token = options.token ?? auth.token;
   if (token) headers.Authorization = `Bearer ${token}`;
+  // Todos los datos se leen de la temporada elegida (sin cabecera, la actual).
+  const season = useSeasonStore().selectedId;
+  if (season) headers['X-Season'] = season;
 
   const loading = useLoadingStore();
   const task = options.silent ? null : loading.start(describeRequest(options.method ?? 'GET', path));

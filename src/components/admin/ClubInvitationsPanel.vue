@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import type { ClubInvitationDto, ClubInvitationStatus, InvitationClubDto } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
 
 /**
  * Invitaciones de la beta cerrada: cada código sirve para que un club se dé de alta una sola vez. Se comparte el enlace
@@ -208,7 +209,7 @@ onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer); });
             @mouseenter="active = i"
           >
             <span class="min-w-0">
-              <span class="block truncate text-slate-900">{{ club.name }}</span>
+              <TeamName :name="club.name" :team-id="club.teamId" class="text-slate-900" size="sm" />
               <span class="block truncate text-xs text-slate-500">{{ teamsLine(club) }}</span>
             </span>
             <Badge :tone="clubState(club).tone" class="shrink-0">{{ clubState(club).label }}</Badge>
@@ -246,7 +247,8 @@ onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer); });
           <tr v-for="invitation in invitations" :key="invitation.id">
             <td class="px-3 py-2 font-mono tracking-widest text-slate-900">{{ invitation.code }}</td>
             <td class="px-3 py-2 text-slate-700">
-              {{ invitation.note ?? '—' }}
+              <TeamName v-if="invitation.teamId" :name="invitation.note ?? 'Club'" :team-id="invitation.teamId" />
+              <template v-else>{{ invitation.note ?? '—' }}</template>
               <span v-if="invitation.clubName" class="block text-xs text-slate-500">Alta: {{ invitation.clubName }}</span>
             </td>
             <td class="px-3 py-2"><Badge :tone="statusTone[invitation.status]">{{ statusLabels[invitation.status] }}</Badge></td>

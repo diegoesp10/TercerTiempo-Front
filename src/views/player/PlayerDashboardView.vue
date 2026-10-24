@@ -23,7 +23,6 @@ import {
   formatDate,
   formatNumber,
   formatPct,
-  opponentLabel,
   outcomeFor,
   outcomeLabels,
   outcomeTone,
@@ -32,6 +31,8 @@ import {
   suggestionStatusTone,
   visibilityLabels,
 } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import { opponentOf } from '@/utils/crests';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
@@ -126,6 +127,8 @@ async function leave() {
     <PlayerHeroCard
       class="mb-8"
       :team="`${squad.teamName} · ${data.season ? `${data.season.competitionName} · ${data.season.label}` : 'Sin temporada activa'}`"
+      :team-crest-url="squad.teamCrestUrl"
+      :team-id="squad.teamId"
       :name="data.player.displayName"
       :number="squad.shirtNumber"
       :photo-url="auth.player?.photoUrl ?? profile.data.value?.player.photoUrl ?? null"
@@ -135,7 +138,7 @@ async function leave() {
       <template #actions>
         <button type="button" class="btn-primary" @click="photoOpen = true"><Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />{{ auth.player?.photoUrl ? 'Cambiar mi foto' : 'Subir mi foto' }}</button>
         <RouterLink :to="{ name: 'squad', params: { squadId: squad.squadId } }" class="btn-secondary">
-          {{ squad.teamName }}
+          <TeamName :name="squad.teamName" :crest-url="squad.teamCrestUrl" :team-id="squad.teamId" />
           <Badge :tone="squad.visibility === 'Public' ? 'green' : 'slate'">{{ visibilityLabels[squad.visibility] }}</Badge>
         </RouterLink>
       </template>
@@ -267,7 +270,7 @@ async function leave() {
         <li v-for="s in suggestions.data.value" :key="s.id" class="flex flex-wrap items-start justify-between gap-2 px-4 py-3 text-sm">
           <div class="min-w-0">
             <RouterLink :to="{ name: 'sheet', params: { squadId: squad.squadId, matchId: s.match.id }, query: { tab: 'interna' } }" class="font-medium text-slate-800 hover:text-accent-400">
-              J{{ s.match.matchday }} · {{ opponentLabel(s.match, squad.teamId) }}
+              J{{ s.match.matchday }} · <TeamName prefix="vs" :name="opponentOf(s.match, squad.teamId).name" :crest-url="opponentOf(s.match, squad.teamId).crestUrl" />
             </RouterLink>
             <p class="text-xs text-slate-500">
               {{ s.current ? 'Corrección' : 'Entrada nueva' }} · {{ s.proposed.minutesPlayed }}' · {{ s.proposed.goals }} G · {{ s.proposed.assists }} A · enviada el {{ formatDate(s.createdAt) }}
@@ -302,7 +305,7 @@ async function leave() {
             <tr v-for="item in data.recentPerformances" :key="item.performance.id" class="hover:bg-slate-50">
               <td class="px-3 py-2">
                 <RouterLink :to="{ name: 'match', params: { matchId: item.match.id } }" class="font-medium text-slate-800 hover:text-accent-400">
-                  J{{ item.match.matchday }} · {{ opponentLabel(item.match, squad.teamId) }}
+                  J{{ item.match.matchday }} · <TeamName prefix="vs" :name="opponentOf(item.match, squad.teamId).name" :crest-url="opponentOf(item.match, squad.teamId).crestUrl" />
                 </RouterLink>
                 <p class="text-xs text-slate-500">{{ formatDate(item.match.kickoffAt) }}</p>
               </td>

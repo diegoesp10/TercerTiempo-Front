@@ -13,6 +13,7 @@ import { useSquad } from '@/composables/useSquad';
 import { useSettingsStore } from '@/stores/settings';
 import type { SquadPlayerStatsDto } from '@/types/api';
 import { formatNumber, formatPct, positionShortLabels } from '@/utils/format';
+import PlayerName from '@/components/players/PlayerName.vue';
 
 const { squadId } = useSquad();
 const settings = useSettingsStore();
@@ -231,7 +232,7 @@ const arrow = (key: string) => (sortKey.value === key ? (sortAsc.value ? ' ▲' 
                 :to="{ name: 'squad-player', params: { squadId, squadPlayerId: row.player.id } }"
                 class="font-medium hover:text-accent-400 hover:underline"
                 :class="row.stats.matchesLogged === 0 ? '' : 'text-slate-800'"
-              >{{ row.player.fullName }}</RouterLink>
+              ><PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" /></RouterLink>
               <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
             </td>
             <td

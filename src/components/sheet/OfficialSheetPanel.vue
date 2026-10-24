@@ -12,6 +12,8 @@ import GoalMarks from '@/components/sheet/GoalMarks.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { OfficialLineDto, OfficialSheetDto, OfficialTeamSheetDto } from '@/types/api';
 import { formatKickoff, officialEventLabels, sheetSourceLabel } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import PlayerName from '@/components/players/PlayerName.vue';
 
 const props = defineProps<{
   matchId: string;
@@ -123,7 +125,7 @@ const minutes = (line: OfficialLineDto) => {
         <div class="grid gap-6 lg:grid-cols-2">
           <div v-for="team in teams" :key="team.side" class="rounded-xl border p-4" :class="highlightTeamId && team.teamId === highlightTeamId ? 'border-accent-400/40 bg-brand-500/10' : 'border-slate-200'">
             <div class="mb-2 flex items-center justify-between">
-              <h3 class="font-semibold text-slate-900">{{ team.teamName }}</h3>
+              <h3 class="font-semibold text-slate-900"><TeamName :name="team.teamName" :team-id="team.teamId" size="sm" /></h3>
               <span v-if="team.goals !== null" class="text-xl font-bold tabular-nums text-slate-900">{{ team.goals }}</span>
             </div>
             <div class="overflow-x-auto">
@@ -141,7 +143,7 @@ const minutes = (line: OfficialLineDto) => {
                 <tr v-for="line in [...team.starters, ...team.bench]" :key="line.id" :class="line.played ? '' : 'text-slate-400'">
                   <td class="py-1 pr-2 tabular-nums text-slate-500">{{ line.shirtNumber ?? '—' }}</td>
                   <td class="py-1 pr-2">
-                    <span class="font-medium" :class="line.played ? 'text-slate-800' : ''">{{ line.fullName }}</span>
+                    <PlayerName :name="line.fullName" class="font-medium" :class="line.played ? 'text-slate-800' : ''" />
                     <Badge v-if="line.started" class="ml-1">titular</Badge>
                   </td>
                   <td class="py-1 pr-2 text-center tabular-nums whitespace-nowrap">{{ minutes(line) }}</td>
@@ -169,8 +171,11 @@ const minutes = (line: OfficialLineDto) => {
                 <Icon v-else icon="arrow-right-arrow-left" class="text-slate-400" />
               </span>
               <span>
-                {{ event.playerName }}<template v-if="event.relatedPlayerName"> <span class="text-slate-400">por</span> {{ event.relatedPlayerName }}</template>
-                <span class="text-xs text-slate-400"> · {{ event.side === 'Home' ? sheet.home?.teamName : sheet.away?.teamName }}</span>
+                <PlayerName :name="event.playerName" /><template v-if="event.relatedPlayerName"> <span class="text-slate-400">por</span> <PlayerName :name="event.relatedPlayerName" /></template>
+                <span class="text-xs text-slate-400"> · <TeamName
+                  :name="(event.side === 'Home' ? sheet.home?.teamName : sheet.away?.teamName) ?? ''"
+                  :team-id="event.side === 'Home' ? sheet.home?.teamId : sheet.away?.teamId"
+                /></span>
               </span>
             </li>
           </ul>

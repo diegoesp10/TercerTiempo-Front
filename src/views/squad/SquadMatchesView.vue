@@ -9,7 +9,8 @@ import SuggestionsPanel from '@/components/suggestions/SuggestionsPanel.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useSquad } from '@/composables/useSquad';
 import { downloadPaperSheet } from '@/utils/paperSheet';
-import { opponentLabel } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import { opponentOf } from '@/utils/crests';
 
 const { squadId, detail } = useSquad();
 
@@ -32,6 +33,7 @@ function downloadPaper(withNextMatch: boolean) {
   void downloadPaperSheet({
     teamName: summary.teamName,
     teamId: summary.teamId,
+    teamCrestUrl: summary.teamCrestUrl,
     competition: summary.competitionName,
     season: summary.seasonLabel,
     match: withNextMatch ? nextMatch.value : null,
@@ -56,7 +58,8 @@ function downloadPaper(withNextMatch: boolean) {
       </div>
       <div class="flex flex-wrap gap-2">
         <button v-if="nextMatch" type="button" class="btn-primary" @click="downloadPaper(true)">
-          Próximo partido · J{{ nextMatch.matchday }} {{ opponentLabel(nextMatch, teamId) }}
+          Próximo partido · J{{ nextMatch.matchday }}
+          <TeamName prefix="vs" :name="opponentOf(nextMatch, teamId).name" :crest-url="opponentOf(nextMatch, teamId).crestUrl" :short-name="opponentOf(nextMatch, teamId).shortName" />
         </button>
         <button type="button" class="btn-secondary" @click="downloadPaper(false)">En blanco</button>
       </div>

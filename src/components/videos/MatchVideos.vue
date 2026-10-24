@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/auth';
 import type { MatchVideoDto } from '@/types/api';
 import { formatBytes, formatKickoff, formatMoney, videoAccessLabels, videoPartLabels } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
+import TeamName from '@/components/teams/TeamName.vue';
 
 const props = defineProps<{
   matchId: string;
@@ -148,7 +149,7 @@ const canUploadHere = computed(() => props.canUpload && !!props.uploadSquadId);
                 <Badge v-if="video.visibility === 'Public'" tone="green" class="ml-2" title="Cualquiera que llegue al partido puede verlo"><Icon icon="globe" class="mr-1 h-3 w-3" />Público</Badge>
               </p>
               <p class="text-xs text-slate-500">
-                {{ video.teamName }} · subido por {{ video.uploadedBy }} el {{ formatKickoff(video.uploadedAt) }} · {{ formatBytes(video.sizeBytes) }}
+                <TeamName :name="video.teamName" :team-id="video.teamId" /> · subido por {{ video.uploadedBy }} el {{ formatKickoff(video.uploadedAt) }} · {{ formatBytes(video.sizeBytes) }}
               </p>
             </div>
             <div class="flex items-center gap-2">

@@ -241,6 +241,7 @@ export interface ClubCatalogDto {
   name: string;
   registered: boolean;
   teams: ClubCatalogTeamDto[];
+  crestUrl?: string | null;
 }
 
 export interface ClubCatalogTeamDto {
@@ -380,6 +381,8 @@ export interface SquadInviteDto {
   competitionName: string;
   seasonLabel: string;
   player: SquadPlayerDto;
+  teamId: string;
+  teamCrestUrl: string | null;
 }
 
 export interface SquadMatchDto {
@@ -502,8 +505,9 @@ export interface CompetitionDto {
   group: string | null;
   region: string;
   sortOrder: number;
-  currentSeasonId: string | null;
-  currentSeasonLabel: string | null;
+  /** Temporada de la liga dentro de la temporada elegida. */
+  seasonId: string | null;
+  seasonLabel: string | null;
   teamsCount: number;
 }
 
@@ -750,6 +754,7 @@ export interface PerformanceDto extends PerformanceStats {
   matchShirtNumber: number | null;
   teamId: string;
   updatedAt: string;
+  playerPhotoUrl?: string | null;
 }
 
 // --- Previa del partido (cuerpo técnico) ---
@@ -801,6 +806,8 @@ export interface FormResultDto {
   goalsFor: number;
   goalsAgainst: number;
   outcome: 'W' | 'D' | 'L';
+  opponentId: string;
+  opponentCrestUrl: string | null;
 }
 
 export interface PreviewPlayerDto {
@@ -815,6 +822,7 @@ export interface PreviewPlayerDto {
   redCards: number;
   goalsLastThree: number;
   formScore: number;
+  photoUrl: string | null;
 }
 
 export interface SetPiecesDto {
@@ -1207,6 +1215,8 @@ export interface SharedVideoDto {
   contentType: string;
   sizeBytes: number;
   expiresAt: string;
+  teamId: string;
+  teamCrestUrl: string | null;
 }
 
 export interface VideoTicketDto {
@@ -1408,6 +1418,7 @@ export interface AdminLicensePaymentDto {
   provider: string;
   createdAt: string;
   paidAt: string | null;
+  teamId: string;
 }
 
 export interface LicensesOverviewDto {
@@ -1427,4 +1438,13 @@ export interface LicensesOverviewDto {
   payments: AdminLicensePaymentDto[];
   currency: string;
   today: string;
+}
+
+/** Temporada de la app (2026/2027...): el dato padre del que cuelga todo lo demás. */
+export interface SeasonYearDto {
+  id: string;
+  label: string;
+  startsOn: string;
+  endsOn: string;
+  isCurrent: boolean;
 }

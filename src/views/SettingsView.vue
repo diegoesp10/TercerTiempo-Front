@@ -6,6 +6,7 @@ import PageHeader from '@/components/ui/PageHeader.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useSettingsStore, type ThemePreference } from '@/stores/settings';
 import { accountTypeLabels } from '@/utils/format';
+import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
@@ -79,6 +80,7 @@ const themes: { value: ThemePreference; label: string; description: string }[] =
           <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre</dt>
           <dd class="mt-0.5 flex items-center gap-2 font-medium text-slate-900">
             <TeamCrest v-if="auth.isClub" :src="auth.clubCrestUrl" :name="auth.displayName" size="sm" />
+            <PlayerAvatar v-else-if="auth.isPlayer" :src="auth.player?.photoUrl" :name="auth.displayName" size="sm" />
             {{ auth.displayName }}
           </dd>
         </div>

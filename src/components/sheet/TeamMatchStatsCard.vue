@@ -5,6 +5,7 @@ import { teamStatsApi } from '@/api/teamStats';
 import Alert from '@/components/ui/Alert.vue';
 import type { TeamMatchStatsDto, TeamMatchStatsInput } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
 
 /**
  * Datos del equipo en el partido que no trae el acta pública (córners, posesión, tiros, fueras de juego, faltas y
@@ -17,6 +18,8 @@ const props = defineProps<{
   canEdit: boolean;
   teamName: string;
   opponentName: string;
+  teamCrestUrl?: string | null;
+  opponentCrestUrl?: string | null;
 }>();
 
 const emit = defineEmits<{ saved: [stats: TeamMatchStatsDto] }>();
@@ -119,8 +122,8 @@ async function save() {
           <thead class="text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th class="px-2 py-2 text-left"></th>
-              <th class="px-2 py-2 text-center text-accent-400">{{ teamName }}</th>
-              <th class="px-2 py-2 text-center">{{ opponentName }}</th>
+              <th class="px-2 py-2 text-center text-accent-400"><TeamName :name="teamName" :crest-url="teamCrestUrl" /></th>
+              <th class="px-2 py-2 text-center"><TeamName :name="opponentName" :crest-url="opponentCrestUrl" /></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">

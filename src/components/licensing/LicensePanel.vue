@@ -16,6 +16,7 @@ import {
   licenseStatusTone,
 } from '@/utils/format';
 import { isSubscribed } from './plans';
+import TeamName from '@/components/teams/TeamName.vue';
 
 /**
  * Licencias del club: una por equipo vinculado, con su plan (Básica o Premium), su facturación (mensual o anual) y
@@ -118,7 +119,7 @@ async function act(team: TeamLicenseDto, call: () => Promise<TeamLicenseDto>) {
       <article v-for="team in teams" :key="team.teamId" class="flex flex-col rounded-xl border border-line bg-surface-2 p-4">
         <div class="flex flex-wrap items-start justify-between gap-2">
           <div class="min-w-0">
-            <p class="truncate font-semibold text-slate-900">{{ team.teamName }}</p>
+            <p class="truncate font-semibold text-slate-900"><TeamName :name="team.teamName" :team-id="team.teamId" size="sm" /></p>
             <p class="text-xs text-slate-500">
               <template v-if="team.plan">Plan {{ licensePlanLabels[team.plan] }} · {{ billingIntervalLabels[team.interval!].toLowerCase() }}</template>
               <template v-else>Prueba con todo Premium · sin plan elegido</template>

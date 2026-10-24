@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import type { ClubCatalogDto } from '@/types/api';
+import TeamName from '@/components/teams/TeamName.vue';
 
 /**
  * Desplegable con búsqueda sobre el catálogo de clubes (GET /api/clubs/catalog): se escribe para filtrar y se elige
@@ -144,18 +145,18 @@ function onBlur() {
         @mousemove="highlighted = index"
       >
         <div class="flex items-center justify-between gap-3">
-          <span class="font-medium">{{ club.name }}</span>
+          <TeamName :name="club.name" :crest-url="club.crestUrl" :team-id="club.teams[0]?.id" class="font-medium" size="sm" />
           <span v-if="club.registered" class="shrink-0 text-xs">Ya tiene cuenta</span>
         </div>
-        <p class="mt-0.5 truncate text-xs text-slate-500">
-          {{ club.teams.map((t) => t.competitionName ? `${t.name} (${t.competitionName})` : t.name).join(' · ') }}
+        <p class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+          <TeamName v-for="t in club.teams" :key="t.id" :name="t.competitionName ? `${t.name} (${t.competitionName})` : t.name" :team-id="t.id" />
         </p>
       </li>
     </ul>
 
     <p v-if="selected" class="mt-1 text-xs text-slate-500">
       Se vincularán sus {{ selected.teams.length === 1 ? 'equipo' : `${selected.teams.length} equipos` }}:
-      {{ selected.teams.map((t) => t.name).join(', ') }}.
+      <template v-for="(t, i) in selected.teams" :key="t.id"><TeamName :name="t.name" :team-id="t.id" />{{ i < selected.teams.length - 1 ? ', ' : '.' }}</template>
     </p>
   </div>
 </template>

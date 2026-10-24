@@ -8,6 +8,7 @@ import SquadAccessCard from '@/components/squads/SquadAccessCard.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, staffRoleLabels, visibilityLabels } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
 
 const auth = useAuthStore();
 
@@ -63,7 +64,7 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
       <ul class="mt-3 divide-y divide-slate-100 text-sm">
         <li v-for="appointment in appointments" :key="appointment.id" class="flex flex-wrap items-center justify-between gap-2 py-2">
           <div>
-            <p class="font-medium text-slate-800">{{ appointment.teamName }} <span class="text-slate-400">· {{ appointment.clubName }}</span></p>
+            <p class="font-medium text-slate-800"><TeamName :name="appointment.teamName" :team-id="appointment.teamId" /> <span class="text-slate-400">· {{ appointment.clubName }}</span></p>
             <p class="text-xs text-slate-500">
               {{ appointment.competitionName }} · {{ appointment.seasonLabel }} · {{ staffRoleLabels[appointment.role] }} ·
               {{ formatDate(appointment.validFrom) }} → {{ formatDate(appointment.validUntil) }}
