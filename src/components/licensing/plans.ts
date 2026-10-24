@@ -1,8 +1,9 @@
-import type { BillingInterval, LicensePlan, LicensePlanDto, TeamLicenseDto } from '@/types/api';
+import type { BillingInterval, LicensePlan, LicensePlanDto, ClubLicenseDto } from '@/types/api';
 
 /**
- * Textos de los planes. Los dos dan las mismas funciones a la plantilla entera; lo que cambia es el cuerpo técnico que
- * puede tener cada equipo. Los precios y el número de técnicos vienen de la API (configuración del backend).
+ * Textos de los planes. La licencia es del club (primer equipo y filiales, un solo precio) y los dos planes dan las
+ * mismas funciones a todos sus equipos; lo que cambia es el cuerpo técnico que puede tener cada equipo. Los precios y
+ * el número de técnicos vienen de la API (configuración del backend).
  */
 export const planCopy: Record<LicensePlan, { tagline: string; staffNote: string; extras: string[] }> = {
   Basic: {
@@ -19,6 +20,7 @@ export const planCopy: Record<LicensePlan, { tagline: string; staffNote: string;
 
 /** Lo que incluyen los dos planes. */
 export const sharedFeatures = [
+  'Primer equipo y todos sus filiales con una sola licencia',
   'Plantilla entera, sin límite de jugadores',
   'Acta interna con estadísticas por jugador',
   'Previa de cada partido y comparador de jugadores',
@@ -29,7 +31,8 @@ export const sharedFeatures = [
 
 /** Filas de la comparativa: [concepto, Básica, Premium] (true/false = incluido o no). */
 export const comparisonRows = (basic: LicensePlanDto, premium: LicensePlanDto): [string, string | boolean, string | boolean][] => [
-  ['Técnicos con cuenta', String(basic.maxStaff), `Hasta ${premium.maxStaff}`],
+  ['Primer equipo y filiales', true, true],
+  ['Técnicos con cuenta en cada equipo', String(basic.maxStaff), `Hasta ${premium.maxStaff}`],
   ['Jugadores en la plantilla', 'Sin límite', 'Sin límite'],
   ['Acta interna y estadísticas', true, true],
   ['Previa de partidos y comparador', true, true],
@@ -45,11 +48,11 @@ export const freeMonths = (plan: LicensePlanDto) =>
 export const priceOf = (plan: LicensePlanDto, interval: BillingInterval) =>
   interval === 'Yearly' ? plan.yearlyPriceCents : plan.monthlyPriceCents;
 
-/** Suscripción en marcha: se renueva sola y el equipo tiene acceso. */
-export const isSubscribed = (license: TeamLicenseDto) => license.autoRenew && license.plan !== null && license.status !== 'Expired';
+/** Suscripción en marcha: se renueva sola y el club tiene acceso. */
+export const isSubscribed = (license: ClubLicenseDto) => license.autoRenew && license.plan !== null && license.status !== 'Expired';
 
 /** Mientras queda prueba o periodo pagado, contratar no cobra nada hoy: el primer cobro llega al día siguiente. */
-export const firstChargeOn = (license: Pick<TeamLicenseDto, 'status' | 'validUntil'>) => {
+export const firstChargeOn = (license: Pick<ClubLicenseDto, 'status' | 'validUntil'>) => {
   if (license.status === 'Expired') return new Date().toISOString().slice(0, 10);
   const next = new Date(`${license.validUntil}T00:00:00Z`);
   next.setUTCDate(next.getUTCDate() + 1);

@@ -7,9 +7,8 @@ import Badge from '@/components/ui/Badge.vue';
 import BrandMark from '@/components/layout/BrandMark.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
-import type { TeamLicenseDto } from '@/types/api';
+import type { ClubLicenseDto } from '@/types/api';
 import { billingIntervalLabels, billingIntervalSuffix, formatDate, formatMoney, formatPrice, licensePlanLabels, staffCountLabel } from '@/utils/format';
-import TeamName from '@/components/teams/TeamName.vue';
 
 /**
  * Pago de una licencia. Con la pasarela simulada es la página de pago: resumen del pedido y una tarjeta de prueba que
@@ -23,7 +22,9 @@ watch(() => props.sessionId, () => void run());
 
 const paying = ref(false);
 const payError = ref<string | null>(null);
-const result = ref<TeamLicenseDto | null>(null);
+const result = ref<ClubLicenseDto | null>(null);
+// La plantilla del primer equipo que ya la tiene (con filiales, el resto se abre desde el club).
+const firstSquadId = computed(() => result.value?.teams.find((t) => t.squadId)?.squadId ?? null);
 
 const isMock = computed(() => data.value?.provider === 'mock');
 const chargedNow = computed(() => (data.value?.amountCents ?? 0) > 0);
@@ -77,7 +78,8 @@ watch(data, async (checkout) => {
           <div class="mt-3 flex items-start justify-between gap-3">
             <div>
               <p class="text-lg font-bold text-slate-900">Licencia {{ licensePlanLabels[data.plan] }}</p>
-              <p class="text-sm text-slate-500"><TeamName :name="data.teamName" :team-id="data.teamId" /></p>
+              <p class="text-sm font-medium text-slate-700">{{ data.clubName }}</p>
+              <p class="text-xs text-slate-500">{{ data.teamNames.length === 1 ? data.teamNames[0] : `${data.teamNames.length} equipos: ${data.teamNames.join(', ')}` }}</p>
             </div>
             <span class="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">{{ billingIntervalLabels[data.interval] }}</span>
           </div>
@@ -116,7 +118,7 @@ watch(data, async (checkout) => {
             <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
               <Icon icon="check" class="h-6 w-6" />
             </span>
-            <h2 class="mt-4 text-xl font-bold text-slate-900">¡Listo! {{ (result?.teamName ?? data.teamName) }} tiene licencia {{ licensePlanLabels[data.plan] }}</h2>
+            <h2 class="mt-4 text-xl font-bold text-slate-900">¡Listo! {{ (result?.clubName ?? data.clubName) }} tiene licencia {{ licensePlanLabels[data.plan] }}</h2>
             <p v-if="result" class="mx-auto mt-2 max-w-md text-sm text-slate-500">
               <template v-if="result.renewsOn">Próximo cobro: {{ formatPrice(result.renewalPriceCents ?? data.periodPriceCents, data.currency) }} el {{ formatDate(result.renewsOn) }}. </template>
               Puedes cambiar de plan o cancelar la renovación cuando quieras desde tu club.
@@ -124,7 +126,7 @@ watch(data, async (checkout) => {
             <p v-else class="mt-2 text-sm text-slate-500">Este pago ya estaba confirmado.</p>
             <div class="mt-6 flex flex-wrap justify-center gap-2">
               <RouterLink to="/" class="btn-primary">Volver a mi club</RouterLink>
-              <RouterLink v-if="result?.squadId" :to="{ name: 'squad', params: { squadId: result.squadId } }" class="btn-secondary">Ver la plantilla</RouterLink>
+              <RouterLink v-if="firstSquadId" :to="{ name: 'squad', params: { squadId: firstSquadId } }" class="btn-secondary">Ver la plantilla</RouterLink>
             </div>
           </div>
 
@@ -135,7 +137,7 @@ watch(data, async (checkout) => {
               <Alert v-if="payError" kind="warning" class="text-left">{{ payError }} Si acabas de pagar, espera unos segundos y vuelve a comprobarlo.</Alert>
               <div class="mt-4 flex flex-wrap justify-center gap-2">
                 <button type="button" class="btn-primary" @click="confirm()">Comprobar el pago</button>
-                <RouterLink :to="{ name: 'licenses', query: { equipo: data.teamId } }" class="btn-ghost">Volver a los planes</RouterLink>
+                <RouterLink :to="{ name: 'licenses' }" class="btn-ghost">Volver a los planes</RouterLink>
               </div>
             </template>
           </div>
@@ -173,7 +175,7 @@ watch(data, async (checkout) => {
             </button>
             <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
               <span class="inline-flex items-center gap-1.5"><Icon icon="shield-halved" class="h-3 w-3" />Pago seguro con Stripe</span>
-              <RouterLink :to="{ name: 'licenses', query: { equipo: data.teamId } }" class="font-medium hover:text-slate-800">Cambiar de plan</RouterLink>
+              <RouterLink :to="{ name: 'licenses' }" class="font-medium hover:text-slate-800">Cambiar de plan</RouterLink>
             </div>
           </form>
         </section>

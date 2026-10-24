@@ -7,7 +7,6 @@ import Badge from '@/components/ui/Badge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { AdminLicenseState, LicensesOverviewDto } from '@/types/api';
 import { billingIntervalLabels, formatDate, formatKickoff, formatMoney, licensePlanLabels } from '@/utils/format';
-import TeamName from '@/components/teams/TeamName.vue';
 
 /**
  * Licencias y cobros de todos los clubes para el administrador: quién está en prueba, quién paga, quién debe y cuánto,
@@ -141,7 +140,7 @@ defineExpose({ load });
               <tr v-for="row in filtered" :key="row.id">
                 <td class="px-3 py-2">
                   <span class="font-medium text-slate-800">{{ row.clubName }}</span>
-                  <span class="block text-xs text-slate-500"><TeamName :name="row.teamName" :team-id="row.teamId" /></span>
+                  <span class="block text-xs text-slate-500">{{ row.teamNames.length === 1 ? row.teamNames[0] : `${row.teamNames.length} equipos: ${row.teamNames.join(', ')}` }}</span>
                 </td>
                 <td class="px-3 py-2">
                   <Badge :tone="stateTone[row.state]">{{ stateLabels[row.state] }}</Badge>
@@ -199,7 +198,6 @@ defineExpose({ load });
                 <td class="px-3 py-2 text-xs whitespace-nowrap text-slate-600">{{ formatKickoff(payment.paidAt ?? payment.createdAt) }}</td>
                 <td class="px-3 py-2">
                   <span class="text-slate-800">{{ payment.clubName }}</span>
-                  <span class="block text-xs text-slate-500"><TeamName :name="payment.teamName" :team-id="payment.teamId" /></span>
                 </td>
                 <td class="px-3 py-2 text-xs text-slate-700">
                   {{ payment.kind === 'Renewal' ? 'Renovación' : 'Alta' }} · {{ licensePlanLabels[payment.plan] }} {{ billingIntervalLabels[payment.interval].toLowerCase() }}

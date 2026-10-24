@@ -92,14 +92,14 @@ function logout() {
             v-for="link in links"
             :key="link.to"
             :to="link.to"
-            class="rounded-md px-3 py-1.5 text-sm font-semibold transition"
+            class="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold transition"
             :class="isActive(link) ? 'bg-action text-white' : 'text-slate-600 hover:bg-surface-2 hover:text-slate-900'"
           >
             {{ link.label }}
           </RouterLink>
         </nav>
 
-        <div class="flex items-center gap-2">
+        <div class="flex min-w-0 items-center gap-2">
           <!-- En móvil la temporada va dentro del menú, para que la cabecera no se parta. -->
           <SeasonSwitcher class="hidden lg:block" />
           <button type="button" class="btn-ghost px-2" :title="themeLabel" :aria-label="themeLabel" @click="settings.toggleTheme()">
@@ -117,13 +117,13 @@ function logout() {
               <RouterLink to="/ajustes" class="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" title="Ajustes">
                 <TeamCrest v-if="auth.isClub" :src="auth.clubCrestUrl" :name="auth.displayName" size="sm" />
                 <PlayerAvatar v-else-if="auth.isPlayer" :src="auth.player?.photoUrl" :name="auth.displayName" size="xs" />
-                <span class="max-w-40 truncate font-medium">{{ auth.displayName }}</span>
-                <Badge :tone="accountTone">{{ accountTypeLabels[auth.account.type] }}</Badge>
+                <span class="min-w-0 max-w-40 truncate font-medium">{{ auth.displayName }}</span>
+                <Badge :tone="accountTone" class="shrink-0">{{ accountTypeLabels[auth.account.type] }}</Badge>
                 <span v-if="teamLabel" class="hidden items-center gap-1 text-slate-400 xl:flex">
                   · <TeamCrest v-if="teamCrest !== undefined" :src="teamCrest" :name="teamLabel" size="xs" /> {{ teamLabel }}
                 </span>
               </RouterLink>
-              <button type="button" class="btn-ghost" @click="logout">Salir</button>
+              <button type="button" class="btn-ghost shrink-0" @click="logout">Salir</button>
             </template>
             <template v-else>
               <RouterLink to="/login" class="btn-ghost">Entrar</RouterLink>

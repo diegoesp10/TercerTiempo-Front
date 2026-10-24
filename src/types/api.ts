@@ -131,13 +131,13 @@ export interface ClubTeamDto {
   seasonEndsOn: string | null;
   squadId: string | null;
   activeAppointments: number;
-  /** Estado de la licencia del equipo. */
+  /** Estado de la licencia del club, que cubre a este equipo. */
   license: LicenseStatus;
   /** Último día con acceso a los datos privados del equipo. */
   licenseValidUntil: string;
 }
 
-// --- Licencias por equipo ---
+// --- Licencia del club (primer equipo y filiales) ---
 
 export type LicenseStatus = 'Trial' | 'Active' | 'Expired';
 export type PaymentStatus = 'Pending' | 'Paid' | 'Cancelled';
@@ -145,10 +145,20 @@ export type PaymentStatus = 'Pending' | 'Paid' | 'Cancelled';
 export type LicensePlan = 'Basic' | 'Premium';
 export type BillingInterval = 'Monthly' | 'Yearly';
 
-export interface TeamLicenseDto {
+/** Equipo que cubre la licencia del club, con su cuerpo técnico (cada equipo tiene su propio cupo según el plan). */
+export interface LicensedTeamDto {
   teamId: string;
   teamName: string;
+  teamCrestUrl: string | null;
   squadId: string | null;
+  /** Técnicos de la temporada (vigentes o pendientes de canjear). */
+  staffCount: number;
+}
+
+/** Una licencia por club, al precio del plan: cubre el primer equipo y todos sus filiales. */
+export interface ClubLicenseDto {
+  clubId: string;
+  clubName: string;
   status: LicenseStatus;
   trialEndsOn: string;
   paidUntil: string | null;
@@ -166,9 +176,10 @@ export interface TeamLicenseDto {
   /** Día del próximo cobro, si se renueva. */
   renewsOn: string | null;
   renewalPriceCents: number | null;
-  /** Técnicos de la temporada (vigentes o pendientes de canjear) y los que admite el plan. */
-  staffCount: number;
+  /** Técnicos que admite el plan en cada equipo. */
   staffLimit: number;
+  /** Equipos cubiertos (para un técnico o un jugador, solo los suyos). */
+  teams: LicensedTeamDto[];
 }
 
 export interface LicensePlanDto {
@@ -189,15 +200,18 @@ export interface LicensingCatalogDto {
 
 export interface LicensingStatusDto {
   licensed: boolean;
-  teams: TeamLicenseDto[];
+  /** Club: la suya. Técnico o jugador: las de los clubes de sus equipos. */
+  licenses: ClubLicenseDto[];
   catalog: LicensingCatalogDto;
 }
 
 export interface LicenseCheckoutDto {
   sessionId: string;
   url: string;
-  teamId: string;
-  teamName: string;
+  clubId: string;
+  clubName: string;
+  /** Equipos que cubre la licencia: el primer equipo y sus filiales. */
+  teamNames: string[];
   plan: LicensePlan;
   interval: BillingInterval;
   /** Lo que se cobra hoy (0 si aún queda prueba o periodo pagado). */
@@ -232,8 +246,18 @@ export interface AppointmentDto {
 export interface ClubDto {
   id: string;
   name: string;
+  /** Equipos que cubre la licencia del club: el primer equipo y sus filiales. */
   teams: ClubTeamDto[];
   appointments: AppointmentDto[];
+  /** Filiales del mismo club que aún no están vinculados (solo en GET /api/clubs/me y al vincular o quitar). */
+  availableFilials: ClubFilialDto[];
+}
+
+export interface ClubFilialDto {
+  teamId: string;
+  teamName: string;
+  teamCrestUrl: string | null;
+  competitionName: string | null;
 }
 
 /** Club del catálogo del proveedor (primer equipo + filiales): es la lista de la que se elige el nombre al darse de alta. */
@@ -1384,8 +1408,8 @@ export interface AdminLicenseDto {
   id: string;
   clubId: string;
   clubName: string;
-  teamId: string;
-  teamName: string;
+  /** Equipos que cubre: el primer equipo y sus filiales. */
+  teamNames: string[];
   state: AdminLicenseState;
   hasAccess: boolean;
   effectivePlan: LicensePlan;
@@ -1408,7 +1432,6 @@ export interface AdminLicenseDto {
 export interface AdminLicensePaymentDto {
   id: string;
   clubName: string;
-  teamName: string;
   kind: 'Subscription' | 'Renewal';
   plan: LicensePlan;
   interval: BillingInterval;
@@ -1418,7 +1441,6 @@ export interface AdminLicensePaymentDto {
   provider: string;
   createdAt: string;
   paidAt: string | null;
-  teamId: string;
 }
 
 export interface LicensesOverviewDto {
