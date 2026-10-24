@@ -1326,6 +1326,16 @@ export interface ClubInvitationDto {
   usedAt: string | null;
   clubName: string | null;
   revokedAt: string | null;
+  teamId: string | null;
+}
+
+/** Equipo del buscador de invitaciones, con su liga, el club que ya lo gestiona y su invitación. */
+export interface InvitationTeamDto {
+  teamId: string;
+  name: string;
+  competition: string | null;
+  clubName: string | null;
+  invitation: ClubInvitationDto | null;
 }
 
 // --- Administración: planes, precios y prueba de las licencias (en la base de datos) ---
