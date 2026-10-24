@@ -152,7 +152,7 @@ const canUploadHere = computed(() => props.canUpload && !!props.uploadSquadId);
                 <TeamName :name="video.teamName" :team-id="video.teamId" /> · subido por {{ video.uploadedBy }} el {{ formatKickoff(video.uploadedAt) }} · {{ formatBytes(video.sizeBytes) }}
               </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <Badge :tone="accessTone(video)">{{ videoAccessLabels[video.access] }}<template v-if="video.access === 'Locked'"> · {{ formatMoney(video.priceCents, video.currency) }}</template></Badge>
               <button v-if="video.canWatch" type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy === video.id" :disabled="busy === video.id" @click="play(video)">
                 {{ playing === video.id ? 'Recargar' : 'Ver' }}

@@ -49,11 +49,11 @@ const state = computed(() => {
           </thead>
           <tbody class="divide-y divide-line">
             <tr v-for="cookie in cookiesOf(category)" :key="cookie.id">
-              <td class="px-3 py-2 font-mono text-slate-800">{{ cookie.name }}</td>
-              <td class="px-3 py-2">{{ storageLabels[cookie.storage] }}</td>
-              <td class="px-3 py-2">{{ cookie.purpose }}</td>
-              <td class="px-3 py-2 whitespace-nowrap">{{ cookie.duration }}</td>
-              <td class="px-3 py-2 whitespace-nowrap">{{ cookie.provider }}</td>
+              <td data-label="Nombre" class="px-3 py-2 font-mono text-slate-800">{{ cookie.name }}</td>
+              <td data-label="Tipo" class="px-3 py-2">{{ storageLabels[cookie.storage] }}</td>
+              <td data-label="Finalidad" class="px-3 py-2">{{ cookie.purpose }}</td>
+              <td data-label="Duración" class="px-3 py-2 sm:whitespace-nowrap">{{ cookie.duration }}</td>
+              <td data-label="Responsable" class="px-3 py-2 sm:whitespace-nowrap">{{ cookie.provider }}</td>
             </tr>
             <tr v-if="cookiesOf(category).length === 0"><td colspan="5" class="px-3 py-2 text-slate-400">Ninguna.</td></tr>
           </tbody>

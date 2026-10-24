@@ -26,7 +26,7 @@ const themes: { value: ThemePreference; label: string; description: string }[] =
       <h2 class="text-lg font-bold text-slate-900">Apariencia</h2>
       <p class="mt-1 text-sm text-slate-500">Elige el tema de la aplicación.</p>
 
-      <div class="mt-4 grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Tema">
+      <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Tema">
         <button
           v-for="option in themes"
           :key="option.value"
@@ -75,7 +75,7 @@ const themes: { value: ThemePreference; label: string; description: string }[] =
 
     <section v-if="auth.isAuthenticated && auth.account" class="card mt-6">
       <h2 class="text-lg font-bold text-slate-900">Cuenta</h2>
-      <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+      <dl class="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
         <div>
           <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre</dt>
           <dd class="mt-0.5 flex items-center gap-2 font-medium text-slate-900">

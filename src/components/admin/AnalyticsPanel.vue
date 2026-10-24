@@ -73,20 +73,20 @@ const shortDay = (day: string) => new Date(`${day}T00:00:00`).toLocaleDateString
 
 <template>
   <section class="space-y-6">
-    <div class="card flex flex-wrap items-end gap-3">
-      <label class="w-40">
+    <div class="card grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
+      <label class="sm:w-40">
         <span class="label">Desde</span>
         <input v-model="from" type="date" class="input" :max="to" />
       </label>
-      <label class="w-40">
+      <label class="sm:w-40">
         <span class="label">Hasta</span>
         <input v-model="to" type="date" class="input" :min="from" />
       </label>
-      <div class="min-w-64 flex-1">
+      <div class="col-span-2 min-w-0 sm:min-w-64 sm:flex-1">
         <span class="label">Club</span>
         <SearchSelect id="analytics-club" placeholder="Toda la web" :model-value="clubId" :options="clubOptions" clearable @update:model-value="clubId = ($event as string | null)" />
       </div>
-      <div v-if="clubId" class="flex gap-1 rounded-lg border border-line p-1 text-sm" role="radiogroup">
+      <div v-if="clubId" class="col-span-2 flex flex-wrap gap-1 rounded-lg border border-line p-1 text-sm" role="radiogroup">
         <button type="button" class="rounded-md px-3 py-1" :class="scope === 'Subject' ? 'bg-brand-500 text-white' : 'text-slate-600'" @click="scope = 'Subject'">Visitas a sus páginas</button>
         <button type="button" class="rounded-md px-3 py-1" :class="scope === 'Actor' ? 'bg-brand-500 text-white' : 'text-slate-600'" @click="scope = 'Actor'">Lo que hacen sus usuarios</button>
       </div>
@@ -96,7 +96,7 @@ const shortDay = (day: string) => new Date(`${day}T00:00:00`).toLocaleDateString
     <Spinner v-if="loading && !data" />
 
     <template v-if="data">
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div v-for="kpi in [
           { label: 'Páginas vistas', value: data.totals.pageViews },
           { label: 'Visitantes', value: data.totals.visitors },
@@ -120,7 +120,7 @@ const shortDay = (day: string) => new Date(`${day}T00:00:00`).toLocaleDateString
         </div>
       </section>
 
-      <div class="grid gap-6 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <section class="card">
           <h3 class="mb-2 font-semibold text-slate-900">Páginas más vistas</h3>
           <ol class="space-y-1 text-sm">
@@ -144,7 +144,7 @@ const shortDay = (day: string) => new Date(`${day}T00:00:00`).toLocaleDateString
         </section>
       </div>
 
-      <div class="grid gap-6 lg:grid-cols-2">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section class="card">
           <h3 class="mb-2 font-semibold text-slate-900">Equipos, ligas y partidos más vistos</h3>
           <ol class="space-y-1.5 text-sm">
@@ -177,7 +177,7 @@ const shortDay = (day: string) => new Date(`${day}T00:00:00`).toLocaleDateString
         </section>
       </div>
 
-      <div v-if="!clubId" class="grid gap-6 lg:grid-cols-2">
+      <div v-if="!clubId" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section class="card">
           <h3 class="mb-2 font-semibold text-slate-900">Clubes más activos <span class="text-xs font-normal text-slate-500">(sus usuarios)</span></h3>
           <ol class="space-y-1.5 text-sm">

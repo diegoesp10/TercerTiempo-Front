@@ -76,7 +76,7 @@ const subtitle = computed(() =>
     <Skeleton v-if="teams.loading.value && !teams.data.value" variant="cards" :count="9" label="Cargando los equipos…" />
     <Alert v-else-if="teams.error.value" kind="error">{{ teams.error.value }}</Alert>
 
-    <div v-else-if="teams.data.value" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" :class="{ 'is-refreshing': teams.loading.value }" :aria-busy="teams.loading.value">
+    <div v-else-if="teams.data.value" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" :class="{ 'is-refreshing': teams.loading.value }" :aria-busy="teams.loading.value">
       <RouterLink
         v-for="team in orderedTeams"
         :key="team.id"

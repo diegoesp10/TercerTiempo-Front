@@ -264,7 +264,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
     <Spinner v-if="loading && !data" />
 
     <div v-if="data" class="space-y-6">
-      <div class="grid gap-4 lg:grid-cols-2">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <article v-for="job in data.jobs" :key="job.name" class="card" :class="job.name === 'football-data' ? 'lg:col-span-2' : ''">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
@@ -444,7 +444,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
                 <td class="px-3 py-1.5 text-right font-semibold tabular-nums" :class="statusClass(request.statusCode)" :title="request.error ?? undefined">{{ request.statusCode ?? 'Error' }}</td>
                 <td class="px-3 py-1.5 text-right tabular-nums text-slate-600">{{ request.durationMs }}</td>
                 <td class="px-3 py-1.5 whitespace-nowrap text-xs text-slate-600">{{ origin(request) }}</td>
-                <td class="max-w-[28rem] truncate px-3 py-1.5 text-xs text-slate-500" :title="request.url">{{ request.method }} {{ request.url }}</td>
+                <td class="px-3 py-1.5 text-xs text-slate-500" :title="request.url"><span class="block max-w-[28rem] truncate">{{ request.method }} {{ request.url }}</span></td>
               </tr>
             </tbody>
           </table>

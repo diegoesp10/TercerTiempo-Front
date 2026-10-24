@@ -23,6 +23,7 @@ import { downloadPaperSheet } from '@/utils/paperSheet';
 import TeamName from '@/components/teams/TeamName.vue';
 import PlayerName from '@/components/players/PlayerName.vue';
 import { opponentOf } from '@/utils/crests';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 
 const props = defineProps<{ squadId: string; matchId: string }>();
 
@@ -257,16 +258,18 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
           <Badge :tone="data.match.status === 'Played' ? 'slate' : 'blue'">{{ matchStatusLabels[data.match.status] }}</Badge>
         </span>
       </div>
-      <div class="mt-3 grid grid-cols-3 items-center text-center">
-        <p class="text-lg font-semibold" :class="data.match.homeTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">
-          <TeamName :name="data.match.homeTeam.name" :crest-url="data.match.homeTeam.crestUrl" :short-name="data.match.homeTeam.shortName" size="sm" />
+      <div class="mt-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-center">
+        <p class="flex min-w-0 flex-col items-center gap-1.5 break-words text-sm font-semibold sm:text-lg" :class="data.match.homeTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">
+          <TeamCrest :src="data.match.homeTeam.crestUrl" :name="data.match.homeTeam.name" :short-name="data.match.homeTeam.shortName" size="md" />
+          {{ data.match.homeTeam.name }}
         </p>
-        <p class="text-3xl font-bold tabular-nums text-slate-900">
+        <p class="text-2xl font-bold tabular-nums text-slate-900 sm:text-3xl">
           <template v-if="data.match.status === 'Played'">{{ data.match.homeGoals }} - {{ data.match.awayGoals }}</template>
           <span v-else class="text-slate-300">vs</span>
         </p>
-        <p class="text-lg font-semibold" :class="data.match.awayTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">
-          <TeamName :name="data.match.awayTeam.name" :crest-url="data.match.awayTeam.crestUrl" :short-name="data.match.awayTeam.shortName" size="sm" />
+        <p class="flex min-w-0 flex-col items-center gap-1.5 break-words text-sm font-semibold sm:text-lg" :class="data.match.awayTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">
+          <TeamCrest :src="data.match.awayTeam.crestUrl" :name="data.match.awayTeam.name" :short-name="data.match.awayTeam.shortName" size="md" />
+          {{ data.match.awayTeam.name }}
         </p>
       </div>
     </div>

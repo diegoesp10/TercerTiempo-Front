@@ -137,12 +137,12 @@ onMounted(load);
       </div>
     </div>
 
-    <div v-if="scope === 'DateRange'" class="flex flex-wrap gap-3">
-      <label class="w-44">
+    <div v-if="scope === 'DateRange'" class="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+      <label class="sm:w-44">
         <span class="label">Desde</span>
         <input v-model="from" type="date" required class="input" />
       </label>
-      <label class="w-44">
+      <label class="sm:w-44">
         <span class="label">Hasta</span>
         <input v-model="to" type="date" required :min="from" class="input" />
       </label>
@@ -195,23 +195,23 @@ onMounted(load);
     <details class="rounded-lg border border-slate-200 p-3 text-sm">
       <summary class="cursor-pointer font-medium text-slate-800">Programación automática</summary>
       <form class="mt-3 space-y-3" @submit.prevent="saveSchedule">
-        <div class="flex flex-wrap gap-3">
-          <label class="w-56">
+        <div class="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
+          <label class="col-span-2 sm:w-56">
             <span class="label">Cada pasada descarga</span>
             <select v-model="schedule.scheduledScope" class="input">
               <option value="CurrentRound">La jornada en curso</option>
               <option value="FullSeason">La temporada completa</option>
             </select>
           </label>
-          <label class="w-36">
+          <label class="sm:w-36">
             <span class="label">Días antes de hoy</span>
             <input v-model.number="schedule.daysBack" type="number" min="0" max="14" required class="input" />
           </label>
-          <label class="w-36">
+          <label class="sm:w-36">
             <span class="label">Días después</span>
             <input v-model.number="schedule.daysAhead" type="number" min="0" max="14" required class="input" />
           </label>
-          <label class="w-52">
+          <label class="col-span-2 sm:w-52">
             <span class="label">Temporada completa cada (días)</span>
             <input v-model.number="schedule.fullSyncEveryDays" type="number" min="0" max="60" required class="input" />
           </label>
@@ -229,7 +229,7 @@ onMounted(load);
           El intervalo entre pasadas es de la configuración de cada entorno.
         </p>
         <Alert v-if="saved && !scheduleDirty" kind="success">Programación guardada: vale desde la próxima pasada.</Alert>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
           <button type="submit" class="btn-secondary" v-busy="saving" :disabled="saving || !scheduleDirty">Guardar programación</button>
           <button type="button" class="btn-ghost" :disabled="saving || !scheduleDirty" @click="fill(settings!)">Descartar</button>
         </div>

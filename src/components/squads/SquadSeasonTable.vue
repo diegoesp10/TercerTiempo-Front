@@ -125,7 +125,7 @@ const columns: { key: SortKey; label: string; title: string; cls?: string }[] = 
         <Icon icon="magnifying-glass" class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
         <input v-model="search" type="search" class="input pl-9" placeholder="Buscar jugador o dorsal" aria-label="Buscar jugador" />
       </div>
-      <SearchSelect class="w-48" size="sm" placeholder="Todas las posiciones" clearable :model-value="position" :options="positionFilter" @update:model-value="position = ($event as Position | 'none' | null)" />
+      <SearchSelect class="w-full sm:w-48" size="sm" placeholder="Todas las posiciones" clearable :model-value="position" :options="positionFilter" @update:model-value="position = ($event as Position | 'none' | null)" />
       <label class="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm text-slate-700">
         <input v-model="groupByPosition" type="checkbox" class="h-4 w-4 accent-brand-500" />
         Agrupar por posición

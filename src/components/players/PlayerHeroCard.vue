@@ -67,7 +67,7 @@ const nameParts = computed(() => {
       </div>
     </div>
 
-    <dl class="hero-strip relative z-20 mx-4 -mb-px grid grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-x-6 gap-y-4 rounded-t-xl px-6 py-4 text-white sm:mx-6 sm:px-7 sm:py-5">
+    <dl class="hero-strip relative z-20 mx-4 -mb-px grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-x-4 gap-y-4 rounded-t-xl px-4 py-4 text-white sm:mx-6 sm:grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] sm:gap-x-6 sm:px-7 sm:py-5">
       <div v-for="stat in stats" :key="stat.label" class="min-w-0">
         <dt class="font-display text-[11px] font-semibold uppercase tracking-[0.16em] text-white/65">{{ stat.label }}</dt>
         <dd class="mt-0.5 font-display text-3xl font-extrabold leading-none tabular-nums tracking-tight sm:text-4xl">{{ stat.value ?? '—' }}</dd>

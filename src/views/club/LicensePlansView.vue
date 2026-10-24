@@ -218,7 +218,7 @@ const faqs = computed(() => {
           <Badge :tone="licenseStatusTone[team.status]">{{ licenseStatusLabels[team.status] }}</Badge>
         </div>
 
-        <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+        <dl class="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
           <div class="rounded-lg bg-surface-2 px-3 py-2">
             <dt class="text-xs text-slate-500">Plan</dt>
             <dd class="font-semibold text-slate-900">
@@ -285,7 +285,7 @@ const faqs = computed(() => {
       <!-- Cómo funciona -->
       <section class="mt-14">
         <h2 class="text-center text-2xl font-bold text-slate-900">Cómo funciona</h2>
-        <ol class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ol class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <li class="card">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 font-figures text-sm font-bold text-brand-500">1</span>
             <h3 class="mt-3 font-semibold text-slate-900">Pruébalo gratis</h3>
@@ -316,25 +316,25 @@ const faqs = computed(() => {
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-line text-left">
-                <th class="px-5 py-3 font-medium text-slate-500" scope="col"></th>
-                <th class="w-32 px-5 py-3 text-center font-bold text-slate-900 sm:w-44" scope="col">Básica</th>
-                <th class="w-32 px-5 py-3 text-center font-bold text-slate-900 sm:w-44" scope="col">Premium</th>
+                <th class="px-3 py-3 sm:px-5 font-medium text-slate-500" scope="col"></th>
+                <th class="w-24 px-3 py-3 text-center font-bold text-slate-900 sm:w-44 sm:px-5" scope="col">Básica</th>
+                <th class="w-24 px-3 py-3 text-center font-bold text-slate-900 sm:w-44 sm:px-5" scope="col">Premium</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-line">
               <tr>
-                <th class="px-5 py-3 text-left font-medium text-slate-700" scope="row">Pago mensual</th>
-                <td class="px-5 py-3 text-center font-figures font-semibold text-slate-900">{{ price('Basic', 'Monthly') }}{{ billingIntervalSuffix.Monthly }}</td>
-                <td class="px-5 py-3 text-center font-figures font-semibold text-slate-900">{{ price('Premium', 'Monthly') }}{{ billingIntervalSuffix.Monthly }}</td>
+                <th class="px-3 py-3 sm:px-5 text-left font-medium text-slate-700" scope="row">Pago mensual</th>
+                <td class="px-3 py-3 sm:px-5 text-center font-figures font-semibold text-slate-900">{{ price('Basic', 'Monthly') }}{{ billingIntervalSuffix.Monthly }}</td>
+                <td class="px-3 py-3 sm:px-5 text-center font-figures font-semibold text-slate-900">{{ price('Premium', 'Monthly') }}{{ billingIntervalSuffix.Monthly }}</td>
               </tr>
               <tr>
-                <th class="px-5 py-3 text-left font-medium text-slate-700" scope="row">Pago anual</th>
-                <td class="px-5 py-3 text-center font-figures font-semibold text-slate-900">{{ price('Basic', 'Yearly') }}{{ billingIntervalSuffix.Yearly }}</td>
-                <td class="px-5 py-3 text-center font-figures font-semibold text-slate-900">{{ price('Premium', 'Yearly') }}{{ billingIntervalSuffix.Yearly }}</td>
+                <th class="px-3 py-3 sm:px-5 text-left font-medium text-slate-700" scope="row">Pago anual</th>
+                <td class="px-3 py-3 sm:px-5 text-center font-figures font-semibold text-slate-900">{{ price('Basic', 'Yearly') }}{{ billingIntervalSuffix.Yearly }}</td>
+                <td class="px-3 py-3 sm:px-5 text-center font-figures font-semibold text-slate-900">{{ price('Premium', 'Yearly') }}{{ billingIntervalSuffix.Yearly }}</td>
               </tr>
               <tr v-for="[label, basic, premium] in comparison" :key="label">
-                <th class="px-5 py-3 text-left font-medium text-slate-700" scope="row">{{ label }}</th>
-                <td v-for="(value, i) in [basic, premium]" :key="i" class="px-5 py-3 text-center text-slate-900">
+                <th class="px-3 py-3 sm:px-5 text-left font-medium text-slate-700" scope="row">{{ label }}</th>
+                <td v-for="(value, i) in [basic, premium]" :key="i" class="px-3 py-3 sm:px-5 text-center text-slate-900">
                   <Icon v-if="value === true" icon="check" class="h-4 w-4 text-emerald-600" aria-label="Incluido" />
                   <span v-else-if="value === false" class="text-slate-400" aria-label="No incluido">—</span>
                   <span v-else class="font-semibold">{{ value }}</span>

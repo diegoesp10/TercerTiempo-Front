@@ -243,7 +243,7 @@ const sortedAppointments = computed(() => {
               <template v-else>Sin temporada en curso en el proveedor</template>
             </p>
           </div>
-          <div class="flex items-center gap-2 text-xs text-slate-500">
+          <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <Badge :tone="licenseStatusTone[team.license]" :title="`Licencia ${licenseStatusLabels[team.license].toLowerCase()} · hasta el ${formatDate(team.licenseValidUntil)}`">Licencia {{ licenseStatusLabels[team.license].toLowerCase() }}</Badge>
             <Badge :tone="team.activeAppointments > 0 ? 'green' : 'amber'">{{ team.activeAppointments }} {{ team.activeAppointments === 1 ? 'técnico vigente' : 'técnicos vigentes' }}</Badge>
             <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" @click="removeTeam(team.teamId, team.teamName)">Desvincular</button>
@@ -254,7 +254,7 @@ const sortedAppointments = computed(() => {
 
     <LicensePanel class="mb-6" />
 
-    <div class="grid gap-6 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <!-- Nuevo nombramiento -->
       <section class="card self-start">
         <h2 class="font-semibold text-slate-900">Nombrar a un técnico</h2>
@@ -284,7 +284,7 @@ const sortedAppointments = computed(() => {
             <input id="ap-email" v-model="appointmentForm.email" type="email" class="input" />
             <p v-if="fieldErrors.email" class="field-error">{{ fieldErrors.email[0] }}</p>
           </div>
-          <div class="grid gap-3 sm:grid-cols-2">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label class="label" for="ap-role">Rol</label>
               <SearchSelect

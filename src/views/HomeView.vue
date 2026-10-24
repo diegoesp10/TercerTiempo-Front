@@ -54,10 +54,10 @@ const highlights = [
 
   <div v-else class="pb-10">
     <!-- Hero -->
-    <section class="grid items-center gap-10 py-6 lg:grid-cols-12 lg:py-12">
+    <section class="grid grid-cols-1 items-center gap-10 py-6 lg:grid-cols-12 lg:py-12">
       <div class="lg:col-span-7">
         <p class="eyebrow">Rendimiento partido a partido</p>
-        <h1 class="mt-3 text-5xl font-extrabold leading-[0.95] text-slate-900 sm:text-6xl lg:text-7xl">
+        <h1 class="mt-3 break-words text-4xl font-extrabold leading-[0.95] text-slate-900 sm:text-6xl lg:text-7xl">
           El acta de cada partido,<br />convertida en estadísticas.
         </h1>
         <p class="mt-6 max-w-xl text-lg text-slate-600">
@@ -69,8 +69,8 @@ const highlights = [
           <RouterLink to="/liga" class="btn-secondary px-6 py-3 text-base">Ver la jornada</RouterLink>
           <RouterLink to="/precios" class="btn-ghost px-6 py-3 text-base">Planes y precios</RouterLink>
         </div>
-        <dl class="mt-10 grid max-w-xl grid-cols-3 gap-3">
-          <div v-for="item in highlights" :key="item.label" class="rounded-lg border border-line bg-surface px-4 py-3">
+        <dl class="mt-10 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
+          <div v-for="item in highlights" :key="item.label" class="flex items-baseline gap-3 rounded-lg border border-line bg-surface px-4 py-3 sm:block">
             <dt class="font-figures text-2xl font-extrabold text-slate-900 sm:text-3xl">{{ item.value }}</dt>
             <dd class="mt-0.5 text-xs text-slate-500">{{ item.label }}</dd>
           </div>
@@ -83,7 +83,7 @@ const highlights = [
     </section>
 
     <!-- Roles -->
-    <section class="mt-6 grid gap-5 md:grid-cols-3">
+    <section class="mt-6 grid grid-cols-1 gap-5 md:grid-cols-3">
       <article v-for="role in roles" :key="role.eyebrow" class="card">
         <p class="eyebrow">{{ role.eyebrow }}</p>
         <h2 class="mt-2 text-2xl font-bold text-slate-900">{{ role.title }}</h2>
@@ -98,7 +98,7 @@ const highlights = [
 
     <!-- Banda de datos -->
     <section class="card mt-8 lg:p-8">
-      <div class="grid items-center gap-6 lg:grid-cols-3">
+      <div class="grid grid-cols-1 items-center gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2">
           <p class="eyebrow">Datos reales, cada jornada</p>
           <h2 class="mt-2 text-2xl font-bold text-slate-900">Calendario, resultados y actas oficiales de 1ª, 2ª y 3ª RFEF y 1ª, 2ª y 3ª AsturFútbol</h2>

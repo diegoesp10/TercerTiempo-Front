@@ -153,7 +153,7 @@ const sizeClasses = computed(() => (props.size === 'sm' ? 'px-2.5 py-1 text-sm' 
 
     <div
       v-if="open"
-      class="absolute left-0 z-30 mt-1 w-full min-w-56 overflow-hidden rounded-lg border border-line bg-surface shadow-card"
+      class="absolute left-0 z-30 mt-1 w-full min-w-[min(14rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-line bg-surface shadow-card"
       role="listbox"
     >
       <div v-if="showSearch" class="flex items-center gap-2 border-b border-line px-3 py-2">

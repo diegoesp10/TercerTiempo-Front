@@ -78,7 +78,7 @@ defineExpose({ load });
     <Spinner v-if="loading && !data" />
 
     <template v-if="data">
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div class="card">
           <p class="text-xs text-slate-500">Ingreso mensual recurrente</p>
           <p class="mt-1 text-2xl font-bold text-slate-900">{{ money(data.summary.monthlyRecurringCents) }}</p>

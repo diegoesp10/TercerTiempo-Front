@@ -147,7 +147,7 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
         </button>
         <SearchSelect
           v-if="matchdays.length > 0"
-          class="w-64"
+          class="w-full sm:w-64"
           size="sm"
           aria-label="Elegir jornada"
           :model-value="selected"

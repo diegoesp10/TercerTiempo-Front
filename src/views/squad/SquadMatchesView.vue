@@ -57,7 +57,7 @@ function downloadPaper(withNextMatch: boolean) {
         <p class="text-xs text-slate-500">PDF para imprimir y apuntar el partido a mano (mismas columnas que el acta interna); después la pasas a la app.</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <button v-if="nextMatch" type="button" class="btn-primary" @click="downloadPaper(true)">
+        <button v-if="nextMatch" type="button" class="btn-primary min-w-0 max-w-full" @click="downloadPaper(true)">
           Próximo partido · J{{ nextMatch.matchday }}
           <TeamName prefix="vs" :name="opponentOf(nextMatch, teamId).name" :crest-url="opponentOf(nextMatch, teamId).crestUrl" :short-name="opponentOf(nextMatch, teamId).shortName" />
         </button>

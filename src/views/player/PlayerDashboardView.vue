@@ -137,7 +137,7 @@ async function leave() {
     >
       <template #actions>
         <button type="button" class="btn-primary" @click="photoOpen = true"><Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />{{ auth.player?.photoUrl ? 'Cambiar mi foto' : 'Subir mi foto' }}</button>
-        <RouterLink :to="{ name: 'squad', params: { squadId: squad.squadId } }" class="btn-secondary">
+        <RouterLink :to="{ name: 'squad', params: { squadId: squad.squadId } }" class="btn-secondary min-w-0 max-w-full">
           <TeamName :name="squad.teamName" :crest-url="squad.teamCrestUrl" :team-id="squad.teamId" />
           <Badge :tone="squad.visibility === 'Public' ? 'green' : 'slate'">{{ visibilityLabels[squad.visibility] }}</Badge>
         </RouterLink>
@@ -169,7 +169,7 @@ async function leave() {
       </div>
     </section>
 
-    <div class="grid gap-6 lg:grid-cols-2">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <!-- Impacto en el equipo -->
       <section v-if="impact" class="card">
         <h2 class="font-semibold text-slate-900">Tu aporte al equipo</h2>
@@ -244,7 +244,7 @@ async function leave() {
           Ver ficha completa
         </RouterLink>
       </div>
-      <div class="grid gap-6 lg:grid-cols-2">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ChartCard title="Tu nota partido a partido" subtitle="Calculada con los datos del acta, frente a tu media y la de la plantilla." class="lg:col-span-2">
           <AppChart v-if="trendChart" :option="trendChart" :height="280" label="Evolución de tu nota" />
         </ChartCard>

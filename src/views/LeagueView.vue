@@ -70,7 +70,7 @@ watch(selectedId, (id) => {
     {{ season.isCurrent ? 'Todavía no hay ligas sincronizadas.' : `No hay ligas guardadas de la temporada ${season.selected?.label}.` }}
   </Alert>
 
-  <div v-else class="grid items-start gap-6 lg:grid-cols-5">
+  <div v-else class="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
     <!-- Jornada en curso (o la elegida) -->
     <MatchdayFixtures v-if="selectedId" :competition-id="selectedId" :highlight-team-ids="myTeamIds" class="lg:col-span-2" />
 

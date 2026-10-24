@@ -139,7 +139,7 @@ async function submit() {
       <form class="mt-6 space-y-4" @submit.prevent="submit">
         <Alert v-if="error" kind="error">{{ error }}</Alert>
 
-        <div class="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Tipo de cuenta">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Tipo de cuenta">
           <button
             v-for="type in accountTypes"
             :key="type.value"

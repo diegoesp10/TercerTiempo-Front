@@ -164,7 +164,7 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
 
       <p v-if="rows.length === 0" class="text-sm text-slate-500">Selecciona al menos un jugador.</p>
 
-      <div v-else class="grid gap-6 lg:grid-cols-2">
+      <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ChartCard title="Perfil por 90 minutos" subtitle="Cada eje escalado al máximo de la plantilla.">
           <AppChart v-if="radar" :option="radar" :height="380" label="Radar comparativo de jugadores" />
         </ChartCard>

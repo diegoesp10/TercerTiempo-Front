@@ -153,7 +153,7 @@ const arrow = (key: string) => (sortKey.value === key ? (sortAsc.value ? ' ▲' 
     </p>
 
     <!-- Gráficos del equipo -->
-    <div v-if="hasRecords || teamResults" class="mb-8 grid gap-6 lg:grid-cols-3">
+    <div v-if="hasRecords || teamResults" class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
       <ChartCard v-if="teamResults" title="Resultados y puntos" subtitle="Goles a favor y en contra por partido; puntos acumulados en el eje derecho." class="lg:col-span-2">
         <AppChart :option="teamResults" :height="300" label="Resultados del equipo y puntos acumulados" />
       </ChartCard>

@@ -148,7 +148,7 @@ const tips = [
         Haz la foto como en las fichas de los profesionales: recortamos tu figura automáticamente y la colocamos sobre el fondo de tu
         ficha. El recorte se hace en tu dispositivo; solo se sube el resultado.
       </p>
-      <ul class="mt-4 grid gap-3 sm:grid-cols-3">
+      <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <li v-for="tip in tips" :key="tip.title" class="rounded-xl border border-line bg-surface-2 p-3">
           <Icon :icon="tip.icon" class="h-4 w-4 text-brand-500" />
           <p class="mt-2 text-sm font-semibold text-slate-900">{{ tip.title }}</p>
@@ -171,7 +171,7 @@ const tips = [
     </div>
 
     <template v-else-if="step === 'frame' && cut">
-      <div class="grid gap-5 sm:grid-cols-[minmax(0,15rem)_1fr]">
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-[minmax(0,15rem)_1fr]">
         <canvas ref="preview" class="mx-auto aspect-[4/5] w-full max-w-60 rounded-xl border border-line shadow-card" />
         <div class="space-y-4">
           <label class="flex items-center gap-2 text-sm text-slate-700">

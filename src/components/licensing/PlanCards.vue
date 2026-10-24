@@ -42,7 +42,7 @@ const monthlyEquivalent = (cents: number) => formatPrice(Math.round(cents / 12),
       </div>
     </div>
 
-    <div class="mx-auto mt-6 grid max-w-4xl gap-5 md:grid-cols-2">
+    <div class="mx-auto mt-6 grid grid-cols-1 max-w-4xl gap-5 md:grid-cols-2">
       <article
         v-for="plan in plans"
         :key="plan.plan"
@@ -67,7 +67,7 @@ const monthlyEquivalent = (cents: number) => formatPrice(Math.round(cents / 12),
             <span class="font-figures text-4xl font-extrabold tracking-tight text-slate-900">{{ formatPrice(priceOf(plan, interval), currency) }}</span>
             <span class="text-sm font-medium text-slate-500">{{ interval === 'Yearly' ? '/año' : '/mes' }}</span>
           </p>
-          <p class="mt-1 h-5 text-xs text-slate-500">
+          <p class="mt-1 min-h-5 text-xs text-slate-500">
             <template v-if="interval === 'Yearly'">
               Equivale a {{ monthlyEquivalent(plan.yearlyPriceCents) }}/mes<template v-if="freeMonths(plan) > 0"> · <strong class="text-emerald-700">{{ freeMonths(plan) }} meses gratis</strong></template>
             </template>
@@ -81,7 +81,7 @@ const monthlyEquivalent = (cents: number) => formatPrice(Math.round(cents / 12),
           </span>
           <div class="min-w-0">
             <p class="font-semibold text-slate-900">{{ plan.maxStaff === 1 ? '1 técnico' : `Hasta ${plan.maxStaff} técnicos` }}</p>
-            <p class="truncate text-xs text-slate-500">{{ planCopy[plan.plan].staffNote }}</p>
+            <p class="text-xs text-slate-500">{{ planCopy[plan.plan].staffNote }}</p>
           </div>
         </div>
 

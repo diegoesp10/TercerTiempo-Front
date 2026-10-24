@@ -141,7 +141,7 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
         <StatCard label="Pases clave" :value="data.stats.keyPasses" :hint="`${data.stats.tackles} entradas · ${data.stats.interceptions} intercepciones`" />
       </div>
 
-      <div class="grid gap-6 lg:grid-cols-2">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ChartCard
           title="Nota partido a partido"
           subtitle="Calculada con los datos del acta; color según el tramo. Línea discontinua: su media y la de la plantilla."

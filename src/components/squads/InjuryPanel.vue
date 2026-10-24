@@ -234,7 +234,7 @@ const expectedTone = (injury: InjuryDto) => {
           <input id="injury-reason" v-model="form.reason" type="text" maxlength="300" class="input" placeholder="Golpe en el entrenamiento del martes, isquio derecho…" />
           <p v-if="fieldErrors.reason" class="field-error">{{ fieldErrors.reason[0] }}</p>
         </div>
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label class="label" for="injury-start">Desde</label>
             <input id="injury-start" v-model="form.startedOn" type="date" required class="input" @change="proposeReturn()" />

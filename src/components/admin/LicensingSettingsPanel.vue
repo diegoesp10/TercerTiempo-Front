@@ -137,10 +137,10 @@ onMounted(load);
         </label>
       </div>
 
-      <div class="grid gap-4 lg:grid-cols-2">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <fieldset v-for="form in plans" :key="form.plan" class="rounded-lg border border-slate-200 p-4">
           <legend class="px-1 text-sm font-semibold text-slate-900">{{ licensePlanLabels[form.plan] }}</legend>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label>
               <span class="label">Al mes (€)</span>
               <input v-model="form.monthly" type="number" required min="0.5" max="10000" step="0.01" class="input" />
@@ -178,7 +178,7 @@ onMounted(load);
       <Alert v-if="error" kind="error">{{ error }}</Alert>
       <Alert v-if="saved && !dirty" kind="success">Planes guardados. La web pública ya muestra los precios nuevos.</Alert>
 
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <button type="submit" class="btn-primary" v-busy="saving" :disabled="saving || !dirty">Guardar cambios</button>
         <button type="button" class="btn-ghost" :disabled="saving || !dirty" @click="fill(settings!)">Descartar</button>
       </div>

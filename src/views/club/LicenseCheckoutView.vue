@@ -70,7 +70,7 @@ watch(data, async (checkout) => {
         <Badge v-if="isMock" tone="amber">Pasarela simulada · sin cobro real</Badge>
       </div>
 
-      <div class="grid gap-6 lg:grid-cols-5">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <!-- Resumen del pedido -->
         <aside class="card lg:col-span-2 lg:self-start">
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Resumen</p>

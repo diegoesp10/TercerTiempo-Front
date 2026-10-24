@@ -152,7 +152,7 @@ async function remove(player: SquadPlayerDto) {
     <!-- Gestión (solo cuerpo técnico) -->
     <section v-if="canManage" class="card mb-6">
       <h2 class="font-semibold text-slate-900">Gestión de la plantilla</h2>
-      <div class="mt-4 grid gap-6 md:grid-cols-2">
+      <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Visibilidad</p>
           <div class="mt-2 inline-flex rounded-lg border border-slate-200 p-0.5" role="radiogroup" aria-label="Visibilidad">
@@ -191,7 +191,7 @@ async function remove(player: SquadPlayerDto) {
       nada más: la cuenta se crea con el nombre de su ficha y el código queda invalidado al utilizarse.
     </Alert>
 
-    <div class="grid gap-6 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <!-- Jugadores -->
       <section class="card lg:col-span-2">
         <div class="mb-3 flex items-center justify-between">

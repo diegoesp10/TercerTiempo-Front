@@ -83,7 +83,7 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
         </div>
         <div v-if="favourite" class="text-right">
           <p class="text-xs uppercase tracking-wide text-slate-500">Favorito según los datos</p>
-          <p class="flex items-center justify-end gap-2 font-display text-3xl font-bold text-slate-900">
+          <p class="flex flex-wrap items-center justify-end gap-2 break-words font-display text-2xl font-bold text-slate-900 sm:text-3xl">
             <TeamCrest v-if="favourite.team" :src="favourite.team.crestUrl" :name="favourite.team.name" :short-name="favourite.team.shortName" size="md" />
             {{ favourite.name }} <span class="text-brand-500">{{ pct(favourite.value) }}</span>
           </p>
@@ -110,7 +110,7 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
         </span>
       </div>
 
-      <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+      <dl class="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
         <div class="rounded-lg border border-line bg-surface-2 px-3 py-2">
           <dt class="text-xs text-slate-500">Goles esperados</dt>
           <dd class="font-display text-xl font-bold text-slate-900">{{ data.prediction.expectedHomeGoals.toFixed(2) }} – {{ data.prediction.expectedAwayGoals.toFixed(2) }}</dd>
@@ -135,7 +135,7 @@ const perMatch = (p: PreviewPlayerDto) => (p.matches > 0 ? (p.minutes / p.matche
     </section>
 
     <!-- Equipos -->
-    <div class="grid gap-6 lg:grid-cols-2">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <section v-for="{ side, isMine, isRival } in sides" :key="side.team.id" class="card" :class="isRival ? 'border-amber-400/50' : ''">
         <div class="flex items-center gap-3">
           <TeamCrest :src="side.team.crestUrl" :name="side.team.name" :short-name="side.team.shortName" size="lg" />

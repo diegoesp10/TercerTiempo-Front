@@ -82,12 +82,12 @@ function logout() {
   <div class="flex min-h-screen flex-col">
     <header class="sticky top-0 z-20 border-b border-line bg-surface/95">
       <div class="mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
-        <RouterLink to="/" class="flex items-center gap-3">
+        <RouterLink to="/" class="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
           <BrandMark :size="34" />
-          <span class="font-display text-2xl font-bold uppercase tracking-wide text-slate-900">Tercer <span class="text-brand-500">Tiempo</span></span>
+          <span class="whitespace-nowrap font-display text-xl font-bold uppercase tracking-wide text-slate-900 sm:text-2xl">Tercer <span class="text-brand-500">Tiempo</span></span>
         </RouterLink>
 
-        <nav class="hidden items-center gap-1 md:flex" aria-label="Principal">
+        <nav class="hidden items-center gap-1 lg:flex" aria-label="Principal">
           <RouterLink
             v-for="link in links"
             :key="link.to"
@@ -100,7 +100,8 @@ function logout() {
         </nav>
 
         <div class="flex items-center gap-2">
-          <SeasonSwitcher />
+          <!-- En móvil la temporada va dentro del menú, para que la cabecera no se parta. -->
+          <SeasonSwitcher class="hidden lg:block" />
           <button type="button" class="btn-ghost px-2" :title="themeLabel" :aria-label="themeLabel" @click="settings.toggleTheme()">
             <svg v-if="settings.isDark" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
               <circle cx="12" cy="12" r="4" />
@@ -111,14 +112,14 @@ function logout() {
             </svg>
           </button>
 
-          <div class="hidden items-center gap-2 md:flex">
+          <div class="hidden min-w-0 items-center gap-2 lg:flex">
             <template v-if="auth.isAuthenticated && auth.account">
-              <RouterLink to="/ajustes" class="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" title="Ajustes">
+              <RouterLink to="/ajustes" class="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" title="Ajustes">
                 <TeamCrest v-if="auth.isClub" :src="auth.clubCrestUrl" :name="auth.displayName" size="sm" />
                 <PlayerAvatar v-else-if="auth.isPlayer" :src="auth.player?.photoUrl" :name="auth.displayName" size="xs" />
-                <span class="font-medium">{{ auth.displayName }}</span>
+                <span class="max-w-40 truncate font-medium">{{ auth.displayName }}</span>
                 <Badge :tone="accountTone">{{ accountTypeLabels[auth.account.type] }}</Badge>
-                <span v-if="teamLabel" class="flex items-center gap-1 text-slate-400">
+                <span v-if="teamLabel" class="hidden items-center gap-1 text-slate-400 xl:flex">
                   · <TeamCrest v-if="teamCrest !== undefined" :src="teamCrest" :name="teamLabel" size="xs" /> {{ teamLabel }}
                 </span>
               </RouterLink>
@@ -130,7 +131,7 @@ function logout() {
             </template>
           </div>
 
-          <button type="button" class="btn-ghost px-2 md:hidden" aria-label="Menú" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
+          <button type="button" class="btn-ghost px-2 lg:hidden" aria-label="Menú" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
               <path d="M4 7h16M4 12h16M4 17h16" />
             </svg>
@@ -138,7 +139,7 @@ function logout() {
         </div>
       </div>
 
-      <div v-if="menuOpen" class="border-t border-line bg-surface px-4 py-2 md:hidden">
+      <div v-if="menuOpen" class="border-t border-line bg-surface px-4 py-2 lg:hidden">
         <RouterLink
           v-for="link in links"
           :key="link.to"
@@ -150,6 +151,27 @@ function logout() {
           {{ link.label }}
         </RouterLink>
         <RouterLink to="/ajustes" class="block rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-2" @click="menuOpen = false">Ajustes</RouterLink>
+        <div v-if="season.seasons.length" class="mt-2 border-t border-line px-3 pt-2">
+          <p class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <Icon icon="calendar-check" class="h-3 w-3" /> Temporada
+          </p>
+          <div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Temporada">
+            <button
+              v-for="item in season.seasons"
+              :key="item.id"
+              type="button"
+              role="radio"
+              :aria-checked="item.id === season.selected?.id"
+              class="rounded-full border px-3 py-1 text-sm font-semibold tabular-nums"
+              :class="item.id === season.selected?.id
+                ? (item.isCurrent ? 'border-brand-400 bg-brand-500 text-white' : 'border-amber-400/70 bg-amber-500/15 text-amber-700')
+                : 'border-line text-slate-600'"
+              @click="season.select(item.id); menuOpen = false"
+            >
+              {{ item.label }}<span v-if="item.isCurrent" class="ml-1 text-xs font-normal opacity-80">actual</span>
+            </button>
+          </div>
+        </div>
         <div class="mt-2 border-t border-line pt-2">
           <template v-if="auth.isAuthenticated && auth.account">
             <p class="flex items-center gap-2 px-3 py-1 text-xs text-slate-500">
@@ -176,7 +198,7 @@ function logout() {
     <LicenseBanner />
     <ConfirmDialog />
 
-    <main class="mx-auto w-full max-w-[1760px] flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+    <main class="mx-auto w-full max-w-[1760px] flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10" :class="consent.needsBanner ? 'pb-48 sm:pb-36 lg:pb-28' : ''">
       <div v-if="!route.meta.root && !route.meta.error" class="mb-4">
         <BackButton />
       </div>
