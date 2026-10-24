@@ -1,38 +1,443 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+/* El tema lo decide el atributo data-theme de <html> (stores/settings.ts): claro u oscuro. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+  Sistema de diseño de Tercer Tiempo. Los colores son variables CSS con un valor por tema; las utilidades de Tailwind
+  (@theme inline) apuntan a esas variables, así que cambiar el tema no toca ninguna vista.
+  La escala "slate" es la escala de grises de la interfaz: slate-900 = texto principal, slate-500 = secundario,
+  slate-200 = líneas, slate-50 = relleno sutil. emerald/sky/amber/red son los tonos semánticos de badges y avisos.
+*/
+:root {
+  color-scheme: light;
+
+  --t-canvas: #eef1f6;
+  --t-canvas-2: #e4e8f0;
+  --t-canvas-3: #d9dfe9;
+  --t-surface: #ffffff;
+  --t-surface-2: #f3f5f9;
+  --t-surface-3: #e9edf3;
+  --t-line: #d8dee8;
+
+  --t-slate-50: #f4f6f9;
+  --t-slate-100: #e9edf2;
+  --t-slate-200: #d5dbe5;
+  --t-slate-300: #b9c2d1;
+  --t-slate-400: #64748b;
+  --t-slate-500: #5f6b80;
+  --t-slate-600: #48536a;
+  --t-slate-700: #333d52;
+  --t-slate-800: #1f2838;
+  --t-slate-900: #101828;
+
+  --t-brand-300: #8ab4ff;
+  --t-brand-400: #4a8bf5;
+  --t-brand-500: #1f6fe8;
+  --t-brand-600: #1558c2;
+  --t-brand-700: #10459a;
+  --t-action: #1f6fe8;
+  --t-action-hover: #1558c2;
+  --t-accent-300: #74c7ea;
+  --t-accent-400: #0b86b8;
+  --t-accent-500: #086f99;
+
+  --t-emerald-50: #e8f8ef;
+  --t-emerald-100: #d2f1df;
+  --t-emerald-200: #a6e2c3;
+  --t-emerald-300: #6fcf9d;
+  --t-emerald-400: #3bb877;
+  --t-emerald-500: #22a35f;
+  --t-emerald-600: #198850;
+  --t-emerald-700: #156e42;
+  --t-emerald-800: #105634;
+  --t-emerald-900: #0b3d25;
+
+  --t-sky-50: #eaf3fe;
+  --t-sky-100: #d6e7fc;
+  --t-sky-200: #aacdf8;
+  --t-sky-700: #1a5fb4;
+  --t-sky-800: #164a8a;
+
+  --t-amber-50: #fff6e5;
+  --t-amber-100: #ffecc2;
+  --t-amber-200: #ffd98a;
+  --t-amber-400: #f5b53f;
+  --t-amber-700: #a35e00;
+  --t-amber-800: #7a4600;
+  --t-amber-900: #5c3500;
+
+  --t-red-50: #fdecef;
+  --t-red-100: #fbd9df;
+  --t-red-200: #f5b3bf;
+  --t-red-600: #d12a46;
+  --t-red-700: #ad1f38;
+  --t-red-800: #87182c;
+
+  --t-shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px -16px rgba(16, 24, 40, 0.18);
+  --t-shadow-glow: 0 1px 2px rgba(16, 24, 40, 0.08), 0 6px 16px -8px rgba(31, 111, 232, 0.45);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --t-canvas: #0a1120;
+  --t-canvas-2: #0e1729;
+  --t-canvas-3: #131e34;
+  --t-surface: #111a2c;
+  --t-surface-2: #172238;
+  --t-surface-3: #1e2b45;
+  --t-line: #243250;
+
+  --t-slate-50: #131d31;
+  --t-slate-100: #182540;
+  --t-slate-200: #243250;
+  --t-slate-300: #324468;
+  --t-slate-400: #8d9cbc;
+  --t-slate-500: #98a6c4;
+  --t-slate-600: #b2bdd6;
+  --t-slate-700: #c8d1e5;
+  --t-slate-800: #dde4f3;
+  --t-slate-900: #f2f5fb;
+
+  --t-brand-300: #8ab4ff;
+  --t-brand-400: #5a9bff;
+  --t-brand-500: #2f7bff;
+  --t-brand-600: #2162d6;
+  --t-brand-700: #184ba6;
+  --t-action: #2162d6;
+  --t-action-hover: #184ba6;
+  --t-accent-300: #8fe8ff;
+  --t-accent-400: #35d3ff;
+  --t-accent-500: #12b6e6;
+
+  --t-emerald-50: #0f2b22;
+  --t-emerald-100: #123b2e;
+  --t-emerald-200: #185a44;
+  --t-emerald-300: #1f8a66;
+  --t-emerald-400: #2fd3a3;
+  --t-emerald-500: #22c39a;
+  --t-emerald-600: #16a883;
+  --t-emerald-700: #4fe2b6;
+  --t-emerald-800: #93f0d2;
+  --t-emerald-900: #d9fff2;
+
+  --t-sky-50: #0d2443;
+  --t-sky-100: #12325e;
+  --t-sky-200: #1d4b85;
+  --t-sky-700: #6fb6ff;
+  --t-sky-800: #aad5ff;
+
+  --t-amber-50: #2a2110;
+  --t-amber-100: #3b2e12;
+  --t-amber-200: #6b4e14;
+  --t-amber-400: #f5b53f;
+  --t-amber-700: #f7c45a;
+  --t-amber-800: #ffd98a;
+  --t-amber-900: #ffe9b8;
+
+  --t-red-50: #2f1422;
+  --t-red-100: #46182b;
+  --t-red-200: #7a2740;
+  --t-red-600: #ff6b81;
+  --t-red-700: #ff8597;
+  --t-red-800: #ffb1bd;
+
+  --t-shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -20px rgba(0, 0, 0, 0.8);
+  --t-shadow-glow: 0 0 0 1px rgba(47, 123, 255, 0.4), 0 8px 24px -10px rgba(47, 123, 255, 0.5);
+}
+
+@theme inline {
+  --font-sans: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --color-canvas: var(--t-canvas);
+  --color-navy-950: var(--t-canvas);
+  --color-navy-900: var(--t-canvas-2);
+  --color-navy-800: var(--t-canvas-3);
+  --color-surface: var(--t-surface);
+  --color-surface-2: var(--t-surface-2);
+  --color-surface-3: var(--t-surface-3);
+  --color-line: var(--t-line);
+
+  --color-brand-300: var(--t-brand-300);
+  --color-brand-400: var(--t-brand-400);
+  --color-brand-500: var(--t-brand-500);
+  --color-brand-600: var(--t-brand-600);
+  --color-brand-700: var(--t-brand-700);
+  --color-action: var(--t-action);
+  --color-action-hover: var(--t-action-hover);
+  --color-accent-300: var(--t-accent-300);
+  --color-accent-400: var(--t-accent-400);
+  --color-accent-500: var(--t-accent-500);
+
+  --color-slate-50: var(--t-slate-50);
+  --color-slate-100: var(--t-slate-100);
+  --color-slate-200: var(--t-slate-200);
+  --color-slate-300: var(--t-slate-300);
+  --color-slate-400: var(--t-slate-400);
+  --color-slate-500: var(--t-slate-500);
+  --color-slate-600: var(--t-slate-600);
+  --color-slate-700: var(--t-slate-700);
+  --color-slate-800: var(--t-slate-800);
+  --color-slate-900: var(--t-slate-900);
+
+  --color-emerald-50: var(--t-emerald-50);
+  --color-emerald-100: var(--t-emerald-100);
+  --color-emerald-200: var(--t-emerald-200);
+  --color-emerald-300: var(--t-emerald-300);
+  --color-emerald-400: var(--t-emerald-400);
+  --color-emerald-500: var(--t-emerald-500);
+  --color-emerald-600: var(--t-emerald-600);
+  --color-emerald-700: var(--t-emerald-700);
+  --color-emerald-800: var(--t-emerald-800);
+  --color-emerald-900: var(--t-emerald-900);
+
+  --color-sky-50: var(--t-sky-50);
+  --color-sky-100: var(--t-sky-100);
+  --color-sky-200: var(--t-sky-200);
+  --color-sky-700: var(--t-sky-700);
+  --color-sky-800: var(--t-sky-800);
+
+  --color-amber-50: var(--t-amber-50);
+  --color-amber-100: var(--t-amber-100);
+  --color-amber-200: var(--t-amber-200);
+  --color-amber-400: var(--t-amber-400);
+  --color-amber-700: var(--t-amber-700);
+  --color-amber-800: var(--t-amber-800);
+  --color-amber-900: var(--t-amber-900);
+
+  --color-red-50: var(--t-red-50);
+  --color-red-100: var(--t-red-100);
+  --color-red-200: var(--t-red-200);
+  --color-red-600: var(--t-red-600);
+  --color-red-700: var(--t-red-700);
+  --color-red-800: var(--t-red-800);
+
+  --shadow-card: var(--t-shadow-card);
+  --shadow-glow: var(--t-shadow-glow);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--t-canvas);
+    color: var(--t-slate-900);
+    font-feature-settings: "tnum" 1, "ss01" 1;
+    font-variation-settings: "wdth" 100;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Titulares: la misma Archivo, estrechada y en negrita, con el interletrado cerrado de la prensa deportiva. */
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 84;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+  h1 {
+    letter-spacing: -0.025em;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--t-brand-500) 35%, transparent);
+  }
+
+  thead {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 90;
+    letter-spacing: 0.02em;
+  }
+
+  :root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+  :root[data-theme="dark"] input[type="search"]::-webkit-search-cancel-button {
+    filter: invert(0.8);
+  }
+
+  /* Tablas: siempre a todo el ancho de su contenedor; el contenedor (.overflow-x-auto) evita que desborden la página.
+     Las columnas secundarias llevan .col-sm / .col-md / .col-lg y solo aparecen a partir de ese ancho, así en el
+     móvil se ven las que importan sin tener que desplazar. */
+  table {
+    width: 100%;
+  }
+  .col-sm, .col-md, .col-lg {
+    display: none;
+  }
+  @media (min-width: 640px) {
+    .col-sm { display: table-cell; }
+  }
+  @media (min-width: 768px) {
+    .col-md { display: table-cell; }
+  }
+  @media (min-width: 1024px) {
+    .col-lg { display: table-cell; }
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--t-canvas); }
+  ::-webkit-scrollbar-thumb { background: var(--t-slate-300); border-radius: 999px; border: 2px solid var(--t-canvas); }
 }
 
 @layer components {
+  /* Todas las rutas comparten una superficie de lectura opaca: el césped queda en los márgenes. */
+  .page-root {
+    @apply rounded-2xl bg-canvas p-4 sm:p-6;
+  }
+  .content-note {
+    @apply rounded-lg border border-line bg-surface-2 px-4 py-3 text-xs leading-relaxed text-slate-600;
+  }
+  /* Fila de tu club en clasificaciones y jornadas: fondo y franja de color a la izquierda. */
+  .my-club-row {
+    @apply bg-brand-500/15 text-slate-900;
+    box-shadow: inset 3px 0 0 var(--color-accent-400);
+  }
+
   .btn,
   .btn-primary,
   .btn-secondary,
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition
-      focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2
-      disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition duration-150
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas
+      disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-emerald-600 text-white hover:bg-emerald-700;
+    @apply bg-action text-white hover:bg-action-hover;
+    box-shadow: var(--t-shadow-glow);
   }
   .btn-secondary {
-    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+    @apply border border-slate-300 bg-surface text-slate-800 hover:border-brand-400 hover:bg-surface-2;
   }
   .btn-ghost {
-    @apply text-slate-600 hover:bg-slate-100;
+    @apply text-slate-600 hover:bg-surface-2 hover:text-slate-900;
   }
   .input {
-    @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm
-      placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30;
+    @apply block w-full rounded-lg border border-slate-300 bg-surface px-3 py-2 text-sm text-slate-900 shadow-sm
+      placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25;
+  }
+  select.input option {
+    background-color: var(--t-surface);
+    color: var(--t-slate-900);
   }
   .label {
     @apply mb-1 block text-sm font-medium text-slate-700;
   }
   .card {
-    @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm;
+    @apply rounded-xl border border-line bg-surface p-5 shadow-card;
   }
   .field-error {
     @apply mt-1 text-xs text-red-600;
   }
+
+  /* Botón en curso (directiva v-busy): anillo girando delante del texto, del color del propio botón. */
+  .busy-spinner {
+    @apply inline-block h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-r-transparent;
+    animation: busy-spin 0.7s linear infinite;
+  }
+  .is-busy {
+    @apply cursor-progress;
+  }
+
+  /* Etiqueta pequeña en mayúsculas, estilo marcador deportivo */
+  .eyebrow {
+    @apply inline-block font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-500;
+  }
+
+  /* Transición entre páginas: con keyframes (y sin estado *-from) la página nunca se queda invisible aunque el
+     navegador no llegue a pintar el fotograma intermedio. */
+  .page-enter-active {
+    animation: page-in 0.2s ease-out;
+  }
+  .page-leave-active {
+    animation: page-out 0.14s ease-in;
+  }
+  /* Pestañas de la plantilla: solo un fundido, la cabecera no se mueve. */
+  .tab-enter-active {
+    animation: tab-in 0.16s ease-out;
+  }
+  .tab-leave-active {
+    animation: tab-out 0.1s ease-in;
+  }
+
+  /* Contenido que se está recargando con datos anteriores a la vista: se atenúa en lugar de desaparecer. */
+  .is-refreshing {
+    @apply pointer-events-none opacity-60 transition-opacity duration-200;
+  }
+
+  /* Esqueleto de carga: la forma de lo que viene, con un brillo que la recorre. */
+  .skeleton {
+    @apply rounded-md bg-surface-3;
+    background-image: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--t-surface) 55%, transparent) 50%, transparent 100%);
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    animation: skeleton-shine 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-shine {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+@keyframes tab-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes tab-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Foco visible con teclado en enlaces y controles que no son botones de la casa. */
+:where(a, summary, [role="radio"], [role="tab"]):focus-visible {
+  outline: 2px solid var(--t-brand-400);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Quien pide menos movimiento no ve deslizamientos ni brillos (el césped de fondo ya se queda quieto). */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes page-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-4px); }
+}
+
+@utility shadow-glow {
+  box-shadow: var(--t-shadow-glow);
+}
+
+@utility font-display {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 84;
+}
+
+/* Cifras grandes: anchura normal para que los números no se estrechen. */
+@utility font-figures {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 96;
+  font-feature-settings: "tnum" 1;
+}
+
+@keyframes busy-spin {
+  to { transform: rotate(360deg); }
 }

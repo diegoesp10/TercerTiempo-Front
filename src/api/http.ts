@@ -1,5 +1,7 @@
 import type { ProblemDetails } from '@/types/api';
 import { useAuthStore } from '@/stores/auth';
+import { useLoadingStore } from '@/stores/loading';
+import { describeRequest } from '@/api/loadingLabels';
 
 const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:5080').replace(/\/$/, '');
 
@@ -18,41 +20,96 @@ export class ApiError extends Error {
   get fieldErrors(): Record<string, string[]> {
     return this.problem.errors ?? {};
   }
+
+  /** Código del catálogo de errores (p. ej. license.required), si la API lo mandó. */
+  get code(): string | null {
+    return this.problem.code ?? null;
+  }
 }
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  /** Objeto (se envía como JSON) o FormData (multipart, para subir archivos). */
   body?: unknown;
+  /** Sondeos en segundo plano: no enciende la barra de carga. */
+  silent?: boolean;
+  /** Solo GET: reutiliza la respuesta durante estos milisegundos (datos de referencia que casi no cambian). */
+  cacheMs?: number;
+  /** Token propio en lugar del de la sesión (página de administración): un 401 no cierra la sesión del usuario. */
+  token?: string;
 }
 
-export async function http<T>(path: string, options: RequestOptions = {}): Promise<T> {
+export const apiBaseUrl = baseUrl;
+
+// GET en vuelo y respuestas cacheadas, por sesión y ruta: dos componentes que piden lo mismo a la vez comparten una
+// sola petición, y las listas de referencia (competiciones, tipos de lesión...) no se repiten al cambiar de página.
+const inFlight = new Map<string, Promise<unknown>>();
+const cache = new Map<string, { expires: number; data: unknown }>();
+
+/** Olvida las respuestas cacheadas (tras guardar algo, o al cambiar de sesión). */
+export function clearHttpCache() {
+  cache.clear();
+}
+
+export function http<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const method = options.method ?? 'GET';
+  if (method !== 'GET') return request<T>(path, options).finally(clearHttpCache);
+
+  const key = `${options.token ?? useAuthStore().token ?? ''}|${path}`;
+  const cached = cache.get(key);
+  if (cached && cached.expires > Date.now()) return Promise.resolve(cached.data as T);
+
+  const pending = inFlight.get(key);
+  if (pending) return pending as Promise<T>;
+
+  const promise = request<T>(path, options)
+    .then((data) => {
+      if (options.cacheMs) cache.set(key, { expires: Date.now() + options.cacheMs, data });
+      return data;
+    })
+    .finally(() => inFlight.delete(key));
+  inFlight.set(key, promise);
+  return promise;
+}
+
+async function request<T>(path: string, options: RequestOptions): Promise<T> {
   const auth = useAuthStore();
   const headers: Record<string, string> = { Accept: 'application/json' };
 
-  if (options.body !== undefined) headers['Content-Type'] = 'application/json';
-  if (auth.token) headers.Authorization = `Bearer ${auth.token}`;
+  const isForm = options.body instanceof FormData;
+  if (options.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
+  const token = options.token ?? auth.token;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
-  let response: Response;
+  const loading = useLoadingStore();
+  const task = options.silent ? null : loading.start(describeRequest(options.method ?? 'GET', path));
   try {
-    response = await fetch(`${baseUrl}${path}`, {
-      method: options.method ?? 'GET',
-      headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    });
-  } catch {
-    throw new ApiError(0, { title: 'Sin conexión', detail: 'No se ha podido contactar con la API. ¿Está arrancada?' });
+    let response: Response;
+    let text: string;
+    try {
+      response = await fetch(`${baseUrl}${path}`, {
+        method: options.method ?? 'GET',
+        headers,
+        body: options.body === undefined ? undefined : isForm ? (options.body as FormData) : JSON.stringify(options.body),
+      });
+      text = await response.text();
+    } catch {
+      throw new ApiError(0, { title: 'Sin conexión', detail: 'No se ha podido contactar con la API. ¿Está arrancada?' });
+    }
+    let data: unknown = null;
+    try { data = text ? JSON.parse(text) : null; } catch {
+      throw new ApiError(response.ok ? 502 : response.status, { title: 'Respuesta inesperada', detail: 'El servidor no ha devuelto una respuesta válida. Vuelve a intentarlo.' });
+    }
+
+    if (!response.ok) {
+      if (response.status === 401 && auth.token && !options.token) auth.logout();
+      const problem = (data as ProblemDetails | null) ?? { status: response.status, title: response.statusText };
+      throw new ApiError(response.status, problem);
+    }
+    return data as T;
+  } finally {
+    if (task !== null) loading.finish(task);
   }
-
-  const text = await response.text();
-  const data: unknown = text ? JSON.parse(text) : null;
-
-  if (!response.ok) {
-    if (response.status === 401 && auth.token) auth.logout();
-    const problem = (data as ProblemDetails | null) ?? { status: response.status, title: response.statusText };
-    throw new ApiError(response.status, problem);
-  }
-
-  return data as T;
 }
 
 export function errorMessage(error: unknown): string {

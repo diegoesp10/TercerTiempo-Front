@@ -1,0 +1,2 @@
+MediaPipe Tasks Vision 0.10.21 (Apache-2.0), copiado de node_modules/@mediapipe/tasks-vision/wasm.
+Modelo models/selfie_segmenter.tflite de Google MediaPipe (Apache-2.0).

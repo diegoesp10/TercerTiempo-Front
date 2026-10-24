@@ -5,8 +5,11 @@ import { api } from '@/api';
 import CompetitionPicker from '@/components/competitions/CompetitionPicker.vue';
 import Alert from '@/components/ui/Alert.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
-import Spinner from '@/components/ui/Spinner.vue';
+import Skeleton from '@/components/ui/Skeleton.vue';
+import MyClubBadge from '@/components/teams/MyClubBadge.vue';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
+import { useMyClub } from '@/composables/useMyClub';
 import { useAuthStore } from '@/stores/auth';
 
 const auth = useAuthStore();
@@ -17,14 +20,18 @@ const competitions = useAsync(() => api.competitions.list());
 
 const selectedId = ref<string | null>(typeof route.query.competition === 'string' ? route.query.competition : null);
 
-// Selección inicial: la de la URL, si no la del equipo del jugador, si no la primera liga nacional.
+const { preferredCompetition, isMine } = useMyClub();
+
+/** Liga preferida: la de tu club (jugador, técnico o club) o, si no, la primera nacional. */
 watch(competitions.data, (list) => {
   if (!list || list.length === 0) return;
   if (selectedId.value && list.some((c) => c.id === selectedId.value)) return;
-  selectedId.value = auth.membership?.competitionId ?? list.find((c) => c.level === 'National')?.id ?? list[0]?.id ?? null;
+  selectedId.value = preferredCompetition(list) ?? list.find((c) => c.level === 'National')?.id ?? list[0]?.id ?? null;
 });
 
 const teams = useAsync(() => (selectedId.value ? api.teams.list(selectedId.value) : Promise.resolve([])), { immediate: false });
+/** Tu club, el primero. */
+const orderedTeams = computed(() => [...(teams.data.value ?? [])].sort((a, b) => Number(isMine(b.id)) - Number(isMine(a.id))));
 
 watch(selectedId, (id) => {
   if (!id) return;
@@ -33,17 +40,23 @@ watch(selectedId, (id) => {
 }, { immediate: true });
 
 const selected = computed(() => competitions.data.value?.find((c) => c.id === selectedId.value) ?? null);
+
+const subtitle = computed(() =>
+  auth.isCoach
+    ? 'Elige nivel, liga y grupo, entra en tu equipo y crea su plantilla.'
+    : 'Elige nivel, liga y grupo para ver equipos, calendarios y plantillas.',
+);
 </script>
 
 <template>
-  <PageHeader title="Equipos" subtitle="Elige nivel, liga y grupo, entra en tu equipo y reclama tu ficha en la plantilla." />
+  <PageHeader title="Equipos" :subtitle="subtitle" />
 
-  <Alert v-if="auth.isAuthenticated && !auth.hasTeam" kind="info" class="mb-4">
-    Todavía no perteneces a ningún equipo. Entra en el tuyo y pulsa <strong>«Soy yo»</strong> sobre tu ficha de la plantilla
-    (o <strong>«Unirme a este equipo»</strong> si su plantilla no está publicada).
+  <Alert v-if="auth.isCoach && auth.coachSquads.length === 0" kind="info" class="mb-4">
+    Todavía no gestionas ninguna plantilla. Entra en tu equipo y pulsa <strong>«Crear plantilla»</strong>; si ya la creó otro
+    miembro del cuerpo técnico, <RouterLink to="/invitacion" class="font-medium underline">únete con su código</RouterLink>.
   </Alert>
 
-  <Spinner v-if="competitions.loading.value" />
+  <Skeleton v-if="competitions.loading.value && !competitions.data.value" variant="cards" label="Cargando las competiciones…" />
   <Alert v-else-if="competitions.error.value" kind="error">{{ competitions.error.value }}</Alert>
   <Alert v-else-if="!competitions.data.value || competitions.data.value.length === 0" kind="warning">
     Todavía no hay ligas sincronizadas. Si acabas de arrancar la API, espera a que termine la primera sincronización.
@@ -56,29 +69,26 @@ const selected = computed(() => competitions.data.value?.find((c) => c.id === se
       {{ selected.name }} · {{ selected.currentSeasonLabel ?? 'sin temporada' }}
     </h2>
 
-    <Spinner v-if="teams.loading.value" />
+    <Skeleton v-if="teams.loading.value && !teams.data.value" variant="cards" :count="9" label="Cargando los equipos…" />
     <Alert v-else-if="teams.error.value" kind="error">{{ teams.error.value }}</Alert>
 
-    <div v-else-if="teams.data.value" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-else-if="teams.data.value" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" :class="{ 'is-refreshing': teams.loading.value }" :aria-busy="teams.loading.value">
       <RouterLink
-        v-for="team in teams.data.value"
+        v-for="team in orderedTeams"
         :key="team.id"
         :to="{ name: 'team', params: { teamId: team.id } }"
-        class="card flex items-center gap-4 transition hover:border-emerald-300 hover:shadow"
-        :class="team.id === auth.membership?.teamId ? 'border-emerald-300 bg-emerald-50' : ''"
+        class="card flex items-center gap-4 transition hover:border-brand-400/60 hover:shadow"
+        :class="isMine(team.id) ? 'border-accent-400/60 bg-brand-500/15 ring-1 ring-accent-400/40' : ''"
       >
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
-          <img v-if="team.crestUrl" :src="team.crestUrl" :alt="team.name" class="h-10 w-10 object-contain" loading="lazy" />
-          <span v-else>{{ team.shortName }}</span>
-        </div>
+        <TeamCrest :src="team.crestUrl" :name="team.name" :short-name="team.shortName" size="lg" />
         <div class="min-w-0 flex-1">
           <p class="truncate font-medium text-slate-900">{{ team.name }}</p>
           <p class="text-xs text-slate-500">
             <template v-if="team.position">{{ team.position }}º · {{ team.points }} pts · {{ team.played }} PJ</template>
             <template v-else>Sin clasificación</template>
           </p>
+          <MyClubBadge v-if="isMine(team.id)" class="mt-1.5" />
         </div>
-        <span v-if="team.id === auth.membership?.teamId" class="text-xs font-medium text-emerald-700">Tu equipo</span>
       </RouterLink>
     </div>
   </template>
