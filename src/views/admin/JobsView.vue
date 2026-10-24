@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { adminApi } from '@/api/admin';
 import { ApiError, errorMessage } from '@/api/http';
 import ClubInvitationsPanel from '@/components/admin/ClubInvitationsPanel.vue';
+import LicensesPanel from '@/components/admin/LicensesPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
@@ -41,6 +42,14 @@ function writeSession(session: AdminSession | null) {
 }
 
 const session = ref<AdminSession | null>(readSession());
+
+type AdminTab = 'jobs' | 'licenses' | 'invitations';
+const tabs: { value: AdminTab; label: string }[] = [
+  { value: 'jobs', label: 'Trabajos y scrapeos' },
+  { value: 'licenses', label: 'Licencias y cobros' },
+  { value: 'invitations', label: 'Invitaciones de clubes' },
+];
+const tab = ref<AdminTab>('jobs');
 const form = reactive({ userName: '', password: '' });
 const loggingIn = ref(false);
 const loginError = ref<string | null>(null);
@@ -185,7 +194,7 @@ const statusClass = (code: number | null) =>
   code === null ? 'text-red-600' : code >= 500 || code === 403 || code === 429 ? 'text-red-600' : code >= 300 ? 'text-amber-700' : 'text-emerald-700';
 
 const sourceTitle = (source: ScrapeSourceDto) =>
-  ({ besoccer: 'BeSoccer (actas)', asturfutbol: 'asturfutbol.es (actas)', futbolasturiano: 'futbolasturiano.es (datos)', escudos: 'Escudos', 'besoccer-datos': 'BeSoccer (datos)' })[source.provider] ?? source.provider;
+  ({ asturfutbol: 'asturfutbol.es (actas)', futbolasturiano: 'futbolasturiano.es (datos)', escudos: 'Escudos' } as Record<string, string>)[source.provider] ?? source.provider;
 </script>
 
 <template>
@@ -209,13 +218,30 @@ const sourceTitle = (source: ScrapeSourceDto) =>
   </section>
 
   <template v-else>
-    <PageHeader title="Trabajos y scrapeos" :subtitle="`Cuándo y cómo se han actualizado los datos, y cada llamada a las webs externas. Sesión de ${session.userName}.`">
+    <PageHeader title="Administración" :subtitle="`Scrapeos, licencias y altas de clubes. Sesión de ${session.userName}.`">
       <template #actions>
         <button type="button" class="btn-secondary" v-busy="loading" :disabled="loading" @click="load()"><Icon icon="rotate-right" class="h-3.5 w-3.5" /> Actualizar</button>
         <button type="button" class="btn-ghost" @click="logout()"><Icon icon="right-from-bracket" class="h-3.5 w-3.5" /> Salir</button>
       </template>
     </PageHeader>
 
+    <div class="mb-6 flex flex-wrap gap-2" role="tablist">
+      <button
+        v-for="item in tabs"
+        :key="item.value"
+        type="button"
+        role="tab"
+        :aria-selected="tab === item.value"
+        class="rounded-full border px-4 py-1.5 text-sm font-medium"
+        :class="tab === item.value ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
+        @click="tab = item.value"
+      >{{ item.label }}</button>
+    </div>
+
+    <LicensesPanel v-if="tab === 'licenses'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    <ClubInvitationsPanel v-else-if="tab === 'invitations'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+
+    <template v-else>
     <Alert v-if="error" kind="error" class="mb-4">{{ error }}</Alert>
     <Alert v-if="launchMessage" kind="success" class="mb-4">{{ launchMessage }}</Alert>
     <Spinner v-if="loading && !data" />
@@ -272,8 +298,6 @@ const sourceTitle = (source: ScrapeSourceDto) =>
           </button>
         </article>
       </div>
-
-      <ClubInvitationsPanel :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
 
       <section class="card">
         <h2 class="font-semibold text-slate-900">Webs externas</h2>
@@ -396,5 +420,6 @@ const sourceTitle = (source: ScrapeSourceDto) =>
         </div>
       </section>
     </div>
+    </template>
   </template>
 </template>

@@ -1299,3 +1299,66 @@ export interface ClubInvitationDto {
   clubName: string | null;
   revokedAt: string | null;
 }
+
+// --- Administración: licencias y cobros de todos los clubes ---
+
+export type AdminLicenseState = 'trial' | 'trial-plan' | 'active' | 'grace' | 'unpaid' | 'cancelled' | 'trial-ended';
+
+export interface AdminLicenseDto {
+  id: string;
+  clubId: string;
+  clubName: string;
+  teamId: string;
+  teamName: string;
+  state: AdminLicenseState;
+  hasAccess: boolean;
+  effectivePlan: LicensePlan;
+  plan: LicensePlan | null;
+  interval: BillingInterval | null;
+  autoRenew: boolean;
+  nextPlan: LicensePlan | null;
+  nextInterval: BillingInterval | null;
+  trialEndsOn: string;
+  paidUntil: string | null;
+  renewsOn: string | null;
+  nextChargeCents: number | null;
+  owedCents: number;
+  owedSince: string | null;
+  paidCents: number;
+  lastPaymentAt: string | null;
+  provider: string | null;
+}
+
+export interface AdminLicensePaymentDto {
+  id: string;
+  clubName: string;
+  teamName: string;
+  kind: 'Subscription' | 'Renewal';
+  plan: LicensePlan;
+  interval: BillingInterval;
+  amountCents: number;
+  periodPriceCents: number;
+  status: PaymentStatus;
+  provider: string;
+  createdAt: string;
+  paidAt: string | null;
+}
+
+export interface LicensesOverviewDto {
+  summary: {
+    total: number;
+    trial: number;
+    paying: number;
+    grace: number;
+    unpaid: number;
+    inactive: number;
+    owedCents: number;
+    collectedCents: number;
+    monthlyRecurringCents: number;
+    pendingCheckouts: number;
+  };
+  licenses: AdminLicenseDto[];
+  payments: AdminLicensePaymentDto[];
+  currency: string;
+  today: string;
+}
