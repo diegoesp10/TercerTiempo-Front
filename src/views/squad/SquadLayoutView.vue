@@ -59,7 +59,7 @@ const tabs = [
   <template v-else-if="error">
     <Alert v-if="licenseCode === 'license.required'" kind="warning">
       <strong>Este equipo no tiene licencia vigente en Tercer Tiempo.</strong> Sus actas, estadísticas, lesiones y vídeos se conservan, pero nadie del equipo puede verlos hasta que el club renueve la licencia.
-      <template v-if="auth.isClub"> <RouterLink to="/" class="font-medium underline">Renovar la licencia</RouterLink>.</template>
+      <template v-if="auth.isClub"> <RouterLink :to="{ name: 'licenses' }" class="font-medium underline">Renovar la licencia</RouterLink>.</template>
       <template v-else> Pídeselo a tu club.</template>
     </Alert>
     <Alert v-else-if="licenseCode === 'license.viewer_required'" kind="warning">

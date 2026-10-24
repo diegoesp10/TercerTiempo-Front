@@ -1,8 +1,10 @@
 import type {
   AccountType,
   AppointmentStatus,
+  BillingInterval,
   CompetitionDto,
   CompetitionLevel,
+  LicensePlan,
   LicenseStatus,
   MatchDto,
   MatchStatus,
@@ -164,6 +166,15 @@ export const licenseStatusLabels: Record<LicenseStatus, string> = {
 
 export const licenseStatusTone: Record<LicenseStatus, Tone> = { Trial: 'blue', Active: 'green', Expired: 'red' };
 
+export const licensePlanLabels: Record<LicensePlan, string> = { Basic: 'Básica', Premium: 'Premium' };
+
+export const billingIntervalLabels: Record<BillingInterval, string> = { Monthly: 'Mensual', Yearly: 'Anual' };
+
+/** «/mes» o «/año» detrás de un precio. */
+export const billingIntervalSuffix: Record<BillingInterval, string> = { Monthly: '/mes', Yearly: '/año' };
+
+export const staffCountLabel = (count: number) => (count === 1 ? '1 técnico' : `${count} técnicos`);
+
 export const suggestionStatusLabels: Record<SuggestionStatus, string> = {
   Pending: 'Pendiente',
   Approved: 'Aprobada',
@@ -209,6 +220,10 @@ export const videoAccessLabels: Record<VideoAccessLevel, string> = {
 /** "5,00 €" a partir de céntimos. */
 export const formatMoney = (cents: number, currency = 'EUR') =>
   (cents / 100).toLocaleString('es-ES', { style: 'currency', currency });
+
+/** Precio para mostrar: sin decimales cuando son cero ("99 €", "9,90 €"). */
+export const formatPrice = (cents: number, currency = 'EUR') =>
+  (cents / 100).toLocaleString('es-ES', { style: 'currency', currency, minimumFractionDigits: cents % 100 === 0 ? 0 : 2 });
 
 export const videoPartLabels: Record<VideoPart, string> = {
   Full: 'Partido completo',

@@ -25,7 +25,8 @@ watch(
 );
 
 const expired = computed(() => status.value?.teams.filter((t) => t.status === 'Expired') ?? []);
-const ending = computed(() => status.value?.teams.filter((t) => t.status === 'Trial' && t.daysLeft <= 7) ?? []);
+// Prueba a punto de acabar sin plan elegido (con plan, el cobro llega solo al acabarla).
+const ending = computed(() => status.value?.teams.filter((t) => t.status === 'Trial' && t.daysLeft <= 7 && !t.autoRenew) ?? []);
 const names = (list: { teamName: string }[]) => list.map((t) => t.teamName).join(', ');
 </script>
 
@@ -38,7 +39,7 @@ const names = (list: { teamName: string }[]) => list.map((t) => t.teamName).join
         <template v-if="auth.isClub">la plantilla, el cuerpo técnico y los jugadores no pueden verlos hasta que la renueves.</template>
         <template v-else>no podrás verlos hasta que tu club renueve la licencia.</template>
       </span>
-      <RouterLink v-if="auth.isClub" to="/" class="font-semibold underline">Renovar licencia</RouterLink>
+      <RouterLink v-if="auth.isClub" :to="{ name: 'licenses', query: { equipo: expired[0]!.teamId } }" class="font-semibold underline">Renovar licencia</RouterLink>
     </div>
   </div>
   <div v-else-if="ending.length" class="border-b border-amber-200 bg-amber-50" role="status">
@@ -46,10 +47,10 @@ const names = (list: { teamName: string }[]) => list.map((t) => t.teamName).join
       <Icon icon="circle-info" class="h-3.5 w-3.5" />
       <span>
         Periodo de prueba de {{ names(ending) }} hasta el {{ formatDate(ending[0]!.validUntil) }}.
-        <template v-if="auth.isClub">Paga la licencia para no perder el acceso.</template>
+        <template v-if="auth.isClub">Elige un plan para no perder el acceso: no se cobra nada hasta que acabe.</template>
         <template v-else>Recuérdaselo a tu club para no perder el acceso.</template>
       </span>
-      <RouterLink v-if="auth.isClub" to="/" class="font-semibold underline">Pagar licencia</RouterLink>
+      <RouterLink v-if="auth.isClub" :to="{ name: 'licenses', query: { equipo: ending[0]!.teamId } }" class="font-semibold underline">Elegir plan</RouterLink>
     </div>
   </div>
 </template>

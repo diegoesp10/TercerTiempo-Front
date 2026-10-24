@@ -141,6 +141,9 @@ export interface ClubTeamDto {
 
 export type LicenseStatus = 'Trial' | 'Active' | 'Expired';
 export type PaymentStatus = 'Pending' | 'Paid' | 'Cancelled';
+/** Básica: un técnico. Premium: cuerpo técnico ampliado. Las dos con la plantilla entera. */
+export type LicensePlan = 'Basic' | 'Premium';
+export type BillingInterval = 'Monthly' | 'Yearly';
 
 export interface TeamLicenseDto {
   teamId: string;
@@ -151,16 +154,43 @@ export interface TeamLicenseDto {
   paidUntil: string | null;
   validUntil: string;
   daysLeft: number;
+  /** Plan contratado; null mientras no se ha elegido (la prueba). */
+  plan: LicensePlan | null;
+  /** Plan con el que funciona ahora: el contratado o Premium durante la prueba. */
+  effectivePlan: LicensePlan;
+  interval: BillingInterval | null;
+  autoRenew: boolean;
+  /** Cambio pedido para la próxima renovación. */
+  nextPlan: LicensePlan | null;
+  nextInterval: BillingInterval | null;
+  /** Día del próximo cobro, si se renueva. */
+  renewsOn: string | null;
+  renewalPriceCents: number | null;
+  /** Técnicos de la temporada (vigentes o pendientes de canjear) y los que admite el plan. */
+  staffCount: number;
+  staffLimit: number;
+}
+
+export interface LicensePlanDto {
+  plan: LicensePlan;
+  monthlyPriceCents: number;
+  yearlyPriceCents: number;
+  maxStaff: number;
+}
+
+export interface LicensingCatalogDto {
+  plans: LicensePlanDto[];
+  currency: string;
+  trialDays: number;
+  renewalGraceDays: number;
+  /** «mock» = pago simulado, sin cobro real. */
+  provider: string;
 }
 
 export interface LicensingStatusDto {
   licensed: boolean;
   teams: TeamLicenseDto[];
-  monthlyPriceCents: number;
-  currency: string;
-  trialDays: number;
-  /** «mock» = pago simulado, sin cobro real. */
-  provider: string;
+  catalog: LicensingCatalogDto;
 }
 
 export interface LicenseCheckoutDto {
@@ -168,8 +198,12 @@ export interface LicenseCheckoutDto {
   url: string;
   teamId: string;
   teamName: string;
-  months: number;
+  plan: LicensePlan;
+  interval: BillingInterval;
+  /** Lo que se cobra hoy (0 si aún queda prueba o periodo pagado). */
   amountCents: number;
+  periodPriceCents: number;
+  firstChargeOn: string;
   currency: string;
   provider: string;
   status: PaymentStatus;
