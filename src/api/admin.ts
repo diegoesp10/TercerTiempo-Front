@@ -1,6 +1,10 @@
 import { http } from '@/api/http';
 import type {
   AdminAuthResponse,
+  AnalyticsReportDto,
+  ClubScope,
+  CookiePolicyDto,
+  UpsertCookieRequest,
   ClubInvitationDto,
   FootballSyncSettingsDto,
   InvitationClubDto,
@@ -25,6 +29,17 @@ export const adminApi = {
     http<FootballSyncSettingsDto>('/api/admin/football-sync', { method: 'PUT', token, body }),
   runFootballSync: (token: string, body: RunFootballSyncRequest) =>
     http<JobDto>('/api/admin/football-sync/run', { method: 'POST', token, body }),
+  analytics: (token: string, from: string, to: string, clubId: string | null, scope: ClubScope) =>
+    http<AnalyticsReportDto>(
+      `/api/admin/analytics?from=${from}&to=${to}&scope=${scope}${clubId ? `&clubId=${clubId}` : ''}`,
+      { token, silent: true },
+    ),
+  createCookie: (token: string, body: UpsertCookieRequest) => http<CookiePolicyDto>('/api/admin/cookies', { method: 'POST', token, body }),
+  updateCookie: (token: string, id: string, body: UpsertCookieRequest) =>
+    http<CookiePolicyDto>(`/api/admin/cookies/${id}`, { method: 'PUT', token, body }),
+  deleteCookie: (token: string, id: string) => http<CookiePolicyDto>(`/api/admin/cookies/${id}`, { method: 'DELETE', token }),
+  publishCookiePolicy: (token: string, version: string) =>
+    http<CookiePolicyDto>('/api/admin/cookies/policy', { method: 'POST', token, body: { version } }),
   licenses: (token: string) => http<LicensesOverviewDto>('/api/admin/licenses', { token }),
   licensingSettings: (token: string) => http<LicensingSettingsDto>('/api/admin/licensing-settings', { token }),
   updateLicensingSettings: (token: string, body: UpdateLicensingSettingsRequest) =>

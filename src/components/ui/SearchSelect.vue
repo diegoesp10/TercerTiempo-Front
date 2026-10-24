@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
+import { trackSearch } from '@/utils/analytics';
 
 /** Opción del desplegable: valor, texto, texto secundario y grupo (cabecera) opcionales. */
 export interface SelectOption {
@@ -42,6 +43,7 @@ const root = ref<HTMLElement | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
 const open = ref(false);
 const query = ref('');
+watch(query, (text) => trackSearch(props.id ?? 'select', text));
 const highlighted = ref(0);
 
 const showSearch = computed(() => props.searchable ?? props.options.length > 6);

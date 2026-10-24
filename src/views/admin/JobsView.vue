@@ -12,6 +12,8 @@ import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { JobDto, JobRunDto, JobRunStatus, JobsOverviewDto, ScrapeRequestDto, ScrapeSourceDto } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
+import AnalyticsPanel from '@/components/admin/AnalyticsPanel.vue';
+import CookiesAdminPanel from '@/components/admin/CookiesAdminPanel.vue';
 
 /**
  * Página oculta del administrador (/jobs, sin enlace en el menú): cuándo y cómo se han actualizado los datos, las
@@ -45,11 +47,13 @@ function writeSession(session: AdminSession | null) {
 
 const session = ref<AdminSession | null>(readSession());
 
-type AdminTab = 'jobs' | 'licenses' | 'invitations';
+type AdminTab = 'jobs' | 'licenses' | 'invitations' | 'analytics' | 'cookies';
 const tabs: { value: AdminTab; label: string }[] = [
   { value: 'jobs', label: 'Trabajos y scrapeos' },
   { value: 'licenses', label: 'Licencias y cobros' },
   { value: 'invitations', label: 'Invitaciones de clubes' },
+  { value: 'analytics', label: 'Uso de la web' },
+  { value: 'cookies', label: 'Cookies' },
 ];
 const tab = ref<AdminTab>('jobs');
 const licensesPanel = ref<InstanceType<typeof LicensesPanel> | null>(null);
@@ -251,6 +255,8 @@ const sourceTitle = (source: ScrapeSourceDto) =>
       <LicensesPanel ref="licensesPanel" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     </div>
     <ClubInvitationsPanel v-else-if="tab === 'invitations'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    <AnalyticsPanel v-else-if="tab === 'analytics'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    <CookiesAdminPanel v-else-if="tab === 'cookies'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
 
     <template v-else>
     <Alert v-if="error" kind="error" class="mb-4">{{ error }}</Alert>

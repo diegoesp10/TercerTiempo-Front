@@ -41,6 +41,9 @@ import type {
   SquadDetailDto,
   RegistrationOptionsDto,
   SeasonYearDto,
+  CookiePolicyDto,
+  ConsentDto,
+  ConsentAction,
   ClubInvitationLookupDto,
   SquadInviteDto,
   SquadMatchDto,
@@ -71,6 +74,12 @@ const REFERENCE_CACHE_MS = 5 * 60_000;
 const SQUAD_READ_CACHE_MS = 30_000;
 
 export const api = {
+  privacy: {
+    /** Política de cookies vigente con su catálogo. */
+    cookies: () => http<CookiePolicyDto>('/api/cookies', { silent: true }),
+    consent: (visitorId: string, action: ConsentAction, analytics: boolean) =>
+      http<ConsentDto>('/api/cookies/consent', { method: 'POST', body: { visitorId, action, analytics }, silent: true }),
+  },
   seasons: {
     /** Temporadas de la app, de la más reciente a la más antigua (la actual marcada). */
     list: () => http<SeasonYearDto[]>('/api/seasons', { silent: true, cacheMs: 300_000 }),

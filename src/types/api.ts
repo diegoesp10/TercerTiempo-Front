@@ -1448,3 +1448,76 @@ export interface SeasonYearDto {
   endsOn: string;
   isCurrent: boolean;
 }
+
+// --- Cookies y analítica propia ---
+
+export type CookieCategory = 'Necessary' | 'Preferences' | 'Analytics';
+export type CookieStorage = 'Cookie' | 'LocalStorage' | 'SessionStorage';
+
+export interface CookieDto {
+  id: string;
+  name: string;
+  category: CookieCategory;
+  storage: CookieStorage;
+  provider: string;
+  purpose: string;
+  duration: string;
+  sortOrder: number;
+  requiresConsent: boolean;
+}
+
+export interface CookiePolicyDto {
+  /** Versión vigente: un consentimiento guardado solo vale si es de esta versión. */
+  version: string;
+  updatedAt: string;
+  cookies: CookieDto[];
+}
+
+export type ConsentAction = 'AcceptAll' | 'RejectAll' | 'Custom';
+
+export interface ConsentDto {
+  visitorId: string;
+  analytics: boolean;
+  action: ConsentAction;
+  policyVersion: string;
+  createdAt: string;
+}
+
+export type AnalyticsEventType = 'PageView' | 'Search' | 'Click';
+export type AnalyticsEntity = 'Team' | 'Club' | 'Competition' | 'Match' | 'Squad';
+export type ClubScope = 'Actor' | 'Subject';
+
+export interface TrackEventDto {
+  type: AnalyticsEventType;
+  path: string;
+  routeName: string | null;
+  label: string | null;
+  entityType: AnalyticsEntity | null;
+  entityId: string | null;
+  occurredAt: string;
+}
+
+export interface AnalyticsCountDto { key: string; label: string; count: number; visitors: number }
+export interface AnalyticsEntityCountDto { type: AnalyticsEntity; id: string; name: string; crestUrl: string | null; count: number; visitors: number }
+export interface AnalyticsClubCountDto { clubId: string; name: string; crestUrl: string | null; count: number; visitors: number }
+
+export interface AnalyticsReportDto {
+  from: string;
+  to: string;
+  clubId: string | null;
+  scope: ClubScope;
+  totals: { pageViews: number; visitors: number; sessions: number; searches: number; clicks: number };
+  days: { day: string; pageViews: number; visitors: number }[];
+  pages: AnalyticsCountDto[];
+  searches: AnalyticsCountDto[];
+  clicks: AnalyticsCountDto[];
+  entities: AnalyticsEntityCountDto[];
+  actors: AnalyticsCountDto[];
+  activeClubs: AnalyticsClubCountDto[];
+  viewedClubs: AnalyticsClubCountDto[];
+  consents: { total: number; acceptAll: number; rejectAll: number; custom: number; withAnalytics: number };
+  /** Todos los clubes con cuenta, para el filtro. */
+  clubs: AnalyticsClubCountDto[];
+}
+
+export type UpsertCookieRequest = Pick<CookieDto, 'name' | 'category' | 'storage' | 'provider' | 'purpose' | 'duration' | 'sortOrder'>;

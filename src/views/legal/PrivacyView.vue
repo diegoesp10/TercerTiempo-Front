@@ -191,10 +191,13 @@ import { dataSources, legalEntity } from '@/legal/entity';
     <section>
       <h2>12. Cookies y almacenamiento local</h2>
       <p>
-        Tercer Tiempo no utiliza cookies de seguimiento ni de publicidad. Solo guarda en el almacenamiento local de tu navegador
-        lo imprescindible para funcionar: el token de tu sesión, un resumen de tu cuenta y el tema (claro u oscuro) elegido.
-        Estos datos no salen de tu dispositivo salvo el token, que se envía a nuestro servidor para identificarte, y se
-        borran al cerrar sesión o al limpiar el navegador.
+        Tercer Tiempo no utiliza cookies de publicidad ni de terceros. Guarda en el almacenamiento de tu navegador lo necesario
+        para funcionar (tu sesión y tu elección sobre las cookies) y las preferencias que tú eliges (tema, temporada), que
+        están exentas de consentimiento. Con tu permiso, y solo entonces, mide de forma anónima qué páginas, búsquedas y
+        botones se usan (analítica propia): esos datos se guardan en nuestros servidores con un identificador aleatorio, sin
+        tu IP, no se comparten con nadie y se borran a los 13 meses. Guardamos también tu elección (qué aceptaste y cuándo)
+        para poder demostrarla. El detalle de cada dato y cómo cambiar tu elección están en la
+        <RouterLink to="/cookies" class="text-accent-400 hover:underline">política de cookies</RouterLink>.
       </p>
     </section>
 

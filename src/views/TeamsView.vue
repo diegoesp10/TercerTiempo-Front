@@ -81,6 +81,7 @@ const subtitle = computed(() =>
         v-for="team in orderedTeams"
         :key="team.id"
         :to="{ name: 'team', params: { teamId: team.id } }"
+        :data-track="team.name"
         class="card flex items-center gap-4 transition hover:border-brand-400/60 hover:shadow"
         :class="isMine(team.id) ? 'border-accent-400/60 bg-brand-500/15 ring-1 ring-accent-400/40' : ''"
       >

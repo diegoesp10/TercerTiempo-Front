@@ -14,10 +14,12 @@ import { useSeasonStore } from '@/stores/season';
 import { useSettingsStore } from '@/stores/settings';
 import { accountTypeLabels } from '@/utils/format';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
+import { useConsentStore } from '@/stores/consent';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
 const season = useSeasonStore();
+const consent = useConsentStore();
 const router = useRouter();
 const route = useRoute();
 const menuOpen = ref(false);
@@ -188,6 +190,8 @@ function logout() {
       <nav class="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1" aria-label="Información legal">
         <RouterLink to="/privacidad" class="hover:text-slate-700 hover:underline">Política de privacidad</RouterLink>
         <RouterLink to="/condiciones" class="hover:text-slate-700 hover:underline">Condiciones de uso</RouterLink>
+        <RouterLink to="/cookies" class="hover:text-slate-700 hover:underline">Cookies</RouterLink>
+        <button type="button" class="hover:text-slate-700 hover:underline" @click="consent.settingsOpen = true">Configurar cookies</button>
         <span>Datos de <a href="https://www.futbolasturiano.es" target="_blank" rel="noopener" class="hover:underline">futbolasturiano.es</a> y <a href="https://www.asturfutbol.es" target="_blank" rel="noopener" class="hover:underline">asturfutbol.es</a></span>
       </nav>
     </footer>

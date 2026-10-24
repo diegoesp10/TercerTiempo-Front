@@ -5,14 +5,18 @@ import GrassField from '@/components/backgrounds/GrassField.vue';
 import AppShell from '@/components/layout/AppShell.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useSeasonStore } from '@/stores/season';
+import { useConsentStore } from '@/stores/consent';
+import CookieBanner from '@/components/privacy/CookieBanner.vue';
 
 const auth = useAuthStore();
 const season = useSeasonStore();
+const consent = useConsentStore();
 
 // Al arrancar con sesión guardada, refrescamos la cuenta (plantillas, vínculos, visibilidad) sin bloquear la UI.
 // Las actualizaciones de datos de la API no se anuncian aquí: se siguen en la página oculta /jobs.
 onMounted(() => {
   void season.load();
+  void consent.load();
   if (auth.isAuthenticated) void auth.refreshAccount().catch(() => undefined);
 });
 
@@ -40,4 +44,5 @@ function pageKey(route: RouteLocationNormalizedLoaded) {
       </Transition>
     </RouterView>
   </AppShell>
+  <CookieBanner />
 </template>

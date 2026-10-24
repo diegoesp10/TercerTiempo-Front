@@ -4,6 +4,7 @@ import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import type { ClubCatalogDto } from '@/types/api';
 import TeamName from '@/components/teams/TeamName.vue';
+import { trackSearch } from '@/utils/analytics';
 
 /**
  * Desplegable con búsqueda sobre el catálogo de clubes (GET /api/clubs/catalog): se escribe para filtrar y se elige
@@ -54,6 +55,7 @@ watch(() => props.modelValue, (value) => {
 
 function onInput() {
   if (props.locked) return;
+  trackSearch('club', query.value);
   open.value = true;
   // Escribir deshace la elección: solo vale un club de la lista.
   if (props.modelValue && query.value !== props.modelValue) emit('update:modelValue', '');
