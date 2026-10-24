@@ -1300,6 +1300,28 @@ export interface ClubInvitationDto {
   revokedAt: string | null;
 }
 
+// --- Administración: planes, precios y prueba de las licencias (en la base de datos) ---
+
+export interface LicensePlanSettingsDto {
+  plan: LicensePlan;
+  monthlyPriceCents: number;
+  yearlyPriceCents: number;
+  maxStaff: number;
+  stripeMonthlyPriceId: string | null;
+  stripeYearlyPriceId: string | null;
+}
+
+export interface LicensingSettingsDto {
+  currency: string;
+  trialDays: number;
+  plans: LicensePlanSettingsDto[];
+  /** Pasarela del entorno ('mock' o 'stripe'): viene de la configuración y no se edita. */
+  provider: string;
+  updatedAt: string;
+}
+
+export type UpdateLicensingSettingsRequest = Pick<LicensingSettingsDto, 'currency' | 'trialDays' | 'plans'>;
+
 // --- Administración: licencias y cobros de todos los clubes ---
 
 export type AdminLicenseState = 'trial' | 'trial-plan' | 'active' | 'grace' | 'unpaid' | 'cancelled' | 'trial-ended';

@@ -4,6 +4,7 @@ import { adminApi } from '@/api/admin';
 import { ApiError, errorMessage } from '@/api/http';
 import ClubInvitationsPanel from '@/components/admin/ClubInvitationsPanel.vue';
 import LicensesPanel from '@/components/admin/LicensesPanel.vue';
+import LicensingSettingsPanel from '@/components/admin/LicensingSettingsPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
@@ -50,6 +51,7 @@ const tabs: { value: AdminTab; label: string }[] = [
   { value: 'invitations', label: 'Invitaciones de clubes' },
 ];
 const tab = ref<AdminTab>('jobs');
+const licensesPanel = ref<InstanceType<typeof LicensesPanel> | null>(null);
 const form = reactive({ userName: '', password: '' });
 const loggingIn = ref(false);
 const loginError = ref<string | null>(null);
@@ -238,7 +240,10 @@ const sourceTitle = (source: ScrapeSourceDto) =>
       >{{ item.label }}</button>
     </div>
 
-    <LicensesPanel v-if="tab === 'licenses'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    <div v-if="tab === 'licenses'" class="space-y-6">
+      <LicensingSettingsPanel :token="session.token" @saved="licensesPanel?.load()" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+      <LicensesPanel ref="licensesPanel" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    </div>
     <ClubInvitationsPanel v-else-if="tab === 'invitations'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
 
     <template v-else>
