@@ -99,28 +99,31 @@ function onBlur() {
 
 <template>
   <div class="relative">
-    <input
-      :id="id"
-      v-model="query"
-      type="text"
-      role="combobox"
-      autocomplete="off"
-      spellcheck="false"
-      :aria-expanded="open"
-      :aria-controls="listId"
-      :aria-activedescendant="open && matches[highlighted] ? `${listId}-${highlighted}` : undefined"
-      :placeholder="loading ? 'Cargando clubes…' : 'Escribe para buscar tu club'"
-      :readonly="locked"
-      :aria-readonly="locked"
-      class="input pr-9"
-      :class="locked ? 'cursor-not-allowed opacity-90' : ''"
-      @focus="open = !locked"
-      @input="onInput"
-      @keydown="onKeydown"
-      @blur="onBlur"
-    />
-    <Icon v-if="locked" icon="lock" class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-    <Icon v-else icon="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" />
+    <!-- El icono se centra respecto al campo, no respecto al bloque con las líneas de ayuda de debajo. -->
+    <div class="relative">
+      <input
+        :id="id"
+        v-model="query"
+        type="text"
+        role="combobox"
+        autocomplete="off"
+        spellcheck="false"
+        :aria-expanded="open"
+        :aria-controls="listId"
+        :aria-activedescendant="open && matches[highlighted] ? `${listId}-${highlighted}` : undefined"
+        :placeholder="loading ? 'Cargando clubes…' : 'Escribe para buscar tu club'"
+        :readonly="locked"
+        :aria-readonly="locked"
+        class="input pr-9"
+        :class="locked ? 'cursor-not-allowed opacity-90' : ''"
+        @focus="open = !locked"
+        @input="onInput"
+        @keydown="onKeydown"
+        @blur="onBlur"
+      />
+      <Icon v-if="locked" icon="lock" class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+      <Icon v-else icon="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" />
+    </div>
 
     <ul
       v-if="open && !loading"
@@ -157,7 +160,7 @@ function onBlur() {
     </ul>
 
     <p v-if="selected" class="mt-1 text-xs text-slate-500">
-      Se vincularán sus {{ selected.teams.length === 1 ? 'equipo' : `${selected.teams.length} equipos` }}:
+      {{ selected.teams.length === 1 ? 'Se vinculará su equipo' : `Se vincularán sus ${selected.teams.length} equipos` }}:
       <template v-for="(t, i) in selected.teams" :key="t.id"><TeamName :name="t.name" :team-id="t.id" />{{ i < selected.teams.length - 1 ? ', ' : '.' }}</template>
     </p>
   </div>

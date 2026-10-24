@@ -169,7 +169,8 @@ onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer); });
       Técnicos y jugadores no la necesitan: entran con el código que les da su club.
     </p>
 
-    <form class="mb-4 flex flex-wrap items-end gap-3" @submit.prevent="create">
+    <!-- Alineado arriba: las líneas de ayuda bajo el campo de club no deben bajar los demás campos. -->
+    <form class="mb-4 flex flex-wrap items-start gap-3" @submit.prevent="create">
       <div class="relative min-w-[14rem] flex-1">
         <label class="label" for="invite-note">Club</label>
         <input
@@ -225,7 +226,10 @@ onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer); });
         <span class="label">Caduca en (días)</span>
         <input v-model.number="days" type="number" min="1" max="365" placeholder="Nunca" class="input" />
       </label>
-      <button type="submit" class="btn-primary" v-busy="creating" :disabled="creating || !selected">Crear invitación</button>
+      <div>
+        <span class="label invisible" aria-hidden="true">Crear</span>
+        <button type="submit" class="btn-primary" v-busy="creating" :disabled="creating || !selected">Crear invitación</button>
+      </div>
     </form>
 
     <Alert v-if="error" kind="error" class="mb-3">{{ error }}</Alert>
