@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { adminApi } from '@/api/admin';
 import { ApiError, errorMessage } from '@/api/http';
 import ClubInvitationsPanel from '@/components/admin/ClubInvitationsPanel.vue';
+import FootballSyncPanel from '@/components/admin/FootballSyncPanel.vue';
 import LicensesPanel from '@/components/admin/LicensesPanel.vue';
 import LicensingSettingsPanel from '@/components/admin/LicensingSettingsPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
@@ -142,6 +143,11 @@ async function launch(job: JobDto) {
   }
 }
 
+function onSyncLaunched(message: string) {
+  launchMessage.value = message;
+  setTimeout(() => void load(true), 1_000);
+}
+
 watch(provider, () => void load());
 
 onMounted(() => {
@@ -253,7 +259,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
 
     <div v-if="data" class="space-y-6">
       <div class="grid gap-4 lg:grid-cols-2">
-        <article v-for="job in data.jobs" :key="job.name" class="card">
+        <article v-for="job in data.jobs" :key="job.name" class="card" :class="job.name === 'football-data' ? 'lg:col-span-2' : ''">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
               <h2 class="font-semibold text-slate-900">{{ job.title }}</h2>
@@ -280,6 +286,10 @@ const sourceTitle = (source: ScrapeSourceDto) =>
             <template v-if="job.lastRun">
               <dt class="text-slate-500">Última</dt>
               <dd class="text-right text-slate-800">{{ formatKickoff(job.lastRun.startedAt) }} · {{ duration(job.lastRun) }}</dd>
+              <template v-if="job.lastRun.scope">
+                <dt class="text-slate-500">Alcance</dt>
+                <dd class="text-right text-slate-800">{{ job.lastRun.scope }}</dd>
+              </template>
               <dt class="text-slate-500">Resultado</dt>
               <dd class="text-right"><Badge :tone="statusTone[job.lastRun.status]">{{ statusLabels[job.lastRun.status] }}</Badge> <span class="text-xs text-slate-500">{{ job.lastRun.requests }} llamadas{{ job.lastRun.manual ? ' · a mano' : '' }}</span></dd>
             </template>
@@ -292,7 +302,16 @@ const sourceTitle = (source: ScrapeSourceDto) =>
             </ul>
           </details>
 
+          <FootballSyncPanel
+            v-if="job.name === 'football-data'"
+            :token="session.token"
+            :running="job.running"
+            :enabled="job.enabled"
+            @launched="onSyncLaunched"
+            @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')"
+          />
           <button
+            v-else
             type="button"
             class="btn-primary mt-4"
             v-busy="launching === job.name"
@@ -372,6 +391,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
                 <td class="px-3 py-2 text-right tabular-nums whitespace-nowrap">{{ duration(run) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ run.requests }}</td>
                 <td class="max-w-md px-3 py-2 text-xs text-slate-600">
+                  <span v-if="run.scope" class="block font-medium text-slate-700">{{ run.scope }}</span>
                   {{ run.summary ?? '—' }}<span v-if="run.errors.length" class="text-amber-700"> · {{ run.errors.length }} {{ run.errors.length === 1 ? 'error' : 'errores' }}</span>
                 </td>
               </tr>

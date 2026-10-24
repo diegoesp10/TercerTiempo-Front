@@ -2,10 +2,13 @@ import { http } from '@/api/http';
 import type {
   AdminAuthResponse,
   ClubInvitationDto,
+  FootballSyncSettingsDto,
   JobDto,
   JobsOverviewDto,
   LicensesOverviewDto,
   LicensingSettingsDto,
+  RunFootballSyncRequest,
+  UpdateFootballSyncRequest,
   UpdateLicensingSettingsRequest,
 } from '@/types/api';
 
@@ -16,6 +19,11 @@ export const adminApi = {
   jobs: (token: string, provider: string | null, silent = false) =>
     http<JobsOverviewDto>(`/api/admin/jobs?requests=200${provider ? `&provider=${encodeURIComponent(provider)}` : ''}`, { token, silent }),
   run: (token: string, job: string) => http<JobDto>(`/api/admin/jobs/${encodeURIComponent(job)}/run`, { method: 'POST', token }),
+  footballSync: (token: string) => http<FootballSyncSettingsDto>('/api/admin/football-sync', { token, silent: true }),
+  updateFootballSync: (token: string, body: UpdateFootballSyncRequest) =>
+    http<FootballSyncSettingsDto>('/api/admin/football-sync', { method: 'PUT', token, body }),
+  runFootballSync: (token: string, body: RunFootballSyncRequest) =>
+    http<JobDto>('/api/admin/football-sync/run', { method: 'POST', token, body }),
   licenses: (token: string) => http<LicensesOverviewDto>('/api/admin/licenses', { token }),
   licensingSettings: (token: string) => http<LicensingSettingsDto>('/api/admin/licensing-settings', { token }),
   updateLicensingSettings: (token: string, body: UpdateLicensingSettingsRequest) =>

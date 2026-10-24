@@ -1235,6 +1235,34 @@ export interface JobRunDto {
   summary: string | null;
   errors: string[];
   requests: number;
+  /** Datos de las ligas: «Jornada en curso (21 oct – 28 oct)», «Temporada completa»… */
+  scope: string | null;
+}
+
+export type SyncScopeKind = 'CurrentRound' | 'DateRange' | 'FullSeason';
+
+export interface FootballSyncSettingsDto {
+  scheduledScope: SyncScopeKind;
+  daysBack: number;
+  daysAhead: number;
+  rostersInRound: boolean;
+  fullSyncEveryDays: number;
+  roundFrom: string;
+  roundTo: string;
+  lastFullSyncAt: string | null;
+  nextFullSyncAt: string | null;
+  competitions: { id: string; name: string; category: string; tier: number; group: string | null }[];
+  updatedAt: string;
+}
+
+export type UpdateFootballSyncRequest = Pick<FootballSyncSettingsDto, 'scheduledScope' | 'daysBack' | 'daysAhead' | 'rostersInRound' | 'fullSyncEveryDays'>;
+
+export interface RunFootballSyncRequest {
+  scope: SyncScopeKind;
+  from: string | null;
+  to: string | null;
+  competitionIds: string[];
+  includeRosters: boolean;
 }
 
 export interface JobDto {
