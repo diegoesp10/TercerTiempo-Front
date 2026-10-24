@@ -201,10 +201,12 @@ import { dataSources, legalEntity } from '@/legal/entity';
     <section>
       <h2>13. Fuentes de terceros</h2>
       <p>
-        Los datos deportivos se obtienen de las fuentes públicas citadas en el apartado 3, a las que se atribuyen y enlazan en
-        la propia plataforma. Tercer Tiempo no es un servicio oficial de la Real Federación de Fútbol del Principado de Asturias
-        ni de ningún medio, y no garantiza la exactitud de los datos que estas fuentes publican. Si detectas un error, el acta
-        oficial enlazada prevalece.
+        Los datos deportivos se obtienen de las fuentes citadas en el apartado 3, a las que se atribuyen y enlazan en la
+        propia plataforma. Tercer Tiempo cuenta con los servicios de FútbolAsturiano, diario independiente digital del fútbol
+        asturiano (futbolasturiano.es), que autoriza el uso de sus calendarios, resultados, clasificaciones, plantillas
+        publicadas y escudos de los equipos. Tercer Tiempo no es un servicio oficial de la Real Federación de Fútbol del
+        Principado de Asturias y no garantiza la exactitud de los datos que estas fuentes publican. Si detectas un error, el
+        acta oficial enlazada prevalece.
       </p>
     </section>
 
