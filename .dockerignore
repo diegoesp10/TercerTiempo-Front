@@ -1,0 +1,12 @@
+.git
+.vscode
+.idea
+node_modules
+dist
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+*.md
+*.ps1
+compose*.yaml
+package-lock.json

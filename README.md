@@ -107,6 +107,28 @@ hora y resultado, y se puede navegar al resto de jornadas; la ficha de cada equi
 | `npm run preview` | Sirve el build de producción |
 | `npm run typecheck` | Solo type-check |
 
+## Docker
+
+La web se sirve con Nginx en un contenedor (`tercer-tiempo-web`) que reenvía `/api` a la API
+([TercerTiempo-Back](https://github.com/diegoesp10/TercerTiempo-Back)) por la red `tercer-tiempo-net`: web y API
+comparten origen, así que la imagen se construye con `VITE_API_URL` vacío. Con Docker Desktop en modo Linux:
+
+```powershell
+.\Start-Docker.ps1                          # web + API de desarrollo (con su SQL Server) en http://127.0.0.1:8180
+.\Start-Docker.ps1 -Environment Production  # web + API de publicación (secretos en .env.production del backend)
+.\Start-Docker.ps1 -SkipBuild               # reutiliza las imágenes
+```
+
+Si la API no está en marcha, el script la arranca antes con el `Start-Docker.ps1` del backend (carpeta `..\backend`).
+La imagen de la web es la misma en los dos entornos; lo que cambia es la API (ver el README del backend).
+
+- `nginx.conf`: rutas de la SPA, proxy de `/api` (el vídeo por rangos sin búfer), subidas de hasta 20 MB y caché larga
+  de `/assets`. `nginx-security-headers.inc`: CSP (todo desde la propia web salvo Google Fonts), `X-Frame-Options`,
+  `Referrer-Policy` y `Permissions-Policy`.
+- Para cumplir la CSP sin scripts en línea, el tema claro/oscuro se aplica desde `public/theme-init.js`, y los iconos
+  del reproductor (Plyr) se sirven desde `public/vendor/plyr` en vez de su CDN.
+- Contenedor sin privilegios y de solo lectura; `GET /healthz` es su comprobación de salud.
+
 ## Estructura
 
 ```
