@@ -8,7 +8,7 @@ export const legalEntity = {
   nif: '[NIF]',
   address: '[Domicilio completo]',
   /** Correo de contacto general y para el ejercicio de derechos. */
-  email: 'privacidad@tercertiempo.es',
+  email: 'diegoespinarodriguez@gmail.com',
   /** Proveedor de alojamiento (encargado del tratamiento). */
   hosting: '[Proveedor de alojamiento, p. ej. Hetzner Online GmbH (Alemania)]',
   /** Pasarela de pago de los vídeos (encargado del tratamiento). */
