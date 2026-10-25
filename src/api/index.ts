@@ -61,6 +61,7 @@ import type {
   TeamDetailDto,
   ClubLicenseDto,
   SearchResultsDto,
+  PlayerCardDto,
   SearchType,
   TeamSummaryDto,
   VideoPart,
@@ -109,6 +110,8 @@ export const api = {
       return http<PlayerDto>('/api/players/me/photo', { method: 'PUT', body });
     },
     deletePhoto: () => http<PlayerDto>('/api/players/me/photo', { method: 'DELETE' }),
+    /** Perfil completo visible para cualquier cuenta con sesión (true) o solo para tu club y tu plantilla (false). */
+    setPublicProfile: (isPublic: boolean) => http<PlayerDto>('/api/players/me/public-profile', { method: 'PUT', body: { public: isPublic } }),
     dashboard: () => http<PlayerDashboardDto>('/api/players/me/dashboard'),
     performances: () => http<PerformanceWithMatchDto[]>('/api/players/me/performances'),
     /** Propone corregir o crear su línea del acta de un partido; la decide su club o su cuerpo técnico. */
@@ -232,6 +235,8 @@ export const api = {
   },
   teams: {
     list: (competitionId: string) => http<TeamSummaryDto[]>(`/api/teams?competitionId=${encodeURIComponent(competitionId)}`),
+    /** Ficha de un jugador (con sesión): la básica siempre; la completa si es de tu club o la ha hecho pública. */
+    playerCard: (teamId: string, entryId: string) => http<PlayerCardDto>(`/api/teams/${teamId}/roster/${entryId}`),
     get: (teamId: string) => http<TeamDetailDto>(`/api/teams/${teamId}`),
     matches: (teamId: string) => http<MatchDto[]>(`/api/teams/${teamId}/matches`),
   },

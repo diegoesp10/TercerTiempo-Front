@@ -40,6 +40,7 @@ const router = createRouter({
     // Página oculta del administrador (sin enlace en el menú; pide su propio usuario y contraseña).
     { path: '/jobs', alias: '/cargatrabajo', name: 'jobs', component: () => import('@/views/admin/JobsView.vue'), meta: { root: true } },
     { path: '/equipos', name: 'teams', component: () => import('@/views/TeamsView.vue'), meta: { root: true } },
+    { path: '/equipos/:teamId/jugadores/:entryId', name: 'player-card', component: () => import('@/views/PlayerCardView.vue'), props: true, meta: { requiresAuth: true } },
     { path: '/equipos/:teamId', name: 'team', component: () => import('@/views/TeamDetailView.vue'), props: true },
     {
       path: '/plantillas/:squadId',

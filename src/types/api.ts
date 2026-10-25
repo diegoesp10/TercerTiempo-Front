@@ -63,6 +63,8 @@ export interface PlayerSquadDto {
   seasonLabel: string;
   shirtNumber: number | null;
   visibility: SquadVisibility;
+  /** Su ficha en la plantilla publicada del equipo (para enlazar su ficha pública). */
+  rosterEntryId: string | null;
 }
 
 export interface PlayerDto {
@@ -73,6 +75,8 @@ export interface PlayerDto {
   squad: PlayerSquadDto | null;
   /** Foto subida por el propio jugador (recortada, fondo transparente). */
   photoUrl: string | null;
+  /** Su perfil completo se ve desde fuera de su club (con sesión). */
+  publicProfile: boolean;
 }
 
 export interface SquadSummaryDto {
@@ -648,6 +652,22 @@ export interface RosterEntryDetailDto {
   internalStats: RosterInternalStatsDto | null;
   /** El cuerpo técnico lleva la plantilla en Tercer Tiempo y este jugador está en ella. */
   hasSquad: boolean;
+}
+
+/** Ficha de un jugador para cualquier cuenta con sesión; el perfil completo solo si es de su club o lo ha hecho público. */
+export interface PlayerCardDto {
+  entry: RosterEntryDto;
+  team: { id: string; name: string; shortName: string; crestUrl: string | null; competitionName: string | null; seasonLabel: string | null };
+  official: RosterOfficialAppearanceDto[];
+  hasAccount: boolean;
+  profilePublic: boolean;
+  /** Quien mira ve el perfil completo (actas de Tercer Tiempo). */
+  extended: boolean;
+  internal: RosterInternalAppearanceDto[];
+  internalStats: RosterInternalStatsDto | null;
+  /** Perfil interno en la plantilla, para su club y su plantilla. */
+  internalProfileLink: string | null;
+  isMe: boolean;
 }
 
 export interface RosterEntryRequest {

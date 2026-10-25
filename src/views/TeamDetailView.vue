@@ -313,7 +313,12 @@ async function linkToClub() {
                   <span class="inline-flex items-center gap-2">
                     <PlayerAvatar :src="entry.photoUrl" :name="entry.fullName" size="sm" />
                     <span>
-                      <span class="font-medium text-slate-800">{{ entry.fullName }}</span>
+                      <RouterLink
+                        v-if="auth.isAuthenticated"
+                        :to="{ name: 'player-card', params: { teamId: data.id, entryId: entry.id } }"
+                        class="font-medium text-slate-800 hover:text-brand-500 hover:underline"
+                      >{{ entry.fullName }}</RouterLink>
+                      <span v-else class="font-medium text-slate-800">{{ entry.fullName }}</span>
                       <span class="block text-xs text-slate-500">{{ entry.position ? positionLabels[entry.position] : 'Sin posición' }}</span>
                     </span>
                   </span>

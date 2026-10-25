@@ -34,6 +34,7 @@ import {
 import TeamName from '@/components/teams/TeamName.vue';
 import { opponentOf } from '@/utils/crests';
 import DashboardSearch from '@/components/search/DashboardSearch.vue';
+import PublicProfileToggle from '@/components/players/PublicProfileToggle.vue';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
@@ -145,6 +146,15 @@ async function leave() {
         </RouterLink>
       </template>
     </PlayerHeroCard>
+
+    <section class="card mb-8 flex flex-wrap items-center justify-between gap-4">
+      <PublicProfileToggle class="min-w-0 flex-1" />
+      <RouterLink
+        v-if="squad.rosterEntryId"
+        :to="{ name: 'player-card', params: { teamId: squad.teamId, entryId: squad.rosterEntryId } }"
+        class="btn-secondary shrink-0 px-3 py-1.5 text-xs"
+      >Ver mi ficha como la ven los demás</RouterLink>
+    </section>
     <DashboardSearch class="mb-8" />
 
     <PlayerPhotoWizard :open="photoOpen" :has-photo="!!auth.player?.photoUrl" @close="photoOpen = false" @saved="onPhotoSaved" />
