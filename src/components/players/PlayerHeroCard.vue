@@ -45,7 +45,17 @@ const nameParts = computed(() => {
   <section class="hero-card relative overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
     <div class="relative z-10 grid gap-6 p-6 sm:p-8" :class="photo || number ? 'lg:grid-cols-[1fr_auto]' : ''">
       <div class="min-w-0">
-        <p class="eyebrow flex items-center gap-2">
+        <!-- Con el id del equipo, el equipo lleva a su página. -->
+        <RouterLink
+          v-if="teamId"
+          :to="{ name: 'team', params: { teamId } }"
+          class="eyebrow inline-flex items-center gap-2 rounded hover:underline focus-visible:underline"
+          :title="`Ver ${team}`"
+        >
+          <TeamCrest :src="crestFor(teamCrestUrl, teamId)" :name="team" size="xs" />
+          {{ team }}
+        </RouterLink>
+        <p v-else class="eyebrow flex items-center gap-2">
           <TeamCrest :src="crestFor(teamCrestUrl, teamId)" :name="team" size="xs" />
           {{ team }}
         </p>
