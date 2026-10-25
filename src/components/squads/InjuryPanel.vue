@@ -9,10 +9,13 @@ import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vu
 import type { InjuryDto, InjuryRequest, InjuryType, InjuryTypeDto, SquadPlayerDto } from '@/types/api';
 import { formatDate } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
+import PlayerName from '@/components/players/PlayerName.vue';
 
 // Control de lesionados de la plantilla: lesiones abiertas con motivo, fechas y días de baja, alta e historial.
 // Opcional para el cuerpo técnico; los jugadores vinculados lo ven sin poder tocarlo.
 const props = defineProps<{ squadId: string; players: SquadPlayerDto[]; canManage: boolean }>();
+
+const photoOf = (squadPlayerId: string) => props.players.find((p) => p.id === squadPlayerId)?.photoUrl ?? null;
 const emit = defineEmits<{ changed: [] }>();
 
 const injuries = shallowRef<InjuryDto[]>([]);
@@ -80,7 +83,7 @@ const playerOptions = computed<SelectOption[]>(() => {
   const injured = new Set(active.value.map((i) => i.squadPlayerId));
   return props.players
     .filter((p) => p.status === 'Active')
-    .map((p) => ({ value: p.id, label: p.fullName, hint: p.shirtNumber ? `#${p.shirtNumber}` : undefined, disabled: injured.has(p.id) && editing.value?.squadPlayerId !== p.id }));
+    .map((p) => ({ value: p.id, label: p.fullName, hint: p.shirtNumber ? `#${p.shirtNumber}` : undefined, disabled: injured.has(p.id) && editing.value?.squadPlayerId !== p.id, photo: p.photoUrl ?? null }));
 });
 const typeOptions = computed<SelectOption[]>(() =>
   types.value.map((t) => ({ value: t.type, label: t.label, hint: t.averageDays ? `≈ ${t.averageDays} días` : 'sin referencia' })),
@@ -175,7 +178,7 @@ const expectedTone = (injury: InjuryDto) => {
       <li v-for="injury in active" :key="injury.id" class="flex flex-wrap items-start justify-between gap-3 py-3">
         <div class="min-w-0">
           <p class="font-medium text-slate-800">
-            <span v-if="injury.shirtNumber" class="mr-1 text-slate-400">{{ injury.shirtNumber }}</span>{{ injury.playerName }}
+            <span v-if="injury.shirtNumber" class="mr-1 text-slate-400">{{ injury.shirtNumber }}</span><PlayerName :name="injury.playerName" :photo-url="photoOf(injury.squadPlayerId)" />
             <Badge tone="red" class="ml-2">{{ injury.typeLabel }}</Badge>
           </p>
           <p v-if="injury.reason" class="mt-0.5 text-sm text-slate-600">{{ injury.reason }}</p>
@@ -203,7 +206,7 @@ const expectedTone = (injury: InjuryDto) => {
       <ul class="mt-2 divide-y divide-slate-100">
         <li v-for="injury in history" :key="injury.id" class="flex flex-wrap items-center justify-between gap-2 py-2 text-slate-600">
           <span>
-            <span class="font-medium text-slate-800">{{ injury.playerName }}</span> · {{ injury.typeLabel }}<template v-if="injury.reason"> · {{ injury.reason }}</template>
+            <PlayerName :name="injury.playerName" :photo-url="photoOf(injury.squadPlayerId)" class="font-medium text-slate-800" /> · {{ injury.typeLabel }}<template v-if="injury.reason"> · {{ injury.reason }}</template>
             <span class="block text-xs text-slate-500">{{ formatDate(injury.startedOn) }} → {{ formatDate(injury.returnedOn!) }} · {{ injury.daysOut }} días</span>
           </span>
           <span v-if="canManage" class="flex gap-1">
@@ -231,7 +234,7 @@ const expectedTone = (injury: InjuryDto) => {
           <input id="injury-reason" v-model="form.reason" type="text" maxlength="300" class="input" placeholder="Golpe en el entrenamiento del martes, isquio derecho…" />
           <p v-if="fieldErrors.reason" class="field-error">{{ fieldErrors.reason[0] }}</p>
         </div>
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label class="label" for="injury-start">Desde</label>
             <input id="injury-start" v-model="form.startedOn" type="date" required class="input" @change="proposeReturn()" />

@@ -4,12 +4,19 @@ import type { RouteLocationNormalizedLoaded } from 'vue-router';
 import GrassField from '@/components/backgrounds/GrassField.vue';
 import AppShell from '@/components/layout/AppShell.vue';
 import { useAuthStore } from '@/stores/auth';
+import { useSeasonStore } from '@/stores/season';
+import { useConsentStore } from '@/stores/consent';
+import CookieBanner from '@/components/privacy/CookieBanner.vue';
 
 const auth = useAuthStore();
+const season = useSeasonStore();
+const consent = useConsentStore();
 
 // Al arrancar con sesión guardada, refrescamos la cuenta (plantillas, vínculos, visibilidad) sin bloquear la UI.
 // Las actualizaciones de datos de la API no se anuncian aquí: se siguen en la página oculta /jobs.
 onMounted(() => {
+  void season.load();
+  void consent.load();
   if (auth.isAuthenticated) void auth.refreshAccount().catch(() => undefined);
 });
 
@@ -30,10 +37,12 @@ function pageKey(route: RouteLocationNormalizedLoaded) {
     <RouterView v-slot="{ Component, route }">
       <!-- Un único nodo raíz por página para que la transición pueda animarlo (las vistas tienen varias raíces). -->
       <Transition name="page" mode="out-in">
-        <div :key="pageKey(route)" class="page-root">
+        <!-- Cambiar de temporada vuelve a montar la página: todo se carga de nuevo con los datos de esa temporada. -->
+        <div :key="`${season.selectedId ?? 'actual'}|${pageKey(route)}`" class="page-root">
           <component :is="Component" />
         </div>
       </Transition>
     </RouterView>
   </AppShell>
+  <CookieBanner />
 </template>

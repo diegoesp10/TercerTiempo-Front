@@ -20,6 +20,10 @@ import { useAuthStore } from '@/stores/auth';
 import type { MatchSheetDto, MatchSheetEntryInput, SquadPlayerDto, SuggestionDto } from '@/types/api';
 import { formatKickoff, matchStatusLabels, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, positionShortLabels, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
 import { downloadPaperSheet } from '@/utils/paperSheet';
+import TeamName from '@/components/teams/TeamName.vue';
+import PlayerName from '@/components/players/PlayerName.vue';
+import { opponentOf } from '@/utils/crests';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 
 const props = defineProps<{ squadId: string; matchId: string }>();
 
@@ -142,7 +146,7 @@ const teamId = computed(() => data.value?.squad.teamId ?? '');
 function downloadPaper() {
   if (!data.value) return;
   const { squad, match } = data.value;
-  void downloadPaperSheet({ teamName: squad.teamName, teamId: squad.teamId, competition: squad.competitionName, season: squad.seasonLabel, match });
+  void downloadPaperSheet({ teamName: squad.teamName, teamId: squad.teamId, teamCrestUrl: squad.teamCrestUrl, competition: squad.competitionName, season: squad.seasonLabel, match });
 }
 
 // Jugador vinculado a esta plantilla: puede proponer su línea (corregirla o crearla) y ver qué pasó con lo que envió.
@@ -222,10 +226,9 @@ async function save() {
 
 const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'shotsOnTarget' | 'keyPasses' | 'passesCompleted' | 'passesAttempted' | 'ballLosses' | 'recoveries' | 'tackles' | 'interceptions' | 'saves' | 'fouls'>; label: string; title: string }[] = [
   { key: 'goals', label: 'G', title: 'Goles' },
-  { key: 'assists', label: 'A', title: 'Asistencias' },
+  { key: 'assists', label: 'A', title: 'Asistencias de gol' },
   { key: 'shots', label: 'T', title: 'Tiros' },
   { key: 'shotsOnTarget', label: 'TP', title: 'Tiros a puerta' },
-  { key: 'keyPasses', label: 'PC', title: 'Pases clave' },
   { key: 'passesCompleted', label: 'PasC', title: 'Pases completados' },
   { key: 'passesAttempted', label: 'PasI', title: 'Pases intentados' },
   { key: 'ballLosses', label: 'Pér', title: 'Pérdidas de balón' },
@@ -243,7 +246,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
 
   <template v-else-if="data">
     <RouterLink :to="{ name: 'squad-matches', params: { squadId } }" class="text-sm text-slate-500 hover:text-slate-800">
-      ← Partidos de {{ data.squad.teamName }}
+      ← Partidos de <TeamName :name="data.squad.teamName" :crest-url="data.squad.teamCrestUrl" :team-id="data.squad.teamId" />
     </RouterLink>
 
     <div class="card mt-3">
@@ -254,13 +257,19 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
           <Badge :tone="data.match.status === 'Played' ? 'slate' : 'blue'">{{ matchStatusLabels[data.match.status] }}</Badge>
         </span>
       </div>
-      <div class="mt-3 grid grid-cols-3 items-center text-center">
-        <p class="text-lg font-semibold" :class="data.match.homeTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">{{ data.match.homeTeam.name }}</p>
-        <p class="text-3xl font-bold tabular-nums text-slate-900">
+      <div class="mt-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-center">
+        <p class="flex min-w-0 flex-col items-center gap-1.5 break-words text-sm font-semibold sm:text-lg" :class="data.match.homeTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">
+          <TeamCrest :src="data.match.homeTeam.crestUrl" :name="data.match.homeTeam.name" :short-name="data.match.homeTeam.shortName" size="md" />
+          {{ data.match.homeTeam.name }}
+        </p>
+        <p class="text-2xl font-bold tabular-nums text-slate-900 sm:text-3xl">
           <template v-if="data.match.status === 'Played'">{{ data.match.homeGoals }} - {{ data.match.awayGoals }}</template>
           <span v-else class="text-slate-300">vs</span>
         </p>
-        <p class="text-lg font-semibold" :class="data.match.awayTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">{{ data.match.awayTeam.name }}</p>
+        <p class="flex min-w-0 flex-col items-center gap-1.5 break-words text-sm font-semibold sm:text-lg" :class="data.match.awayTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">
+          <TeamCrest :src="data.match.awayTeam.crestUrl" :name="data.match.awayTeam.name" :short-name="data.match.awayTeam.shortName" size="md" />
+          {{ data.match.awayTeam.name }}
+        </p>
       </div>
     </div>
 
@@ -304,7 +313,9 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
         :stats="data.teamStats"
         :can-edit="canEdit"
         :team-name="data.squad.teamName"
-        :opponent-name="data.match.homeTeam.id === teamId ? data.match.awayTeam.name : data.match.homeTeam.name"
+        :team-crest-url="data.squad.teamCrestUrl"
+        :opponent-name="opponentOf(data.match, teamId).name"
+        :opponent-crest-url="opponentOf(data.match, teamId).crestUrl"
         @saved="(stats) => { if (data) data.teamStats = stats; }"
       />
 
@@ -381,7 +392,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
                 />
               </td>
               <td class="px-3 py-1 whitespace-nowrap">
-                <span class="font-medium" :class="row.played ? 'text-slate-800' : ''">{{ row.player.fullName }}</span>
+                <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium" :class="row.played ? 'text-slate-800' : ''" />
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
               </td>
               <td class="px-2 py-1 text-center">
@@ -412,7 +423,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
             <tr v-for="row in playedRows" :key="row.squadPlayerId">
               <td class="px-3 py-2 whitespace-nowrap">
                 <span v-if="row.shirtNumber ?? row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.shirtNumber ?? row.player.shirtNumber }}</span>
-                <span class="font-medium text-slate-800">{{ row.player.fullName }}</span>
+                <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium text-slate-800" />
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
               </td>
               <td class="px-2 py-2 text-center">{{ row.started ? '●' : '' }}</td>
@@ -428,13 +439,13 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
       </div>
 
       <p class="content-note mt-3">
-        Tit = titular · Min = minutos (0-120) · G goles · A asistencias · T tiros · TP tiros a puerta · PC pases clave · PasC pases
+        Tit = titular · Min = minutos (0-120) · G goles · A asistencias de gol · T tiros · TP tiros a puerta · PasC pases
         completados · PasI pases intentados · Pér pérdidas de balón · Rec recuperaciones · Ent entradas · Int intercepciones ·
         Par paradas · F faltas · TA amarillas (dos implican roja). Con «jugó» desmarcado la línea se elimina del acta al guardar.
       </p>
       <p class="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
         <strong>La nota no se pone a mano:</strong> se calcula al guardar con los datos de cada línea, la posición del jugador y el
-        resultado. Parte de 6,0 y suma o resta por ataque (goles, tiros a puerta), creación (asistencias, pases clave, acierto en el
+        resultado. Parte de 6,0 y suma o resta por ataque (goles, tiros a puerta), creación (asistencias de gol, acierto en el
         pase con 10 o más intentados y pérdidas de balón), defensa (entradas, intercepciones, recuperaciones, portería a cero y
         goles encajados para defensas), portería (paradas), disciplina (tarjetas) y
         resultado (según los minutos jugados). Escala de 3,0 a 10,0.

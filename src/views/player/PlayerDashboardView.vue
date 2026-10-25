@@ -23,7 +23,6 @@ import {
   formatDate,
   formatNumber,
   formatPct,
-  opponentLabel,
   outcomeFor,
   outcomeLabels,
   outcomeTone,
@@ -32,6 +31,8 @@ import {
   suggestionStatusTone,
   visibilityLabels,
 } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import { opponentOf } from '@/utils/crests';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
@@ -73,7 +74,7 @@ const heroStats = computed(() =>
         { label: 'Partidos', value: data.value.individual.matchesLogged },
         { label: 'Minutos', value: data.value.individual.minutes },
         { label: 'Goles', value: data.value.individual.goals },
-        { label: 'Asistencias', value: data.value.individual.assists },
+        { label: 'Asistencias de gol', value: data.value.individual.assists },
         { label: 'Nota media', value: data.value.individual.averageRating === null ? '—' : formatNumber(data.value.individual.averageRating, 1) },
       ]
     : [],
@@ -126,6 +127,8 @@ async function leave() {
     <PlayerHeroCard
       class="mb-8"
       :team="`${squad.teamName} · ${data.season ? `${data.season.competitionName} · ${data.season.label}` : 'Sin temporada activa'}`"
+      :team-crest-url="squad.teamCrestUrl"
+      :team-id="squad.teamId"
       :name="data.player.displayName"
       :number="squad.shirtNumber"
       :photo-url="auth.player?.photoUrl ?? profile.data.value?.player.photoUrl ?? null"
@@ -134,8 +137,8 @@ async function leave() {
     >
       <template #actions>
         <button type="button" class="btn-primary" @click="photoOpen = true"><Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />{{ auth.player?.photoUrl ? 'Cambiar mi foto' : 'Subir mi foto' }}</button>
-        <RouterLink :to="{ name: 'squad', params: { squadId: squad.squadId } }" class="btn-secondary">
-          {{ squad.teamName }}
+        <RouterLink :to="{ name: 'squad', params: { squadId: squad.squadId } }" class="btn-secondary min-w-0 max-w-full">
+          <TeamName :name="squad.teamName" :crest-url="squad.teamCrestUrl" :team-id="squad.teamId" />
           <Badge :tone="squad.visibility === 'Public' ? 'green' : 'slate'">{{ visibilityLabels[squad.visibility] }}</Badge>
         </RouterLink>
       </template>
@@ -154,7 +157,7 @@ async function leave() {
         <StatCard label="Partidos" :value="data.individual.matchesLogged" :hint="`${data.individual.starts} como titular`" />
         <StatCard label="Minutos" :value="data.individual.minutes" />
         <StatCard label="Goles" :value="data.individual.goals" :hint="`${formatNumber(data.individual.goalsPer90)} por 90'`" accent />
-        <StatCard label="Asistencias" :value="data.individual.assists" :hint="`${formatNumber(data.individual.assistsPer90)} por 90'`" />
+        <StatCard label="Asistencias de gol" :value="data.individual.assists" :hint="`${formatNumber(data.individual.assistsPer90)} por 90'`" />
         <StatCard label="Nota media" :value="formatNumber(data.individual.averageRating, 1)" hint="calculada con los datos del acta" />
         <StatCard label="Precisión tiro" :value="formatPct(data.individual.shotAccuracyPct)" :hint="`${data.individual.shotsOnTarget}/${data.individual.shots} a puerta`" />
       </div>
@@ -162,11 +165,11 @@ async function leave() {
         <StatCard label="Acierto en el pase" :value="formatPct(data.individual.passAccuracyPct)" :hint="`${data.individual.passesCompleted}/${data.individual.passesAttempted} completados`" />
         <StatCard label="Recuperaciones" :value="data.individual.recoveries" :hint="`${formatNumber(data.individual.recoveriesPer90)} por 90'`" />
         <StatCard label="Pérdidas de balón" :value="data.individual.ballLosses" :hint="`${data.individual.fouls} faltas cometidas`" />
-        <StatCard label="Pases clave" :value="data.individual.keyPasses" :hint="`${data.individual.tackles} entradas · ${data.individual.interceptions} intercepciones`" />
+        <StatCard label="Entradas" :value="data.individual.tackles" :hint="`${data.individual.interceptions} intercepciones`" />
       </div>
     </section>
 
-    <div class="grid gap-6 lg:grid-cols-2">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <!-- Impacto en el equipo -->
       <section v-if="impact" class="card">
         <h2 class="font-semibold text-slate-900">Tu aporte al equipo</h2>
@@ -216,7 +219,7 @@ async function leave() {
           <h3 class="mb-2 text-sm font-medium text-slate-800">Tú frente a los jugadores con actas visibles</h3>
           <div v-if="hasPercentiles" class="space-y-3">
             <PercentileBar label="Goles por 90'" :value="league.goalsPer90Percentile" />
-            <PercentileBar label="Asistencias por 90'" :value="league.assistsPer90Percentile" />
+            <PercentileBar label="Asistencias de gol por 90'" :value="league.assistsPer90Percentile" />
             <PercentileBar label="Nota media" :value="league.ratingPercentile" />
             <PercentileBar label="Minutos jugados" :value="league.minutesPercentile" />
             <p class="text-xs text-slate-500">
@@ -241,7 +244,7 @@ async function leave() {
           Ver ficha completa
         </RouterLink>
       </div>
-      <div class="grid gap-6 lg:grid-cols-2">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ChartCard title="Tu nota partido a partido" subtitle="Calculada con los datos del acta, frente a tu media y la de la plantilla." class="lg:col-span-2">
           <AppChart v-if="trendChart" :option="trendChart" :height="280" label="Evolución de tu nota" />
         </ChartCard>
@@ -267,7 +270,7 @@ async function leave() {
         <li v-for="s in suggestions.data.value" :key="s.id" class="flex flex-wrap items-start justify-between gap-2 px-4 py-3 text-sm">
           <div class="min-w-0">
             <RouterLink :to="{ name: 'sheet', params: { squadId: squad.squadId, matchId: s.match.id }, query: { tab: 'interna' } }" class="font-medium text-slate-800 hover:text-accent-400">
-              J{{ s.match.matchday }} · {{ opponentLabel(s.match, squad.teamId) }}
+              J{{ s.match.matchday }} · <TeamName prefix="vs" :name="opponentOf(s.match, squad.teamId).name" :crest-url="opponentOf(s.match, squad.teamId).crestUrl" />
             </RouterLink>
             <p class="text-xs text-slate-500">
               {{ s.current ? 'Corrección' : 'Entrada nueva' }} · {{ s.proposed.minutesPlayed }}' · {{ s.proposed.goals }} G · {{ s.proposed.assists }} A · enviada el {{ formatDate(s.createdAt) }}
@@ -302,7 +305,7 @@ async function leave() {
             <tr v-for="item in data.recentPerformances" :key="item.performance.id" class="hover:bg-slate-50">
               <td class="px-3 py-2">
                 <RouterLink :to="{ name: 'match', params: { matchId: item.match.id } }" class="font-medium text-slate-800 hover:text-accent-400">
-                  J{{ item.match.matchday }} · {{ opponentLabel(item.match, squad.teamId) }}
+                  J{{ item.match.matchday }} · <TeamName prefix="vs" :name="opponentOf(item.match, squad.teamId).name" :crest-url="opponentOf(item.match, squad.teamId).crestUrl" />
                 </RouterLink>
                 <p class="text-xs text-slate-500">{{ formatDate(item.match.kickoffAt) }}</p>
               </td>

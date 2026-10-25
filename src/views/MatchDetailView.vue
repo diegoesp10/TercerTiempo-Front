@@ -12,6 +12,9 @@ import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import { formatKickoff, matchStatusLabels, positionShortLabels, visibilityLabels } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import PlayerName from '@/components/players/PlayerName.vue';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 
 const props = defineProps<{ matchId: string }>();
 
@@ -37,15 +40,17 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
         </span>
         <Badge :tone="data.match.status === 'Played' ? 'slate' : 'blue'">{{ matchStatusLabels[data.match.status] }}</Badge>
       </div>
-      <div class="mt-4 grid grid-cols-3 items-center text-center">
-        <RouterLink :to="{ name: 'team', params: { teamId: data.match.homeTeam.id } }" class="text-lg font-semibold text-slate-900 hover:text-accent-400">
+      <div class="mt-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-center">
+        <RouterLink :to="{ name: 'team', params: { teamId: data.match.homeTeam.id } }" class="flex min-w-0 flex-col items-center gap-2 break-words text-sm font-semibold text-slate-900 hover:text-accent-400 sm:text-lg">
+          <TeamCrest :src="data.match.homeTeam.crestUrl" :name="data.match.homeTeam.name" :short-name="data.match.homeTeam.shortName" size="lg" />
           {{ data.match.homeTeam.name }}
         </RouterLink>
-        <div class="text-3xl font-bold tabular-nums text-slate-900">
+        <div class="text-2xl font-bold tabular-nums text-slate-900 sm:text-3xl">
           <template v-if="data.match.status === 'Played'">{{ data.match.homeGoals }} - {{ data.match.awayGoals }}</template>
           <span v-else class="text-slate-300">vs</span>
         </div>
-        <RouterLink :to="{ name: 'team', params: { teamId: data.match.awayTeam.id } }" class="text-lg font-semibold text-slate-900 hover:text-accent-400">
+        <RouterLink :to="{ name: 'team', params: { teamId: data.match.awayTeam.id } }" class="flex min-w-0 flex-col items-center gap-2 break-words text-sm font-semibold text-slate-900 hover:text-accent-400 sm:text-lg">
+          <TeamCrest :src="data.match.awayTeam.crestUrl" :name="data.match.awayTeam.name" :short-name="data.match.awayTeam.shortName" size="lg" />
           {{ data.match.awayTeam.name }}
         </RouterLink>
       </div>
@@ -66,10 +71,10 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
     <section v-for="sheet in data.sheets" :key="sheet.squadId" class="card mt-6">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 class="font-semibold text-slate-900">
-          Acta interna de {{ sheet.teamName }}
+          Acta interna de <TeamName :name="sheet.teamName" :team-id="sheet.teamId" size="sm" />
           <Badge :tone="sheet.visibility === 'Public' ? 'green' : 'slate'" class="ml-2">{{ visibilityLabels[sheet.visibility] }}</Badge>
         </h2>
-        <div class="flex gap-3 text-sm">
+        <div class="flex flex-wrap gap-x-3 gap-y-1 text-sm">
           <RouterLink v-if="sheet.visible" :to="{ name: 'squad', params: { squadId: sheet.squadId } }" class="text-accent-400 hover:underline">Ver plantilla</RouterLink>
           <RouterLink
             v-if="auth.isStaffOf(sheet.squadId) && data.match.status === 'Played'"
@@ -102,7 +107,6 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
               <th class="px-2 py-2 text-center">G</th>
               <th class="col-sm px-2 py-2 text-center">A</th>
               <th class="col-sm px-2 py-2 text-center">Tiros</th>
-              <th class="col-md px-2 py-2 text-center">PC</th>
               <th class="col-md px-2 py-2 text-center">Ent</th>
               <th class="col-md px-2 py-2 text-center">Int</th>
               <th class="col-md px-2 py-2 text-center">Par</th>
@@ -114,7 +118,7 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
             <tr v-for="p in sheet.entries" :key="p.id" :class="p.squadPlayerId === auth.playerSquad?.squadPlayerId ? 'bg-brand-500/10' : ''">
               <td class="py-2 pr-3 whitespace-nowrap">
                 <span v-if="p.shirtNumber" class="mr-1 text-slate-400">{{ p.shirtNumber }}</span>
-                <span class="font-medium text-slate-800">{{ p.playerName }}</span>
+                <PlayerName :name="p.playerName" :photo-url="p.playerPhotoUrl" class="font-medium text-slate-800" />
                 <span class="ml-1 text-xs text-slate-400">
                   <template v-if="p.position">{{ positionShortLabels[p.position] }}</template>
                   <template v-if="p.started"> · titular</template>
@@ -124,7 +128,6 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
               <td class="px-2 py-2 text-center"><GoalMarks :goals="p.goals" /></td>
               <td class="col-sm px-2 py-2 text-center tabular-nums">{{ p.assists }}</td>
               <td class="col-sm px-2 py-2 text-center tabular-nums">{{ p.shotsOnTarget }}/{{ p.shots }}</td>
-              <td class="col-md px-2 py-2 text-center tabular-nums">{{ p.keyPasses }}</td>
               <td class="col-md px-2 py-2 text-center tabular-nums">{{ p.tackles }}</td>
               <td class="col-md px-2 py-2 text-center tabular-nums">{{ p.interceptions }}</td>
               <td class="col-md px-2 py-2 text-center tabular-nums">{{ p.saves }}</td>

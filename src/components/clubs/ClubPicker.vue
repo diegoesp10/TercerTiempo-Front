@@ -3,12 +3,15 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import type { ClubCatalogDto } from '@/types/api';
+import TeamName from '@/components/teams/TeamName.vue';
+import { trackSearch } from '@/utils/analytics';
 
 /**
  * Desplegable con búsqueda sobre el catálogo de clubes (GET /api/clubs/catalog): se escribe para filtrar y se elige
- * uno de la lista. El valor es el nombre canónico del club elegido o '' si no hay ninguno elegido.
+ * uno de la lista. El valor es el nombre canónico del club elegido o '' si no hay ninguno elegido. Con locked (el club
+ * que trae una invitación) se muestra fijado y no se puede cambiar.
  */
-const props = defineProps<{ modelValue: string; id?: string }>();
+const props = defineProps<{ modelValue: string; id?: string; locked?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
 
 const catalog = ref<ClubCatalogDto[]>([]);
@@ -44,7 +47,15 @@ const selected = computed(() => catalog.value.find((club) => club.name === props
 
 watch(matches, () => { highlighted.value = 0; });
 
+// El club puede llegar de fuera (la invitación): el texto del campo lo sigue.
+watch(() => props.modelValue, (value) => {
+  if (value && value !== query.value) query.value = value;
+  if (props.locked) open.value = false;
+});
+
 function onInput() {
+  if (props.locked) return;
+  trackSearch('club', query.value);
   open.value = true;
   // Escribir deshace la elección: solo vale un club de la lista.
   if (props.modelValue && query.value !== props.modelValue) emit('update:modelValue', '');
@@ -58,6 +69,7 @@ function choose(club: ClubCatalogDto) {
 }
 
 function onKeydown(event: KeyboardEvent) {
+  if (props.locked) return;
   if (!open.value && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
     open.value = true;
     event.preventDefault();
@@ -87,24 +99,31 @@ function onBlur() {
 
 <template>
   <div class="relative">
-    <input
-      :id="id"
-      v-model="query"
-      type="text"
-      role="combobox"
-      autocomplete="off"
-      spellcheck="false"
-      :aria-expanded="open"
-      :aria-controls="listId"
-      :aria-activedescendant="open && matches[highlighted] ? `${listId}-${highlighted}` : undefined"
-      :placeholder="loading ? 'Cargando clubes…' : 'Escribe para buscar tu club'"
-      class="input pr-9"
-      @focus="open = true"
-      @input="onInput"
-      @keydown="onKeydown"
-      @blur="onBlur"
-    />
-    <Icon icon="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" />
+    <!-- El icono se centra respecto al campo, no respecto al bloque con las líneas de ayuda de debajo. -->
+    <div class="relative">
+      <input
+        :id="id"
+        v-model="query"
+        type="text"
+        role="combobox"
+        autocomplete="off"
+        spellcheck="false"
+        :aria-expanded="open"
+        :aria-controls="listId"
+        :aria-activedescendant="open && matches[highlighted] ? `${listId}-${highlighted}` : undefined"
+        :placeholder="loading ? 'Cargando clubes…' : 'Escribe para buscar tu club'"
+        :readonly="locked"
+        :aria-readonly="locked"
+        class="input pr-9"
+        :class="locked ? 'cursor-not-allowed opacity-90' : ''"
+        @focus="open = !locked"
+        @input="onInput"
+        @keydown="onKeydown"
+        @blur="onBlur"
+      />
+      <Icon v-if="locked" icon="lock" class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+      <Icon v-else icon="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" />
+    </div>
 
     <ul
       v-if="open && !loading"
@@ -131,18 +150,18 @@ function onBlur() {
         @mousemove="highlighted = index"
       >
         <div class="flex items-center justify-between gap-3">
-          <span class="font-medium">{{ club.name }}</span>
+          <TeamName :name="club.name" :crest-url="club.crestUrl" :team-id="club.teams[0]?.id" class="font-medium" size="sm" />
           <span v-if="club.registered" class="shrink-0 text-xs">Ya tiene cuenta</span>
         </div>
-        <p class="mt-0.5 truncate text-xs text-slate-500">
-          {{ club.teams.map((t) => t.competitionName ? `${t.name} (${t.competitionName})` : t.name).join(' · ') }}
+        <p class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+          <TeamName v-for="t in club.teams" :key="t.id" :name="t.competitionName ? `${t.name} (${t.competitionName})` : t.name" :team-id="t.id" />
         </p>
       </li>
     </ul>
 
     <p v-if="selected" class="mt-1 text-xs text-slate-500">
-      Se vincularán sus {{ selected.teams.length === 1 ? 'equipo' : `${selected.teams.length} equipos` }}:
-      {{ selected.teams.map((t) => t.name).join(', ') }}.
+      {{ selected.teams.length === 1 ? 'Se vinculará su equipo' : `Se vincularán sus ${selected.teams.length} equipos` }}:
+      <template v-for="(t, i) in selected.teams" :key="t.id"><TeamName :name="t.name" :team-id="t.id" />{{ i < selected.teams.length - 1 ? ', ' : '.' }}</template>
     </p>
   </div>
 </template>

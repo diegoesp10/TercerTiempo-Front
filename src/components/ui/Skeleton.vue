@@ -10,7 +10,7 @@ withDefaults(defineProps<{ variant?: 'cards' | 'table' | 'list'; count?: number;
 
 <template>
   <div role="status" :aria-label="label" aria-busy="true">
-    <div v-if="variant === 'cards'" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-if="variant === 'cards'" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <div v-for="n in count" :key="n" class="card flex items-center gap-4">
         <span class="skeleton h-14 w-14 shrink-0 rounded-full" />
         <span class="flex-1 space-y-2">

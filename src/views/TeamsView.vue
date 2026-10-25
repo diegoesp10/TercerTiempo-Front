@@ -11,6 +11,9 @@ import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useMyClub } from '@/composables/useMyClub';
 import { useAuthStore } from '@/stores/auth';
+import { useSeasonStore } from '@/stores/season';
+
+const season = useSeasonStore();
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -59,24 +62,26 @@ const subtitle = computed(() =>
   <Skeleton v-if="competitions.loading.value && !competitions.data.value" variant="cards" label="Cargando las competiciones…" />
   <Alert v-else-if="competitions.error.value" kind="error">{{ competitions.error.value }}</Alert>
   <Alert v-else-if="!competitions.data.value || competitions.data.value.length === 0" kind="warning">
-    Todavía no hay ligas sincronizadas. Si acabas de arrancar la API, espera a que termine la primera sincronización.
+    <template v-if="!season.isCurrent">No hay ligas guardadas de la temporada {{ season.selected?.label }}.</template>
+    <template v-else>Todavía no hay ligas sincronizadas. Si acabas de arrancar la API, espera a que termine la primera sincronización.</template>
   </Alert>
 
   <template v-else>
     <CompetitionPicker v-model="selectedId" :competitions="competitions.data.value" class="mb-6" />
 
     <h2 v-if="selected" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-      {{ selected.name }} · {{ selected.currentSeasonLabel ?? 'sin temporada' }}
+      {{ selected.name }} · {{ selected.seasonLabel ?? 'sin temporada' }}
     </h2>
 
     <Skeleton v-if="teams.loading.value && !teams.data.value" variant="cards" :count="9" label="Cargando los equipos…" />
     <Alert v-else-if="teams.error.value" kind="error">{{ teams.error.value }}</Alert>
 
-    <div v-else-if="teams.data.value" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" :class="{ 'is-refreshing': teams.loading.value }" :aria-busy="teams.loading.value">
+    <div v-else-if="teams.data.value" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" :class="{ 'is-refreshing': teams.loading.value }" :aria-busy="teams.loading.value">
       <RouterLink
         v-for="team in orderedTeams"
         :key="team.id"
         :to="{ name: 'team', params: { teamId: team.id } }"
+        :data-track="team.name"
         class="card flex items-center gap-4 transition hover:border-brand-400/60 hover:shadow"
         :class="isMine(team.id) ? 'border-accent-400/60 bg-brand-500/15 ring-1 ring-accent-400/40' : ''"
       >

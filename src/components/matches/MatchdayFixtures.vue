@@ -8,6 +8,8 @@ import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { CompetitionMatchdayDto, MatchDto } from '@/types/api';
 import { formatDayHeading, formatDayRange, formatTime, localDayKey, matchStatusLabels } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 
 const props = defineProps<{
   competitionId: string;
@@ -145,7 +147,7 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
         </button>
         <SearchSelect
           v-if="matchdays.length > 0"
-          class="w-64"
+          class="w-full sm:w-64"
           size="sm"
           aria-label="Elegir jornada"
           :model-value="selected"
@@ -175,7 +177,10 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
               class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
               :class="isHighlighted(match) ? 'my-club-row font-semibold' : ''"
             >
-              <span class="min-w-0 truncate text-right" :class="isMine(match.homeTeam.id) ? 'text-accent-400' : 'text-slate-800'" :title="match.homeTeam.name">{{ match.homeTeam.name }}</span>
+              <span class="flex min-w-0 items-center justify-end gap-1.5 text-right" :class="isMine(match.homeTeam.id) ? 'text-accent-400' : 'text-slate-800'" :title="match.homeTeam.name">
+                <span class="truncate">{{ match.homeTeam.name }}</span>
+                <TeamCrest :src="match.homeTeam.crestUrl" :name="match.homeTeam.name" :short-name="match.homeTeam.shortName" size="xs" />
+              </span>
               <span class="min-w-16 text-center">
                 <span v-if="hasScore(match)" class="rounded bg-brand-500 px-2 py-0.5 font-semibold tabular-nums text-white">
                   {{ match.homeGoals }} - {{ match.awayGoals }}
@@ -183,7 +188,13 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
                 <span v-else-if="match.status === 'Scheduled'" class="tabular-nums text-slate-600">{{ formatTime(match.kickoffAt) }}</span>
                 <Badge v-else tone="amber">{{ matchStatusLabels[match.status] }}</Badge>
               </span>
-              <span class="min-w-0 truncate" :class="isMine(match.awayTeam.id) ? 'text-accent-400' : 'text-slate-800'" :title="match.awayTeam.name">{{ match.awayTeam.name }}</span>
+              <TeamName
+                :name="match.awayTeam.name"
+                :crest-url="match.awayTeam.crestUrl"
+                :short-name="match.awayTeam.shortName"
+                :class="isMine(match.awayTeam.id) ? 'text-accent-400' : 'text-slate-800'"
+                :title="match.awayTeam.name"
+              />
             </RouterLink>
             <p v-if="match.venue" class="-mt-1 truncate px-3 pb-2 text-center text-xs text-slate-400">{{ match.venue }}</p>
           </li>

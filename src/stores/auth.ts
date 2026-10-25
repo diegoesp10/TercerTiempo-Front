@@ -2,6 +2,8 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { api } from '@/api';
 import type { AccountDto, AuthResponse, LoginRequest, PlayerDto, RegisterRequest, SquadSummaryDto } from '@/types/api';
+import { useAdminSessionStore } from './adminSession';
+import { markActiveSession } from './sessionSync';
 
 const TOKEN_KEY = 'tt.token';
 const ACCOUNT_KEY = 'tt.account';
@@ -14,7 +16,10 @@ function readAccount(): AccountDto | null {
   }
 }
 
-/** Sesión: token JWT y cuenta (jugador con su plantilla, o técnico con sus plantillas), persistidos en localStorage. */
+/**
+ * Sesión: token JWT y cuenta (jugador con su plantilla, técnico con sus plantillas o club), persistidos en localStorage.
+ * Entrar con una cuenta cierra la sesión de administrador (ver sessionSync).
+ */
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem(TOKEN_KEY));
   const account = ref<AccountDto | null>(readAccount());
@@ -65,6 +70,8 @@ export const useAuthStore = defineStore('auth', () => {
   const isStaffOf = (squadId: string) => coachSquads.value.some((s) => s.id === squadId);
 
   function setSession(session: AuthResponse) {
+    useAdminSessionStore().end();
+    markActiveSession('user');
     token.value = session.accessToken;
     localStorage.setItem(TOKEN_KEY, session.accessToken);
     setAccount(session.account);
@@ -90,6 +97,12 @@ export const useAuthStore = defineStore('auth', () => {
     account.value = null;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ACCOUNT_KEY);
+  }
+
+  /** Otra pestaña ha entrado o salido: se toma lo que haya guardado. */
+  function reloadFromStorage() {
+    token.value = localStorage.getItem(TOKEN_KEY);
+    account.value = token.value ? readAccount() : null;
   }
 
   async function login(request: LoginRequest) {
@@ -128,6 +141,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     logout,
+    reloadFromStorage,
     setAccount,
     setPlayer,
     setCoachSquads,

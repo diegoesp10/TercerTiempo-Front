@@ -78,10 +78,15 @@ import { dataSources, legalEntity } from '@/legal/entity';
         </li>
       </ul>
       <p>
-        Tercer Tiempo no es un servicio oficial de la Real Federación de Fútbol del Principado de Asturias ni de ningún medio,
-        no está vinculado a ellos y no garantiza la exactitud, integridad ni actualidad de esos datos. En caso de discrepancia
-        prevalece el acta oficial publicada por la federación, que se enlaza desde cada partido. Los nombres y escudos de
-        clubes y competiciones se utilizan únicamente para identificarlos y pertenecen a sus titulares.
+        Tercer Tiempo cuenta con los servicios de <strong>FútbolAsturiano, diario independiente digital del fútbol
+        asturiano</strong> (<a href="https://www.futbolasturiano.es" target="_blank" rel="noopener">futbolasturiano.es</a>),
+        que autoriza el uso de sus calendarios, resultados, clasificaciones, plantillas publicadas y escudos de los equipos.
+      </p>
+      <p>
+        Tercer Tiempo no es un servicio oficial de la Real Federación de Fútbol del Principado de Asturias ni está vinculado a
+        ella, y no garantiza la exactitud, integridad ni actualidad de esos datos. En caso de discrepancia prevalece el acta
+        oficial publicada por la federación, que se enlaza desde cada partido. Los nombres y escudos de clubes y competiciones
+        se utilizan únicamente para identificarlos y pertenecen a sus titulares.
       </p>
     </section>
 

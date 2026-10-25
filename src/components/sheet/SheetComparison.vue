@@ -10,6 +10,7 @@ import GoalMarks from '@/components/sheet/GoalMarks.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { SheetComparisonDto, SheetComparisonRowDto } from '@/types/api';
 import { positionShortLabels, sheetFieldLabels } from '@/utils/format';
+import PlayerName from '@/components/players/PlayerName.vue';
 
 const props = defineProps<{ squadId: string; matchId: string }>();
 
@@ -75,7 +76,7 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
             <template v-else>Cuando se publique el acta pública se compara con la tuya jugador a jugador.</template>
           </p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <div v-if="available" class="inline-flex rounded-lg border border-slate-200 p-0.5" role="radiogroup" aria-label="Filtro">
             <button type="button" role="radio" :aria-checked="filter === 'all'" class="rounded-md px-3 py-1 text-xs font-medium" :class="filter === 'all' ? 'bg-action text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'" @click="filter = 'all'">Todos</button>
             <button type="button" role="radio" :aria-checked="filter === 'differences'" class="rounded-md px-3 py-1 text-xs font-medium" :class="filter === 'differences' ? 'bg-action text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'" @click="filter = 'differences'">Solo discrepancias</button>
@@ -114,7 +115,7 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
               <tr v-for="row in rows" :key="row.player.id" :class="row.differences.length > 0 ? '' : 'text-slate-600'">
                 <td class="py-2 pr-3 whitespace-nowrap">
                   <span v-if="row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.player.shirtNumber }}</span>
-                  <span class="font-medium text-slate-800">{{ row.player.fullName }}</span>
+                  <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium text-slate-800" />
                   <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
                   <p v-if="row.official" class="text-xs text-slate-400">en el acta: {{ row.official.fullName }}</p>
                 </td>
@@ -156,7 +157,7 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
           <ul class="mt-2 flex flex-wrap gap-2">
             <li v-for="line in data.unmatchedOfficial" :key="line.id">
               <Badge :tone="line.played ? 'amber' : 'slate'">
-                <span v-if="line.shirtNumber" class="mr-1 text-amber-700/70">{{ line.shirtNumber }}</span>{{ line.fullName }}<template v-if="line.played"> · {{ line.minutesPlayed }}'</template>
+                <span v-if="line.shirtNumber" class="mr-1 text-amber-700/70">{{ line.shirtNumber }}</span><PlayerName :name="line.fullName" /><template v-if="line.played"> · {{ line.minutesPlayed }}'</template>
               </Badge>
             </li>
           </ul>

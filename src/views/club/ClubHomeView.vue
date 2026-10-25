@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, reactive, ref, shallowRef, watch } from 'vue';
+import { computed, reactive, ref, shallowRef } from 'vue';
 import { api } from '@/api';
 import { ApiError, errorMessage } from '@/api/http';
-import CompetitionPicker from '@/components/competitions/CompetitionPicker.vue';
 import LicensePanel from '@/components/licensing/LicensePanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -12,11 +11,11 @@ import Spinner from '@/components/ui/Spinner.vue';
 import SquadAccessCard from '@/components/squads/SquadAccessCard.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
-import { useMyClub } from '@/composables/useMyClub';
 import { useAuthStore } from '@/stores/auth';
-import type { AppointmentDto, ClubDto, StaffRole, TeamSummaryDto } from '@/types/api';
+import type { AppointmentDto, ClubDto, ClubFilialDto, StaffRole } from '@/types/api';
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, formatKickoff, licenseStatusLabels, licenseStatusTone, staffRoleLabels, staffRoleOptions } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
+import TeamName from '@/components/teams/TeamName.vue';
 
 const auth = useAuthStore();
 
@@ -44,37 +43,24 @@ async function act(fn: () => Promise<string | void>) {
 }
 
 // --- Equipos del club ---
-const addingTeam = ref(false);
-const competitions = useAsync(() => api.competitions.list(), { immediate: false });
-const competitionId = ref<string | null>(null);
-watch(addingTeam, (open) => { if (open && !competitions.data.value) void competitions.run(); });
-// El buscador se abre en la liga de tu club (ajuste «Mi club primero»).
-const { preferredCompetition } = useMyClub();
-watch(competitions.data, (list) => { if (list && !competitionId.value) competitionId.value = preferredCompetition(list); });
-const teams = shallowRef<TeamSummaryDto[]>([]);
-const teamToAdd = ref('');
-
-watch(competitionId, async (id) => {
-  teams.value = [];
-  teamToAdd.value = '';
-  if (id) teams.value = await api.teams.list(id);
-});
-
-const availableTeams = computed(() => teams.value.filter((t) => !club.value?.teams.some((ct) => ct.teamId === t.id)));
-
-function addTeam() {
-  if (!teamToAdd.value) return;
+// La licencia es del club y cubre el primer equipo y sus filiales: no se vinculan equipos de otros clubes. Si el
+// proveedor publica un filial nuevo del club, aparece aquí para añadirlo.
+function addFilial(filial: ClubFilialDto) {
   void act(async () => {
-    data.value = await api.clubs.addTeam(teamToAdd.value);
-    teamToAdd.value = '';
-    addingTeam.value = false;
+    data.value = await api.clubs.addTeam(filial.teamId);
     await auth.refreshAccount();
-    return 'Equipo vinculado al club.';
+    return `${filial.teamName} ya está cubierto por la licencia del club.`;
   });
 }
 
 async function removeTeam(teamId: string, teamName: string) {
-  if (!(await confirmDialog({ title: `Desvincular ${teamName}`, message: 'El equipo dejará de ser del club. Los nombramientos ya emitidos no cambian.', confirmLabel: 'Desvincular', danger: true }))) return;
+  const ok = await confirmDialog({
+    title: `Quitar ${teamName}`,
+    message: 'Dejará de estar cubierto por la licencia del club y de aparecer en tu club. Los nombramientos ya emitidos no cambian.',
+    confirmLabel: 'Quitar',
+    danger: true,
+  });
+  if (!ok) return;
   void act(async () => {
     data.value = await api.clubs.removeTeam(teamId);
     await auth.refreshAccount();
@@ -160,9 +146,6 @@ const sortedAppointments = computed(() => {
       <RouterLink to="/ajustes" title="Cambiar el escudo en Ajustes" class="inline-flex size-14 shrink-0 items-center justify-center rounded-full leading-none ring-offset-2 ring-offset-canvas transition-shadow hover:ring-2 hover:ring-brand-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
         <TeamCrest :src="auth.clubCrestUrl" :name="club?.name ?? auth.displayName" size="lg" />
       </RouterLink>
-      <button type="button" class="btn-primary" v-busy="busy" :disabled="busy" @click="addingTeam = !addingTeam">
-        {{ addingTeam ? 'Cerrar' : 'Vincular otro equipo' }}
-      </button>
     </template>
   </PageHeader>
 
@@ -200,37 +183,32 @@ const sortedAppointments = computed(() => {
       </template>
     </div>
 
-    <!-- Vincular equipo -->
-    <section v-if="addingTeam" class="card mb-6">
-      <h2 class="font-semibold text-slate-900">Vincular otro equipo</h2>
+    <!-- Filiales del club publicados después del alta -->
+    <section v-if="club.availableFilials.length" class="card mb-6">
+      <h2 class="font-semibold text-slate-900">Filiales sin añadir</h2>
       <p class="mt-1 text-sm text-slate-500">
-        Tus equipos quedaron vinculados al darte de alta; esto es para los que no se reconocieron por el nombre (un filial con otro nombre, un equipo nuevo).
-        Elige la liga y el grupo en que juega y después el equipo: su nombre tiene que corresponderse con el del club y solo puede pertenecer a un club.
+        Equipos de tu club que el proveedor ha publicado después de tu alta. Al añadirlos quedan cubiertos por la misma licencia, sin coste extra, con su propio cupo de técnicos.
       </p>
-      <div class="mt-4">
-        <Spinner v-if="competitions.loading.value" />
-        <CompetitionPicker v-else-if="competitions.data.value" v-model="competitionId" :competitions="competitions.data.value" />
-      </div>
-      <div v-if="competitionId" class="mt-4 flex flex-wrap items-end gap-3">
-        <div class="min-w-64 flex-1">
-          <label class="label" for="team-to-add">Equipo</label>
-          <SearchSelect
-            id="team-to-add"
-            :model-value="teamToAdd || null"
-            placeholder="— Elige un equipo —"
-            :options="availableTeams.map((t) => ({ value: t.id, label: t.name }))"
-            @update:model-value="teamToAdd = String($event ?? '')"
-          />
-        </div>
-        <button type="button" class="btn-primary" v-busy="busy" :disabled="busy || !teamToAdd" @click="addTeam">Vincular</button>
-      </div>
+      <ul class="mt-3 divide-y divide-slate-100">
+        <li v-for="filial in club.availableFilials" :key="filial.teamId" class="flex flex-wrap items-center gap-3 py-3">
+          <TeamCrest :src="filial.teamCrestUrl" :name="filial.teamName" />
+          <div class="min-w-0 flex-1">
+            <p class="truncate font-medium text-slate-900">{{ filial.teamName }}</p>
+            <p v-if="filial.competitionName" class="text-xs text-slate-500">{{ filial.competitionName }}</p>
+          </div>
+          <button type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy" :disabled="busy" @click="addFilial(filial)">
+            <Icon icon="plus" class="h-3 w-3" />Añadir a la licencia
+          </button>
+        </li>
+      </ul>
     </section>
 
     <!-- Equipos -->
     <section class="card mb-6">
       <h2 class="font-semibold text-slate-900">Equipos del club</h2>
+      <p class="mt-1 text-xs text-slate-500">El primer equipo y sus filiales, todos con la misma licencia del club. Cada equipo tiene su propio cupo de técnicos según el plan.</p>
       <p v-if="club.teams.length === 0" class="mt-2 text-sm text-slate-500">
-        Ningún equipo del proveedor se reconoció con el nombre del club. Vincula los tuyos para poder nombrar a sus técnicos.
+        Ningún equipo del proveedor se reconoció con el nombre del club.
       </p>
       <ul v-else class="mt-3 divide-y divide-slate-100">
         <li v-for="team in club.teams" :key="team.teamId" class="flex flex-wrap items-center gap-3 py-3">
@@ -242,10 +220,17 @@ const sortedAppointments = computed(() => {
               <template v-else>Sin temporada en curso en el proveedor</template>
             </p>
           </div>
-          <div class="flex items-center gap-2 text-xs text-slate-500">
+          <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <Badge :tone="licenseStatusTone[team.license]" :title="`Licencia ${licenseStatusLabels[team.license].toLowerCase()} · hasta el ${formatDate(team.licenseValidUntil)}`">Licencia {{ licenseStatusLabels[team.license].toLowerCase() }}</Badge>
             <Badge :tone="team.activeAppointments > 0 ? 'green' : 'amber'">{{ team.activeAppointments }} {{ team.activeAppointments === 1 ? 'técnico vigente' : 'técnicos vigentes' }}</Badge>
-            <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" @click="removeTeam(team.teamId, team.teamName)">Desvincular</button>
+            <button
+              v-if="club.teams.length > 1"
+              type="button"
+              class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+              v-busy="busy"
+              :disabled="busy"
+              @click="removeTeam(team.teamId, team.teamName)"
+            >Quitar</button>
           </div>
         </li>
       </ul>
@@ -253,7 +238,7 @@ const sortedAppointments = computed(() => {
 
     <LicensePanel class="mb-6" />
 
-    <div class="grid gap-6 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <!-- Nuevo nombramiento -->
       <section class="card self-start">
         <h2 class="font-semibold text-slate-900">Nombrar a un técnico</h2>
@@ -268,7 +253,7 @@ const sortedAppointments = computed(() => {
               id="ap-team"
               :model-value="appointmentForm.teamId || null"
               placeholder="— Elige un equipo —"
-              :options="club.teams.map((t) => ({ value: t.teamId, label: t.teamName, hint: t.competitionName ?? undefined, disabled: !t.seasonId }))"
+              :options="club.teams.map((t) => ({ value: t.teamId, label: t.teamName, hint: t.competitionName ?? undefined, disabled: !t.seasonId, crest: t.teamCrestUrl ?? `/api/teams/${t.teamId}/crest` }))"
               @update:model-value="appointmentForm.teamId = String($event ?? '')"
             />
             <p v-if="fieldErrors.teamId" class="field-error">{{ fieldErrors.teamId[0] }}</p>
@@ -283,7 +268,7 @@ const sortedAppointments = computed(() => {
             <input id="ap-email" v-model="appointmentForm.email" type="email" class="input" />
             <p v-if="fieldErrors.email" class="field-error">{{ fieldErrors.email[0] }}</p>
           </div>
-          <div class="grid gap-3 sm:grid-cols-2">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label class="label" for="ap-role">Rol</label>
               <SearchSelect
@@ -308,7 +293,7 @@ const sortedAppointments = computed(() => {
           <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Código de acceso para {{ lastCreated.coachName }}</p>
           <p class="mt-1 font-mono text-2xl font-semibold tracking-[0.3em] text-slate-900">{{ lastCreated.accessCode }}</p>
           <p class="mt-1 text-xs text-slate-600">
-            {{ lastCreated.teamName }} · {{ lastCreated.seasonLabel }} · hasta {{ formatDate(lastCreated.validUntil) }}. Con él se da de alta en
+            <TeamName :name="lastCreated.teamName" :team-id="lastCreated.teamId" /> · {{ lastCreated.seasonLabel }} · hasta {{ formatDate(lastCreated.validUntil) }}. Con él se da de alta en
             <RouterLink :to="{ name: 'register', query: { code: lastCreated.accessCode } }" class="font-medium underline">Darme de alta</RouterLink>
             o, si ya tiene cuenta, lo canjea desde su panel.
           </p>
@@ -340,7 +325,7 @@ const sortedAppointments = computed(() => {
                   </p>
                 </td>
                 <td class="col-sm py-2 pr-3">
-                  <p>{{ appointment.teamName }}</p>
+                  <p><TeamName :name="appointment.teamName" :team-id="appointment.teamId" /></p>
                   <p class="text-xs text-slate-500">{{ appointment.seasonLabel }}</p>
                 </td>
                 <td class="py-2 pr-3">

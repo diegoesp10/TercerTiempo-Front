@@ -10,7 +10,7 @@ const features = [
 
 <template>
   <!-- Pantallas de acceso: titular y tres ideas a la izquierda, formulario a la derecha. -->
-  <div class="mx-auto mt-4 grid max-w-5xl overflow-hidden rounded-2xl border border-line bg-surface shadow-card lg:grid-cols-5">
+  <div class="mx-auto mt-4 grid grid-cols-1 max-w-5xl overflow-hidden rounded-2xl border border-line bg-surface shadow-card lg:grid-cols-5">
     <aside class="auth-aside relative hidden overflow-hidden p-10 text-white lg:col-span-2 lg:flex lg:flex-col lg:justify-between">
       <div>
         <p class="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">Tercer Tiempo</p>

@@ -16,6 +16,7 @@ import { useSquad } from '@/composables/useSquad';
 import { useSettingsStore } from '@/stores/settings';
 import type { SquadPlayerProfileDto, SquadPlayerStatsDto } from '@/types/api';
 import { formatNumber, formatPct, positionShortLabels } from '@/utils/format';
+import PlayerName from '@/components/players/PlayerName.vue';
 
 const MAX_SELECTED = 4;
 
@@ -108,7 +109,7 @@ const metrics: MetricRow[] = [
   { label: 'Partidos', value: (r) => r.stats.matchesLogged, format: (v) => String(v ?? '—') },
   { label: 'Minutos', value: (r) => r.stats.minutes, format: (v) => String(v ?? '—') },
   { label: 'Goles', value: (r) => r.stats.goals, format: (v) => String(v ?? '—') },
-  { label: 'Asistencias', value: (r) => r.stats.assists, format: (v) => String(v ?? '—') },
+  { label: 'Asistencias de gol', value: (r) => r.stats.assists, format: (v) => String(v ?? '—') },
   { label: "Goles + asist. por 90'", value: (r) => r.stats.goalContributionsPer90, format: (v) => formatNumber(v) },
   { label: 'Precisión de tiro', value: (r) => r.stats.shotAccuracyPct, format: (v) => formatPct(v) },
   { label: 'Acierto en el pase', value: (r) => r.stats.passAccuracyPct, format: (v) => formatPct(v) },
@@ -155,7 +156,7 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
             @click="toggle(row.player.id)"
           >
             <span v-if="row.player.shirtNumber">{{ row.player.shirtNumber }}</span>
-            {{ row.player.fullName }}
+            <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" />
             <span v-if="row.player.position" class="text-xs">{{ positionShortLabels[row.player.position] }}</span>
           </button>
         </div>
@@ -163,7 +164,7 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
 
       <p v-if="rows.length === 0" class="text-sm text-slate-500">Selecciona al menos un jugador.</p>
 
-      <div v-else class="grid gap-6 lg:grid-cols-2">
+      <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ChartCard title="Perfil por 90 minutos" subtitle="Cada eje escalado al máximo de la plantilla.">
           <AppChart v-if="radar" :option="radar" :height="380" label="Radar comparativo de jugadores" />
         </ChartCard>
@@ -180,7 +181,7 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
                       class="block text-xs font-semibold hover:underline"
                       :style="{ color: textColorOf(row.player.id) }"
                     >
-                      {{ row.player.fullName }}
+                      <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" />
                     </RouterLink>
                   </th>
                 </tr>

@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/auth';
 import type { Position, SquadPlayerDto, SquadPlayerRequest, SquadVisibility } from '@/types/api';
 import { formatDate, positionLabels, positionOptions, staffRoleLabels, visibilityLabels } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
+import PlayerName from '@/components/players/PlayerName.vue';
 
 const { squadId, detail, reload } = useSquad();
 const auth = useAuthStore();
@@ -151,7 +152,7 @@ async function remove(player: SquadPlayerDto) {
     <!-- Gestión (solo cuerpo técnico) -->
     <section v-if="canManage" class="card mb-6">
       <h2 class="font-semibold text-slate-900">Gestión de la plantilla</h2>
-      <div class="mt-4 grid gap-6 md:grid-cols-2">
+      <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Visibilidad</p>
           <div class="mt-2 inline-flex rounded-lg border border-slate-200 p-0.5" role="radiogroup" aria-label="Visibilidad">
@@ -190,7 +191,7 @@ async function remove(player: SquadPlayerDto) {
       nada más: la cuenta se crea con el nombre de su ficha y el código queda invalidado al utilizarse.
     </Alert>
 
-    <div class="grid gap-6 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <!-- Jugadores -->
       <section class="card lg:col-span-2">
         <div class="mb-3 flex items-center justify-between">
@@ -247,7 +248,7 @@ async function remove(player: SquadPlayerDto) {
                     <RouterLink
                       :to="{ name: 'squad-player', params: { squadId, squadPlayerId: player.id } }"
                       class="font-medium text-slate-800 hover:text-accent-400 hover:underline"
-                    >{{ player.fullName }}</RouterLink>
+                    ><PlayerName :name="player.fullName" :photo-url="player.photoUrl" size="sm" /></RouterLink>
                     <p class="text-xs text-slate-400">
                       {{ player.fromRoster ? 'futbolasturiano.es' : 'añadido a mano' }}
                       <Badge v-if="player.injury" tone="red" class="ml-1" :title="[player.injury.typeLabel, player.injury.reason].filter(Boolean).join(': ')">
@@ -308,7 +309,7 @@ async function remove(player: SquadPlayerDto) {
           <summary class="cursor-pointer text-slate-500">Bajas ({{ left.length }})</summary>
           <ul class="mt-2 divide-y divide-slate-100">
             <li v-for="player in left" :key="player.id" class="flex items-center justify-between py-1 text-slate-500">
-              <span>{{ player.fullName }}</span>
+              <PlayerName :name="player.fullName" :photo-url="player.photoUrl" />
               <Badge>Baja</Badge>
             </li>
           </ul>

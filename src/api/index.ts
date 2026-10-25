@@ -40,6 +40,11 @@ import type {
   SheetComparisonDto,
   SquadDetailDto,
   RegistrationOptionsDto,
+  SeasonYearDto,
+  CookiePolicyDto,
+  ConsentDto,
+  ConsentAction,
+  ClubInvitationLookupDto,
   SquadInviteDto,
   SquadMatchDto,
   SquadPlayerDto,
@@ -54,7 +59,7 @@ import type {
   SuggestPerformanceRequest,
   TeamCrestImportDto,
   TeamDetailDto,
-  TeamLicenseDto,
+  ClubLicenseDto,
   TeamSummaryDto,
   VideoPart,
   VideoShareLinkDto,
@@ -69,6 +74,16 @@ const REFERENCE_CACHE_MS = 5 * 60_000;
 const SQUAD_READ_CACHE_MS = 30_000;
 
 export const api = {
+  privacy: {
+    /** Política de cookies vigente con su catálogo. */
+    cookies: () => http<CookiePolicyDto>('/api/cookies', { silent: true }),
+    consent: (visitorId: string, action: ConsentAction, analytics: boolean) =>
+      http<ConsentDto>('/api/cookies/consent', { method: 'POST', body: { visitorId, action, analytics }, silent: true }),
+  },
+  seasons: {
+    /** Temporadas de la app, de la más reciente a la más antigua (la actual marcada). */
+    list: () => http<SeasonYearDto[]>('/api/seasons', { silent: true, cacheMs: 300_000 }),
+  },
   auth: {
     register: (body: RegisterRequest) => http<AuthResponse>('/api/auth/register', { method: 'POST', body }),
     invite: (inviteCode: string) => http<SquadInviteDto>(`/api/auth/invite/${encodeURIComponent(inviteCode.trim())}`),
@@ -76,6 +91,9 @@ export const api = {
     me: () => http<AccountDto>('/api/auth/me'),
     /** Si el alta de clubes exige invitación (beta cerrada). */
     registrationOptions: () => http<RegistrationOptionsDto>('/api/auth/registration-options', { silent: true, cacheMs: 300_000 }),
+    /** Para qué club es una invitación de la beta (404 si no vale). */
+    clubInvitation: (code: string) =>
+      http<ClubInvitationLookupDto>(`/api/auth/club-invitation/${encodeURIComponent(code.trim())}`, { silent: true }),
   },
 
   /** Lo que puede hacer un jugador: vincularse a su ficha y consultar sus números. */
@@ -181,21 +199,21 @@ export const api = {
     deleteInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'DELETE' }),
   },
 
-  /** Licencias por equipo: estado de la cuenta, licencias del club y pago (simulado de momento). */
+  /** Licencia del club (primer equipo y filiales): estado de la cuenta, la licencia del club y pago (simulado de momento). */
   licensing: {
     status: () => http<LicensingStatusDto>('/api/licensing/status', { silent: true }),
-    club: () => http<TeamLicenseDto[]>('/api/licensing/club'),
+    club: () => http<ClubLicenseDto>('/api/licensing/club'),
     /** Planes y precios (público). */
     plans: () => http<LicensingCatalogDto>('/api/licensing/plans', { silent: true }),
-    beginCheckout: (teamId: string, plan: LicensePlan, interval: BillingInterval) =>
-      http<LicenseCheckoutDto>(`/api/licensing/club/${teamId}/checkout`, { method: 'POST', body: { plan, interval } }),
+    beginCheckout: (plan: LicensePlan, interval: BillingInterval) =>
+      http<LicenseCheckoutDto>('/api/licensing/club/checkout', { method: 'POST', body: { plan, interval } }),
     checkout: (sessionId: string) => http<LicenseCheckoutDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}`),
-    confirm: (sessionId: string) => http<TeamLicenseDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}/confirm`, { method: 'POST' }),
+    confirm: (sessionId: string) => http<ClubLicenseDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}/confirm`, { method: 'POST' }),
     /** Plan o facturación para la próxima renovación (durante la prueba, ya). */
-    changeRenewal: (teamId: string, plan: LicensePlan, interval: BillingInterval) =>
-      http<TeamLicenseDto>(`/api/licensing/club/${teamId}/renewal`, { method: 'PUT', body: { plan, interval } }),
-    cancelRenewal: (teamId: string) => http<TeamLicenseDto>(`/api/licensing/club/${teamId}/renewal/cancel`, { method: 'POST' }),
-    resumeRenewal: (teamId: string) => http<TeamLicenseDto>(`/api/licensing/club/${teamId}/renewal/resume`, { method: 'POST' }),
+    changeRenewal: (plan: LicensePlan, interval: BillingInterval) =>
+      http<ClubLicenseDto>('/api/licensing/club/renewal', { method: 'PUT', body: { plan, interval } }),
+    cancelRenewal: () => http<ClubLicenseDto>('/api/licensing/club/renewal/cancel', { method: 'POST' }),
+    resumeRenewal: () => http<ClubLicenseDto>('/api/licensing/club/renewal/resume', { method: 'POST' }),
   },
 
   competitions: {

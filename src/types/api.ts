@@ -131,13 +131,13 @@ export interface ClubTeamDto {
   seasonEndsOn: string | null;
   squadId: string | null;
   activeAppointments: number;
-  /** Estado de la licencia del equipo. */
+  /** Estado de la licencia del club, que cubre a este equipo. */
   license: LicenseStatus;
   /** Último día con acceso a los datos privados del equipo. */
   licenseValidUntil: string;
 }
 
-// --- Licencias por equipo ---
+// --- Licencia del club (primer equipo y filiales) ---
 
 export type LicenseStatus = 'Trial' | 'Active' | 'Expired';
 export type PaymentStatus = 'Pending' | 'Paid' | 'Cancelled';
@@ -145,10 +145,20 @@ export type PaymentStatus = 'Pending' | 'Paid' | 'Cancelled';
 export type LicensePlan = 'Basic' | 'Premium';
 export type BillingInterval = 'Monthly' | 'Yearly';
 
-export interface TeamLicenseDto {
+/** Equipo que cubre la licencia del club, con su cuerpo técnico (cada equipo tiene su propio cupo según el plan). */
+export interface LicensedTeamDto {
   teamId: string;
   teamName: string;
+  teamCrestUrl: string | null;
   squadId: string | null;
+  /** Técnicos de la temporada (vigentes o pendientes de canjear). */
+  staffCount: number;
+}
+
+/** Una licencia por club, al precio del plan: cubre el primer equipo y todos sus filiales. */
+export interface ClubLicenseDto {
+  clubId: string;
+  clubName: string;
   status: LicenseStatus;
   trialEndsOn: string;
   paidUntil: string | null;
@@ -166,9 +176,10 @@ export interface TeamLicenseDto {
   /** Día del próximo cobro, si se renueva. */
   renewsOn: string | null;
   renewalPriceCents: number | null;
-  /** Técnicos de la temporada (vigentes o pendientes de canjear) y los que admite el plan. */
-  staffCount: number;
+  /** Técnicos que admite el plan en cada equipo. */
   staffLimit: number;
+  /** Equipos cubiertos (para un técnico o un jugador, solo los suyos). */
+  teams: LicensedTeamDto[];
 }
 
 export interface LicensePlanDto {
@@ -189,15 +200,18 @@ export interface LicensingCatalogDto {
 
 export interface LicensingStatusDto {
   licensed: boolean;
-  teams: TeamLicenseDto[];
+  /** Club: la suya. Técnico o jugador: las de los clubes de sus equipos. */
+  licenses: ClubLicenseDto[];
   catalog: LicensingCatalogDto;
 }
 
 export interface LicenseCheckoutDto {
   sessionId: string;
   url: string;
-  teamId: string;
-  teamName: string;
+  clubId: string;
+  clubName: string;
+  /** Equipos que cubre la licencia: el primer equipo y sus filiales. */
+  teamNames: string[];
   plan: LicensePlan;
   interval: BillingInterval;
   /** Lo que se cobra hoy (0 si aún queda prueba o periodo pagado). */
@@ -232,8 +246,18 @@ export interface AppointmentDto {
 export interface ClubDto {
   id: string;
   name: string;
+  /** Equipos que cubre la licencia del club: el primer equipo y sus filiales. */
   teams: ClubTeamDto[];
   appointments: AppointmentDto[];
+  /** Filiales del mismo club que aún no están vinculados (solo en GET /api/clubs/me y al vincular o quitar). */
+  availableFilials: ClubFilialDto[];
+}
+
+export interface ClubFilialDto {
+  teamId: string;
+  teamName: string;
+  teamCrestUrl: string | null;
+  competitionName: string | null;
 }
 
 /** Club del catálogo del proveedor (primer equipo + filiales): es la lista de la que se elige el nombre al darse de alta. */
@@ -241,6 +265,7 @@ export interface ClubCatalogDto {
   name: string;
   registered: boolean;
   teams: ClubCatalogTeamDto[];
+  crestUrl?: string | null;
 }
 
 export interface ClubCatalogTeamDto {
@@ -380,6 +405,8 @@ export interface SquadInviteDto {
   competitionName: string;
   seasonLabel: string;
   player: SquadPlayerDto;
+  teamId: string;
+  teamCrestUrl: string | null;
 }
 
 export interface SquadMatchDto {
@@ -416,6 +443,14 @@ export interface TeamMatchStatsInput {
   foulsReceived: number;
   setPieceGoalsFor: number;
   setPieceGoalsAgainst: number;
+  /** Penaltis a favor (lanzados por el equipo) y en contra. */
+  penaltiesFor: number;
+  penaltiesAgainst: number;
+  /** Goles de penalti: son parte de los goles a balón parado. */
+  penaltyGoalsFor: number;
+  penaltyGoalsAgainst: number;
+  throwInsFor: number;
+  throwInsAgainst: number;
   notes: string | null;
 }
 
@@ -438,6 +473,12 @@ export interface TeamStatsAveragesDto {
   foulsReceived: number;
   setPieceGoalsFor: number;
   setPieceGoalsAgainst: number;
+  penaltiesFor: number;
+  penaltiesAgainst: number;
+  penaltyGoalsFor: number;
+  penaltyGoalsAgainst: number;
+  throwInsFor: number;
+  throwInsAgainst: number;
 }
 
 export interface SquadTeamStatsDto {
@@ -502,8 +543,9 @@ export interface CompetitionDto {
   group: string | null;
   region: string;
   sortOrder: number;
-  currentSeasonId: string | null;
-  currentSeasonLabel: string | null;
+  /** Temporada de la liga dentro de la temporada elegida. */
+  seasonId: string | null;
+  seasonLabel: string | null;
   teamsCount: number;
 }
 
@@ -750,6 +792,7 @@ export interface PerformanceDto extends PerformanceStats {
   matchShirtNumber: number | null;
   teamId: string;
   updatedAt: string;
+  playerPhotoUrl?: string | null;
 }
 
 // --- Previa del partido (cuerpo técnico) ---
@@ -801,6 +844,8 @@ export interface FormResultDto {
   goalsFor: number;
   goalsAgainst: number;
   outcome: 'W' | 'D' | 'L';
+  opponentId: string;
+  opponentCrestUrl: string | null;
 }
 
 export interface PreviewPlayerDto {
@@ -815,6 +860,7 @@ export interface PreviewPlayerDto {
   redCards: number;
   goalsLastThree: number;
   formScore: number;
+  photoUrl: string | null;
 }
 
 export interface SetPiecesDto {
@@ -1207,6 +1253,8 @@ export interface SharedVideoDto {
   contentType: string;
   sizeBytes: number;
   expiresAt: string;
+  teamId: string;
+  teamCrestUrl: string | null;
 }
 
 export interface VideoTicketDto {
@@ -1235,6 +1283,132 @@ export interface JobRunDto {
   summary: string | null;
   errors: string[];
   requests: number;
+  /** Datos de las ligas: «Jornada en curso (21 oct – 28 oct)», «Temporada completa»… */
+  scope: string | null;
+}
+
+export type SyncScopeKind = 'CurrentRound' | 'DateRange' | 'FullSeason';
+
+export interface FootballSyncSettingsDto {
+  scheduledScope: SyncScopeKind;
+  daysBack: number;
+  daysAhead: number;
+  rostersInRound: boolean;
+  fullSyncEveryDays: number;
+  roundFrom: string;
+  roundTo: string;
+  lastFullSyncAt: string | null;
+  nextFullSyncAt: string | null;
+  competitions: { id: string; name: string; category: string; tier: number; group: string | null }[];
+  updatedAt: string;
+}
+
+export type UpdateFootballSyncRequest = Pick<FootballSyncSettingsDto, 'scheduledScope' | 'daysBack' | 'daysAhead' | 'rostersInRound' | 'fullSyncEveryDays'>;
+
+export interface RunFootballSyncRequest {
+  scope: SyncScopeKind;
+  from: string | null;
+  to: string | null;
+  competitionIds: string[];
+  includeRosters: boolean;
+  /** Encolar las actas de la federación de los partidos ya jugados del alcance (se bajan a su ritmo: 20/h, 60/día). */
+  includeSheets: boolean;
+}
+
+// --- Administración: descargas en directo ---
+
+export type SyncLeagueStatus = 'pending' | 'running' | 'done' | 'failed';
+
+export interface SyncLeagueDto {
+  name: string;
+  status: SyncLeagueStatus;
+  /** Fase en curso: Calendario, Equipos, Partidos, Clasificación, Plantillas (3/18), Guardando. */
+  stage: string | null;
+  teams: number;
+  matches: number;
+  played: number;
+  standings: number;
+  roster: number;
+  error: string | null;
+}
+
+export interface SyncTeamRefDto {
+  id: string;
+  name: string;
+  crestUrl: string | null;
+}
+
+export interface SyncEventDto {
+  id: number;
+  at: string;
+  kind: 'match' | 'team' | 'standings' | 'roster';
+  league: string;
+  text: string;
+  home: SyncTeamRefDto | null;
+  away: SyncTeamRefDto | null;
+  homeGoals: number | null;
+  awayGoals: number | null;
+  matchday: number | null;
+  kickoffAt: string | null;
+  matchId: string | null;
+  /** new / updated / same (partidos) o new (equipos). */
+  change: 'new' | 'updated' | 'same' | null;
+}
+
+export interface SyncLiveDto {
+  running: boolean;
+  scope: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  summary: string | null;
+  done: number;
+  total: number;
+  current: string | null;
+  leagues: SyncLeagueDto[];
+  feed: SyncEventDto[];
+  errors: string[];
+}
+
+export type SheetDownloadStatus = 'pending' | 'downloading' | 'done' | 'missing' | 'failed';
+
+export interface SheetQueueItemDto {
+  matchId: string;
+  status: SheetDownloadStatus;
+  competition: string;
+  matchday: number;
+  kickoffAt: string;
+  home: SyncTeamRefDto;
+  away: SyncTeamRefDto;
+  homeGoals: number | null;
+  awayGoals: number | null;
+  detail: string | null;
+  attempts: number;
+  requestedAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+}
+
+export interface SheetQueueDto {
+  pending: number;
+  downloading: number;
+  done: number;
+  missing: number;
+  failed: number;
+  pausedUntil: string | null;
+  hourRequests: number;
+  maxPerHour: number;
+  dayRequests: number;
+  maxPerDay: number;
+  nextRequestAt: string | null;
+  requestsNeeded: number;
+  estimatedFinishAt: string | null;
+  items: SheetQueueItemDto[];
+}
+
+export interface LiveDownloadsDto {
+  football: SyncLiveDto;
+  sheets: SheetQueueDto;
+  generatedAt: string;
 }
 
 export interface JobDto {
@@ -1298,7 +1472,45 @@ export interface ClubInvitationDto {
   usedAt: string | null;
   clubName: string | null;
   revokedAt: string | null;
+  teamId: string | null;
 }
+
+/** Club del buscador de invitaciones: sus equipos, la cuenta si ya la tiene y su invitación. teamId se manda al crearla. */
+export interface InvitationClubDto {
+  name: string;
+  teamId: string;
+  teams: { id: string; name: string; competitionName: string | null }[];
+  registeredAs: string | null;
+  invitation: ClubInvitationDto | null;
+}
+
+/** Para qué club es una invitación de la beta (en el alta va fijado). */
+export interface ClubInvitationLookupDto {
+  code: string;
+  clubName: string | null;
+}
+
+// --- Administración: planes, precios y prueba de las licencias (en la base de datos) ---
+
+export interface LicensePlanSettingsDto {
+  plan: LicensePlan;
+  monthlyPriceCents: number;
+  yearlyPriceCents: number;
+  maxStaff: number;
+  stripeMonthlyPriceId: string | null;
+  stripeYearlyPriceId: string | null;
+}
+
+export interface LicensingSettingsDto {
+  currency: string;
+  trialDays: number;
+  plans: LicensePlanSettingsDto[];
+  /** Pasarela del entorno ('mock' o 'stripe'): viene de la configuración y no se edita. */
+  provider: string;
+  updatedAt: string;
+}
+
+export type UpdateLicensingSettingsRequest = Pick<LicensingSettingsDto, 'currency' | 'trialDays' | 'plans'>;
 
 // --- Administración: licencias y cobros de todos los clubes ---
 
@@ -1308,8 +1520,8 @@ export interface AdminLicenseDto {
   id: string;
   clubId: string;
   clubName: string;
-  teamId: string;
-  teamName: string;
+  /** Equipos que cubre: el primer equipo y sus filiales. */
+  teamNames: string[];
   state: AdminLicenseState;
   hasAccess: boolean;
   effectivePlan: LicensePlan;
@@ -1332,7 +1544,6 @@ export interface AdminLicenseDto {
 export interface AdminLicensePaymentDto {
   id: string;
   clubName: string;
-  teamName: string;
   kind: 'Subscription' | 'Renewal';
   plan: LicensePlan;
   interval: BillingInterval;
@@ -1362,3 +1573,85 @@ export interface LicensesOverviewDto {
   currency: string;
   today: string;
 }
+
+/** Temporada de la app (2026/2027...): el dato padre del que cuelga todo lo demás. */
+export interface SeasonYearDto {
+  id: string;
+  label: string;
+  startsOn: string;
+  endsOn: string;
+  isCurrent: boolean;
+}
+
+// --- Cookies y analítica propia ---
+
+export type CookieCategory = 'Necessary' | 'Preferences' | 'Analytics';
+export type CookieStorage = 'Cookie' | 'LocalStorage' | 'SessionStorage';
+
+export interface CookieDto {
+  id: string;
+  name: string;
+  category: CookieCategory;
+  storage: CookieStorage;
+  provider: string;
+  purpose: string;
+  duration: string;
+  sortOrder: number;
+  requiresConsent: boolean;
+}
+
+export interface CookiePolicyDto {
+  /** Versión vigente: un consentimiento guardado solo vale si es de esta versión. */
+  version: string;
+  updatedAt: string;
+  cookies: CookieDto[];
+}
+
+export type ConsentAction = 'AcceptAll' | 'RejectAll' | 'Custom';
+
+export interface ConsentDto {
+  visitorId: string;
+  analytics: boolean;
+  action: ConsentAction;
+  policyVersion: string;
+  createdAt: string;
+}
+
+export type AnalyticsEventType = 'PageView' | 'Search' | 'Click';
+export type AnalyticsEntity = 'Team' | 'Club' | 'Competition' | 'Match' | 'Squad';
+export type ClubScope = 'Actor' | 'Subject';
+
+export interface TrackEventDto {
+  type: AnalyticsEventType;
+  path: string;
+  routeName: string | null;
+  label: string | null;
+  entityType: AnalyticsEntity | null;
+  entityId: string | null;
+  occurredAt: string;
+}
+
+export interface AnalyticsCountDto { key: string; label: string; count: number; visitors: number }
+export interface AnalyticsEntityCountDto { type: AnalyticsEntity; id: string; name: string; crestUrl: string | null; count: number; visitors: number }
+export interface AnalyticsClubCountDto { clubId: string; name: string; crestUrl: string | null; count: number; visitors: number }
+
+export interface AnalyticsReportDto {
+  from: string;
+  to: string;
+  clubId: string | null;
+  scope: ClubScope;
+  totals: { pageViews: number; visitors: number; sessions: number; searches: number; clicks: number };
+  days: { day: string; pageViews: number; visitors: number }[];
+  pages: AnalyticsCountDto[];
+  searches: AnalyticsCountDto[];
+  clicks: AnalyticsCountDto[];
+  entities: AnalyticsEntityCountDto[];
+  actors: AnalyticsCountDto[];
+  activeClubs: AnalyticsClubCountDto[];
+  viewedClubs: AnalyticsClubCountDto[];
+  consents: { total: number; acceptAll: number; rejectAll: number; custom: number; withAnalytics: number };
+  /** Todos los clubes con cuenta, para el filtro. */
+  clubs: AnalyticsClubCountDto[];
+}
+
+export type UpsertCookieRequest = Pick<CookieDto, 'name' | 'category' | 'storage' | 'provider' | 'purpose' | 'duration' | 'sortOrder'>;

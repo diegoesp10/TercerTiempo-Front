@@ -6,6 +6,8 @@ import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import type { MatchDto, TeamStatsAveragesDto } from '@/types/api';
 import { formatNumber, formatPct } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import { opponentOf } from '@/utils/crests';
 
 /**
  * Datos del equipo en la temporada que apunta el cuerpo técnico: medias por partido frente a los rivales y, salvo en
@@ -17,17 +19,19 @@ const { data, loading, error } = useAsync(() => teamStatsApi.season(props.squadI
 
 const averageRows: { label: string; mine: keyof TeamStatsAveragesDto; theirs: keyof TeamStatsAveragesDto; total?: boolean }[] = [
   { label: 'Córners', mine: 'cornersFor', theirs: 'cornersAgainst' },
+  { label: 'Saques de banda', mine: 'throwInsFor', theirs: 'throwInsAgainst' },
   { label: 'Tiros', mine: 'shotsFor', theirs: 'shotsAgainst' },
   { label: 'Tiros a puerta', mine: 'shotsOnTargetFor', theirs: 'shotsOnTargetAgainst' },
   { label: 'Fueras de juego', mine: 'offsidesFor', theirs: 'offsidesAgainst' },
   { label: 'Faltas (cometidas / recibidas)', mine: 'foulsCommitted', theirs: 'foulsReceived' },
+  { label: 'Penaltis (total)', mine: 'penaltiesFor', theirs: 'penaltiesAgainst', total: true },
   { label: 'Goles a balón parado (total)', mine: 'setPieceGoalsFor', theirs: 'setPieceGoalsAgainst', total: true },
+  { label: 'de ellos, de penalti (total)', mine: 'penaltyGoalsFor', theirs: 'penaltyGoalsAgainst', total: true },
 ];
 
 /** Ancho de la barra de cada lado, sobre la suma de ambos (nunca se desborda). */
 const share = (mine: number, theirs: number) => (mine + theirs > 0 ? (mine / (mine + theirs)) * 100 : 50);
 
-const opponent = (match: MatchDto) => (match.homeTeam.id === props.teamId ? match.awayTeam.name : match.homeTeam.name);
 const venue = (match: MatchDto) => (match.homeTeam.id === props.teamId ? 'Casa' : 'Fuera');
 const score = (match: MatchDto) => {
   if (match.homeGoals === null || match.awayGoals === null) return '—';
@@ -93,7 +97,12 @@ const possession = computed(() => (averages.value?.possessionPct == null ? null 
             <tr v-for="row in data.matches" :key="row.match.id">
               <td class="px-3 py-2 whitespace-nowrap">
                 <span class="text-xs text-slate-400">J{{ row.match.matchday }} · {{ venue(row.match) }}</span>
-                <span class="ml-1 font-medium text-slate-800">{{ opponent(row.match) }}</span>
+                <TeamName
+                  class="ml-1 font-medium text-slate-800"
+                  :name="opponentOf(row.match, teamId).name"
+                  :crest-url="opponentOf(row.match, teamId).crestUrl"
+                  :short-name="opponentOf(row.match, teamId).shortName"
+                />
               </td>
               <td class="px-2 py-2 text-center tabular-nums">{{ score(row.match) }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ formatPct(row.stats.possessionPct) }}</td>

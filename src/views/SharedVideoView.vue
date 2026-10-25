@@ -7,6 +7,7 @@ import BrandMark from '@/components/layout/BrandMark.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { formatBytes, formatKickoff, videoPartLabels } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
 
 // Visor público de un vídeo por enlace compartido: no hace falta cuenta; el enlace caduca o se revoca desde la app.
 const props = defineProps<{ token: string }>();
@@ -32,11 +33,13 @@ const score = computed(() => (data.value && data.value.match.homeGoals !== null 
       <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p class="eyebrow">Vídeo compartido · {{ videoPartLabels[data.part] }}</p>
-          <h1 class="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
-            {{ data.match.homeTeam.name }} <span class="font-display text-brand-500">{{ score }}</span> {{ data.match.awayTeam.name }}
+          <h1 class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xl font-bold text-slate-900 sm:text-3xl">
+            <TeamName :name="data.match.homeTeam.name" :crest-url="data.match.homeTeam.crestUrl" :short-name="data.match.homeTeam.shortName" size="md" />
+            <span class="font-display text-brand-500">{{ score }}</span>
+            <TeamName :name="data.match.awayTeam.name" :crest-url="data.match.awayTeam.crestUrl" :short-name="data.match.awayTeam.shortName" size="md" />
           </h1>
           <p class="mt-1 text-sm text-slate-500">
-            Jornada {{ data.match.matchday }} · {{ formatKickoff(data.match.kickoffAt) }} · grabado por {{ data.teamName }}
+            Jornada {{ data.match.matchday }} · {{ formatKickoff(data.match.kickoffAt) }} · grabado por <TeamName :name="data.teamName" :team-id="data.teamId" :crest-url="data.teamCrestUrl" />
             <template v-if="data.title && data.title !== data.match.homeTeam.name"> · {{ data.title }}</template>
           </p>
         </div>

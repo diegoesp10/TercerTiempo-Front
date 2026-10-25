@@ -3,53 +3,44 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { adminApi } from '@/api/admin';
 import { ApiError, errorMessage } from '@/api/http';
 import ClubInvitationsPanel from '@/components/admin/ClubInvitationsPanel.vue';
+import FootballSyncPanel from '@/components/admin/FootballSyncPanel.vue';
 import LicensesPanel from '@/components/admin/LicensesPanel.vue';
+import LicensingSettingsPanel from '@/components/admin/LicensingSettingsPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { JobDto, JobRunDto, JobRunStatus, JobsOverviewDto, ScrapeRequestDto, ScrapeSourceDto } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
+import AnalyticsPanel from '@/components/admin/AnalyticsPanel.vue';
+import LiveDownloadsPanel from '@/components/admin/LiveDownloadsPanel.vue';
+import { useAdminSessionStore } from '@/stores/adminSession';
+import { useAuthStore } from '@/stores/auth';
+import CookiesAdminPanel from '@/components/admin/CookiesAdminPanel.vue';
 
 /**
  * Página oculta del administrador (/jobs, sin enlace en el menú): cuándo y cómo se han actualizado los datos, las
- * llamadas reales a cada web externa y el lanzamiento a mano de cada trabajo. Su sesión es aparte de la normal y
- * dura lo que la pestaña (sessionStorage).
+ * llamadas reales a cada web externa y el lanzamiento a mano de cada trabajo. Su sesión dura lo que la pestaña y no
+ * convive con la de una cuenta: entrar aquí cierra la del club, técnico o jugador (stores/adminSession).
  */
-const STORAGE_KEY = 'tt.admin-session';
 const RUNNING_EVERY_MS = 4_000;
 const IDLE_EVERY_MS = 30_000;
 
-interface AdminSession { token: string; userName: string; expiresAt: string }
+const admin = useAdminSessionStore();
+const auth = useAuthStore();
+const session = computed(() => admin.session);
 
-function readSession(): AdminSession | null {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    const session = raw ? (JSON.parse(raw) as AdminSession) : null;
-    return session && new Date(session.expiresAt).getTime() > Date.now() ? session : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeSession(session: AdminSession | null) {
-  try {
-    if (session) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-    else sessionStorage.removeItem(STORAGE_KEY);
-  } catch {
-    /* sin almacenamiento: la sesión vive solo en memoria */
-  }
-}
-
-const session = ref<AdminSession | null>(readSession());
-
-type AdminTab = 'jobs' | 'licenses' | 'invitations';
+type AdminTab = 'jobs' | 'live' | 'licenses' | 'invitations' | 'analytics' | 'cookies';
 const tabs: { value: AdminTab; label: string }[] = [
   { value: 'jobs', label: 'Trabajos y scrapeos' },
+  { value: 'live', label: 'Descargas en directo' },
   { value: 'licenses', label: 'Licencias y cobros' },
   { value: 'invitations', label: 'Invitaciones de clubes' },
+  { value: 'analytics', label: 'Uso de la web' },
+  { value: 'cookies', label: 'Cookies' },
 ];
 const tab = ref<AdminTab>('jobs');
+const licensesPanel = ref<InstanceType<typeof LicensesPanel> | null>(null);
 const form = reactive({ userName: '', password: '' });
 const loggingIn = ref(false);
 const loginError = ref<string | null>(null);
@@ -71,8 +62,7 @@ async function login() {
   loginError.value = null;
   try {
     const response = await adminApi.login(form.userName, form.password);
-    session.value = { token: response.accessToken, userName: response.userName, expiresAt: response.expiresAt };
-    writeSession(session.value);
+    admin.start({ token: response.accessToken, userName: response.userName, expiresAt: response.expiresAt });
     form.password = '';
     await load();
   } catch (e) {
@@ -84,9 +74,8 @@ async function login() {
 
 function logout(message: string | null = null) {
   stopPolling();
-  session.value = null;
+  admin.end();
   data.value = null;
-  writeSession(null);
   loginError.value = message;
 }
 
@@ -138,6 +127,12 @@ async function launch(job: JobDto) {
   } finally {
     launching.value = null;
   }
+}
+
+function onSyncLaunched(message: string) {
+  launchMessage.value = message;
+  tab.value = 'live';
+  setTimeout(() => void load(true), 1_000);
 }
 
 watch(provider, () => void load());
@@ -204,6 +199,9 @@ const sourceTitle = (source: ScrapeSourceDto) =>
       <p class="mt-1 text-sm text-slate-500">Trabajos en segundo plano y llamadas a las webs externas. Solo para el administrador.</p>
       <form class="mt-6 space-y-4" @submit.prevent="login">
         <Alert v-if="loginError" kind="error">{{ loginError }}</Alert>
+        <Alert v-if="auth.isAuthenticated" kind="warning">
+          Tienes abierta la sesión de <strong>{{ auth.displayName }}</strong>. Al entrar como administrador se cerrará: las dos no pueden convivir.
+        </Alert>
         <div>
           <label class="label" for="admin-user">Usuario</label>
           <input id="admin-user" v-model="form.userName" type="text" autocomplete="username" required class="input" />
@@ -238,8 +236,17 @@ const sourceTitle = (source: ScrapeSourceDto) =>
       >{{ item.label }}</button>
     </div>
 
-    <LicensesPanel v-if="tab === 'licenses'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    <div v-if="tab === 'licenses'" class="space-y-6">
+      <LicensingSettingsPanel :token="session.token" @saved="licensesPanel?.load()" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+      <LicensesPanel ref="licensesPanel" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    </div>
+    <div v-else-if="tab === 'live'" class="space-y-4">
+      <Alert v-if="launchMessage" kind="success">{{ launchMessage }}</Alert>
+      <LiveDownloadsPanel :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    </div>
     <ClubInvitationsPanel v-else-if="tab === 'invitations'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    <AnalyticsPanel v-else-if="tab === 'analytics'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    <CookiesAdminPanel v-else-if="tab === 'cookies'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
 
     <template v-else>
     <Alert v-if="error" kind="error" class="mb-4">{{ error }}</Alert>
@@ -247,8 +254,8 @@ const sourceTitle = (source: ScrapeSourceDto) =>
     <Spinner v-if="loading && !data" />
 
     <div v-if="data" class="space-y-6">
-      <div class="grid gap-4 lg:grid-cols-2">
-        <article v-for="job in data.jobs" :key="job.name" class="card">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <article v-for="job in data.jobs" :key="job.name" class="card" :class="job.name === 'football-data' ? 'lg:col-span-2' : ''">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
               <h2 class="font-semibold text-slate-900">{{ job.title }}</h2>
@@ -275,6 +282,10 @@ const sourceTitle = (source: ScrapeSourceDto) =>
             <template v-if="job.lastRun">
               <dt class="text-slate-500">Última</dt>
               <dd class="text-right text-slate-800">{{ formatKickoff(job.lastRun.startedAt) }} · {{ duration(job.lastRun) }}</dd>
+              <template v-if="job.lastRun.scope">
+                <dt class="text-slate-500">Alcance</dt>
+                <dd class="text-right text-slate-800">{{ job.lastRun.scope }}</dd>
+              </template>
               <dt class="text-slate-500">Resultado</dt>
               <dd class="text-right"><Badge :tone="statusTone[job.lastRun.status]">{{ statusLabels[job.lastRun.status] }}</Badge> <span class="text-xs text-slate-500">{{ job.lastRun.requests }} llamadas{{ job.lastRun.manual ? ' · a mano' : '' }}</span></dd>
             </template>
@@ -287,7 +298,16 @@ const sourceTitle = (source: ScrapeSourceDto) =>
             </ul>
           </details>
 
+          <FootballSyncPanel
+            v-if="job.name === 'football-data'"
+            :token="session.token"
+            :running="job.running"
+            :enabled="job.enabled"
+            @launched="onSyncLaunched"
+            @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')"
+          />
           <button
+            v-else
             type="button"
             class="btn-primary mt-4"
             v-busy="launching === job.name"
@@ -367,6 +387,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
                 <td class="px-3 py-2 text-right tabular-nums whitespace-nowrap">{{ duration(run) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ run.requests }}</td>
                 <td class="max-w-md px-3 py-2 text-xs text-slate-600">
+                  <span v-if="run.scope" class="block font-medium text-slate-700">{{ run.scope }}</span>
                   {{ run.summary ?? '—' }}<span v-if="run.errors.length" class="text-amber-700"> · {{ run.errors.length }} {{ run.errors.length === 1 ? 'error' : 'errores' }}</span>
                 </td>
               </tr>
@@ -413,7 +434,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
                 <td class="px-3 py-1.5 text-right font-semibold tabular-nums" :class="statusClass(request.statusCode)" :title="request.error ?? undefined">{{ request.statusCode ?? 'Error' }}</td>
                 <td class="px-3 py-1.5 text-right tabular-nums text-slate-600">{{ request.durationMs }}</td>
                 <td class="px-3 py-1.5 whitespace-nowrap text-xs text-slate-600">{{ origin(request) }}</td>
-                <td class="max-w-[28rem] truncate px-3 py-1.5 text-xs text-slate-500" :title="request.url">{{ request.method }} {{ request.url }}</td>
+                <td class="px-3 py-1.5 text-xs text-slate-500" :title="request.url"><span class="block max-w-[28rem] truncate">{{ request.method }} {{ request.url }}</span></td>
               </tr>
             </tbody>
           </table>

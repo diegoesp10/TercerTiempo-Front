@@ -8,6 +8,8 @@ import PageHeader from '@/components/ui/PageHeader.vue';
 import { useAuthStore } from '@/stores/auth';
 import type { SquadInviteDto } from '@/types/api';
 import { positionLabels } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import PlayerName from '@/components/players/PlayerName.vue';
 
 const props = defineProps<{ code?: string }>();
 const auth = useAuthStore();
@@ -75,7 +77,7 @@ onMounted(() => {
       <RouterLink to="/codigo-acceso" class="font-medium underline">código de acceso para el cuerpo técnico</RouterLink>.
     </Alert>
     <Alert v-else-if="auth.isPlayer && auth.playerSquad" kind="info" class="mb-4">
-      Ya estás vinculado a <strong>{{ auth.playerSquad.teamName }}</strong>. Para cambiar de plantilla, desvincúlate primero desde
+      Ya estás vinculado a <strong><TeamName :name="auth.playerSquad.teamName" :crest-url="auth.playerSquad.teamCrestUrl" :team-id="auth.playerSquad.teamId" /></strong>. Para cambiar de plantilla, desvincúlate primero desde
       <RouterLink to="/" class="font-medium underline">tu panel</RouterLink> y pide un código personal nuevo.
     </Alert>
 
@@ -96,12 +98,12 @@ onMounted(() => {
 
       <template v-if="invite">
         <div class="mt-6 rounded-lg bg-slate-50 p-4">
-          <p class="font-semibold text-slate-900">{{ invite.teamName }}</p>
+          <p class="font-semibold text-slate-900"><TeamName :name="invite.teamName" :crest-url="invite.teamCrestUrl" :team-id="invite.teamId" size="sm" /></p>
           <p class="text-sm text-slate-500">{{ invite.competitionName }} · {{ invite.seasonLabel }}</p>
         </div>
         <div class="mt-4 rounded-xl border border-accent-400/40 bg-brand-500/10 p-4">
           <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Tu ficha de jugador</p>
-          <p class="mt-1 text-lg font-semibold text-slate-900">{{ invite.player.fullName }}</p>
+          <p class="mt-1 text-lg font-semibold text-slate-900"><PlayerName :name="invite.player.fullName" :photo-url="invite.player.photoUrl" size="sm" /></p>
           <p class="mt-1 text-sm text-slate-500">
             <span v-if="invite.player.shirtNumber">Dorsal {{ invite.player.shirtNumber }}</span>
             <span v-if="invite.player.shirtNumber && invite.player.position"> · </span>

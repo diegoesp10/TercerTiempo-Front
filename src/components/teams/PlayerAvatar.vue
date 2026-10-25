@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { apiBaseUrl } from '@/api/http';
 
 // Foto del jugador servida por la API; sin foto (o si falla) se muestran sus iniciales.
-const props = withDefaults(defineProps<{ src: string | null | undefined; name: string; size?: 'sm' | 'md' | 'lg' | 'xl' }>(), { size: 'md' });
+const props = withDefaults(defineProps<{ src: string | null | undefined; name: string; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' }>(), { size: 'md' });
 
 const failed = ref(false);
 watch(() => props.src, () => { failed.value = false; });
@@ -19,6 +19,7 @@ const initials = computed(() => {
 });
 
 const sizeClasses: Record<NonNullable<typeof props.size>, string> = {
+  xs: 'h-6 w-6 text-[9px]',
   sm: 'h-8 w-8 text-[10px]',
   md: 'h-10 w-10 text-xs',
   lg: 'h-16 w-16 text-base',

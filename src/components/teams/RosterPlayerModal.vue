@@ -12,7 +12,9 @@ import RatingBadge from '@/components/ui/RatingBadge.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { MatchDto, Position, RosterEntryDetailDto, RosterEntryDto } from '@/types/api';
-import { formatDate, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, positionLabels, positionOptions, scoreLabel } from '@/utils/format';
+import { formatDate, outcomeFor, outcomeLabels, outcomeTone, positionLabels, positionOptions, scoreLabel } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import { opponentOf } from '@/utils/crests';
 
 // Ficha completa de un jugador de la plantilla para la cuenta de club: foto, datos editables y sus actas.
 const props = defineProps<{ teamId: string; entry: RosterEntryDto | null }>();
@@ -149,7 +151,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
     <Alert v-else-if="saved" kind="success" class="mb-3">{{ saved }}</Alert>
 
     <!-- Datos de la ficha -->
-    <form class="grid gap-3 rounded-lg border border-line bg-surface-2 p-3 sm:grid-cols-[5rem_1fr_11rem_auto] sm:items-end" @submit.prevent="save">
+    <form class="grid grid-cols-[5rem_minmax(0,1fr)] gap-3 rounded-lg border border-line bg-surface-2 p-3 sm:grid-cols-[5rem_minmax(0,1fr)_11rem_auto] sm:items-start" @submit.prevent="save">
       <div>
         <label class="label" for="player-number">Dorsal</label>
         <input id="player-number" v-model.number="form.shirtNumber" type="number" min="1" max="99" class="input" />
@@ -159,11 +161,14 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
         <input id="player-name" v-model="form.fullName" type="text" required maxlength="150" class="input" />
         <p v-if="fieldErrors.fullName" class="field-error">{{ fieldErrors.fullName[0] }}</p>
       </div>
-      <div>
+      <div class="col-span-2 sm:col-span-1">
         <label class="label" for="player-position">Posición</label>
         <SearchSelect id="player-position" placeholder="—" clearable :model-value="form.position || null" :options="positionOptions" @update:model-value="form.position = ($event as Position | null) ?? ''" />
       </div>
-      <button type="submit" class="btn-primary" v-busy="busy" :disabled="busy || !dirty || !form.fullName.trim()"><Icon icon="check" class="mr-1.5 h-3.5 w-3.5" />Guardar</button>
+      <div class="col-span-2 sm:col-span-1">
+        <span class="label invisible hidden sm:block" aria-hidden="true">Guardar</span>
+        <button type="submit" class="btn-primary w-full sm:w-auto" v-busy="busy" :disabled="busy || !dirty || !form.fullName.trim()"><Icon icon="check" class="mr-1.5 h-3.5 w-3.5" />Guardar</button>
+      </div>
     </form>
 
     <Spinner v-if="loading && !detail" class="my-6" />
@@ -186,7 +191,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
       </dl>
 
       <!-- Partido a partido -->
-      <div class="mt-5 flex gap-1 border-b border-line">
+      <div class="mt-5 flex gap-1 overflow-x-auto whitespace-nowrap border-b border-line">
         <button type="button" class="-mb-px border-b-2 px-3 py-2 text-sm font-medium" :class="tab === 'official' ? 'border-accent-400 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'" @click="tab = 'official'">
           Actas oficiales <span class="ml-1 text-xs text-slate-400">{{ detail.official.length }}</span>
         </button>
@@ -212,7 +217,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
             <tr v-for="row in detail.official" :key="row.match.id" :class="row.line.played ? '' : 'text-slate-400'">
               <td class="py-1.5 pr-3 tabular-nums text-slate-500">{{ row.match.matchday }}</td>
               <td class="py-1.5 pr-3">
-                <RouterLink :to="{ name: 'match', params: { matchId: row.match.id } }" class="font-medium text-slate-800 hover:underline">{{ opponentLabel(row.match, teamId) }}</RouterLink>
+                <RouterLink :to="{ name: 'match', params: { matchId: row.match.id } }" class="font-medium text-slate-800 hover:underline"><TeamName prefix="vs" :name="opponentOf(row.match, teamId).name" :crest-url="opponentOf(row.match, teamId).crestUrl" /></RouterLink>
                 <span class="ml-1 text-xs text-slate-400">{{ row.home ? 'en casa' : 'fuera' }} · {{ formatDate(row.match.kickoffAt) }}</span>
               </td>
               <td class="col-sm py-1.5 pr-3 text-center tabular-nums whitespace-nowrap">
@@ -251,7 +256,6 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
                   <th class="py-1 pr-2 text-center">G</th>
                   <th class="col-sm py-1 pr-2 text-center">A</th>
                   <th class="col-sm py-1 pr-2 text-center" title="Tiros a puerta / tiros">Tiros</th>
-                  <th class="col-md py-1 pr-2 text-center" title="Pases clave">PC</th>
                   <th class="col-md py-1 pr-2 text-center" title="Entradas">Ent</th>
                   <th class="col-md py-1 pr-2 text-center" title="Intercepciones">Int</th>
                   <th class="col-md py-1 pr-2 text-center" title="Paradas">Par</th>
@@ -263,14 +267,13 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
                 <tr v-for="row in detail.internal" :key="row.performance.id" :class="row.performance.minutesPlayed > 0 ? '' : 'text-slate-400'">
                   <td class="py-1.5 pr-3 tabular-nums text-slate-500">{{ row.match.matchday }}</td>
                   <td class="py-1.5 pr-3 whitespace-nowrap">
-                    <RouterLink :to="{ name: 'match', params: { matchId: row.match.id } }" class="font-medium text-slate-800 hover:underline">{{ opponentLabel(row.match, teamId) }}</RouterLink>
+                    <RouterLink :to="{ name: 'match', params: { matchId: row.match.id } }" class="font-medium text-slate-800 hover:underline"><TeamName prefix="vs" :name="opponentOf(row.match, teamId).name" :crest-url="opponentOf(row.match, teamId).crestUrl" /></RouterLink>
                     <span class="ml-1 text-xs text-slate-400">{{ row.home ? 'en casa' : 'fuera' }}<template v-if="row.performance.started"> · titular</template></span>
                   </td>
                   <td class="py-1.5 pr-2 text-center tabular-nums">{{ row.performance.minutesPlayed }}'</td>
                   <td class="py-1.5 pr-2 text-center whitespace-nowrap"><GoalMarks :goals="row.performance.goals" /></td>
                   <td class="col-sm py-1.5 pr-2 text-center tabular-nums">{{ row.performance.assists }}</td>
                   <td class="col-sm py-1.5 pr-2 text-center tabular-nums">{{ row.performance.shotsOnTarget }}/{{ row.performance.shots }}</td>
-                  <td class="col-md py-1.5 pr-2 text-center tabular-nums">{{ row.performance.keyPasses }}</td>
                   <td class="col-md py-1.5 pr-2 text-center tabular-nums">{{ row.performance.tackles }}</td>
                   <td class="col-md py-1.5 pr-2 text-center tabular-nums">{{ row.performance.interceptions }}</td>
                   <td class="col-md py-1.5 pr-2 text-center tabular-nums">{{ row.performance.saves }}</td>

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { apiBaseUrl } from '@/api/http';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
+import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
+import { crestFor } from '@/utils/crests';
 
 /**
  * Cabecera de ficha de jugador, al estilo de las tarjetas de estadísticas de los medios deportivos: el equipo en
@@ -14,6 +17,9 @@ export interface HeroStat {
 
 const props = defineProps<{
   team: string;
+  /** Escudo del equipo, junto a su nombre. */
+  teamCrestUrl?: string | null;
+  teamId?: string | null;
   name: string;
   meta?: string;
   number?: number | null;
@@ -39,7 +45,12 @@ const nameParts = computed(() => {
   <section class="hero-card relative overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
     <div class="relative z-10 grid gap-6 p-6 sm:p-8" :class="photo || number ? 'lg:grid-cols-[1fr_auto]' : ''">
       <div class="min-w-0">
-        <p class="eyebrow">{{ team }}</p>
+        <p class="eyebrow flex items-center gap-2">
+          <TeamCrest :src="crestFor(teamCrestUrl, teamId)" :name="team" size="xs" />
+          {{ team }}
+        </p>
+        <!-- En pantallas pequeñas la foto grande no cabe: va como avatar junto al nombre. -->
+        <PlayerAvatar v-if="photoUrl" :src="photoUrl" :name="name" size="lg" class="mt-3 lg:hidden" />
         <h1 class="mt-2 font-display leading-[0.92] text-slate-900">
           <span v-if="nameParts.first" class="block text-2xl font-semibold tracking-tight text-slate-500 sm:text-3xl">{{ nameParts.first }}</span>
           <span class="block break-words font-extrabold tracking-[-0.03em]" style="font-size: clamp(2.4rem, 8.5vw, 4.75rem)">{{ nameParts.last }}</span>
@@ -56,7 +67,7 @@ const nameParts = computed(() => {
       </div>
     </div>
 
-    <dl class="hero-strip relative z-20 mx-4 -mb-px grid grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-x-6 gap-y-4 rounded-t-xl px-6 py-4 text-white sm:mx-6 sm:px-7 sm:py-5">
+    <dl class="hero-strip relative z-20 mx-4 -mb-px grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-x-4 gap-y-4 rounded-t-xl px-4 py-4 text-white sm:mx-6 sm:grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] sm:gap-x-6 sm:px-7 sm:py-5">
       <div v-for="stat in stats" :key="stat.label" class="min-w-0">
         <dt class="font-display text-[11px] font-semibold uppercase tracking-[0.16em] text-white/65">{{ stat.label }}</dt>
         <dd class="mt-0.5 font-display text-3xl font-extrabold leading-none tabular-nums tracking-tight sm:text-4xl">{{ stat.value ?? '—' }}</dd>

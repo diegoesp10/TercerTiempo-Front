@@ -16,6 +16,8 @@ let player: Plyr | null = null;
 function attach() {
   if (!video.value) return;
   player = new Plyr(video.value, {
+    // Iconos servidos por la propia web (por defecto Plyr los pide a cdn.plyr.io).
+    iconUrl: '/vendor/plyr/plyr.svg',
     controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'settings', 'pip', 'fullscreen'],
     settings: ['speed'],
     speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },

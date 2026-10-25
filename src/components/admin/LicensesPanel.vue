@@ -77,7 +77,7 @@ defineExpose({ load });
     <Spinner v-if="loading && !data" />
 
     <template v-if="data">
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div class="card">
           <p class="text-xs text-slate-500">Ingreso mensual recurrente</p>
           <p class="mt-1 text-2xl font-bold text-slate-900">{{ money(data.summary.monthlyRecurringCents) }}</p>
@@ -140,7 +140,7 @@ defineExpose({ load });
               <tr v-for="row in filtered" :key="row.id">
                 <td class="px-3 py-2">
                   <span class="font-medium text-slate-800">{{ row.clubName }}</span>
-                  <span class="block text-xs text-slate-500">{{ row.teamName }}</span>
+                  <span class="block text-xs text-slate-500">{{ row.teamNames.length === 1 ? row.teamNames[0] : `${row.teamNames.length} equipos: ${row.teamNames.join(', ')}` }}</span>
                 </td>
                 <td class="px-3 py-2">
                   <Badge :tone="stateTone[row.state]">{{ stateLabels[row.state] }}</Badge>
@@ -198,7 +198,6 @@ defineExpose({ load });
                 <td class="px-3 py-2 text-xs whitespace-nowrap text-slate-600">{{ formatKickoff(payment.paidAt ?? payment.createdAt) }}</td>
                 <td class="px-3 py-2">
                   <span class="text-slate-800">{{ payment.clubName }}</span>
-                  <span class="block text-xs text-slate-500">{{ payment.teamName }}</span>
                 </td>
                 <td class="px-3 py-2 text-xs text-slate-700">
                   {{ payment.kind === 'Renewal' ? 'Renovación' : 'Alta' }} · {{ licensePlanLabels[payment.plan] }} {{ billingIntervalLabels[payment.interval].toLowerCase() }}

@@ -101,22 +101,30 @@ async function add() {
       </table>
     </div>
 
-    <form v-if="adding" class="mt-4 flex flex-wrap items-end gap-3 rounded-lg border border-line bg-surface-2 p-3" @submit.prevent="add">
-      <div class="w-20">
+    <form v-if="adding" class="mt-4 grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-3 rounded-lg border border-line bg-surface-2 p-3 sm:flex sm:flex-wrap" @submit.prevent="add">
+      <div class="sm:w-20">
         <label class="label" for="roster-new-number">Dorsal</label>
         <input id="roster-new-number" v-model.number="newEntry.shirtNumber" type="number" min="1" max="99" class="input" />
       </div>
-      <div class="min-w-48 flex-1">
+      <div class="min-w-0 sm:min-w-48 sm:flex-1">
         <label class="label" for="roster-new-name">Nombre y apellidos</label>
         <input id="roster-new-name" v-model="newEntry.fullName" type="text" required maxlength="150" class="input" />
         <p v-if="fieldErrors.fullName" class="field-error">{{ fieldErrors.fullName[0] }}</p>
       </div>
-      <div class="w-44">
+      <div class="col-span-2 sm:w-44">
         <label class="label" for="roster-new-position">Posición</label>
         <SearchSelect id="roster-new-position" placeholder="—" clearable :model-value="newEntry.position || null" :options="positionOptions" @update:model-value="newEntry.position = ($event as Position | null) ?? ''" />
       </div>
-      <button type="submit" class="btn-primary" v-busy="busy" :disabled="busy || !newEntry.fullName.trim()">Añadir</button>
-      <button type="button" class="btn-ghost" @click="adding = false">Cancelar</button>
+      <div class="col-span-2 flex gap-2 sm:col-span-1">
+        <div>
+          <span class="label invisible hidden sm:block" aria-hidden="true">Añadir</span>
+          <button type="submit" class="btn-primary" v-busy="busy" :disabled="busy || !newEntry.fullName.trim()">Añadir</button>
+        </div>
+        <div>
+          <span class="label invisible hidden sm:block" aria-hidden="true">Cancelar</span>
+          <button type="button" class="btn-ghost" @click="adding = false">Cancelar</button>
+        </div>
+      </div>
     </form>
     <button v-else type="button" class="btn-secondary mt-4 text-sm" v-busy="busy" :disabled="busy" @click="adding = true"><Icon icon="plus" class="mr-1.5 h-3.5 w-3.5" />Añadir jugador</button>
 

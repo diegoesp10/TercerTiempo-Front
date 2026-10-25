@@ -2,11 +2,11 @@
 import { computed, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import { useAuthStore } from '@/stores/auth';
-import type { LicensingStatusDto } from '@/types/api';
+import type { ClubLicenseDto, LicensingStatusDto } from '@/types/api';
 import { formatDate } from '@/utils/format';
 
 /**
- * Banda bajo la cabecera cuando algún equipo de la cuenta no tiene licencia vigente (o la prueba está a punto de
+ * Banda bajo la cabecera cuando la licencia de algún club de la cuenta no está vigente (o la prueba está a punto de
  * acabar): el club puede pagar desde aquí; técnicos y jugadores saben a quién pedirlo.
  */
 const auth = useAuthStore();
@@ -24,10 +24,12 @@ watch(
   { immediate: true },
 );
 
-const expired = computed(() => status.value?.teams.filter((t) => t.status === 'Expired') ?? []);
+const expired = computed(() => status.value?.licenses.filter((l) => l.status === 'Expired') ?? []);
 // Prueba a punto de acabar sin plan elegido (con plan, el cobro llega solo al acabarla).
-const ending = computed(() => status.value?.teams.filter((t) => t.status === 'Trial' && t.daysLeft <= 7 && !t.autoRenew) ?? []);
-const names = (list: { teamName: string }[]) => list.map((t) => t.teamName).join(', ');
+const ending = computed(() => status.value?.licenses.filter((l) => l.status === 'Trial' && l.daysLeft <= 7 && !l.autoRenew) ?? []);
+// El club ya sabe que es suyo; a técnicos y jugadores se les dice de qué club y equipo.
+const names = (list: ClubLicenseDto[]) =>
+  auth.isClub ? 'tus equipos' : list.map((l) => `${l.clubName} (${l.teams.map((t) => t.teamName).join(', ')})`).join(', ');
 </script>
 
 <template>
@@ -39,7 +41,7 @@ const names = (list: { teamName: string }[]) => list.map((t) => t.teamName).join
         <template v-if="auth.isClub">la plantilla, el cuerpo técnico y los jugadores no pueden verlos hasta que la renueves.</template>
         <template v-else>no podrás verlos hasta que tu club renueve la licencia.</template>
       </span>
-      <RouterLink v-if="auth.isClub" :to="{ name: 'licenses', query: { equipo: expired[0]!.teamId } }" class="font-semibold underline">Renovar licencia</RouterLink>
+      <RouterLink v-if="auth.isClub" :to="{ name: 'licenses' }" class="font-semibold underline">Renovar licencia</RouterLink>
     </div>
   </div>
   <div v-else-if="ending.length" class="border-b border-amber-200 bg-amber-50" role="status">
@@ -50,7 +52,7 @@ const names = (list: { teamName: string }[]) => list.map((t) => t.teamName).join
         <template v-if="auth.isClub">Elige un plan para no perder el acceso: no se cobra nada hasta que acabe.</template>
         <template v-else>Recuérdaselo a tu club para no perder el acceso.</template>
       </span>
-      <RouterLink v-if="auth.isClub" :to="{ name: 'licenses', query: { equipo: ending[0]!.teamId } }" class="font-semibold underline">Elegir plan</RouterLink>
+      <RouterLink v-if="auth.isClub" :to="{ name: 'licenses' }" class="font-semibold underline">Elegir plan</RouterLink>
     </div>
   </div>
 </template>

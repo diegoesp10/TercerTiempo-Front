@@ -5,10 +5,12 @@ import { teamStatsApi } from '@/api/teamStats';
 import Alert from '@/components/ui/Alert.vue';
 import type { TeamMatchStatsDto, TeamMatchStatsInput } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 
 /**
- * Datos del equipo en el partido que no trae el acta pública (córners, posesión, tiros, fueras de juego, faltas y
- * goles a balón parado). El cuerpo técnico los rellena; el resto de quien ve la plantilla los consulta.
+ * Datos del equipo en el partido que no trae el acta pública (posesión, córners, saques de banda, tiros, fueras de
+ * juego, faltas, penaltis y goles a balón parado, con los de penalti aparte). El cuerpo técnico los rellena; el resto de
+ * quien ve la plantilla los consulta. Cada valor va bajo el escudo y el nombre de su equipo.
  */
 const props = defineProps<{
   squadId: string;
@@ -17,6 +19,8 @@ const props = defineProps<{
   canEdit: boolean;
   teamName: string;
   opponentName: string;
+  teamCrestUrl?: string | null;
+  opponentCrestUrl?: string | null;
 }>();
 
 const emit = defineEmits<{ saved: [stats: TeamMatchStatsDto] }>();
@@ -24,13 +28,16 @@ const emit = defineEmits<{ saved: [stats: TeamMatchStatsDto] }>();
 type CountKey = Exclude<keyof TeamMatchStatsInput, 'possessionPct' | 'notes'>;
 
 /** Cada fila compara a tu equipo con el rival. */
-const rows: { label: string; mine: CountKey; theirs: CountKey; max: number }[] = [
+const rows: { label: string; mine: CountKey; theirs: CountKey; max: number; sub?: boolean }[] = [
   { label: 'Córners', mine: 'cornersFor', theirs: 'cornersAgainst', max: 50 },
+  { label: 'Saques de banda', mine: 'throwInsFor', theirs: 'throwInsAgainst', max: 150 },
   { label: 'Tiros', mine: 'shotsFor', theirs: 'shotsAgainst', max: 100 },
   { label: 'Tiros a puerta', mine: 'shotsOnTargetFor', theirs: 'shotsOnTargetAgainst', max: 100 },
   { label: 'Fueras de juego', mine: 'offsidesFor', theirs: 'offsidesAgainst', max: 50 },
   { label: 'Faltas cometidas', mine: 'foulsCommitted', theirs: 'foulsReceived', max: 100 },
+  { label: 'Penaltis', mine: 'penaltiesFor', theirs: 'penaltiesAgainst', max: 20 },
   { label: 'Goles a balón parado', mine: 'setPieceGoalsFor', theirs: 'setPieceGoalsAgainst', max: 30 },
+  { label: 'de ellos, de penalti', mine: 'penaltyGoalsFor', theirs: 'penaltyGoalsAgainst', max: 20, sub: true },
 ];
 
 const empty = (): TeamMatchStatsInput => ({
@@ -47,6 +54,12 @@ const empty = (): TeamMatchStatsInput => ({
   foulsReceived: 0,
   setPieceGoalsFor: 0,
   setPieceGoalsAgainst: 0,
+  penaltiesFor: 0,
+  penaltiesAgainst: 0,
+  penaltyGoalsFor: 0,
+  penaltyGoalsAgainst: 0,
+  throwInsFor: 0,
+  throwInsAgainst: 0,
   notes: null,
 });
 
@@ -99,7 +112,7 @@ async function save() {
       <div>
         <h2 class="font-semibold text-slate-900">Datos del equipo</h2>
         <p class="text-xs text-slate-500">
-          Lo que no trae el acta pública: córners, posesión, tiros, fueras de juego, faltas y goles a balón parado.
+          Lo que no trae el acta pública: posesión, córners, saques de banda, tiros, fueras de juego, faltas, penaltis y goles a balón parado.
           <template v-if="saved"> Actualizado el {{ formatKickoff(saved.updatedAt) }}.</template>
         </p>
       </div>
@@ -115,12 +128,27 @@ async function save() {
 
     <template v-else>
       <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
-          <thead class="text-xs uppercase tracking-wide text-slate-500">
+        <table class="w-full min-w-[30rem] table-fixed text-sm">
+          <colgroup>
+            <col class="w-[34%]" />
+            <col class="w-[33%]" />
+            <col class="w-[33%]" />
+          </colgroup>
+          <thead>
             <tr>
-              <th class="px-2 py-2 text-left"></th>
-              <th class="px-2 py-2 text-center text-accent-400">{{ teamName }}</th>
-              <th class="px-2 py-2 text-center">{{ opponentName }}</th>
+              <th class="px-2 pb-3 text-left" scope="col"><span class="sr-only">Dato</span></th>
+              <th class="px-2 pb-3" scope="col">
+                <div class="flex flex-col items-center gap-1.5 text-center">
+                  <TeamCrest :src="teamCrestUrl" :name="teamName" size="md" />
+                  <span class="line-clamp-2 text-xs font-bold uppercase tracking-wide text-accent-400">{{ teamName }}</span>
+                </div>
+              </th>
+              <th class="px-2 pb-3" scope="col">
+                <div class="flex flex-col items-center gap-1.5 text-center">
+                  <TeamCrest :src="opponentCrestUrl" :name="opponentName" size="md" />
+                  <span class="line-clamp-2 text-xs font-bold uppercase tracking-wide text-slate-500">{{ opponentName }}</span>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
@@ -133,7 +161,7 @@ async function save() {
                   type="number"
                   min="0"
                   max="100"
-                  class="input w-20 px-1 py-1 text-center"
+                  class="input mx-auto block w-20 px-1 py-1 text-center"
                   placeholder="—"
                   aria-label="Posesión de tu equipo"
                 />
@@ -141,8 +169,8 @@ async function save() {
               </td>
               <td class="px-2 py-1.5 text-center tabular-nums text-slate-500">{{ possessionAgainst ?? '—' }}</td>
             </tr>
-            <tr v-for="row in rows" :key="row.mine">
-              <td class="px-2 py-1.5 font-medium text-slate-700">{{ row.label }}</td>
+            <tr v-for="row in rows" :key="row.mine" :class="row.sub ? 'bg-surface-2/60' : ''">
+              <td class="px-2 py-1.5 font-medium" :class="row.sub ? 'pl-6 text-xs text-slate-500' : 'text-slate-700'">{{ row.label }}</td>
               <td v-for="key in [row.mine, row.theirs]" :key="key" class="px-2 py-1.5 text-center">
                 <input
                   v-if="canEdit"
@@ -150,7 +178,7 @@ async function save() {
                   type="number"
                   min="0"
                   :max="row.max"
-                  class="input w-20 px-1 py-1 text-center"
+                  class="input mx-auto block w-20 px-1 py-1 text-center"
                   :aria-label="`${row.label}: ${key === row.mine ? teamName : opponentName}`"
                 />
                 <span v-else class="tabular-nums">{{ form[key] }}</span>
@@ -159,7 +187,10 @@ async function save() {
           </tbody>
         </table>
       </div>
-      <p class="mt-2 text-xs text-slate-500">En «Faltas cometidas», la columna del rival son las faltas que te hicieron (faltas recibidas).</p>
+      <p class="mt-2 text-xs text-slate-500">
+        En «Faltas cometidas», la columna del rival son las faltas que te hicieron (faltas recibidas). Los goles de penalti cuentan también como goles a
+        balón parado.
+      </p>
 
       <label class="mt-4 block">
         <span class="label">Notas del partido</span>

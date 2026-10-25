@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
+import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
+import { trackSearch } from '@/utils/analytics';
 
 /** Opción del desplegable: valor, texto, texto secundario y grupo (cabecera) opcionales. */
 export interface SelectOption {
@@ -8,6 +11,10 @@ export interface SelectOption {
   hint?: string;
   group?: string;
   disabled?: boolean;
+  /** Equipos: escudo junto al nombre (URL o, si no hay, la ruta de la API por id). */
+  crest?: string | null;
+  /** Jugadores: foto junto al nombre (o sus iniciales). */
+  photo?: string | null;
 }
 
 /**
@@ -36,6 +43,7 @@ const root = ref<HTMLElement | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
 const open = ref(false);
 const query = ref('');
+watch(query, (text) => trackSearch(props.id ?? 'select', text));
 const highlighted = ref(0);
 
 const showSearch = computed(() => props.searchable ?? props.options.length > 6);
@@ -134,6 +142,8 @@ const sizeClasses = computed(() => (props.size === 'sm' ? 'px-2.5 py-1 text-sm' 
     >
       <span class="min-w-0 flex-1 truncate" :class="selected ? '' : 'text-slate-400'">
         <template v-if="selected">
+          <TeamCrest v-if="selected.crest !== undefined" :src="selected.crest" :name="selected.label" size="xs" class="mr-1.5 align-middle" />
+          <PlayerAvatar v-else-if="selected.photo !== undefined" :src="selected.photo" :name="selected.label" size="xs" class="mr-1.5 align-middle" />
           {{ selected.label }}<span v-if="selected.hint" class="ml-1 text-xs text-slate-500">· {{ selected.hint }}</span>
         </template>
         <template v-else>{{ placeholder }}</template>
@@ -143,7 +153,7 @@ const sizeClasses = computed(() => (props.size === 'sm' ? 'px-2.5 py-1 text-sm' 
 
     <div
       v-if="open"
-      class="absolute left-0 z-30 mt-1 w-full min-w-56 overflow-hidden rounded-lg border border-line bg-surface shadow-card"
+      class="absolute left-0 z-30 mt-1 w-full min-w-[min(14rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-line bg-surface shadow-card"
       role="listbox"
     >
       <div v-if="showSearch" class="flex items-center gap-2 border-b border-line px-3 py-2">
@@ -182,8 +192,10 @@ const sizeClasses = computed(() => (props.size === 'sm' ? 'px-2.5 py-1 text-sm' 
             @mousemove="highlighted = flat.indexOf(option)"
             @click="choose(option)"
           >
-            <span class="min-w-0 truncate">
-              {{ option.label }}<span v-if="option.hint" class="ml-1 text-xs text-slate-500">· {{ option.hint }}</span>
+            <span class="flex min-w-0 items-center gap-1.5">
+              <TeamCrest v-if="option.crest !== undefined" :src="option.crest" :name="option.label" size="xs" />
+              <PlayerAvatar v-else-if="option.photo !== undefined" :src="option.photo" :name="option.label" size="xs" />
+              <span class="truncate">{{ option.label }}<span v-if="option.hint" class="ml-1 text-xs text-slate-500">· {{ option.hint }}</span></span>
             </span>
             <Icon v-if="option.value === modelValue" icon="check" class="h-3.5 w-3.5 shrink-0 text-brand-500" />
           </li>

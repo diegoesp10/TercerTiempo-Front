@@ -46,7 +46,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
             <td data-label="Base jurídica">Ejecución del contrato con el club e interés legítimo del técnico y del club (art. 6.1.b y f).</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Fichas y actas internas</strong>: nombre, dorsal y posición de cada jugador; por partido, minutos, titularidad, goles, asistencias, tiros, pases clave, entradas, intercepciones, paradas, tarjetas y observaciones del técnico.</td>
+            <td data-label="Datos"><strong>Fichas y actas internas</strong>: nombre, dorsal y posición de cada jugador; por partido, minutos, titularidad, goles, asistencias de gol, tiros, entradas, intercepciones, paradas, tarjetas y observaciones del técnico.</td>
             <td data-label="Origen">El cuerpo técnico de la plantilla; las fichas pueden importarse de la plantilla publicada por la fuente pública indicada abajo.</td>
             <td data-label="Finalidad">Llevar el acta interna del equipo y calcular estadísticas individuales y colectivas.</td>
             <td data-label="Base jurídica">Ejecución del contrato con el club y su cuerpo técnico; respecto de los jugadores, interés legítimo del club en analizar el rendimiento deportivo de su propia plantilla (art. 6.1.f), ponderado con la privacidad por defecto que se describe en el apartado 6.</td>
@@ -109,7 +109,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <h2>5. La nota calculada</h2>
       <p>
         La nota de cada jugador en un partido no la pone ninguna persona: se calcula con una fórmula fija a partir de los
-        datos del acta (minutos, goles, asistencias, tiros, pases clave, entradas, intercepciones, paradas y tarjetas), de la
+        datos del acta (minutos, goles, asistencias de gol, tiros, entradas, intercepciones, paradas y tarjetas), de la
         posición del jugador y del resultado, en una escala de 3,0 a 10,0. Es una síntesis orientativa, no produce efectos
         jurídicos ni decisiones automatizadas en el sentido del artículo 22 del RGPD, y la fórmula se explica en la propia
         pantalla del acta. El jugador puede oponerse a su cálculo (apartado 9).
@@ -191,20 +191,25 @@ import { dataSources, legalEntity } from '@/legal/entity';
     <section>
       <h2>12. Cookies y almacenamiento local</h2>
       <p>
-        Tercer Tiempo no utiliza cookies de seguimiento ni de publicidad. Solo guarda en el almacenamiento local de tu navegador
-        lo imprescindible para funcionar: el token de tu sesión, un resumen de tu cuenta y el tema (claro u oscuro) elegido.
-        Estos datos no salen de tu dispositivo salvo el token, que se envía a nuestro servidor para identificarte, y se
-        borran al cerrar sesión o al limpiar el navegador.
+        Tercer Tiempo no utiliza cookies de publicidad ni de terceros. Guarda en el almacenamiento de tu navegador lo necesario
+        para funcionar (tu sesión y tu elección sobre las cookies) y las preferencias que tú eliges (tema, temporada), que
+        están exentas de consentimiento. Con tu permiso, y solo entonces, mide de forma anónima qué páginas, búsquedas y
+        botones se usan (analítica propia): esos datos se guardan en nuestros servidores con un identificador aleatorio, sin
+        tu IP, no se comparten con nadie y se borran a los 13 meses. Guardamos también tu elección (qué aceptaste y cuándo)
+        para poder demostrarla. El detalle de cada dato y cómo cambiar tu elección están en la
+        <RouterLink to="/cookies" class="text-accent-400 hover:underline">política de cookies</RouterLink>.
       </p>
     </section>
 
     <section>
       <h2>13. Fuentes de terceros</h2>
       <p>
-        Los datos deportivos se obtienen de las fuentes públicas citadas en el apartado 3, a las que se atribuyen y enlazan en
-        la propia plataforma. Tercer Tiempo no es un servicio oficial de la Real Federación de Fútbol del Principado de Asturias
-        ni de ningún medio, y no garantiza la exactitud de los datos que estas fuentes publican. Si detectas un error, el acta
-        oficial enlazada prevalece.
+        Los datos deportivos se obtienen de las fuentes citadas en el apartado 3, a las que se atribuyen y enlazan en la
+        propia plataforma. Tercer Tiempo cuenta con los servicios de FútbolAsturiano, diario independiente digital del fútbol
+        asturiano (futbolasturiano.es), que autoriza el uso de sus calendarios, resultados, clasificaciones, plantillas
+        publicadas y escudos de los equipos. Tercer Tiempo no es un servicio oficial de la Real Federación de Fútbol del
+        Principado de Asturias y no garantiza la exactitud de los datos que estas fuentes publican. Si detectas un error, el
+        acta oficial enlazada prevalece.
       </p>
     </section>
 

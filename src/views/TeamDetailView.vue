@@ -16,6 +16,7 @@ import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import { formatKickoff, levelLabels, positionLabels, visibilityLabels } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
 
 const props = defineProps<{ teamId: string }>();
 
@@ -136,10 +137,10 @@ async function linkToClub() {
     <Alert v-if="linkError" kind="error" class="mb-4">{{ linkError }}</Alert>
 
     <div v-if="standingFigures.length" class="mb-6 grid grid-cols-3 gap-3 sm:grid-cols-6">
-      <div v-for="(figure, i) in standingFigures" :key="figure.label" class="relative rounded-xl border border-line bg-surface px-3 pb-3 pt-2.5 text-center shadow-card">
+      <div v-for="(figure, i) in standingFigures" :key="figure.label" class="relative min-w-0 rounded-xl border border-line bg-surface px-2 pb-3 pt-2.5 text-center shadow-card sm:px-3">
         <span v-if="i === 0" class="absolute inset-x-3 top-0 h-0.5 rounded-b bg-brand-500" aria-hidden="true" />
-        <p class="font-display text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{{ figure.label }}</p>
-        <p class="mt-1 font-figures text-2xl font-extrabold leading-none tabular-nums text-slate-900">{{ figure.value }}</p>
+        <p class="truncate font-display text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-500 sm:text-[11px] sm:tracking-[0.12em]">{{ figure.label }}</p>
+        <p class="mt-1 font-figures text-xl font-extrabold leading-none tabular-nums text-slate-900 sm:text-2xl">{{ figure.value }}</p>
       </div>
     </div>
 
@@ -154,7 +155,7 @@ async function linkToClub() {
         </div>
         <a v-if="data.officialUrl" :href="data.officialUrl" target="_blank" rel="noopener" class="text-xs text-accent-400 hover:underline">Ficha en la federación ↗</a>
       </div>
-      <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+      <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
         <div v-if="profile.ground">
           <dt class="eyebrow">Campo (como local)</dt>
           <dd class="mt-1 font-medium text-slate-900">
@@ -234,7 +235,9 @@ async function linkToClub() {
       <div class="min-w-0 flex-1 basis-56">
         <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Próximo partido</p>
         <RouterLink :to="{ name: 'match', params: { matchId: nextMatch.id } }" class="block truncate text-lg font-semibold text-slate-900 hover:text-accent-400">
-          <span class="text-slate-400">vs</span> {{ nextOpponent.team.name }}
+          <TeamName :name="nextOpponent.team.name" :crest-url="nextOpponent.team.crestUrl" :short-name="nextOpponent.team.shortName" size="sm">
+            <span class="text-slate-400">vs</span> {{ nextOpponent.team.name }}
+          </TeamName>
           <span class="ml-1 text-sm font-normal" :class="nextOpponent.home ? 'text-emerald-700' : 'text-slate-500'">{{ nextOpponent.home ? 'en casa' : 'fuera' }}</span>
         </RouterLink>
         <p class="text-sm text-slate-600">{{ formatKickoff(nextMatch.kickoffAt) }}<span v-if="nextMatch.venue"> · {{ nextMatch.venue }}</span></p>
@@ -244,7 +247,7 @@ async function linkToClub() {
       </RouterLink>
     </section>
 
-    <div class="grid gap-6 lg:grid-cols-5">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
       <section class="lg:col-span-3">
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Resultados</h2>
         <Skeleton v-if="matches.loading.value && !matches.data.value" :count="6" label="Cargando el calendario…" />

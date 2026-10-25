@@ -7,7 +7,10 @@ import Badge from '@/components/ui/Badge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import type { SuggestionDto } from '@/types/api';
-import { formatKickoff, opponentLabel, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
+import { formatKickoff, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import PlayerName from '@/components/players/PlayerName.vue';
+import { opponentOf } from '@/utils/crests';
 
 /**
  * Sugerencias de los jugadores sobre sus líneas del acta, para el club y el cuerpo técnico: cada una muestra lo que
@@ -46,7 +49,6 @@ const columns: { key: 'minutesPlayed' | 'goals' | 'assists' | 'shots' | 'shotsOn
   { key: 'assists', label: 'A' },
   { key: 'shots', label: 'T' },
   { key: 'shotsOnTarget', label: 'TP' },
-  { key: 'keyPasses', label: 'PC' },
   { key: 'tackles', label: 'Ent' },
   { key: 'interceptions', label: 'Int' },
   { key: 'saves', label: 'Par' },
@@ -103,11 +105,11 @@ async function resolve(s: SuggestionDto, approve: boolean) {
         <div class="flex flex-wrap items-start justify-between gap-2">
           <div>
             <p class="font-semibold text-slate-900">
-              {{ s.player.fullName }}
+              <PlayerName :name="s.player.fullName" :photo-url="s.player.photoUrl" size="sm" />
               <span class="font-normal text-slate-500">ha sugerido {{ s.current ? 'una corrección' : 'una entrada nueva' }}</span>
             </p>
             <p class="text-xs text-slate-500">
-              <RouterLink :to="{ name: 'sheet', params: { squadId, matchId: s.match.id }, query: { tab: 'interna' } }" class="hover:underline">J{{ s.match.matchday }} · {{ opponentLabel(s.match, teamId) }}</RouterLink>
+              <RouterLink :to="{ name: 'sheet', params: { squadId, matchId: s.match.id }, query: { tab: 'interna' } }" class="hover:underline">J{{ s.match.matchday }} · <TeamName prefix="vs" :name="opponentOf(s.match, teamId).name" :crest-url="opponentOf(s.match, teamId).crestUrl" /></RouterLink>
               · {{ formatKickoff(s.match.kickoffAt) }} · enviada el {{ formatKickoff(s.createdAt) }}
             </p>
           </div>

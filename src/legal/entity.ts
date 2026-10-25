@@ -8,7 +8,7 @@ export const legalEntity = {
   nif: '[NIF]',
   address: '[Domicilio completo]',
   /** Correo de contacto general y para el ejercicio de derechos. */
-  email: 'privacidad@tercertiempo.es',
+  email: 'diegoespinarodriguez@gmail.com',
   /** Proveedor de alojamiento (encargado del tratamiento). */
   hosting: '[Proveedor de alojamiento, p. ej. Hetzner Online GmbH (Alemania)]',
   /** Pasarela de pago de los vídeos (encargado del tratamiento). */
@@ -16,10 +16,10 @@ export const legalEntity = {
 };
 
 /** Fecha de la última versión de los textos legales. */
-export const legalVersion = '21 de octubre de 2026';
+export const legalVersion = '24 de octubre de 2026';
 
 /** Fuentes públicas de datos deportivos que usa la plataforma, con atribución. */
 export const dataSources = [
-  { name: 'futbolasturiano.es', url: 'https://www.futbolasturiano.es', what: 'calendarios, resultados, clasificaciones y plantillas publicadas de las ligas asturianas' },
+  { name: 'FútbolAsturiano, diario independiente digital del fútbol asturiano (futbolasturiano.es)', url: 'https://www.futbolasturiano.es', what: 'calendarios, resultados, clasificaciones, plantillas publicadas y escudos de los equipos, con su autorización' },
   { name: 'asturfutbol.es (Real Federación de Fútbol del Principado de Asturias)', url: 'https://www.asturfutbol.es', what: 'actas oficiales de los partidos: alineaciones, sustituciones, goles, tarjetas y árbitros' },
 ];

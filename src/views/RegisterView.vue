@@ -10,6 +10,8 @@ import { useAuthStore } from '@/stores/auth';
 import type { AccountType, SquadInviteDto } from '@/types/api';
 import { legalEntity } from '@/legal/entity';
 import { positionLabels } from '@/utils/format';
+import TeamName from '@/components/teams/TeamName.vue';
+import PlayerName from '@/components/players/PlayerName.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -39,6 +41,27 @@ onMounted(async () => {
     /* sin respuesta: el servidor lo exigirá igualmente si hace falta */
   }
 });
+
+// La invitación es para un club concreto: en cuanto el código vale, ese club queda elegido y no se puede cambiar.
+const invitedClub = ref<string | null>(null);
+const inviteInvalid = ref(false);
+let inviteLookup = 0;
+watch(clubInvite, async (value) => {
+  const code = value.trim();
+  const lookup = ++inviteLookup;
+  inviteInvalid.value = false;
+  if (invitedClub.value && form.displayName === invitedClub.value) form.displayName = '';
+  invitedClub.value = null;
+  if (code.length < 10) return;
+  try {
+    const result = await api.auth.clubInvitation(code);
+    if (lookup !== inviteLookup) return;
+    invitedClub.value = result.clubName;
+    if (result.clubName) form.displayName = result.clubName;
+  } catch {
+    if (lookup === inviteLookup) inviteInvalid.value = true;
+  }
+}, { immediate: true });
 
 // Aceptación expresa de las condiciones y la política de privacidad: sin ella no se envía el formulario.
 const acceptsTerms = ref(false);
@@ -116,7 +139,7 @@ async function submit() {
       <form class="mt-6 space-y-4" @submit.prevent="submit">
         <Alert v-if="error" kind="error">{{ error }}</Alert>
 
-        <div class="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Tipo de cuenta">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Tipo de cuenta">
           <button
             v-for="type in accountTypes"
             :key="type.value"
@@ -174,9 +197,9 @@ async function submit() {
           </p>
           <div v-if="invite" class="mt-3 rounded-xl border border-accent-400/40 bg-brand-500/10 p-4">
             <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Tu ficha de jugador</p>
-            <p class="mt-1 text-lg font-semibold text-slate-900">{{ invite.player.fullName }}</p>
+            <p class="mt-1 text-lg font-semibold text-slate-900"><PlayerName :name="invite.player.fullName" :photo-url="invite.player.photoUrl" size="sm" /></p>
             <p class="mt-1 text-sm text-slate-500">
-              {{ invite.teamName }} · {{ invite.competitionName }} · {{ invite.seasonLabel }}
+              <TeamName :name="invite.teamName" :crest-url="invite.teamCrestUrl" :team-id="invite.teamId" /> · {{ invite.competitionName }} · {{ invite.seasonLabel }}
               <template v-if="invite.player.position"> · {{ positionLabels[invite.player.position] }}</template>
               <template v-if="invite.player.shirtNumber"> · dorsal {{ invite.player.shirtNumber }}</template>
             </p>
@@ -202,12 +225,16 @@ async function submit() {
             Tercer Tiempo está en beta cerrada: los clubes entran con una invitación. Si quieres una, escríbenos a {{ legalEntity.email }}.
           </p>
           <p v-if="fieldErrors.accessCode" class="field-error">{{ fieldErrors.accessCode[0] }}</p>
+          <p v-else-if="inviteInvalid" class="field-error">La invitación no existe, ha caducado o ya se ha usado.</p>
         </div>
 
         <div v-if="isClub">
           <label class="label" for="displayName">Club</label>
-          <ClubPicker id="displayName" v-model="form.displayName" />
-          <p class="mt-1 text-xs text-slate-400">
+          <ClubPicker id="displayName" v-model="form.displayName" :locked="!!invitedClub" />
+          <p v-if="invitedClub" class="mt-1 text-xs text-slate-400">
+            Tu invitación es para {{ invitedClub }}: el club va fijado y no se puede cambiar.
+          </p>
+          <p v-else class="mt-1 text-xs text-slate-400">
             Elige tu club de la lista: solo puede haber una cuenta por club y al crearla quedan vinculados todos sus equipos (primero y filiales).
           </p>
           <p v-if="fieldErrors.displayName" class="field-error">{{ fieldErrors.displayName[0] }}</p>

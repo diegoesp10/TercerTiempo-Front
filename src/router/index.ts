@@ -69,6 +69,7 @@ const router = createRouter({
     { path: '/ver/:token', name: 'shared-video', component: () => import('@/views/SharedVideoView.vue'), props: true, meta: { root: true } },
     { path: '/privacidad', name: 'privacy', component: () => import('@/views/legal/PrivacyView.vue') },
     { path: '/condiciones', name: 'terms', component: () => import('@/views/legal/TermsView.vue') },
+    { path: '/cookies', name: 'cookies', component: () => import('@/views/legal/CookiesView.vue') },
     { path: '/error/servidor', name: 'server-error', component: () => import('@/views/ServerErrorView.vue'), meta: { error: true } },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFoundView.vue'), meta: { error: true } },
   ],
