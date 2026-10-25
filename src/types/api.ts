@@ -1297,6 +1297,104 @@ export interface RunFootballSyncRequest {
   to: string | null;
   competitionIds: string[];
   includeRosters: boolean;
+  /** Encolar las actas de la federación de los partidos ya jugados del alcance (se bajan a su ritmo: 20/h, 60/día). */
+  includeSheets: boolean;
+}
+
+// --- Administración: descargas en directo ---
+
+export type SyncLeagueStatus = 'pending' | 'running' | 'done' | 'failed';
+
+export interface SyncLeagueDto {
+  name: string;
+  status: SyncLeagueStatus;
+  /** Fase en curso: Calendario, Equipos, Partidos, Clasificación, Plantillas (3/18), Guardando. */
+  stage: string | null;
+  teams: number;
+  matches: number;
+  played: number;
+  standings: number;
+  roster: number;
+  error: string | null;
+}
+
+export interface SyncTeamRefDto {
+  id: string;
+  name: string;
+  crestUrl: string | null;
+}
+
+export interface SyncEventDto {
+  id: number;
+  at: string;
+  kind: 'match' | 'team' | 'standings' | 'roster';
+  league: string;
+  text: string;
+  home: SyncTeamRefDto | null;
+  away: SyncTeamRefDto | null;
+  homeGoals: number | null;
+  awayGoals: number | null;
+  matchday: number | null;
+  kickoffAt: string | null;
+  matchId: string | null;
+  /** new / updated / same (partidos) o new (equipos). */
+  change: 'new' | 'updated' | 'same' | null;
+}
+
+export interface SyncLiveDto {
+  running: boolean;
+  scope: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  summary: string | null;
+  done: number;
+  total: number;
+  current: string | null;
+  leagues: SyncLeagueDto[];
+  feed: SyncEventDto[];
+  errors: string[];
+}
+
+export type SheetDownloadStatus = 'pending' | 'downloading' | 'done' | 'missing' | 'failed';
+
+export interface SheetQueueItemDto {
+  matchId: string;
+  status: SheetDownloadStatus;
+  competition: string;
+  matchday: number;
+  kickoffAt: string;
+  home: SyncTeamRefDto;
+  away: SyncTeamRefDto;
+  homeGoals: number | null;
+  awayGoals: number | null;
+  detail: string | null;
+  attempts: number;
+  requestedAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+}
+
+export interface SheetQueueDto {
+  pending: number;
+  downloading: number;
+  done: number;
+  missing: number;
+  failed: number;
+  pausedUntil: string | null;
+  hourRequests: number;
+  maxPerHour: number;
+  dayRequests: number;
+  maxPerDay: number;
+  nextRequestAt: string | null;
+  requestsNeeded: number;
+  estimatedFinishAt: string | null;
+  items: SheetQueueItemDto[];
+}
+
+export interface LiveDownloadsDto {
+  football: SyncLiveDto;
+  sheets: SheetQueueDto;
+  generatedAt: string;
 }
 
 export interface JobDto {

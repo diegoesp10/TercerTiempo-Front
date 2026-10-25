@@ -37,6 +37,16 @@ import {
   faUserInjured,
   faVideo,
   faXmark,
+  faCircleCheck,
+  faCircleXmark,
+  faClock,
+  faDownload,
+  faFileLines,
+  faHourglassHalf,
+  faListOl,
+  faPause,
+  faSpinner,
+  faUsers,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
@@ -82,6 +92,16 @@ library.add(
   faUserInjured,
   faVideo,
   faXmark,
+  faCircleCheck,
+  faCircleXmark,
+  faClock,
+  faDownload,
+  faFileLines,
+  faHourglassHalf,
+  faListOl,
+  faPause,
+  faSpinner,
+  faUsers,
 );
 
 export { FontAwesomeIcon as Icon };

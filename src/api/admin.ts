@@ -11,6 +11,7 @@ import type {
   JobDto,
   JobsOverviewDto,
   LicensesOverviewDto,
+  LiveDownloadsDto,
   LicensingSettingsDto,
   RunFootballSyncRequest,
   UpdateFootballSyncRequest,
@@ -29,6 +30,9 @@ export const adminApi = {
     http<FootballSyncSettingsDto>('/api/admin/football-sync', { method: 'PUT', token, body }),
   runFootballSync: (token: string, body: RunFootballSyncRequest) =>
     http<JobDto>('/api/admin/football-sync/run', { method: 'POST', token, body }),
+  liveDownloads: (token: string) => http<LiveDownloadsDto>('/api/admin/live-downloads', { token, silent: true }),
+  cancelSheetDownloads: (token: string, onlyFinished: boolean) =>
+    http<number>(`/api/admin/sheet-downloads/cancel?onlyFinished=${onlyFinished}`, { method: 'POST', token }),
   analytics: (token: string, from: string, to: string, clubId: string | null, scope: ClubScope) =>
     http<AnalyticsReportDto>(
       `/api/admin/analytics?from=${from}&to=${to}&scope=${scope}${clubId ? `&clubId=${clubId}` : ''}`,

@@ -25,6 +25,8 @@ const from = ref('');
 const to = ref('');
 const leagues = ref<string[]>([]);
 const rosters = ref(false);
+// Las actas de los partidos ya jugados se encolan al terminar y se bajan de la federación a su ritmo.
+const sheets = ref(true);
 
 const schedule = reactive({ scheduledScope: 'CurrentRound' as SyncScopeKind, daysBack: 3, daysAhead: 4, rostersInRound: false, fullSyncEveryDays: 7 });
 
@@ -87,10 +89,11 @@ async function launch() {
     to: scope.value === 'DateRange' ? to.value : null,
     competitionIds: leagues.value,
     includeRosters: rosters.value,
+    includeSheets: sheets.value,
   }));
   if (done) {
     const which = allLeagues.value ? 'todas las ligas' : leagues.value.length === 1 ? '1 liga' : `${leagues.value.length} ligas`;
-    emit('launched', `Datos de las ligas lanzados: ${what}, ${which}. La página se actualiza sola mientras dura.`);
+    emit('launched', `Datos de las ligas lanzados: ${what}, ${which}${sheets.value ? ', con sus actas' : ''}. Lo puedes seguir en «Descargas en directo».`);
   }
   launching.value = false;
 }
@@ -172,6 +175,17 @@ onMounted(load);
     <label class="flex items-center gap-2 text-sm text-slate-700">
       <input v-model="rosters" type="checkbox" class="h-4 w-4 accent-brand-500" />
       Plantillas (descarga el catálogo entero de jugadores: unas 20 llamadas más)
+    </label>
+
+    <label class="flex items-start gap-2 text-sm text-slate-700">
+      <input v-model="sheets" type="checkbox" class="mt-0.5 h-4 w-4 accent-brand-500" />
+      <span>
+        Actas de los partidos jugados (asturfutbol.es)
+        <span class="block text-xs text-slate-500">
+          Al terminar se ponen en cola las actas que falten de esos partidos. La federación bloquea si se le pide de más, así que se bajan a su
+          ritmo (una cada 30 s, 20 por hora, 60 al día): una liga entera tarda días. Se ve en «Descargas en directo».
+        </span>
+      </span>
     </label>
 
     <p class="text-xs text-slate-500">

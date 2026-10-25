@@ -13,6 +13,7 @@ import Spinner from '@/components/ui/Spinner.vue';
 import type { JobDto, JobRunDto, JobRunStatus, JobsOverviewDto, ScrapeRequestDto, ScrapeSourceDto } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
 import AnalyticsPanel from '@/components/admin/AnalyticsPanel.vue';
+import LiveDownloadsPanel from '@/components/admin/LiveDownloadsPanel.vue';
 import { useAdminSessionStore } from '@/stores/adminSession';
 import { useAuthStore } from '@/stores/auth';
 import CookiesAdminPanel from '@/components/admin/CookiesAdminPanel.vue';
@@ -29,9 +30,10 @@ const admin = useAdminSessionStore();
 const auth = useAuthStore();
 const session = computed(() => admin.session);
 
-type AdminTab = 'jobs' | 'licenses' | 'invitations' | 'analytics' | 'cookies';
+type AdminTab = 'jobs' | 'live' | 'licenses' | 'invitations' | 'analytics' | 'cookies';
 const tabs: { value: AdminTab; label: string }[] = [
   { value: 'jobs', label: 'Trabajos y scrapeos' },
+  { value: 'live', label: 'Descargas en directo' },
   { value: 'licenses', label: 'Licencias y cobros' },
   { value: 'invitations', label: 'Invitaciones de clubes' },
   { value: 'analytics', label: 'Uso de la web' },
@@ -129,6 +131,7 @@ async function launch(job: JobDto) {
 
 function onSyncLaunched(message: string) {
   launchMessage.value = message;
+  tab.value = 'live';
   setTimeout(() => void load(true), 1_000);
 }
 
@@ -236,6 +239,10 @@ const sourceTitle = (source: ScrapeSourceDto) =>
     <div v-if="tab === 'licenses'" class="space-y-6">
       <LicensingSettingsPanel :token="session.token" @saved="licensesPanel?.load()" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
       <LicensesPanel ref="licensesPanel" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    </div>
+    <div v-else-if="tab === 'live'" class="space-y-4">
+      <Alert v-if="launchMessage" kind="success">{{ launchMessage }}</Alert>
+      <LiveDownloadsPanel :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     </div>
     <ClubInvitationsPanel v-else-if="tab === 'invitations'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     <AnalyticsPanel v-else-if="tab === 'analytics'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
