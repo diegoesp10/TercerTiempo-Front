@@ -9,6 +9,7 @@ import SeasonSwitcher from '@/components/layout/SeasonSwitcher.vue';
 import BackButton from '@/components/ui/BackButton.vue';
 import Badge from '@/components/ui/Badge.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
+import { useAdminSessionStore } from '@/stores/adminSession';
 import { useAuthStore } from '@/stores/auth';
 import { useSeasonStore } from '@/stores/season';
 import { useSettingsStore } from '@/stores/settings';
@@ -76,6 +77,14 @@ function logout() {
   menuOpen.value = false;
   void router.push({ name: 'login' });
 }
+
+// La sesión de administrador va aparte de la de las cuentas (nunca a la vez): se enseña como tal y se cierra aquí.
+const admin = useAdminSessionStore();
+function logoutAdmin() {
+  admin.end();
+  menuOpen.value = false;
+  void router.push({ name: 'jobs' });
+}
 </script>
 
 <template>
@@ -113,7 +122,15 @@ function logout() {
           </button>
 
           <div class="hidden min-w-0 items-center gap-2 lg:flex">
-            <template v-if="auth.isAuthenticated && auth.account">
+            <template v-if="admin.isActive">
+              <RouterLink to="/jobs" class="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" title="Administración">
+                <Icon icon="lock" class="h-3.5 w-3.5 shrink-0 text-accent-400" />
+                <span class="min-w-0 max-w-40 truncate font-medium">{{ admin.session?.userName }}</span>
+                <Badge tone="red" class="shrink-0">Administrador</Badge>
+              </RouterLink>
+              <button type="button" class="btn-ghost shrink-0" @click="logoutAdmin">Salir</button>
+            </template>
+            <template v-else-if="auth.isAuthenticated && auth.account">
               <RouterLink to="/ajustes" class="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" title="Ajustes">
                 <TeamCrest v-if="auth.isClub" :src="auth.clubCrestUrl" :name="auth.displayName" size="sm" />
                 <PlayerAvatar v-else-if="auth.isPlayer" :src="auth.player?.photoUrl" :name="auth.displayName" size="xs" />
@@ -173,7 +190,13 @@ function logout() {
           </div>
         </div>
         <div class="mt-2 border-t border-line pt-2">
-          <template v-if="auth.isAuthenticated && auth.account">
+          <template v-if="admin.isActive">
+            <RouterLink to="/jobs" class="flex items-center gap-2 px-3 py-1 text-xs text-slate-500" @click="menuOpen = false">
+              <Icon icon="lock" class="h-3 w-3 text-accent-400" />{{ admin.session?.userName }} · Administrador
+            </RouterLink>
+            <button type="button" class="btn-ghost w-full" @click="logoutAdmin">Salir</button>
+          </template>
+          <template v-else-if="auth.isAuthenticated && auth.account">
             <p class="flex items-center gap-2 px-3 py-1 text-xs text-slate-500">
               <TeamCrest v-if="auth.isClub" :src="auth.clubCrestUrl" :name="auth.displayName" size="xs" />
               {{ auth.displayName }} · {{ accountTypeLabels[auth.account.type] }}

@@ -13,39 +13,21 @@ import Spinner from '@/components/ui/Spinner.vue';
 import type { JobDto, JobRunDto, JobRunStatus, JobsOverviewDto, ScrapeRequestDto, ScrapeSourceDto } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
 import AnalyticsPanel from '@/components/admin/AnalyticsPanel.vue';
+import { useAdminSessionStore } from '@/stores/adminSession';
+import { useAuthStore } from '@/stores/auth';
 import CookiesAdminPanel from '@/components/admin/CookiesAdminPanel.vue';
 
 /**
  * Página oculta del administrador (/jobs, sin enlace en el menú): cuándo y cómo se han actualizado los datos, las
- * llamadas reales a cada web externa y el lanzamiento a mano de cada trabajo. Su sesión es aparte de la normal y
- * dura lo que la pestaña (sessionStorage).
+ * llamadas reales a cada web externa y el lanzamiento a mano de cada trabajo. Su sesión dura lo que la pestaña y no
+ * convive con la de una cuenta: entrar aquí cierra la del club, técnico o jugador (stores/adminSession).
  */
-const STORAGE_KEY = 'tt.admin-session';
 const RUNNING_EVERY_MS = 4_000;
 const IDLE_EVERY_MS = 30_000;
 
-interface AdminSession { token: string; userName: string; expiresAt: string }
-
-function readSession(): AdminSession | null {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    const session = raw ? (JSON.parse(raw) as AdminSession) : null;
-    return session && new Date(session.expiresAt).getTime() > Date.now() ? session : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeSession(session: AdminSession | null) {
-  try {
-    if (session) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-    else sessionStorage.removeItem(STORAGE_KEY);
-  } catch {
-    /* sin almacenamiento: la sesión vive solo en memoria */
-  }
-}
-
-const session = ref<AdminSession | null>(readSession());
+const admin = useAdminSessionStore();
+const auth = useAuthStore();
+const session = computed(() => admin.session);
 
 type AdminTab = 'jobs' | 'licenses' | 'invitations' | 'analytics' | 'cookies';
 const tabs: { value: AdminTab; label: string }[] = [
@@ -78,8 +60,7 @@ async function login() {
   loginError.value = null;
   try {
     const response = await adminApi.login(form.userName, form.password);
-    session.value = { token: response.accessToken, userName: response.userName, expiresAt: response.expiresAt };
-    writeSession(session.value);
+    admin.start({ token: response.accessToken, userName: response.userName, expiresAt: response.expiresAt });
     form.password = '';
     await load();
   } catch (e) {
@@ -91,9 +72,8 @@ async function login() {
 
 function logout(message: string | null = null) {
   stopPolling();
-  session.value = null;
+  admin.end();
   data.value = null;
-  writeSession(null);
   loginError.value = message;
 }
 
@@ -216,6 +196,9 @@ const sourceTitle = (source: ScrapeSourceDto) =>
       <p class="mt-1 text-sm text-slate-500">Trabajos en segundo plano y llamadas a las webs externas. Solo para el administrador.</p>
       <form class="mt-6 space-y-4" @submit.prevent="login">
         <Alert v-if="loginError" kind="error">{{ loginError }}</Alert>
+        <Alert v-if="auth.isAuthenticated" kind="warning">
+          Tienes abierta la sesión de <strong>{{ auth.displayName }}</strong>. Al entrar como administrador se cerrará: las dos no pueden convivir.
+        </Alert>
         <div>
           <label class="label" for="admin-user">Usuario</label>
           <input id="admin-user" v-model="form.userName" type="text" autocomplete="username" required class="input" />
