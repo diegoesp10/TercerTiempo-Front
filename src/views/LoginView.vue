@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ApiError, errorMessage } from '@/api/http';
 import AuthPanel from '@/components/layout/AuthPanel.vue';
@@ -9,6 +9,8 @@ import { useAuthStore } from '@/stores/auth';
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
+// Permite probar las validaciones del servidor desde el login local sin cambiar el formulario de producción.
+const backendTest = computed(() => import.meta.env.DEV && route.query.backendTest === '1');
 
 const form = reactive({ email: '', password: '' });
 const loading = ref(false);
@@ -37,7 +39,8 @@ async function submit() {
     <h1 class="text-3xl font-bold text-slate-900">Entrar</h1>
     <p class="mt-1 text-sm text-slate-500">Cuerpo técnico: gestiona tu plantilla y sus actas. Jugadores: consulta tus estadísticas. Clubes: nombra a tus técnicos.</p>
 
-    <form class="mt-6 space-y-4" @submit.prevent="submit">
+    <form class="mt-6 space-y-4" :novalidate="backendTest" @submit.prevent="submit">
+      <Alert v-if="backendTest" kind="warning">Prueba del backend: la validación del navegador está desactivada.</Alert>
       <Alert v-if="error" kind="error">{{ error }}</Alert>
 
       <div>
