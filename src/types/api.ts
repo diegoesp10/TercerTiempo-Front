@@ -144,7 +144,7 @@ export interface ClubTeamDto {
 // --- Licencia del club (primer equipo y filiales) ---
 
 export type LicenseStatus = 'Trial' | 'Active' | 'Expired';
-export type PaymentStatus = 'Pending' | 'Paid' | 'Cancelled';
+export type PaymentStatus = 'Pending' | 'Paid' | 'Cancelled' | 'Failed';
 /** Básica: un técnico. Premium: cuerpo técnico ampliado. Las dos con la plantilla entera. */
 export type LicensePlan = 'Basic' | 'Premium';
 export type BillingInterval = 'Monthly' | 'Yearly';
@@ -225,6 +225,37 @@ export interface LicenseCheckoutDto {
   currency: string;
   provider: string;
   status: PaymentStatus;
+  /** Avisos de la pasarela de esta licencia desde que se abrió el pago (la cola de eventos). */
+  events: PaymentEventDto[] | null;
+}
+
+export type PaymentEventStatus = 'pending' | 'processed' | 'ignored' | 'failed';
+
+/** Aviso de la pasarela en la cola: webhook de Stripe o evento de la simulada (mismo formato). */
+export interface PaymentEventDto {
+  id: string;
+  provider: string;
+  externalId: string;
+  type: string;
+  status: PaymentEventStatus;
+  attempts: number;
+  receivedAt: string;
+  processedAt: string | null;
+  nextAttemptAt: string | null;
+  error: string | null;
+  licenseId: string | null;
+  clubName: string | null;
+  summary: string | null;
+}
+
+export type SimulatedPaymentOutcome = 'Succeeded' | 'Declined' | 'InsufficientFunds' | 'ExpiredCard' | 'AuthenticationFailed';
+export type SimulatedLicenseEvent = 'RenewalPaid' | 'RenewalFailed' | 'SubscriptionDeleted';
+
+export interface SimulatedPaymentDto {
+  succeeded: boolean;
+  /** Código de rechazo como el de Stripe. */
+  declineCode: string | null;
+  message: string;
 }
 
 /** Nombramiento visto por el club: el código de acceso solo llega mientras está pendiente. */
@@ -1573,6 +1604,7 @@ export interface AdminLicensePaymentDto {
   provider: string;
   createdAt: string;
   paidAt: string | null;
+  failureReason: string | null;
 }
 
 export interface LicensesOverviewDto {
@@ -1592,6 +1624,8 @@ export interface LicensesOverviewDto {
   payments: AdminLicensePaymentDto[];
   currency: string;
   today: string;
+  /** Pasarela en uso: mock (simulada, con simulador) o stripe. */
+  provider: string;
 }
 
 /** Temporada de la app (2026/2027...): el dato padre del que cuelga todo lo demás. */

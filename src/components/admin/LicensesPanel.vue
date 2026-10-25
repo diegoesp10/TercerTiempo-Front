@@ -2,15 +2,17 @@
 import { computed, onMounted, ref } from 'vue';
 import { adminApi } from '@/api/admin';
 import { errorMessage } from '@/api/http';
+import PaymentEventList from '@/components/licensing/PaymentEventList.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
-import type { AdminLicenseState, LicensesOverviewDto } from '@/types/api';
+import type { AdminLicenseDto, AdminLicenseState, LicensesOverviewDto, PaymentEventDto, SimulatedLicenseEvent } from '@/types/api';
 import { billingIntervalLabels, formatDate, formatKickoff, formatMoney, licensePlanLabels } from '@/utils/format';
 
 /**
  * Licencias y cobros de todos los clubes para el administrador: quién está en prueba, quién paga, quién debe y cuánto,
  * lo cobrado y el ingreso mensual recurrente. Sin licencia vigente el equipo no tiene acceso a sus datos privados.
+ * También la cola de avisos de la pasarela y, con la simulada, los avisos que mandaría Stripe en una renovación.
  */
 const props = defineProps<{ token: string }>();
 const emit = defineEmits<{ unauthorized: [] }>();
@@ -38,8 +40,21 @@ const stateTone: Record<AdminLicenseState, 'green' | 'amber' | 'red' | 'blue' | 
   cancelled: 'slate',
   'trial-ended': 'slate',
 };
-const paymentStatusLabels = { Pending: 'Pendiente', Paid: 'Cobrado', Cancelled: 'Cancelado' } as const;
-const paymentTone = { Pending: 'amber', Paid: 'green', Cancelled: 'slate' } as const;
+const paymentStatusLabels = { Pending: 'Pendiente', Paid: 'Cobrado', Cancelled: 'Cancelado', Failed: 'Rechazado' } as const;
+const paymentTone = { Pending: 'amber', Paid: 'green', Cancelled: 'slate', Failed: 'red' } as const;
+
+const events = ref<PaymentEventDto[]>([]);
+const retrying = ref<string | null>(null);
+const simulating = ref<string | null>(null);
+const notice = ref<string | null>(null);
+const isMock = computed(() => data.value?.provider === 'mock');
+
+const simulations: { event: SimulatedLicenseEvent; label: string; tone: string }[] = [
+  { event: 'RenewalPaid', label: 'Renovación cobrada', tone: 'text-emerald-600' },
+  { event: 'RenewalFailed', label: 'Cobro rechazado', tone: 'text-amber-600' },
+  { event: 'SubscriptionDeleted', label: 'Fin de suscripción', tone: 'text-red-600' },
+];
+const canSimulate = (row: AdminLicenseDto) => isMock.value && !!row.plan && row.provider === 'mock';
 
 const filtered = computed(() => {
   const rows = data.value?.licenses ?? [];
@@ -57,13 +72,49 @@ const money = (cents: number) => formatMoney(cents, data.value?.currency ?? 'EUR
 async function load() {
   loading.value = true;
   try {
-    data.value = await adminApi.licenses(props.token);
+    [data.value, events.value] = await Promise.all([adminApi.licenses(props.token), adminApi.paymentEvents(props.token)]);
     error.value = null;
   } catch (e) {
     if ((e as { status?: number }).status === 401) emit('unauthorized');
     else error.value = errorMessage(e);
   } finally {
     loading.value = false;
+  }
+}
+
+function fail(e: unknown) {
+  if ((e as { status?: number }).status === 401) emit('unauthorized');
+  else error.value = errorMessage(e);
+}
+
+// Tras dejar un aviso en la cola, se espera un momento a que lo aplique antes de recargar.
+const settle = () => new Promise((resolve) => setTimeout(resolve, 1200));
+
+async function simulate(row: AdminLicenseDto, event: SimulatedLicenseEvent) {
+  simulating.value = `${row.id}:${event}`;
+  notice.value = null;
+  try {
+    const { summary } = await adminApi.simulateLicenseEvent(props.token, row.id, event);
+    await settle();
+    await load();
+    notice.value = `${row.clubName}: ${summary}`;
+  } catch (e) {
+    fail(e);
+  } finally {
+    simulating.value = null;
+  }
+}
+
+async function retry(id: string) {
+  retrying.value = id;
+  try {
+    await adminApi.retryPaymentEvent(props.token, id);
+    await settle();
+    await load();
+  } catch (e) {
+    fail(e);
+  } finally {
+    retrying.value = null;
   }
 }
 
@@ -74,6 +125,7 @@ defineExpose({ load });
 <template>
   <section class="space-y-6">
     <Alert v-if="error" kind="error">{{ error }}</Alert>
+    <Alert v-if="notice" kind="success">{{ notice }}</Alert>
     <Spinner v-if="loading && !data" />
 
     <template v-if="data">
@@ -108,6 +160,7 @@ defineExpose({ load });
           <div>
             <h2 class="font-semibold text-slate-900">Licencias por equipo</h2>
             <p class="text-xs text-slate-500">Sin licencia vigente, nadie del club (club, cuerpo técnico ni jugadores) accede a los datos del equipo; el club solo puede pagar.</p>
+            <p v-if="isMock" class="mt-1 text-xs text-amber-600">Pasarela simulada: en cada licencia con suscripción puedes lanzar los avisos que mandaría Stripe.</p>
           </div>
           <div class="flex flex-wrap gap-1.5">
             <button
@@ -134,6 +187,7 @@ defineExpose({ load });
                 <th class="px-3 py-2 text-left">Próximo cobro</th>
                 <th class="px-3 py-2 text-right">Debe</th>
                 <th class="px-3 py-2 text-right">Cobrado</th>
+                <th v-if="isMock" class="px-3 py-2 text-left">Simular</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -173,6 +227,22 @@ defineExpose({ load });
                   {{ money(row.paidCents) }}
                   <span v-if="row.lastPaymentAt" class="block text-slate-500">{{ formatKickoff(row.lastPaymentAt) }}</span>
                 </td>
+                <td v-if="isMock" class="px-3 py-2 text-xs">
+                  <div v-if="canSimulate(row)" class="flex flex-col items-start gap-0.5">
+                    <button
+                      v-for="option in simulations"
+                      :key="option.event"
+                      type="button"
+                      class="whitespace-nowrap font-medium hover:underline disabled:opacity-50"
+                      :class="option.tone"
+                      :disabled="!!simulating"
+                      @click="simulate(row, option.event)"
+                    >
+                      <Spinner v-if="simulating === `${row.id}:${option.event}`" class="mr-1 inline h-3 w-3" />{{ option.label }}
+                    </button>
+                  </div>
+                  <span v-else class="text-slate-400">Sin suscripción</span>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -203,7 +273,10 @@ defineExpose({ load });
                   {{ payment.kind === 'Renewal' ? 'Renovación' : 'Alta' }} · {{ licensePlanLabels[payment.plan] }} {{ billingIntervalLabels[payment.interval].toLowerCase() }}
                   <span class="block text-slate-500">{{ payment.provider === 'mock' ? 'Pago simulado' : payment.provider }}</span>
                 </td>
-                <td class="px-3 py-2"><Badge :tone="paymentTone[payment.status]">{{ paymentStatusLabels[payment.status] }}</Badge></td>
+                <td class="px-3 py-2">
+                  <Badge :tone="paymentTone[payment.status]">{{ paymentStatusLabels[payment.status] }}</Badge>
+                  <span v-if="payment.failureReason" class="mt-0.5 block text-xs text-red-500">{{ payment.failureReason }}</span>
+                </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
                   {{ money(payment.amountCents) }}
                   <span v-if="payment.amountCents === 0 && payment.periodPriceCents > 0" class="block text-xs text-slate-500">en prueba; luego {{ money(payment.periodPriceCents) }}</span>
@@ -212,6 +285,19 @@ defineExpose({ load });
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section class="card">
+        <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="font-semibold text-slate-900">Avisos de la pasarela</h2>
+          <Badge :tone="isMock ? 'amber' : 'blue'">{{ isMock ? 'Pasarela simulada' : 'Stripe' }}</Badge>
+        </div>
+        <p class="text-xs text-slate-500">
+          Cola de los webhooks (o de los eventos de la simulada, con el mismo formato): se guardan al llegar y se aplican a la licencia en orden,
+          con reintentos espaciados si algo falla. Un aviso repetido no se aplica dos veces.
+        </p>
+        <p v-if="!events.length" class="mt-3 text-sm text-slate-500">Todavía no ha llegado ningún aviso.</p>
+        <PaymentEventList v-else :events="events" admin :retrying="retrying" class="mt-2" @retry="retry" />
       </section>
     </template>
   </section>

@@ -62,6 +62,8 @@ import type {
   ClubLicenseDto,
   SearchResultsDto,
   PlayerCardDto,
+  SimulatedPaymentDto,
+  SimulatedPaymentOutcome,
   SearchType,
   TeamSummaryDto,
   VideoPart,
@@ -219,6 +221,9 @@ export const api = {
     beginCheckout: (plan: LicensePlan, interval: BillingInterval) =>
       http<LicenseCheckoutDto>('/api/licensing/club/checkout', { method: 'POST', body: { plan, interval } }),
     checkout: (sessionId: string) => http<LicenseCheckoutDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}`),
+    /** Pasarela simulada: el resultado de la tarjeta de prueba (nunca se envían los datos de la tarjeta). */
+    simulatePayment: (sessionId: string, outcome: SimulatedPaymentOutcome) =>
+      http<SimulatedPaymentDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}/simulate`, { method: 'POST', body: { outcome } }),
     confirm: (sessionId: string) => http<ClubLicenseDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}/confirm`, { method: 'POST' }),
     /** Plan o facturación para la próxima renovación (durante la prueba, ya). */
     changeRenewal: (plan: LicensePlan, interval: BillingInterval) =>

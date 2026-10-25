@@ -12,6 +12,8 @@ import type {
   JobsOverviewDto,
   LicensesOverviewDto,
   LiveDownloadsDto,
+  PaymentEventDto,
+  SimulatedLicenseEvent,
   LicensingSettingsDto,
   RunFootballSyncRequest,
   UpdateFootballSyncRequest,
@@ -45,6 +47,11 @@ export const adminApi = {
   publishCookiePolicy: (token: string, version: string) =>
     http<CookiePolicyDto>('/api/admin/cookies/policy', { method: 'POST', token, body: { version } }),
   licenses: (token: string) => http<LicensesOverviewDto>('/api/admin/licenses', { token }),
+  paymentEvents: (token: string, licenseId: string | null = null) =>
+    http<PaymentEventDto[]>(`/api/admin/payment-events?max=100${licenseId ? `&licenseId=${licenseId}` : ''}`, { token, silent: true }),
+  retryPaymentEvent: (token: string, id: string) => http<boolean>(`/api/admin/payment-events/${id}/retry`, { method: 'POST', token }),
+  simulateLicenseEvent: (token: string, licenseId: string, event: SimulatedLicenseEvent) =>
+    http<{ summary: string }>(`/api/admin/licenses/${licenseId}/simulate`, { method: 'POST', token, body: { event } }),
   licensingSettings: (token: string) => http<LicensingSettingsDto>('/api/admin/licensing-settings', { token }),
   updateLicensingSettings: (token: string, body: UpdateLicensingSettingsRequest) =>
     http<LicensingSettingsDto>('/api/admin/licensing-settings', { method: 'PUT', token, body }),

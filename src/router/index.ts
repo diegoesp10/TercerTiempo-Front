@@ -92,7 +92,36 @@ router.beforeEach((to) => {
   return true;
 });
 
-router.afterEach(() => { useLoadingStore().navigating = false; });
-router.onError((error) => { useLoadingStore().navigating = false; console.error('No se ha podido cargar la página.', error); });
+// Tras desplegar una versión nueva, una pestaña abierta con la anterior pide trozos de página que ya no existen: se
+// recarga una vez en la página a la que iba, que ya trae la versión nueva.
+const STALE_CHUNK = /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Unable to preload CSS/i;
+const RELOAD_KEY = 'tt.reloaded-for';
+
+function reloadInto(path: string) {
+  try {
+    if (sessionStorage.getItem(RELOAD_KEY) === path) return false;
+    sessionStorage.setItem(RELOAD_KEY, path);
+  } catch {
+    /* sin almacenamiento: se recarga igualmente */
+  }
+  window.location.assign(path);
+  return true;
+}
+
+router.afterEach(() => {
+  useLoadingStore().navigating = false;
+  try { sessionStorage.removeItem(RELOAD_KEY); } catch { /* sin almacenamiento */ }
+});
+router.onError((error, to) => {
+  useLoadingStore().navigating = false;
+  if (STALE_CHUNK.test(String((error as Error)?.message ?? error)) && reloadInto(to?.fullPath ?? window.location.pathname)) return;
+  console.error('No se ha podido cargar la página.', error);
+});
+// Durante una navegación el error sigue hasta router.onError, que sabe a qué página iba; fuera de ellas (un import
+// dinámico dentro de una página ya abierta) se recarga la actual.
+window.addEventListener('vite:preloadError', (event) => {
+  if (useLoadingStore().navigating) return;
+  if (reloadInto(window.location.pathname + window.location.search)) event.preventDefault();
+});
 
 export default router;

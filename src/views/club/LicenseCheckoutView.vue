@@ -5,15 +5,18 @@ import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import BrandMark from '@/components/layout/BrandMark.vue';
+import MockCheckoutForm from '@/components/licensing/MockCheckoutForm.vue';
+import PaymentEventList from '@/components/licensing/PaymentEventList.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import type { ClubLicenseDto } from '@/types/api';
 import { billingIntervalLabels, billingIntervalSuffix, formatDate, formatMoney, formatPrice, licensePlanLabels, staffCountLabel } from '@/utils/format';
 
 /**
- * Pago de una licencia. Con la pasarela simulada es la página de pago: resumen del pedido y una tarjeta de prueba que
- * confirma la suscripción con un clic, sin cobro real. Con Stripe es la página a la que vuelve el club desde Stripe
- * Checkout: confirma la sesión (el webhook hace lo mismo, lo que llegue antes) y enseña el resultado.
+ * Pago de una licencia. Con la pasarela simulada es la página de pago, como Stripe Checkout con sus tarjetas de prueba:
+ * al pagar deja en la cola los mismos avisos que Stripe y la licencia se activa al procesarlos. Con Stripe es la página
+ * a la que vuelve el club desde Stripe Checkout: confirma la sesión (el webhook hace lo mismo, lo que llegue antes) y
+ * enseña el resultado.
  */
 const props = defineProps<{ sessionId: string }>();
 
@@ -29,6 +32,11 @@ const firstSquadId = computed(() => result.value?.teams.find((t) => t.squadId)?.
 const isMock = computed(() => data.value?.provider === 'mock');
 const chargedNow = computed(() => (data.value?.amountCents ?? 0) > 0);
 const period = computed(() => (data.value ? (data.value.interval === 'Yearly' ? 'cada año' : 'cada mes') : ''));
+const events = computed(() => data.value?.events ?? []);
+
+// Pasos tras pagar en la simulada: autorizado, avisos en la cola y licencia activada.
+const activating = ref(false);
+const queueStep = ref<'queued' | 'applied'>('queued');
 
 async function confirm(delayMs = 0) {
   paying.value = true;
@@ -41,6 +49,25 @@ async function confirm(delayMs = 0) {
   } finally {
     paying.value = false;
   }
+}
+
+// Tras pagar en la simulada, se espera a que la cola aplique el aviso (como haría el webhook de Stripe) y luego se
+// confirma, que no cambia nada si ya está aplicada y da los datos de la licencia.
+async function onMockPaid() {
+  activating.value = true;
+  queueStep.value = 'queued';
+  for (let i = 0; i < 12; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    try {
+      data.value = await api.licensing.checkout(props.sessionId);
+    } catch {
+      break;
+    }
+    if (data.value.status === 'Paid' || data.value.events?.some((e) => e.type === 'checkout.session.completed' && e.status !== 'pending')) break;
+  }
+  queueStep.value = 'applied';
+  await confirm();
+  activating.value = false;
 }
 
 // Vuelta desde Stripe: la sesión ya está pagada allí; se confirma al llegar (y se reintenta un par de veces si Stripe
@@ -114,7 +141,7 @@ watch(data, async (checkout) => {
         <!-- Pago o resultado -->
         <section class="card lg:col-span-3">
           <!-- Hecho -->
-          <div v-if="result || data.status === 'Paid'" class="py-4 text-center">
+          <div v-if="!activating && (result || data.status === 'Paid')" class="py-4 text-center">
             <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
               <Icon icon="check" class="h-6 w-6" />
             </span>
@@ -142,44 +169,37 @@ watch(data, async (checkout) => {
             </template>
           </div>
 
+          <!-- Pasarela simulada: activando tras pagar -->
+          <div v-else-if="activating" class="py-6">
+            <h2 class="text-center font-semibold text-slate-900">Activando la licencia…</h2>
+            <ol class="mx-auto mt-5 max-w-sm space-y-3 text-sm">
+              <li class="flex items-center gap-3"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><Icon icon="check" class="h-3 w-3" /></span>Pago autorizado</li>
+              <li class="flex items-center gap-3">
+                <span v-if="queueStep === 'applied'" class="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><Icon icon="check" class="h-3 w-3" /></span>
+                <Spinner v-else class="h-6 w-6" />
+                Aviso de la pasarela en la cola
+              </li>
+              <li class="flex items-center gap-3 text-slate-500"><Spinner class="h-6 w-6" />Licencia activada</li>
+            </ol>
+            <Alert v-if="payError" kind="error" class="mt-4">{{ payError }}</Alert>
+          </div>
+
           <!-- Pasarela simulada -->
-          <form v-else class="space-y-4" @submit.prevent="confirm(900)">
-            <div>
-              <h2 class="font-semibold text-slate-900">Datos de pago</h2>
-              <p class="mt-1 text-xs text-slate-500">
-                Aquí irá el formulario seguro de Stripe. Mientras tanto no se cobra nada: la tarjeta es de prueba y la suscripción se confirma al pulsar el botón.
-              </p>
+          <template v-else>
+            <MockCheckoutForm :checkout="data" @paid="onMockPaid" />
+            <div class="mt-4 text-right text-xs">
+              <RouterLink :to="{ name: 'licenses' }" class="font-medium text-slate-500 hover:text-slate-800">Cambiar de plan</RouterLink>
             </div>
-            <div>
-              <label class="label" for="card-number">Número de tarjeta</label>
-              <div class="relative">
-                <input id="card-number" type="text" class="input pr-10 font-mono" value="4242 4242 4242 4242" readonly />
-                <Icon icon="credit-card" class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="label" for="card-exp">Caducidad</label>
-                <input id="card-exp" type="text" class="input font-mono" value="12/30" readonly />
-              </div>
-              <div>
-                <label class="label" for="card-cvc">CVC</label>
-                <input id="card-cvc" type="text" class="input font-mono" value="123" readonly />
-              </div>
-            </div>
-            <Alert v-if="payError" kind="error">{{ payError }}</Alert>
-            <button type="submit" class="btn-primary w-full py-3 text-base" v-busy="paying" :disabled="paying">
-              <Icon icon="lock" class="h-4 w-4" />
-              <template v-if="chargedNow">Pagar {{ formatMoney(data.amountCents, data.currency) }} y activar</template>
-              <template v-else>Activar suscripción · hoy 0 €</template>
-            </button>
-            <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-              <span class="inline-flex items-center gap-1.5"><Icon icon="shield-halved" class="h-3 w-3" />Pago seguro con Stripe</span>
-              <RouterLink :to="{ name: 'licenses' }" class="font-medium hover:text-slate-800">Cambiar de plan</RouterLink>
-            </div>
-          </form>
+          </template>
         </section>
       </div>
+
+      <!-- Avisos de la pasarela -->
+      <section v-if="events.length" class="card mt-6">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Avisos de la pasarela</p>
+        <p class="mt-1 text-xs text-slate-500">Lo que la pasarela ha comunicado sobre este pago, en el mismo formato que los webhooks de Stripe.</p>
+        <PaymentEventList :events="events" class="mt-2" />
+      </section>
     </template>
   </div>
 </template>
