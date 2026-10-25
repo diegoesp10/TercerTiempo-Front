@@ -9,6 +9,7 @@ import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, staffRoleLabels, visibilityLabels } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
+import DashboardSearch from '@/components/search/DashboardSearch.vue';
 
 const auth = useAuthStore();
 
@@ -26,6 +27,8 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
       <RouterLink to="/codigo-acceso" :class="squads.length > 0 ? 'btn-secondary' : 'btn-primary'">Canjear un código de acceso</RouterLink>
     </template>
   </PageHeader>
+
+  <DashboardSearch class="mb-6" />
 
   <Spinner v-if="loading && squads.length === 0" />
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>

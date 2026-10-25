@@ -16,6 +16,7 @@ import type { AppointmentDto, ClubDto, ClubFilialDto, StaffRole } from '@/types/
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, formatKickoff, licenseStatusLabels, licenseStatusTone, staffRoleLabels, staffRoleOptions } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
 import TeamName from '@/components/teams/TeamName.vue';
+import DashboardSearch from '@/components/search/DashboardSearch.vue';
 
 const auth = useAuthStore();
 
@@ -148,6 +149,8 @@ const sortedAppointments = computed(() => {
       </RouterLink>
     </template>
   </PageHeader>
+
+  <DashboardSearch class="mb-6" />
 
   <Spinner v-if="loading && !club" />
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>

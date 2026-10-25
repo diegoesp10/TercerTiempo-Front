@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, nextTick, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import MatchRow from '@/components/matches/MatchRow.vue';
@@ -24,6 +24,19 @@ const auth = useAuthStore();
 const router = useRouter();
 
 const { data, loading, error } = useAsync(() => api.teams.get(props.teamId));
+
+// Desde el buscador (?jugador=): se baja hasta su fila de la plantilla y se resalta.
+const route = useRoute();
+const highlightedPlayer = computed(() => (typeof route.query.jugador === 'string' ? route.query.jugador : null));
+watch(
+  () => [data.value, highlightedPlayer.value] as const,
+  async ([team, entryId]) => {
+    if (!team || !entryId) return;
+    await nextTick();
+    document.getElementById(`jugador-${entryId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  },
+  { immediate: true },
+);
 const matches = useAsync(() => api.teams.matches(props.teamId));
 
 const played = computed(() => (matches.data.value ?? []).filter((m) => m.status === 'Played').reverse());
@@ -288,7 +301,13 @@ async function linkToClub() {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="entry in data.roster" :key="entry.id">
+              <tr
+                v-for="entry in data.roster"
+                :id="`jugador-${entry.id}`"
+                :key="entry.id"
+                class="scroll-mt-24 transition-colors"
+                :class="entry.id === highlightedPlayer ? 'bg-accent-400/15 outline outline-2 outline-accent-400/60' : ''"
+              >
                 <td class="py-2 pr-3 tabular-nums text-slate-500">{{ entry.shirtNumber ?? '—' }}</td>
                 <td class="py-2 pr-3 whitespace-nowrap">
                   <span class="inline-flex items-center gap-2">

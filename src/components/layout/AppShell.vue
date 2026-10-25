@@ -9,6 +9,8 @@ import SeasonSwitcher from '@/components/layout/SeasonSwitcher.vue';
 import BackButton from '@/components/ui/BackButton.vue';
 import Badge from '@/components/ui/Badge.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
+import SearchPalette from '@/components/search/SearchPalette.vue';
+import SearchTrigger from '@/components/search/SearchTrigger.vue';
 import { useAdminSessionStore } from '@/stores/adminSession';
 import { useAuthStore } from '@/stores/auth';
 import { useSeasonStore } from '@/stores/season';
@@ -80,6 +82,8 @@ function logout() {
 
 // La sesión de administrador va aparte de la de las cuentas (nunca a la vez): se enseña como tal y se cierra aquí.
 const admin = useAdminSessionStore();
+// El buscador es para las cuentas (club, técnico o jugador), no para el administrador.
+const canSearch = computed(() => auth.isAuthenticated && !admin.isActive);
 function logoutAdmin() {
   admin.end();
   menuOpen.value = false;
@@ -110,6 +114,8 @@ function logoutAdmin() {
 
         <div class="flex min-w-0 items-center gap-2">
           <!-- En móvil la temporada va dentro del menú, para que la cabecera no se parta. -->
+          <SearchTrigger v-if="canSearch" class="hidden w-44 xl:flex 2xl:w-60" />
+          <SearchTrigger v-if="canSearch" compact class="xl:hidden" />
           <SeasonSwitcher class="hidden lg:block" />
           <button type="button" class="btn-ghost px-2" :title="themeLabel" :aria-label="themeLabel" @click="settings.toggleTheme()">
             <svg v-if="settings.isDark" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
@@ -131,12 +137,12 @@ function logoutAdmin() {
               <button type="button" class="btn-ghost shrink-0" @click="logoutAdmin">Salir</button>
             </template>
             <template v-else-if="auth.isAuthenticated && auth.account">
-              <RouterLink to="/ajustes" class="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" title="Ajustes">
+              <RouterLink to="/ajustes" class="flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" :title="`Ajustes · ${accountTypeLabels[auth.account.type]}`">
                 <TeamCrest v-if="auth.isClub" :src="auth.clubCrestUrl" :name="auth.displayName" size="sm" />
                 <PlayerAvatar v-else-if="auth.isPlayer" :src="auth.player?.photoUrl" :name="auth.displayName" size="xs" />
-                <span class="min-w-0 max-w-40 truncate font-medium">{{ auth.displayName }}</span>
-                <Badge :tone="accountTone" class="shrink-0">{{ accountTypeLabels[auth.account.type] }}</Badge>
-                <span v-if="teamLabel" class="hidden items-center gap-1 text-slate-400 xl:flex">
+                <span class="min-w-[3rem] max-w-40 truncate font-medium">{{ auth.displayName }}</span>
+                <span class="hidden shrink-0 2xl:inline-flex"><Badge :tone="accountTone">{{ accountTypeLabels[auth.account.type] }}</Badge></span>
+                <span v-if="teamLabel" class="hidden shrink-0 items-center gap-1 text-slate-400 2xl:flex">
                   · <TeamCrest v-if="teamCrest !== undefined" :src="teamCrest" :name="teamLabel" size="xs" /> {{ teamLabel }}
                 </span>
               </RouterLink>
@@ -219,6 +225,7 @@ function logoutAdmin() {
       </button>
     </div>
     <LicenseBanner />
+    <SearchPalette v-if="canSearch" />
     <ConfirmDialog />
 
     <main class="mx-auto w-full max-w-[1760px] flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10" :class="consent.needsBanner ? 'pb-48 sm:pb-36 lg:pb-28' : ''">

@@ -33,6 +33,7 @@ import {
 } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 import { opponentOf } from '@/utils/crests';
+import DashboardSearch from '@/components/search/DashboardSearch.vue';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
@@ -109,6 +110,7 @@ async function leave() {
 <template>
   <template v-if="!squad">
     <PageHeader :title="`Hola, ${auth.displayName}`" subtitle="Todavía no estás vinculado a ninguna plantilla." />
+    <DashboardSearch class="mb-6 max-w-2xl" />
     <div class="card max-w-2xl">
       <h2 class="font-semibold text-slate-900">Vincúlate a tu ficha</h2>
       <p class="mt-2 text-sm text-slate-600">
@@ -143,6 +145,7 @@ async function leave() {
         </RouterLink>
       </template>
     </PlayerHeroCard>
+    <DashboardSearch class="mb-8" />
 
     <PlayerPhotoWizard :open="photoOpen" :has-photo="!!auth.player?.photoUrl" @close="photoOpen = false" @saved="onPhotoSaved" />
 

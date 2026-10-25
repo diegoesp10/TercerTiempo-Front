@@ -60,6 +60,8 @@ import type {
   TeamCrestImportDto,
   TeamDetailDto,
   ClubLicenseDto,
+  SearchResultsDto,
+  SearchType,
   TeamSummaryDto,
   VideoPart,
   VideoShareLinkDto,
@@ -197,6 +199,12 @@ export const api = {
       http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/close`, { method: 'POST', body: { returnedOn } }),
     reopenInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/reopen`, { method: 'POST' }),
     deleteInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'DELETE' }),
+  },
+
+  /** Buscador de toda la app (ligas, equipos, clubes, jugadores, partidos y tus plantillas); solo con sesión. */
+  search: {
+    query: (q: string, type: SearchType | null = null, limit = 6) =>
+      http<SearchResultsDto>(`/api/search?q=${encodeURIComponent(q)}&limit=${limit}${type ? `&type=${type}` : ''}`, { silent: true, cacheMs: 30_000 }),
   },
 
   /** Licencia del club (primer equipo y filiales): estado de la cuenta, la licencia del club y pago (simulado de momento). */

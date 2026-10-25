@@ -1655,3 +1655,45 @@ export interface AnalyticsReportDto {
 }
 
 export type UpsertCookieRequest = Pick<CookieDto, 'name' | 'category' | 'storage' | 'provider' | 'purpose' | 'duration' | 'sortOrder'>;
+
+// --- Buscador ---
+
+export type SearchType = 'competition' | 'team' | 'club' | 'player' | 'match' | 'squad';
+
+export interface SearchItemDto {
+  type: SearchType;
+  id: string;
+  title: string;
+  subtitle: string | null;
+  /** Ruta del frontal donde está la información. */
+  link: string;
+  /** Escudo (crest), foto del jugador (photo), escudo del local (match) o icono de liga (league). */
+  imageUrl: string | null;
+  imageKind: 'crest' | 'photo' | 'match' | 'league' | 'none';
+  /** Escudo del equipo del jugador o del visitante del partido. */
+  secondaryImageUrl: string | null;
+  /** Resultado del partido («0-1» o «vs») o jornadas de la liga. */
+  meta: string | null;
+  date: string | null;
+  badges: string[];
+  score: number;
+}
+
+export interface SearchGroupDto {
+  type: SearchType;
+  label: string;
+  total: number;
+  items: SearchItemDto[];
+}
+
+export interface SearchResultsDto {
+  query: string;
+  /** Palabras buscadas ya normalizadas (sin tildes), para resaltarlas. */
+  terms: string[];
+  /** Sin nada con todas las palabras: se enseña lo que coincide con casi todas. */
+  partial: boolean;
+  total: number;
+  groups: SearchGroupDto[];
+  indexedAt: string;
+  elapsedMs: number;
+}
