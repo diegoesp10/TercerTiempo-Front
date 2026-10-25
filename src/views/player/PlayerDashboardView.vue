@@ -74,7 +74,7 @@ const heroStats = computed(() =>
         { label: 'Partidos', value: data.value.individual.matchesLogged },
         { label: 'Minutos', value: data.value.individual.minutes },
         { label: 'Goles', value: data.value.individual.goals },
-        { label: 'Asistencias', value: data.value.individual.assists },
+        { label: 'Asistencias de gol', value: data.value.individual.assists },
         { label: 'Nota media', value: data.value.individual.averageRating === null ? '—' : formatNumber(data.value.individual.averageRating, 1) },
       ]
     : [],
@@ -157,7 +157,7 @@ async function leave() {
         <StatCard label="Partidos" :value="data.individual.matchesLogged" :hint="`${data.individual.starts} como titular`" />
         <StatCard label="Minutos" :value="data.individual.minutes" />
         <StatCard label="Goles" :value="data.individual.goals" :hint="`${formatNumber(data.individual.goalsPer90)} por 90'`" accent />
-        <StatCard label="Asistencias" :value="data.individual.assists" :hint="`${formatNumber(data.individual.assistsPer90)} por 90'`" />
+        <StatCard label="Asistencias de gol" :value="data.individual.assists" :hint="`${formatNumber(data.individual.assistsPer90)} por 90'`" />
         <StatCard label="Nota media" :value="formatNumber(data.individual.averageRating, 1)" hint="calculada con los datos del acta" />
         <StatCard label="Precisión tiro" :value="formatPct(data.individual.shotAccuracyPct)" :hint="`${data.individual.shotsOnTarget}/${data.individual.shots} a puerta`" />
       </div>
@@ -165,7 +165,7 @@ async function leave() {
         <StatCard label="Acierto en el pase" :value="formatPct(data.individual.passAccuracyPct)" :hint="`${data.individual.passesCompleted}/${data.individual.passesAttempted} completados`" />
         <StatCard label="Recuperaciones" :value="data.individual.recoveries" :hint="`${formatNumber(data.individual.recoveriesPer90)} por 90'`" />
         <StatCard label="Pérdidas de balón" :value="data.individual.ballLosses" :hint="`${data.individual.fouls} faltas cometidas`" />
-        <StatCard label="Pases clave" :value="data.individual.keyPasses" :hint="`${data.individual.tackles} entradas · ${data.individual.interceptions} intercepciones`" />
+        <StatCard label="Entradas" :value="data.individual.tackles" :hint="`${data.individual.interceptions} intercepciones`" />
       </div>
     </section>
 
@@ -219,7 +219,7 @@ async function leave() {
           <h3 class="mb-2 text-sm font-medium text-slate-800">Tú frente a los jugadores con actas visibles</h3>
           <div v-if="hasPercentiles" class="space-y-3">
             <PercentileBar label="Goles por 90'" :value="league.goalsPer90Percentile" />
-            <PercentileBar label="Asistencias por 90'" :value="league.assistsPer90Percentile" />
+            <PercentileBar label="Asistencias de gol por 90'" :value="league.assistsPer90Percentile" />
             <PercentileBar label="Nota media" :value="league.ratingPercentile" />
             <PercentileBar label="Minutos jugados" :value="league.minutesPercentile" />
             <p class="text-xs text-slate-500">

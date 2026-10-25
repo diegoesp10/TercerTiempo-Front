@@ -226,10 +226,9 @@ async function save() {
 
 const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'shotsOnTarget' | 'keyPasses' | 'passesCompleted' | 'passesAttempted' | 'ballLosses' | 'recoveries' | 'tackles' | 'interceptions' | 'saves' | 'fouls'>; label: string; title: string }[] = [
   { key: 'goals', label: 'G', title: 'Goles' },
-  { key: 'assists', label: 'A', title: 'Asistencias' },
+  { key: 'assists', label: 'A', title: 'Asistencias de gol' },
   { key: 'shots', label: 'T', title: 'Tiros' },
   { key: 'shotsOnTarget', label: 'TP', title: 'Tiros a puerta' },
-  { key: 'keyPasses', label: 'PC', title: 'Pases clave' },
   { key: 'passesCompleted', label: 'PasC', title: 'Pases completados' },
   { key: 'passesAttempted', label: 'PasI', title: 'Pases intentados' },
   { key: 'ballLosses', label: 'Pér', title: 'Pérdidas de balón' },
@@ -440,13 +439,13 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
       </div>
 
       <p class="content-note mt-3">
-        Tit = titular · Min = minutos (0-120) · G goles · A asistencias · T tiros · TP tiros a puerta · PC pases clave · PasC pases
+        Tit = titular · Min = minutos (0-120) · G goles · A asistencias de gol · T tiros · TP tiros a puerta · PasC pases
         completados · PasI pases intentados · Pér pérdidas de balón · Rec recuperaciones · Ent entradas · Int intercepciones ·
         Par paradas · F faltas · TA amarillas (dos implican roja). Con «jugó» desmarcado la línea se elimina del acta al guardar.
       </p>
       <p class="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
         <strong>La nota no se pone a mano:</strong> se calcula al guardar con los datos de cada línea, la posición del jugador y el
-        resultado. Parte de 6,0 y suma o resta por ataque (goles, tiros a puerta), creación (asistencias, pases clave, acierto en el
+        resultado. Parte de 6,0 y suma o resta por ataque (goles, tiros a puerta), creación (asistencias de gol, acierto en el
         pase con 10 o más intentados y pérdidas de balón), defensa (entradas, intercepciones, recuperaciones, portería a cero y
         goles encajados para defensas), portería (paradas), disciplina (tarjetas) y
         resultado (según los minutos jugados). Escala de 3,0 a 10,0.

@@ -169,7 +169,7 @@ export function contributionsOption(points: PlayerMatchPointDto[]): EChartsOptio
     ],
     series: [
       { name: 'Goles', type: 'bar', stack: 'ga', barMaxWidth: 24, itemStyle: { color: palette.emerald }, data: points.map((p) => p.performance?.goals ?? 0) },
-      { name: 'Asistencias', type: 'bar', stack: 'ga', barMaxWidth: 24, itemStyle: { color: palette.sky }, data: points.map((p) => p.performance?.assists ?? 0) },
+      { name: 'Asistencias de gol', type: 'bar', stack: 'ga', barMaxWidth: 24, itemStyle: { color: palette.sky }, data: points.map((p) => p.performance?.assists ?? 0) },
       {
         name: 'Minutos',
         type: 'line',
@@ -195,9 +195,8 @@ export interface RadarEntry {
 
 const radarAxes: Array<{ key: keyof PlayerAxesDto; label: string; per90?: boolean; goalkeeper?: boolean }> = [
   { key: 'goalsPer90', label: 'Goles', per90: true },
-  { key: 'assistsPer90', label: 'Asistencias', per90: true },
+  { key: 'assistsPer90', label: 'Asistencias de gol', per90: true },
   { key: 'shotsOnTargetPer90', label: 'Tiros a puerta', per90: true },
-  { key: 'keyPassesPer90', label: 'Pases clave', per90: true },
   { key: 'tacklesPer90', label: 'Entradas', per90: true },
   { key: 'interceptionsPer90', label: 'Intercepciones', per90: true },
   { key: 'savesPer90', label: 'Paradas', per90: true, goalkeeper: true },

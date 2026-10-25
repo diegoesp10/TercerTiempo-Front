@@ -100,7 +100,7 @@ const columns: { key: SortKey; label: string; title: string; cls?: string }[] = 
   { key: 'starts', label: 'Tit', title: 'Titularidades', cls: 'col-md' },
   { key: 'minutes', label: 'Min', title: 'Minutos jugados' },
   { key: 'goals', label: 'G', title: 'Goles' },
-  { key: 'assists', label: 'A', title: 'Asistencias (actas internas)', cls: 'col-sm' },
+  { key: 'assists', label: 'A', title: 'Asistencias de gol (actas internas)', cls: 'col-sm' },
   { key: 'yellow', label: 'TA', title: 'Tarjetas amarillas' },
   { key: 'red', label: 'TR', title: 'Tarjetas rojas', cls: 'col-sm' },
   { key: 'fouls', label: 'Faltas', title: 'Faltas cometidas (actas internas)', cls: 'col-md' },

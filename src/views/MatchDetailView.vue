@@ -107,7 +107,6 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
               <th class="px-2 py-2 text-center">G</th>
               <th class="col-sm px-2 py-2 text-center">A</th>
               <th class="col-sm px-2 py-2 text-center">Tiros</th>
-              <th class="col-md px-2 py-2 text-center">PC</th>
               <th class="col-md px-2 py-2 text-center">Ent</th>
               <th class="col-md px-2 py-2 text-center">Int</th>
               <th class="col-md px-2 py-2 text-center">Par</th>
@@ -129,7 +128,6 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
               <td class="px-2 py-2 text-center"><GoalMarks :goals="p.goals" /></td>
               <td class="col-sm px-2 py-2 text-center tabular-nums">{{ p.assists }}</td>
               <td class="col-sm px-2 py-2 text-center tabular-nums">{{ p.shotsOnTarget }}/{{ p.shots }}</td>
-              <td class="col-md px-2 py-2 text-center tabular-nums">{{ p.keyPasses }}</td>
               <td class="col-md px-2 py-2 text-center tabular-nums">{{ p.tackles }}</td>
               <td class="col-md px-2 py-2 text-center tabular-nums">{{ p.interceptions }}</td>
               <td class="col-md px-2 py-2 text-center tabular-nums">{{ p.saves }}</td>

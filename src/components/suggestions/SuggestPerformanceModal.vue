@@ -55,10 +55,9 @@ watch(
 
 const fields: { key: 'goals' | 'assists' | 'shots' | 'shotsOnTarget' | 'keyPasses' | 'tackles' | 'interceptions' | 'saves'; label: string }[] = [
   { key: 'goals', label: 'Goles' },
-  { key: 'assists', label: 'Asistencias' },
+  { key: 'assists', label: 'Asistencias de gol' },
   { key: 'shots', label: 'Tiros' },
   { key: 'shotsOnTarget', label: 'Tiros a puerta' },
-  { key: 'keyPasses', label: 'Pases clave' },
   { key: 'tackles', label: 'Entradas' },
   { key: 'interceptions', label: 'Intercepciones' },
   { key: 'saves', label: 'Paradas' },

@@ -37,7 +37,6 @@ const PLAYER_COLUMNS: { label: string; width: number; box?: boolean; left?: bool
   { label: 'A', width: 9 },
   { label: 'T', width: 10 },
   { label: 'TP', width: 10 },
-  { label: 'PC', width: 10 },
   { label: 'PasC', width: 17 },
   { label: 'PasI', width: 17 },
   { label: 'Pér', width: 16 },
@@ -48,15 +47,15 @@ const PLAYER_COLUMNS: { label: string; width: number; box?: boolean; left?: bool
   { label: 'F', width: 10 },
   { label: 'TA', width: 8 },
   { label: 'TR', width: 8 },
-  { label: 'Notas', width: 31, left: true },
+  { label: 'Notas', width: 41, left: true },
 ];
 
 const LEGEND =
-  'Jugó: marca quien ha jugado · Tit: titular · Min: minutos · G: goles · A: asistencias · T: tiros · TP: tiros a puerta · PC: pases clave · ' +
+  'Jugó: marca quien ha jugado · Tit: titular · Min: minutos · G: goles · A: asistencias de gol · T: tiros · TP: tiros a puerta · ' +
   'PasC / PasI: pases completados / intentados · Pér: pérdidas · Rec: recuperaciones · Ent: entradas · Int: intercepciones · Par: paradas · ' +
   'F: faltas cometidas · TA / TR: tarjetas amarilla / roja';
 
-const TEAM_ROWS = ['Posesión (%)', 'Córners', 'Tiros', 'Tiros a puerta', 'Fueras de juego', 'Faltas cometidas', 'Goles a balón parado'];
+const TEAM_ROWS = ['Posesión (%)', 'Córners', 'Saques de banda', 'Tiros', 'Tiros a puerta', 'Fueras de juego', 'Faltas cometidas', 'Penaltis', 'Goles a balón parado', '  de ellos, de penalti'];
 const INCIDENT_ROWS = 17;
 
 export async function downloadPaperSheet(context: PaperSheetContext) {
@@ -236,7 +235,7 @@ function teamAndIncidents(doc: JsPdf, context: PaperSheetContext, top: number) {
   // Datos del equipo: cada lado por partes y total, con sitio para palotes.
   const labelWidth = 34;
   const cell = 19;
-  const rowHeight = 9;
+  const rowHeight = 8;
   const teamWidth = labelWidth + cell * 6;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);

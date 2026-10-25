@@ -443,6 +443,14 @@ export interface TeamMatchStatsInput {
   foulsReceived: number;
   setPieceGoalsFor: number;
   setPieceGoalsAgainst: number;
+  /** Penaltis a favor (lanzados por el equipo) y en contra. */
+  penaltiesFor: number;
+  penaltiesAgainst: number;
+  /** Goles de penalti: son parte de los goles a balón parado. */
+  penaltyGoalsFor: number;
+  penaltyGoalsAgainst: number;
+  throwInsFor: number;
+  throwInsAgainst: number;
   notes: string | null;
 }
 
@@ -465,6 +473,12 @@ export interface TeamStatsAveragesDto {
   foulsReceived: number;
   setPieceGoalsFor: number;
   setPieceGoalsAgainst: number;
+  penaltiesFor: number;
+  penaltiesAgainst: number;
+  penaltyGoalsFor: number;
+  penaltyGoalsAgainst: number;
+  throwInsFor: number;
+  throwInsAgainst: number;
 }
 
 export interface SquadTeamStatsDto {

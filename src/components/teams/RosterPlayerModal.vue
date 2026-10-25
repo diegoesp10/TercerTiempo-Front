@@ -256,7 +256,6 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
                   <th class="py-1 pr-2 text-center">G</th>
                   <th class="col-sm py-1 pr-2 text-center">A</th>
                   <th class="col-sm py-1 pr-2 text-center" title="Tiros a puerta / tiros">Tiros</th>
-                  <th class="col-md py-1 pr-2 text-center" title="Pases clave">PC</th>
                   <th class="col-md py-1 pr-2 text-center" title="Entradas">Ent</th>
                   <th class="col-md py-1 pr-2 text-center" title="Intercepciones">Int</th>
                   <th class="col-md py-1 pr-2 text-center" title="Paradas">Par</th>
@@ -275,7 +274,6 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
                   <td class="py-1.5 pr-2 text-center whitespace-nowrap"><GoalMarks :goals="row.performance.goals" /></td>
                   <td class="col-sm py-1.5 pr-2 text-center tabular-nums">{{ row.performance.assists }}</td>
                   <td class="col-sm py-1.5 pr-2 text-center tabular-nums">{{ row.performance.shotsOnTarget }}/{{ row.performance.shots }}</td>
-                  <td class="col-md py-1.5 pr-2 text-center tabular-nums">{{ row.performance.keyPasses }}</td>
                   <td class="col-md py-1.5 pr-2 text-center tabular-nums">{{ row.performance.tackles }}</td>
                   <td class="col-md py-1.5 pr-2 text-center tabular-nums">{{ row.performance.interceptions }}</td>
                   <td class="col-md py-1.5 pr-2 text-center tabular-nums">{{ row.performance.saves }}</td>

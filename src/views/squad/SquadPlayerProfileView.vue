@@ -53,7 +53,7 @@ const heroStats = computed(() =>
         { label: 'Partidos', value: combined.value.matches },
         { label: 'Minutos', value: combined.value.minutes },
         { label: 'Goles', value: combined.value.goals },
-        { label: 'Asistencias', value: combined.value.assists },
+        { label: 'Asistencias de gol', value: combined.value.assists },
         { label: 'Tarjetas', value: `${combined.value.yellow} / ${combined.value.red}` },
         { label: 'Nota media', value: data.value.stats.averageRating === null ? '—' : formatNumber(data.value.stats.averageRating, 1) },
       ]
@@ -126,7 +126,7 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
         <StatCard label="Partidos" :value="data.stats.matchesLogged" :hint="`${data.stats.starts} como titular`" />
         <StatCard label="Minutos" :value="data.stats.minutes" :hint="`${formatPct(data.impact.participationPct)} de los posibles`" />
         <StatCard label="Goles" :value="data.stats.goals" :hint="`${formatNumber(data.stats.goalsPer90)} por 90'`" accent />
-        <StatCard label="Asistencias" :value="data.stats.assists" :hint="`${formatNumber(data.stats.assistsPer90)} por 90'`" />
+        <StatCard label="Asistencias de gol" :value="data.stats.assists" :hint="`${formatNumber(data.stats.assistsPer90)} por 90'`" />
         <StatCard
           label="Puntos/partido"
           :value="formatNumber(data.impact.pointsPerMatchWithPlayer)"
@@ -138,7 +138,7 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
         <StatCard label="Acierto en el pase" :value="formatPct(data.stats.passAccuracyPct)" :hint="`${data.stats.passesCompleted}/${data.stats.passesAttempted} completados`" />
         <StatCard label="Recuperaciones" :value="data.stats.recoveries" :hint="`${formatNumber(data.stats.recoveriesPer90)} por 90'`" />
         <StatCard label="Pérdidas de balón" :value="data.stats.ballLosses" :hint="`${data.stats.fouls} faltas cometidas`" />
-        <StatCard label="Pases clave" :value="data.stats.keyPasses" :hint="`${data.stats.tackles} entradas · ${data.stats.interceptions} intercepciones`" />
+        <StatCard label="Entradas" :value="data.stats.tackles" :hint="`${data.stats.interceptions} intercepciones`" />
       </div>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">

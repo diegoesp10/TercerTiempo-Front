@@ -19,11 +19,14 @@ const { data, loading, error } = useAsync(() => teamStatsApi.season(props.squadI
 
 const averageRows: { label: string; mine: keyof TeamStatsAveragesDto; theirs: keyof TeamStatsAveragesDto; total?: boolean }[] = [
   { label: 'Córners', mine: 'cornersFor', theirs: 'cornersAgainst' },
+  { label: 'Saques de banda', mine: 'throwInsFor', theirs: 'throwInsAgainst' },
   { label: 'Tiros', mine: 'shotsFor', theirs: 'shotsAgainst' },
   { label: 'Tiros a puerta', mine: 'shotsOnTargetFor', theirs: 'shotsOnTargetAgainst' },
   { label: 'Fueras de juego', mine: 'offsidesFor', theirs: 'offsidesAgainst' },
   { label: 'Faltas (cometidas / recibidas)', mine: 'foulsCommitted', theirs: 'foulsReceived' },
+  { label: 'Penaltis (total)', mine: 'penaltiesFor', theirs: 'penaltiesAgainst', total: true },
   { label: 'Goles a balón parado (total)', mine: 'setPieceGoalsFor', theirs: 'setPieceGoalsAgainst', total: true },
+  { label: 'de ellos, de penalti (total)', mine: 'penaltyGoalsFor', theirs: 'penaltyGoalsAgainst', total: true },
 ];
 
 /** Ancho de la barra de cada lado, sobre la suma de ambos (nunca se desborda). */

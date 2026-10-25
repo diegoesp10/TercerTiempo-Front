@@ -49,7 +49,6 @@ const columns: { key: 'minutesPlayed' | 'goals' | 'assists' | 'shots' | 'shotsOn
   { key: 'assists', label: 'A' },
   { key: 'shots', label: 'T' },
   { key: 'shotsOnTarget', label: 'TP' },
-  { key: 'keyPasses', label: 'PC' },
   { key: 'tackles', label: 'Ent' },
   { key: 'interceptions', label: 'Int' },
   { key: 'saves', label: 'Par' },
