@@ -182,8 +182,8 @@ onMounted(load);
       <span>
         Actas de los partidos jugados (asturfutbol.es)
         <span class="block text-xs text-slate-500">
-          Al terminar se ponen en cola las actas que falten de esos partidos. La federación bloquea si se le pide de más, así que se bajan a su
-          ritmo (una cada 30 s, 20 por hora, 60 al día): una liga entera tarda días. Se ve en «Descargas en directo».
+          Al terminar se ponen en cola las actas que falten de esos partidos. La federación corta si se le pide de más, así que se bajan en
+          tandas con descansos y un tope diario: una liga entera tarda días. Se ve en «Descargas en directo».
         </span>
       </span>
     </label>

@@ -191,10 +191,12 @@ const sheetState = computed(() => {
   if (s.downloading > 0) return { tone: 'blue' as const, title: 'Descargando', text: 'Bajando un acta de la federación.' };
   if (s.pending > 0 && s.dayRequests >= s.maxPerDay) return { tone: 'amber' as const, title: 'Tope del día', text: 'Se han gastado las peticiones de hoy; sigue a medianoche UTC.' };
   if (s.pending > 0 && s.hourRequests >= s.maxPerHour) return { tone: 'amber' as const, title: 'Tope de la hora', text: 'Se han gastado las peticiones de esta hora; sigue en la siguiente.' };
-  if (s.pending > 0) return { tone: 'blue' as const, title: 'Esperando turno', text: s.nextRequestAt ? `Siguiente petición en ${countdown(s.nextRequestAt)} (una cada 30 s).` : 'A la espera de la siguiente petición.' };
+  if (s.pending > 0) return { tone: 'blue' as const, title: 'Esperando turno', text: s.nextRequestAt ? `Siguiente petición en ${countdown(s.nextRequestAt)}.` : 'A la espera de la siguiente petición.' };
   return { tone: 'slate' as const, title: 'Sin cola', text: 'No hay actas pedidas por descargar.' };
 });
 
+// Solo un bloqueo de verdad sale en rojo; el descanso entre tandas es lo normal.
+const alertKind = computed(() => ({ red: 'error', amber: 'warning', blue: 'info', slate: 'info' } as const)[sheetState.value?.tone ?? 'slate']);
 const pauseIconTone = computed(() => ({ red: 'text-red-500', amber: 'text-amber-500', blue: 'text-brand-500', slate: 'text-slate-400' })[sheetState.value?.tone ?? 'slate']);
 
 async function clearQueue(onlyFinished: boolean) {
@@ -405,7 +407,8 @@ defineExpose({ load });
             <h2 class="font-semibold text-slate-900">Actas pedidas a la federación</h2>
             <p class="max-w-3xl text-xs text-slate-500">
               Se piden al lanzar los datos de las ligas con «Actas de los partidos jugados». Van liga a liga y jornada a jornada (una página de jornada sirve para
-              todas sus actas) y siempre por detrás de las que abre un usuario. asturfutbol.es bloquea la IP si se le pide de más: una petición cada 30 s,
+              todas sus actas) y siempre por detrás de las que abre un usuario. asturfutbol.es cierra la sesión si se le piden muchas seguidas, así que van en
+              tandas<template v-if="sheets.maxPerBurst"> de {{ sheets.maxPerBurst }}</template> con un descanso entre ellas, con un tope de
               {{ sheets.maxPerHour }} por hora y {{ sheets.maxPerDay }} al día. La cola se guarda y sigue tras reiniciar la API.
             </p>
           </div>
@@ -417,9 +420,8 @@ defineExpose({ load });
           </div>
         </div>
 
-        <Alert v-if="paused" kind="error" class="mt-4">
-          <strong>Descargas en pausa.</strong> asturfutbol.es dejó de responder por exceso de peticiones y se espera 24 h antes de volver a intentarlo, para no
-          alargar el bloqueo. Se reanuda solo el {{ formatKickoff(paused) }} (en {{ countdown(paused) }}).
+        <Alert v-if="paused && sheetState" :kind="alertKind" class="mt-4">
+          <strong>{{ sheetState.title }}.</strong> {{ sheetState.text }}
         </Alert>
 
         <div v-if="sheetCounts && sheetTotal" class="mt-4 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Estado">
