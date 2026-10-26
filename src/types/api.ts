@@ -1479,6 +1479,8 @@ export interface JobDto {
   nextRunAt: string | null;
   progress: { current: string | null; done: number; total: number } | null;
   lastRun: JobRunDto | null;
+  /** Día y hora fijos («Los lunes a las 7:00»); null si va por intervalo. */
+  schedule?: string | null;
 }
 
 export interface ScrapeSourceDto {

@@ -173,7 +173,7 @@ function duration(run: JobRunDto) {
 }
 
 const interval = (job: JobDto) =>
-  job.intervalMinutes === null ? 'Solo a mano' : job.intervalMinutes % 60 === 0 ? `Cada ${job.intervalMinutes / 60} h` : `Cada ${job.intervalMinutes} min`;
+  job.schedule ? job.schedule : job.intervalMinutes === null ? 'Solo a mano' : job.intervalMinutes % 60 === 0 ? `Cada ${job.intervalMinutes / 60} h` : `Cada ${job.intervalMinutes} min`;
 
 /** Uso del límite de peticiones (0-100), siempre dentro de la barra. */
 const pauseLabels: Record<string, string> = {
