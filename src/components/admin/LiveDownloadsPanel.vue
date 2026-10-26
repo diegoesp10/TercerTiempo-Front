@@ -190,7 +190,7 @@ const sheetState = computed(() => {
     }
   }
   if (s.downloading > 0) return { tone: 'blue' as const, title: 'Descargando', text: 'Bajando un acta de la federación.' };
-  if (s.pending > 0 && s.dayRequests >= s.maxPerDay) return { tone: 'amber' as const, title: 'Tope del día', text: 'Se han gastado las peticiones de hoy; sigue a medianoche UTC.' };
+  if (s.pending > 0 && s.maxPerDay > 0 && s.dayRequests >= s.maxPerDay) return { tone: 'amber' as const, title: 'Tope del día', text: 'Se han gastado las peticiones de hoy; sigue a medianoche UTC.' };
   if (s.pending > 0 && s.hourRequests >= s.maxPerHour) return { tone: 'amber' as const, title: 'Tope de la hora', text: 'Se han gastado las peticiones de esta hora; sigue en la siguiente.' };
   if (s.pending > 0) return { tone: 'blue' as const, title: 'Esperando turno', text: s.nextRequestAt ? `Siguiente petición en ${countdown(s.nextRequestAt)}.` : 'A la espera de la siguiente petición.' };
   return { tone: 'slate' as const, title: 'Sin cola', text: 'No hay actas pedidas por descargar.' };
@@ -296,8 +296,14 @@ defineExpose({ load });
             </div>
             <div class="rounded-lg bg-surface-2 px-3 py-2">
               <dt class="text-slate-500">Peticiones hoy (UTC)</dt>
-              <dd class="mt-1 font-semibold text-slate-900">{{ sheets.dayRequests }} / {{ sheets.maxPerDay }}</dd>
-              <div class="mt-1 h-1 overflow-hidden rounded-full bg-surface-3"><div class="h-full bg-brand-500" :style="{ width: `${pct(sheets.dayRequests, sheets.maxPerDay)}%` }" /></div>
+              <template v-if="sheets.maxPerDay > 0">
+                <dd class="mt-1 font-semibold text-slate-900">{{ sheets.dayRequests }} / {{ sheets.maxPerDay }}</dd>
+                <div class="mt-1 h-1 overflow-hidden rounded-full bg-surface-3"><div class="h-full bg-brand-500" :style="{ width: `${pct(sheets.dayRequests, sheets.maxPerDay)}%` }" /></div>
+              </template>
+              <template v-else>
+                <dd class="mt-1 font-semibold text-slate-900">{{ sheets.dayRequests }}</dd>
+                <p class="mt-0.5 text-[11px] text-slate-500">Sin tope diario</p>
+              </template>
             </div>
             <div v-if="sheets.maxPerBurst" class="rounded-lg bg-surface-2 px-3 py-2">
               <dt class="text-slate-500">Tanda en curso</dt>
@@ -410,7 +416,8 @@ defineExpose({ load });
               Se piden al lanzar los datos de las ligas con «Actas de los partidos jugados». Van liga a liga y jornada a jornada (una página de jornada sirve para
               todas sus actas) y siempre por detrás de las que abre un usuario. asturfutbol.es cierra la sesión si se le piden muchas seguidas, así que van en
               tandas<template v-if="sheets.maxPerBurst"> de {{ sheets.maxPerBurst }}</template> con un descanso entre ellas, con un tope de
-              {{ sheets.maxPerHour }} por hora y {{ sheets.maxPerDay }} al día. La cola se guarda y sigue tras reiniciar la API.
+              {{ sheets.maxPerHour }} por hora<template v-if="sheets.maxPerDay > 0"> y {{ sheets.maxPerDay }} al día</template>. La cola se guarda y sigue tras
+              reiniciar la API.
             </p>
           </div>
           <div class="flex flex-wrap gap-2">

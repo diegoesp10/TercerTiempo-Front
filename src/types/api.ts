@@ -1454,6 +1454,7 @@ export interface SheetQueueDto {
   hourRequests: number;
   maxPerHour: number;
   dayRequests: number;
+  /** 0 = sin tope diario. */
   maxPerDay: number;
   nextRequestAt: string | null;
   burstRequests: number;
