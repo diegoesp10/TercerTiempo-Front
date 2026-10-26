@@ -176,6 +176,12 @@ const interval = (job: JobDto) =>
   job.intervalMinutes === null ? 'Solo a mano' : job.intervalMinutes % 60 === 0 ? `Cada ${job.intervalMinutes / 60} h` : `Cada ${job.intervalMinutes} min`;
 
 /** Uso del límite de peticiones (0-100), siempre dentro de la barra. */
+const pauseLabels: Record<string, string> = {
+  rest: 'Descansando',
+  session: 'Sesión cerrada',
+  blocked: 'Bloqueada',
+  error: 'Fallando',
+};
 const usage = (used: number | null, max: number | null) => (used === null || !max ? 0 : Math.min(100, (used / max) * 100));
 
 function origin(request: ScrapeRequestDto) {
@@ -352,7 +358,9 @@ const sourceTitle = (source: ScrapeSourceDto) =>
                   <span v-else class="text-slate-400">—</span>
                 </td>
                 <td class="px-3 py-2 text-xs whitespace-nowrap">
-                  <span v-if="source.pausedUntil" class="font-semibold text-red-600">En pausa hasta {{ formatKickoff(source.pausedUntil) }}</span>
+                  <span v-if="source.pausedUntil" class="font-semibold" :class="source.pauseKind === 'blocked' ? 'text-red-600' : 'text-amber-600'" :title="source.pauseReason ?? undefined">
+                    {{ pauseLabels[source.pauseKind ?? ''] ?? 'En pausa' }} hasta {{ formatKickoff(source.pausedUntil) }}
+                  </span>
                   <span v-else-if="source.nextRequestAt" class="text-slate-600">Siguiente desde {{ formatKickoff(source.nextRequestAt) }}</span>
                   <span v-else class="text-emerald-700">Disponible</span>
                 </td>

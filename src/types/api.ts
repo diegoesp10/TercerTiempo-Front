@@ -1439,6 +1439,8 @@ export interface SheetQueueItemDto {
   finishedAt: string | null;
 }
 
+export type PauseKind = 'rest' | 'session' | 'blocked' | 'error' | 'hour' | 'day';
+
 export interface SheetQueueDto {
   pending: number;
   downloading: number;
@@ -1446,11 +1448,16 @@ export interface SheetQueueDto {
   missing: number;
   failed: number;
   pausedUntil: string | null;
+  /** Por qué espera: descanso entre tandas, sesión cortada (no es bloqueo), bloqueo, error de la web o tope de peticiones. */
+  pauseKind: PauseKind | null;
+  pauseReason: string | null;
   hourRequests: number;
   maxPerHour: number;
   dayRequests: number;
   maxPerDay: number;
   nextRequestAt: string | null;
+  burstRequests: number;
+  maxPerBurst: number | null;
   requestsNeeded: number;
   estimatedFinishAt: string | null;
   items: SheetQueueItemDto[];
@@ -1485,6 +1492,11 @@ export interface ScrapeSourceDto {
   last24h: number;
   failed24h: number;
   lastRequestAt: string | null;
+  pauseKind: PauseKind | null;
+  pauseReason: string | null;
+  burstRequests: number;
+  maxPerBurst: number | null;
+  burstRestMinutes: number | null;
 }
 
 export interface ScrapeRequestDto {

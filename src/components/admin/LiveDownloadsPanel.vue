@@ -176,13 +176,26 @@ const queuePosition = computed(() => {
 const sheetState = computed(() => {
   const s = sheets.value;
   if (!s) return null;
-  if (paused.value) return { tone: 'red' as const, title: 'En pausa', text: `asturfutbol.es nos ha limitado. Se reanuda en ${countdown(paused.value)} (${formatKickoff(paused.value)}).` };
+  if (paused.value) {
+    const when = `${countdown(paused.value)} (${formatKickoff(paused.value)})`;
+    switch (s.pauseKind) {
+      case 'rest': return { tone: 'blue' as const, title: 'Descansando', text: `Pausa entre tandas para no cargar a la federación. Sigue con una sesión nueva en ${when}.` };
+      case 'session': return { tone: 'amber' as const, title: 'Sesión cerrada', text: `${s.pauseReason ?? 'La federación cerró la sesión; no es un bloqueo.'} Sigue en ${when}.` };
+      case 'error': return { tone: 'amber' as const, title: 'La federación falla', text: `${s.pauseReason ?? 'La web de la federación da error.'} Se reintenta en ${when}.` };
+      case 'day': return { tone: 'amber' as const, title: 'Tope del día', text: `Se han gastado las peticiones de hoy; sigue en ${when}.` };
+      case 'hour': return { tone: 'amber' as const, title: 'Tope de la hora', text: `Se han gastado las peticiones de esta hora; sigue en ${when}.` };
+      case 'blocked': return { tone: 'red' as const, title: 'Bloqueada', text: `${s.pauseReason ?? 'asturfutbol.es nos ha bloqueado.'} Se reintenta en ${when}.` };
+      default: return { tone: 'amber' as const, title: 'En espera', text: `Las descargas siguen en ${when}.` };
+    }
+  }
   if (s.downloading > 0) return { tone: 'blue' as const, title: 'Descargando', text: 'Bajando un acta de la federación.' };
   if (s.pending > 0 && s.dayRequests >= s.maxPerDay) return { tone: 'amber' as const, title: 'Tope del día', text: 'Se han gastado las peticiones de hoy; sigue a medianoche UTC.' };
   if (s.pending > 0 && s.hourRequests >= s.maxPerHour) return { tone: 'amber' as const, title: 'Tope de la hora', text: 'Se han gastado las peticiones de esta hora; sigue en la siguiente.' };
   if (s.pending > 0) return { tone: 'blue' as const, title: 'Esperando turno', text: s.nextRequestAt ? `Siguiente petición en ${countdown(s.nextRequestAt)} (una cada 30 s).` : 'A la espera de la siguiente petición.' };
   return { tone: 'slate' as const, title: 'Sin cola', text: 'No hay actas pedidas por descargar.' };
 });
+
+const pauseIconTone = computed(() => ({ red: 'text-red-500', amber: 'text-amber-500', blue: 'text-brand-500', slate: 'text-slate-400' })[sheetState.value?.tone ?? 'slate']);
 
 async function clearQueue(onlyFinished: boolean) {
   if (!onlyFinished) {
@@ -251,7 +264,7 @@ defineExpose({ load });
             <div class="min-w-0">
               <p class="eyebrow">Actas · asturfutbol.es</p>
               <h2 class="mt-1 flex items-center gap-2 text-lg font-bold text-slate-900">
-                <Icon v-if="paused" icon="pause" class="h-4 w-4 text-red-500" />
+                <Icon v-if="paused" :icon="sheets.pauseKind === 'rest' ? 'mug-hot' : 'pause'" class="h-4 w-4" :class="pauseIconTone" />
                 <Icon v-else-if="sheets.downloading" icon="spinner" class="h-4 w-4 animate-spin text-brand-500" />
                 <Icon v-else-if="sheets.pending" icon="hourglass-half" class="h-4 w-4 text-amber-500" />
                 <Icon v-else icon="file-lines" class="h-4 w-4 text-slate-400" />
@@ -272,7 +285,7 @@ defineExpose({ load });
             <div class="h-full animate-pulse bg-brand-500 transition-[width] duration-700" :style="{ width: `${pct(sheets.downloading, sheetTotal)}%` }" />
           </div>
 
-          <dl class="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
+          <dl class="mt-4 grid grid-cols-2 gap-3 text-xs">
             <div class="rounded-lg bg-surface-2 px-3 py-2">
               <dt class="text-slate-500">Peticiones esta hora</dt>
               <dd class="mt-1 font-semibold text-slate-900">{{ sheets.hourRequests }} / {{ sheets.maxPerHour }}</dd>
@@ -283,7 +296,13 @@ defineExpose({ load });
               <dd class="mt-1 font-semibold text-slate-900">{{ sheets.dayRequests }} / {{ sheets.maxPerDay }}</dd>
               <div class="mt-1 h-1 overflow-hidden rounded-full bg-surface-3"><div class="h-full bg-brand-500" :style="{ width: `${pct(sheets.dayRequests, sheets.maxPerDay)}%` }" /></div>
             </div>
-            <div class="col-span-2 rounded-lg bg-surface-2 px-3 py-2 sm:col-span-1">
+            <div v-if="sheets.maxPerBurst" class="rounded-lg bg-surface-2 px-3 py-2">
+              <dt class="text-slate-500">Tanda en curso</dt>
+              <dd class="mt-1 font-semibold text-slate-900">{{ sheets.burstRequests }} / {{ sheets.maxPerBurst }}</dd>
+              <div class="mt-1 h-1 overflow-hidden rounded-full bg-surface-3"><div class="h-full bg-brand-500" :style="{ width: `${pct(sheets.burstRequests, sheets.maxPerBurst)}%` }" /></div>
+              <p class="mt-0.5 text-[11px] text-slate-500">Luego descansa y sigue con sesión nueva</p>
+            </div>
+            <div class="rounded-lg bg-surface-2 px-3 py-2" :class="{ 'col-span-2': !sheets.maxPerBurst }">
               <dt class="text-slate-500">Terminaría hacia</dt>
               <dd class="mt-1 font-semibold text-slate-900">{{ sheets.estimatedFinishAt ? formatKickoff(sheets.estimatedFinishAt) : '—' }}</dd>
               <p v-if="sheets.requestsNeeded" class="mt-0.5 text-[11px] text-slate-500">≈ {{ sheets.requestsNeeded }} peticiones</p>
