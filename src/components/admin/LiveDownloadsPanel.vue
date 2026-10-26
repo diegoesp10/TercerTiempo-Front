@@ -181,6 +181,7 @@ const sheetState = computed(() => {
     switch (s.pauseKind) {
       case 'rest': return { tone: 'blue' as const, title: 'Descansando', text: `Pausa entre tandas para no cargar a la federación. Sigue con una sesión nueva en ${when}.` };
       case 'session': return { tone: 'amber' as const, title: 'Sesión cerrada', text: `${s.pauseReason ?? 'La federación cerró la sesión; no es un bloqueo.'} Sigue en ${when}.` };
+      case 'retry': return { tone: 'amber' as const, title: 'Reintentando', text: `${s.pauseReason ?? 'La federación devolvió una página vacía; no es un bloqueo.'} Se reintenta en ${when}.` };
       case 'error': return { tone: 'amber' as const, title: 'La federación falla', text: `${s.pauseReason ?? 'La web de la federación da error.'} Se reintenta en ${when}.` };
       case 'day': return { tone: 'amber' as const, title: 'Tope del día', text: `Se han gastado las peticiones de hoy; sigue en ${when}.` };
       case 'hour': return { tone: 'amber' as const, title: 'Tope de la hora', text: `Se han gastado las peticiones de esta hora; sigue en ${when}.` };

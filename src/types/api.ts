@@ -1439,7 +1439,7 @@ export interface SheetQueueItemDto {
   finishedAt: string | null;
 }
 
-export type PauseKind = 'rest' | 'session' | 'blocked' | 'error' | 'hour' | 'day';
+export type PauseKind = 'rest' | 'session' | 'retry' | 'blocked' | 'error' | 'hour' | 'day';
 
 export interface SheetQueueDto {
   pending: number;

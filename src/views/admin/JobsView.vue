@@ -179,6 +179,7 @@ const interval = (job: JobDto) =>
 const pauseLabels: Record<string, string> = {
   rest: 'Descansando',
   session: 'Sesión cerrada',
+  retry: 'Reintentando',
   blocked: 'Bloqueada',
   error: 'Fallando',
 };
