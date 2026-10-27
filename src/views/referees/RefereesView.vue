@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
@@ -8,22 +8,27 @@ import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StarRating from '@/components/referees/StarRating.vue';
 import { useAsync } from '@/composables/useAsync';
-import type { CompetitionLevel, OfficialDuty, RefereeCategoryDto, RefereeSummaryDto } from '@/types/api';
+import { useAuthStore } from '@/stores/auth';
+import type { CompetitionLevel, OfficialDuty, RefereeCategoryDto, RefereeSort, RefereeSummaryDto, SortOrder } from '@/types/api';
 import { formatDate, formatScore, levelLabels } from '@/utils/format';
 
 /**
- * Árbitros por categoría, públicos como la liga y los equipos: primero se elige la categoría (de entrada, la de los
- * equipos de la cuenta o, sin ella, la que más notas tiene) y dentro van por separado los principales y los asistentes,
- * cada uno con la nota que le ponen los equipos en esa categoría y función.
- * La categoría y la función van en la URL (?categoria=3a-asturfutbol&funcion=asistentes) para poder enlazarlas.
+ * Árbitros, públicos como la liga y los equipos (las llamadas van sin token). La categoría manda: siempre hay una elegida
+ * (de entrada, la de los equipos de la cuenta o, sin ella, la que más notas tiene) y dentro van por separado los
+ * principales y los asistentes, con su nota media, sus notas y sus partidos pitados en esa categoría, ordenados como se
+ * elija. La categoría y la función van en la URL (?categoria=3a-asturfutbol&funcion=asistentes) para poder enlazarlas.
  */
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
 const { data: index, loading: loadingIndex, error: indexError } = useAsync(() => api.referees.categories());
+
+// Las categorías de los equipos de la cuenta, por sus ligas: la llamada no necesita el token para saberlo.
+const mine = computed(() => (index.value ?? []).filter((c) => c.competitionIds.some((id) => auth.myCompetitionIds.includes(id))).map((c) => c.key));
 
 const levels = computed(() => {
   const groups: { level: CompetitionLevel; categories: RefereeCategoryDto[] }[] = [];
-  for (const category of index.value?.categories ?? []) {
+  for (const category of index.value ?? []) {
     const group = groups.find((g) => g.level === category.level);
     if (group) group.categories.push(category);
     else groups.push({ level: category.level, categories: [category] });
@@ -32,10 +37,10 @@ const levels = computed(() => {
 });
 
 const category = computed(() => {
-  const list = index.value?.categories ?? [];
+  const list = index.value ?? [];
   const wanted = typeof route.query.categoria === 'string' ? route.query.categoria : null;
   return list.find((c) => c.key === wanted)
-    ?? list.find((c) => index.value?.mine.includes(c.key))
+    ?? list.find((c) => mine.value.includes(c.key))
     ?? [...list].sort((a, b) => b.ratings - a.ratings || b.matches - a.matches)[0]
     ?? null;
 });
@@ -49,17 +54,35 @@ function show(categoryKey: string, to: OfficialDuty = duty.value) {
   void router.replace({ query: { ...route.query, categoria: categoryKey, funcion: to === 'Assistant' ? 'asistentes' : undefined } });
 }
 
-// Los árbitros de cada categoría se piden una vez (con las dos funciones) y se guardan mientras se está en la página.
+// El orden lo hace la API; por nombre va de la A a la Z y lo demás de mayor a menor, salvo que se dé la vuelta.
+const sorts: { value: RefereeSort; label: string }[] = [
+  { value: 'Average', label: 'Nota media' },
+  { value: 'Ratings', label: 'Número de notas' },
+  { value: 'Matches', label: 'Partidos pitados' },
+  { value: 'LastMatch', label: 'Último partido' },
+  { value: 'Name', label: 'Nombre' },
+];
+const sort = ref<RefereeSort>('Average');
+const order = ref<SortOrder>('Desc');
+watch(sort, (value) => { order.value = value === 'Name' ? 'Asc' : 'Desc'; });
+const orderLabel = computed(() => {
+  if (sort.value === 'Name') return order.value === 'Asc' ? 'De la A a la Z' : 'De la Z a la A';
+  if (sort.value === 'Average') return order.value === 'Desc' ? 'Mejor nota primero' : 'Peor nota primero';
+  return order.value === 'Desc' ? 'De más a menos' : 'De menos a más';
+});
+
+// Cada categoría y orden se piden una vez, con las dos funciones, y se guardan mientras se está en la página.
 const cache = new Map<string, RefereeSummaryDto[]>();
 const rows = shallowRef<RefereeSummaryDto[] | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 let latest = 0;
-watch(() => category.value?.key, async (key) => {
+watch(() => [category.value?.key, sort.value, order.value] as const, async ([key, by, direction]) => {
   if (!key) return;
   const call = ++latest;
   error.value = null;
-  const cached = cache.get(key);
+  const cacheKey = `${key}|${by}|${direction}`;
+  const cached = cache.get(cacheKey);
   if (cached) {
     rows.value = cached;
     loading.value = false;
@@ -67,8 +90,8 @@ watch(() => category.value?.key, async (key) => {
   }
   loading.value = true;
   try {
-    const list = await api.referees.list({ category: key });
-    cache.set(key, list);
+    const list = (await api.referees.category(key, { sort: by, order: direction })).referees;
+    cache.set(cacheKey, list);
     if (call === latest) rows.value = list;
   } catch (e) {
     if (call === latest) error.value = errorMessage(e);
@@ -78,48 +101,11 @@ watch(() => category.value?.key, async (key) => {
 }, { immediate: true });
 
 const search = ref('');
-type Sort = 'average' | 'ratings' | 'matches' | 'name';
-const sort = ref<Sort>('average');
-const sorts: { value: Sort; label: string }[] = [
-  { value: 'average', label: 'Mejor nota' },
-  { value: 'ratings', label: 'Más notas' },
-  { value: 'matches', label: 'Más partidos' },
-  { value: 'name', label: 'Nombre' },
-];
-
-const normalize = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const needle = computed(() => normalize(search.value.trim()));
 const ofDuty = computed(() => (rows.value ?? []).filter((r) => r.duty === duty.value));
-const shown = computed(() => {
-  const list = ofDuty.value.filter((r) => !needle.value || normalize(r.name).includes(needle.value));
-  if (sort.value === 'name') return [...list].sort((a, b) => a.name.localeCompare(b.name, 'es'));
-  if (sort.value === 'ratings') return [...list].sort((a, b) => b.ratings - a.ratings || (b.average ?? -1) - (a.average ?? -1));
-  if (sort.value === 'matches') return [...list].sort((a, b) => b.matches - a.matches || (b.average ?? -1) - (a.average ?? -1));
-  return list;
-});
+const shown = computed(() => ofDuty.value.filter((r) => !needle.value || normalize(r.name).includes(needle.value)));
 const rated = computed(() => ofDuty.value.filter((r) => r.ratings > 0).length);
-
-// Al buscar un nombre, dónde más ha pitado esa persona (otras categorías o la otra función), para saltar ahí.
-const found = shallowRef<RefereeSummaryDto[]>([]);
-let timer: ReturnType<typeof setTimeout> | undefined;
-watch(needle, (value) => {
-  clearTimeout(timer);
-  if (value.length < 3) {
-    found.value = [];
-    return;
-  }
-  timer = setTimeout(async () => {
-    try {
-      const list = await api.referees.list({ search: search.value.trim() });
-      if (needle.value === value) found.value = list;
-    } catch {
-      found.value = [];
-    }
-  }, 300);
-});
-onBeforeUnmount(() => clearTimeout(timer));
-const elsewhere = computed(() =>
-  found.value.filter((r) => !(r.categoryKey === category.value?.key && r.duty === duty.value)).slice(0, 8));
 </script>
 
 <template>
@@ -151,7 +137,7 @@ const elsewhere = computed(() =>
               :aria-pressed="item.key === category.key"
               @click="show(item.key)"
             >
-              <Icon v-if="index.mine.includes(item.key)" icon="star" class="mr-1 h-3 w-3 text-accent-400" title="La de tus equipos" />
+              <Icon v-if="mine.includes(item.key)" icon="star" class="mr-1 h-3 w-3 text-accent-400" title="La de tus equipos" />
               <span class="font-medium">{{ item.name }}</span>
               <span class="ml-2 hidden text-xs text-slate-400 sm:inline">{{ item.referees }} árbitros · {{ item.assistants }} asistentes</span>
             </button>
@@ -191,29 +177,22 @@ const elsewhere = computed(() =>
             <Icon icon="magnifying-glass" class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input v-model="search" type="search" class="input w-full pl-9" placeholder="Buscar por nombre" />
           </label>
-          <div class="flex w-full rounded-full border border-line bg-surface-2 p-1 sm:inline-flex sm:w-auto" role="radiogroup" aria-label="Ordenar">
+          <div class="flex w-full items-center gap-2 sm:w-auto">
+            <label class="text-xs font-semibold text-slate-500" for="referee-sort">Ordenar por</label>
+            <select id="referee-sort" v-model="sort" class="input min-w-0 flex-1 py-1.5 text-sm sm:w-44 sm:flex-none">
+              <option v-for="option in sorts" :key="option.value" :value="option.value">{{ option.label }}</option>
+            </select>
             <button
-              v-for="option in sorts"
-              :key="option.value"
               type="button"
-              role="radio"
-              :aria-checked="sort === option.value"
-              class="flex-1 whitespace-nowrap rounded-full px-1.5 py-1 text-[11px] font-semibold transition sm:flex-none sm:px-3 sm:text-xs"
-              :class="sort === option.value ? 'bg-action text-white' : 'text-slate-600 hover:text-slate-900'"
-              @click="sort = option.value"
-            >{{ option.label }}</button>
+              class="btn-ghost shrink-0 px-2.5 py-1.5 text-xs"
+              :title="orderLabel"
+              :aria-label="`${orderLabel}: dar la vuelta al orden`"
+              @click="order = order === 'Desc' ? 'Asc' : 'Desc'"
+            >
+              <Icon :icon="order === 'Desc' ? 'arrow-down-wide-short' : 'arrow-up-short-wide'" class="h-3.5 w-3.5" />
+              <span class="hidden sm:inline">{{ orderLabel }}</span>
+            </button>
           </div>
-        </div>
-
-        <div v-if="elsewhere.length" class="mx-4 mb-3 rounded-xl border border-line bg-surface-2 px-3 py-2 text-xs text-slate-500">
-          <p class="font-semibold text-slate-600">También con ese nombre:</p>
-          <ul class="mt-1 flex flex-wrap gap-x-3 gap-y-1">
-            <li v-for="other in elsewhere" :key="`${other.id}-${other.categoryKey}-${other.duty}`">
-              <button type="button" class="text-accent-400 hover:underline" @click="show(other.categoryKey, other.duty)">
-                {{ other.name }} · {{ other.category }} · {{ other.duty === 'Main' ? 'principal' : 'asistente' }}
-              </button>
-            </li>
-          </ul>
         </div>
 
         <Spinner v-if="loading && !rows" class="my-10" />

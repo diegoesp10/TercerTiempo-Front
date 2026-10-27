@@ -38,6 +38,8 @@ interface RequestOptions {
   cacheMs?: number;
   /** Token propio en lugar del de la sesión (página de administración): un 401 no cierra la sesión del usuario. */
   token?: string;
+  /** Lectura pública: va sin token, así que responde igual sin sesión, con una cuenta o como administrador. */
+  anonymous?: boolean;
 }
 
 export const apiBaseUrl = baseUrl;
@@ -56,7 +58,7 @@ export function http<T>(path: string, options: RequestOptions = {}): Promise<T> 
   const method = options.method ?? 'GET';
   if (method !== 'GET') return request<T>(path, options).finally(clearHttpCache);
 
-  const key = `${options.token ?? useAuthStore().token ?? ''}|${useSeasonStore().selectedId ?? ''}|${path}`;
+  const key = `${options.anonymous ? '' : options.token ?? useAuthStore().token ?? ''}|${useSeasonStore().selectedId ?? ''}|${path}`;
   const cached = cache.get(key);
   if (cached && cached.expires > Date.now()) return Promise.resolve(cached.data as T);
 
@@ -79,7 +81,7 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
 
   const isForm = options.body instanceof FormData;
   if (options.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
-  const token = options.token ?? auth.token;
+  const token = options.anonymous ? null : options.token ?? auth.token;
   if (token) headers.Authorization = `Bearer ${token}`;
   // Todos los datos se leen de la temporada elegida (sin cabecera, la actual).
   const season = useSeasonStore().selectedId;

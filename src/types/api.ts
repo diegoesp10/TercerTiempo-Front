@@ -187,12 +187,20 @@ export interface RefereeCategoryDto {
   assistants: number;
   matches: number;
   ratings: number;
+  /** Ligas (cada grupo) de la categoría: con ellas se reconoce la de los equipos de la cuenta. */
+  competitionIds: string[];
 }
 
-export interface RefereeCategoriesDto {
-  categories: RefereeCategoryDto[];
-  /** Claves de las categorías de los equipos de la cuenta, la más alta primero. */
-  mine: string[];
+export type RefereeSort = 'Average' | 'Ratings' | 'Matches' | 'Name' | 'LastMatch';
+export type SortOrder = 'Desc' | 'Asc';
+
+/** Los árbitros de una categoría, en el orden pedido. */
+export interface RefereeCategoryListDto {
+  category: RefereeCategoryDto;
+  duty: OfficialDuty | null;
+  sort: RefereeSort;
+  order: SortOrder;
+  referees: RefereeSummaryDto[];
 }
 
 /** Un árbitro en una categoría y función: sale una vez por cada combinación en que ha estado. */

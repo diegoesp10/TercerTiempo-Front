@@ -3,6 +3,7 @@ import { onMounted, ref, shallowRef } from 'vue';
 import { api } from '@/api';
 import { ApiError } from '@/api/http';
 import StarRating from '@/components/referees/StarRating.vue';
+import { useAuthStore } from '@/stores/auth';
 import type { PendingRefereeRatingDto, RefereeCategoryDto, RefereeSummaryDto } from '@/types/api';
 import { formatDate, formatScore } from '@/utils/format';
 
@@ -10,6 +11,7 @@ import { formatDate, formatScore } from '@/utils/format';
  * Árbitros en el panel del club o del técnico: los partidos recientes con el equipo arbitral sin puntuar y los árbitros
  * principales mejor valorados de la categoría de sus equipos (si tiene varias, la primera que ya tenga notas).
  */
+const auth = useAuthStore();
 const pending = shallowRef<PendingRefereeRatingDto[]>([]);
 const category = shallowRef<RefereeCategoryDto | null>(null);
 const best = shallowRef<RefereeSummaryDto[]>([]);
@@ -21,12 +23,11 @@ onMounted(async () => {
   if (p.status === 'fulfilled') pending.value = p.value;
   else unlicensed.value = p.reason instanceof ApiError && p.reason.status === 403;
   if (c.status === 'fulfilled') {
-    const index = c.value;
-    const mine = index.categories.filter((item) => index.mine.includes(item.key));
-    category.value = mine.find((item) => item.ratings > 0) ?? mine[0] ?? index.categories[0] ?? null;
+    const mine = c.value.filter((item) => item.competitionIds.some((id) => auth.myCompetitionIds.includes(id)));
+    category.value = mine.find((item) => item.ratings > 0) ?? mine[0] ?? c.value[0] ?? null;
     if (category.value) {
       try {
-        best.value = (await api.referees.list({ category: category.value.key, duty: 'Main' })).filter((r) => r.ratings > 0).slice(0, 3);
+        best.value = (await api.referees.category(category.value.key, { duty: 'Main', sort: 'Average' })).referees.filter((r) => r.ratings > 0).slice(0, 3);
       } catch {
         best.value = [];
       }

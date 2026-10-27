@@ -9,9 +9,11 @@ import type {
   MatchOfficialsDto,
   OfficialDuty,
   PendingRefereeRatingDto,
-  RefereeCategoriesDto,
+  RefereeCategoryDto,
+  RefereeCategoryListDto,
+  RefereeSort,
   RefereeDetailDto,
-  RefereeSummaryDto,
+  SortOrder,
   ClubDto,
   ClubSquadDto,
   CoachDto,
@@ -229,12 +231,13 @@ export const api = {
 
   /** Árbitros y notas de los equipos (solo clubes y cuerpos técnicos con licencia). */
   referees: {
-    list: (filter: { category?: string; duty?: OfficialDuty; search?: string } = {}) => {
+    // Públicas: van sin token. Los árbitros se buscan siempre dentro de una categoría.
+    categories: () => http<RefereeCategoryDto[]>('/api/referees/categories', { anonymous: true }),
+    category: (category: string, filter: { duty?: OfficialDuty; search?: string; sort?: RefereeSort; order?: SortOrder } = {}) => {
       const query = new URLSearchParams(Object.entries(filter).filter((entry): entry is [string, string] => !!entry[1])).toString();
-      return http<RefereeSummaryDto[]>(`/api/referees${query ? `?${query}` : ''}`);
+      return http<RefereeCategoryListDto>(`/api/referees/categories/${encodeURIComponent(category)}${query ? `?${query}` : ''}`, { anonymous: true });
     },
-    categories: () => http<RefereeCategoriesDto>('/api/referees/categories'),
-    get: (refereeId: string) => http<RefereeDetailDto>(`/api/referees/${refereeId}`),
+    get: (refereeId: string) => http<RefereeDetailDto>(`/api/referees/${refereeId}`, { anonymous: true }),
     pending: () => http<PendingRefereeRatingDto[]>('/api/referees/pending', { silent: true }),
     matchOfficials: (matchId: string) => http<MatchOfficialsDto>(`/api/matches/${matchId}/officials`),
     rate: (matchId: string, refereeId: string, body: { score: number; comment: string | null; teamId?: string | null; confirmed: true }) =>
