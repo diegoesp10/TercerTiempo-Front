@@ -9,6 +9,8 @@ import StarRating from '@/components/referees/StarRating.vue';
 import type { MatchOfficialDto, MatchOfficialsDto } from '@/types/api';
 import { formatScore, officialRoleLabels } from '@/utils/format';
 
+const dutyOf = (official: MatchOfficialDto) => (official.role === 'Referee' ? 'como principal' : 'como asistente');
+
 /**
  * Equipo arbitral de un partido y la nota que le pone el equipo de la cuenta (su club o su cuerpo técnico): de 0 a 10 a
  * cada uno, con un comentario opcional. Solo con el partido ya jugado; las notas las ven los demás clubes y técnicos.
@@ -77,7 +79,9 @@ async function save(official: MatchOfficialDto) {
           con un comentario si quieres explicar la nota. Es una referencia para los clubes: la ven los demás clubes y cuerpos técnicos, nunca los jugadores ni el público.
         </p>
       </div>
-      <RouterLink :to="{ name: 'referees' }" class="btn-ghost px-3 py-1.5 text-xs"><Icon icon="flag" class="h-3.5 w-3.5" />Todos los árbitros</RouterLink>
+      <RouterLink :to="{ name: 'referees', query: data?.categoryKey ? { categoria: data.categoryKey } : {} }" class="btn-ghost px-3 py-1.5 text-xs">
+        <Icon icon="flag" class="h-3.5 w-3.5" />{{ data?.category ? `Árbitros de ${data.category}` : 'Todos los árbitros' }}
+      </RouterLink>
     </div>
 
     <Alert v-if="error" kind="error" class="mt-3">{{ error }}</Alert>
@@ -98,12 +102,12 @@ async function save(official: MatchOfficialDto) {
             </div>
             <div class="flex items-center gap-2 text-xs text-slate-500">
               <StarRating :score="official.average" size="sm" />
-              <span><strong class="text-slate-700">{{ formatScore(official.average) }}</strong> · {{ official.ratings === 1 ? '1 nota' : `${official.ratings} notas` }} en total</span>
+              <span><strong class="text-slate-700">{{ formatScore(official.average) }}</strong> · {{ official.ratings === 1 ? '1 nota' : `${official.ratings} notas` }} {{ dutyOf(official) }}</span>
             </div>
           </div>
 
           <div v-if="data.canRate && drafts[official.refereeId]" class="mt-3 space-y-2 border-t border-line pt-3">
-            <StarInput v-model="drafts[official.refereeId]!.score" :disabled="saving === official.refereeId" />
+            <StarInput v-model="drafts[official.refereeId]!.score" :disabled="saving === official.refereeId" :label="`Nota de 0 a 10 para ${official.name}`" />
             <textarea
               v-model="drafts[official.refereeId]!.comment"
               rows="2"

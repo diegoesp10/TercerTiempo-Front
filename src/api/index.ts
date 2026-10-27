@@ -7,7 +7,9 @@ import type {
   ClubCatalogDto,
   ClubAlertsDto,
   MatchOfficialsDto,
+  OfficialDuty,
   PendingRefereeRatingDto,
+  RefereeCategoriesDto,
   RefereeDetailDto,
   RefereeSummaryDto,
   ClubDto,
@@ -227,7 +229,11 @@ export const api = {
 
   /** Árbitros y notas de los equipos (solo clubes y cuerpos técnicos con licencia). */
   referees: {
-    list: (search?: string) => http<RefereeSummaryDto[]>(`/api/referees${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+    list: (filter: { category?: string; duty?: OfficialDuty; search?: string } = {}) => {
+      const query = new URLSearchParams(Object.entries(filter).filter((entry): entry is [string, string] => !!entry[1])).toString();
+      return http<RefereeSummaryDto[]>(`/api/referees${query ? `?${query}` : ''}`);
+    },
+    categories: () => http<RefereeCategoriesDto>('/api/referees/categories'),
     get: (refereeId: string) => http<RefereeDetailDto>(`/api/referees/${refereeId}`),
     pending: () => http<PendingRefereeRatingDto[]>('/api/referees/pending', { silent: true }),
     matchOfficials: (matchId: string) => http<MatchOfficialsDto>(`/api/matches/${matchId}/officials`),

@@ -1,24 +1,49 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
 import Alert from '@/components/ui/Alert.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StarRating from '@/components/referees/StarRating.vue';
 import RefereeRatingItem from '@/components/referees/RefereeRatingItem.vue';
 import { useAsync } from '@/composables/useAsync';
-import { formatDate, formatScore, officialRoleLabels } from '@/utils/format';
+import { formatDate, formatScore, officialDutyLabels, officialRoleLabels } from '@/utils/format';
 
-/** Ficha de un árbitro: sus partidos, la nota media que le ponen los equipos, cómo se reparten y sus comentarios. */
+/**
+ * Ficha de un árbitro: la nota media que le ponen los equipos y cómo se reparte, sus cifras en cada categoría como
+ * principal y como asistente, y sus notas y partidos, que se pueden ver de una sola categoría (?categoria=).
+ */
 const props = defineProps<{ refereeId: string }>();
+const route = useRoute();
+const router = useRouter();
 const { data, loading, error, run } = useAsync(() => api.referees.get(props.refereeId));
 watch(() => props.refereeId, () => void run());
 
 const maxBar = computed(() => Math.max(1, ...(data.value?.stats.distribution ?? [])));
+
+const categories = computed(() => {
+  const seen = new Map<string, string>();
+  for (const row of data.value?.byCategory ?? []) if (!seen.has(row.categoryKey)) seen.set(row.categoryKey, row.category);
+  return [...seen].map(([key, name]) => ({ key, name }));
+});
+const only = computed(() => {
+  const wanted = typeof route.query.categoria === 'string' ? route.query.categoria : null;
+  return categories.value.length > 1 && categories.value.some((c) => c.key === wanted) ? wanted : null;
+});
+const pick = (key: string | null) => void router.replace({ query: { ...route.query, categoria: key ?? undefined } });
+const inCategory = <T extends { categoryKey: string | null }>(items: T[]) => (only.value ? items.filter((i) => i.categoryKey === only.value) : items);
+const ratings = computed(() => inCategory(data.value?.ratings ?? []));
+const best = computed(() => inCategory(data.value?.best ?? []));
+const games = computed(() => inCategory(data.value?.matches ?? []));
+const back = computed(() => {
+  const key = typeof route.query.categoria === 'string' ? route.query.categoria : data.value?.byCategory[0]?.categoryKey;
+  return { name: 'referees', query: key ? { categoria: key } : {} };
+});
 </script>
 
 <template>
   <div>
-    <RouterLink :to="{ name: 'referees' }" class="text-sm text-slate-500 hover:text-slate-800">← Todos los árbitros</RouterLink>
+    <RouterLink :to="back" class="text-sm text-slate-500 hover:text-slate-800">← Árbitros</RouterLink>
 
     <Spinner v-if="loading && !data" class="my-12" />
     <Alert v-else-if="error" kind="error" class="mt-4">{{ error }}</Alert>
@@ -58,14 +83,17 @@ const maxBar = computed(() => Math.max(1, ...(data.value?.stats.distribution ?? 
             </ol>
           </div>
           <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Por función</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Por categoría y función</p>
             <ul class="mt-3 divide-y divide-line rounded-xl border border-line">
-              <li v-for="role in data.byRole" :key="role.role" class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
-                <span class="font-medium text-slate-800">{{ officialRoleLabels[role.role] }}</span>
+              <li v-for="row in data.byCategory" :key="`${row.categoryKey}-${row.duty}`" class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5 text-sm">
+                <span class="min-w-0">
+                  <span class="font-medium text-slate-800">{{ row.category }}</span>
+                  <span class="ml-1.5 text-xs text-slate-500">{{ officialDutyLabels[row.duty].toLowerCase() }}</span>
+                </span>
                 <span class="flex items-center gap-2 text-xs text-slate-500">
-                  {{ role.matches === 1 ? '1 partido' : `${role.matches} partidos` }} · {{ role.ratings === 1 ? '1 nota' : `${role.ratings} notas` }}
-                  <StarRating :score="role.average" size="sm" />
-                  <strong class="font-figures text-slate-900">{{ formatScore(role.average) }}</strong>
+                  {{ row.matches === 1 ? '1 partido' : `${row.matches} partidos` }} · {{ row.ratings === 1 ? '1 nota' : `${row.ratings} notas` }}
+                  <StarRating :score="row.average" size="sm" />
+                  <strong class="font-figures text-slate-900">{{ formatScore(row.average) }}</strong>
                 </span>
               </li>
             </ul>
@@ -73,28 +101,44 @@ const maxBar = computed(() => Math.max(1, ...(data.value?.stats.distribution ?? 
         </div>
       </section>
 
-      <section v-if="data.best.length" class="mt-6">
+      <div v-if="categories.length > 1" class="mt-6 flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Ver de una categoría">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Ver</span>
+        <button
+          v-for="option in [{ key: null, name: 'Todas las categorías' }, ...categories]"
+          :key="option.key ?? 'all'"
+          type="button"
+          role="radio"
+          :aria-checked="only === option.key"
+          class="rounded-full px-3 py-1 text-xs font-semibold transition"
+          :class="only === option.key ? 'bg-action text-white' : 'bg-surface-2 text-slate-600 ring-1 ring-line hover:text-slate-900'"
+          @click="pick(option.key)"
+        >{{ option.name }}</button>
+      </div>
+
+      <section v-if="best.length" class="mt-6">
         <h2 class="text-lg font-bold text-slate-900">Mejores notas</h2>
         <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-          <RefereeRatingItem v-for="rating in data.best" :key="`${rating.matchId}-${rating.teamId}`" :rating="rating" />
+          <RefereeRatingItem v-for="rating in best" :key="`${rating.matchId}-${rating.teamId}`" :rating="rating" />
         </div>
       </section>
 
       <section class="mt-6">
         <h2 class="text-lg font-bold text-slate-900">Todas las notas</h2>
-        <p v-if="data.ratings.length === 0" class="card mt-3 text-sm text-slate-500">Ningún equipo le ha puntuado todavía.</p>
+        <p v-if="ratings.length === 0" class="card mt-3 text-sm text-slate-500">Ningún equipo le ha puntuado todavía{{ only ? ' en esta categoría' : '' }}.</p>
         <div v-else class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-          <RefereeRatingItem v-for="rating in data.ratings" :key="`${rating.matchId}-${rating.teamId}`" :rating="rating" />
+          <RefereeRatingItem v-for="rating in ratings" :key="`${rating.matchId}-${rating.teamId}`" :rating="rating" />
         </div>
       </section>
 
       <section class="mt-6">
         <h2 class="text-lg font-bold text-slate-900">Partidos</h2>
         <ul class="card mt-3 divide-y divide-line p-0">
-          <li v-for="game in data.matches" :key="game.match.id" class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+          <li v-for="game in games" :key="game.match.id" class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
             <RouterLink :to="{ name: 'match', params: { matchId: game.match.id } }" class="min-w-0 hover:text-accent-400">
               <span class="font-medium text-slate-900">{{ game.match.homeTeam.name }} {{ game.match.homeGoals ?? '' }} – {{ game.match.awayGoals ?? '' }} {{ game.match.awayTeam.name }}</span>
-              <span class="block text-xs text-slate-500">Jornada {{ game.match.matchday }} · {{ formatDate(game.match.kickoffAt) }} · {{ officialRoleLabels[game.role].toLowerCase() }}</span>
+              <span class="block text-xs text-slate-500">
+                <template v-if="game.category">{{ game.category }} · </template>Jornada {{ game.match.matchday }} · {{ formatDate(game.match.kickoffAt) }} · {{ officialRoleLabels[game.role].toLowerCase() }}
+              </span>
             </RouterLink>
             <span class="flex items-center gap-2 text-xs text-slate-500">
               <StarRating :score="game.average" size="sm" />

@@ -172,17 +172,36 @@ export interface RefereeStatsDto {
   distribution: number[];
 }
 
-export interface RefereeRoleStatsDto {
-  role: OfficialRole;
+/** Main: árbitro principal; Assistant: asistente o cuarto árbitro. */
+export type OfficialDuty = 'Main' | 'Assistant';
+
+export interface RefereeCategoryDto {
+  /** Clave para filtrar («3a-asturfutbol»). */
+  key: string;
+  name: string;
+  level: CompetitionLevel;
+  tier: number;
+  /** Árbitros principales con algún partido en la categoría. */
+  referees: number;
+  /** Asistentes y cuartos árbitros. */
+  assistants: number;
   matches: number;
   ratings: number;
-  average: number | null;
 }
 
+export interface RefereeCategoriesDto {
+  categories: RefereeCategoryDto[];
+  /** Claves de las categorías de los equipos de la cuenta, la más alta primero. */
+  mine: string[];
+}
+
+/** Un árbitro en una categoría y función: sale una vez por cada combinación en que ha estado. */
 export interface RefereeSummaryDto {
   id: string;
   name: string;
-  mainRole: OfficialRole;
+  categoryKey: string;
+  category: string;
+  duty: OfficialDuty;
   matches: number;
   ratings: number;
   average: number | null;
@@ -194,6 +213,8 @@ export interface RefereeRatingDto {
   kickoffAt: string;
   homeTeamName: string;
   awayTeamName: string;
+  categoryKey: string | null;
+  category: string | null;
   /** Equipo que puso la nota. */
   teamId: string;
   teamName: string;
@@ -206,6 +227,8 @@ export interface RefereeRatingDto {
 
 export interface RefereeMatchDto {
   match: MatchDto;
+  categoryKey: string | null;
+  category: string | null;
   role: OfficialRole;
   ratings: number;
   average: number | null;
@@ -217,17 +240,28 @@ export interface RefereeDetailDto {
   /** Su ficha en futbolasturiano.es, si la publica. */
   profileUrl: string | null;
   stats: RefereeStatsDto;
-  byRole: RefereeRoleStatsDto[];
+  /** Sus cifras en cada categoría como principal y como asistente, de la categoría más alta a la más baja. */
+  byCategory: RefereeCategoryStatsDto[];
   /** Las mejores notas con comentario. */
   best: RefereeRatingDto[];
   ratings: RefereeRatingDto[];
   matches: RefereeMatchDto[];
 }
 
+export interface RefereeCategoryStatsDto {
+  categoryKey: string;
+  category: string;
+  duty: OfficialDuty;
+  matches: number;
+  ratings: number;
+  average: number | null;
+}
+
 export interface MatchOfficialDto {
   refereeId: string;
   name: string;
   role: OfficialRole;
+  /** Media que le ponen en esa función (principal o asistente), en todos sus partidos. */
   average: number | null;
   ratings: number;
   /** La nota de tu equipo en este partido, si ya la ha puesto. */
@@ -237,6 +271,8 @@ export interface MatchOfficialDto {
 
 export interface MatchOfficialsDto {
   matchId: string;
+  categoryKey: string | null;
+  category: string | null;
   played: boolean;
   canRate: boolean;
   raterTeamId: string | null;

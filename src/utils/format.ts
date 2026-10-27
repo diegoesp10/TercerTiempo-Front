@@ -8,6 +8,7 @@ import type {
   LicenseStatus,
   MatchDto,
   MatchStatus,
+  OfficialDuty,
   OfficialRole,
   OfficialEventType,
   Position,
@@ -68,6 +69,11 @@ export const officialRoleLabels: Record<OfficialRole, string> = {
   AssistantReferee1: 'Asistente 1',
   AssistantReferee2: 'Asistente 2',
   FourthOfficial: 'Cuarto árbitro',
+};
+
+export const officialDutyLabels: Record<OfficialDuty, string> = {
+  Main: 'Árbitro principal',
+  Assistant: 'Asistente',
 };
 
 /** Nota media con un decimal («7,5») o una raya si no hay notas. */
