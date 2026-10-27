@@ -30,21 +30,23 @@ const horizontalGradient = (color: string) =>
   ]);
 
 /** Probabilidad de cada equipo de ser campeón, acabar en ascenso o promoción y descender, de mejor a peor previsión. */
-export function predictionBarsOption(teams: TeamPredictionDto[], zones: LeagueZonesDto, theme: ChartTheme): EChartsOption {
+export function predictionBarsOption(
+  teams: TeamPredictionDto[], zones: LeagueZonesDto, theme: ChartTheme, labels: Record<PredictionMetric, string> = metricLabels,
+): EChartsOption {
   const colors = chartPalettes[theme];
-  const metrics: PredictionMetric[] = zones.relegationFrom ? ['champion', 'promotion', 'relegation'] : ['champion', 'promotion'];
+  const metrics: PredictionMetric[] = zones.relegation.length ? ['champion', 'promotion', 'relegation'] : ['champion', 'promotion'];
   const names = teams.map((t) => t.teamName);
 
   return {
     grid: { left: 8, right: 56, top: 36, bottom: 8, containLabel: true },
-    legend: { top: 0, left: 0, data: metrics.map((m) => metricLabels[m]) },
+    legend: { top: 0, left: 0, data: metrics.map((m) => labels[m]) },
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
       formatter: (params) => {
         const index = (Array.isArray(params) ? params[0] : params)?.dataIndex ?? 0;
         const team = teams[index]!;
-        const rows = metrics.map((m) => `${dot(metricColors[m])}${metricLabels[m]}: <b>${percent(team[m])}</b>`).join('<br/>');
+        const rows = metrics.map((m) => `${dot(metricColors[m])}${labels[m]}: <b>${percent(team[m])}</b>`).join('<br/>');
         return `<b>${team.teamName}</b><br/>Ahora ${team.position}.º con ${team.points} pts · acabaría ${team.expectedPosition.toLocaleString('es-ES', { maximumFractionDigits: 1 })}.º con ${team.expectedPoints.toLocaleString('es-ES', { maximumFractionDigits: 1 })} pts<br/>${rows}`;
       },
     },
@@ -60,7 +62,7 @@ export function predictionBarsOption(teams: TeamPredictionDto[], zones: LeagueZo
       axisLabel: { width: 150, overflow: 'truncate', color: colors.text, fontSize: 12 },
     },
     series: metrics.map((m) => ({
-      name: metricLabels[m],
+      name: labels[m],
       type: 'bar',
       barGap: '15%',
       barCategoryGap: '30%',
@@ -80,14 +82,15 @@ export function predictionBarsOption(teams: TeamPredictionDto[], zones: LeagueZo
   };
 }
 
-/** Dónde puede acabar cada equipo: probabilidad de cada puesto final, con las zonas de ascenso y descenso marcadas. */
+/** Dónde puede acabar cada equipo: probabilidad de cada puesto final, con los puestos coloreados como en la web de la liga. */
 export function positionHeatmapOption(teams: TeamPredictionDto[], zones: LeagueZonesDto, theme: ChartTheme): EChartsOption {
   const colors = chartPalettes[theme];
   const positions = Array.from({ length: zones.teams }, (_, i) => i + 1);
   const data = teams.flatMap((team, row) => team.positionOdds.map((odds, col) => [col, row, Math.round(odds * 1000) / 10]));
   const max = Math.max(5, ...data.map((d) => d[2]!));
   const zoneColor = (position: number) =>
-    position <= zones.promotionUntil ? palette.emerald : zones.relegationFrom && position >= zones.relegationFrom ? palette.rose : colors.textMuted;
+    zones.places.find((p) => p.position === position)?.color
+    ?? (zones.promotion.includes(position) ? palette.emerald : zones.relegation.includes(position) ? palette.rose : colors.textMuted);
 
   return {
     grid: { left: 8, right: 16, top: 28, bottom: 64, containLabel: true },

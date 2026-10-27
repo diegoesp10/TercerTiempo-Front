@@ -16,6 +16,7 @@ import {
 } from '@/charts/predictions';
 import { useSettingsStore } from '@/stores/settings';
 import type { LeaguePredictionDto, LeaguePredictionEvolutionDto, TeamPredictionDto } from '@/types/api';
+import { rangeText, zoneRanges } from '@/utils/zones';
 
 /**
  * Previsor de resultados: probabilidad de cada equipo de ser campeón, acabar en ascenso o promoción y descender, con lo
@@ -80,12 +81,20 @@ const num = (value: number) => value.toLocaleString('es-ES', { maximumFractionDi
 
 const favourite = computed(() => [...teams.value].sort((a, b) => b.champion - a.champion)[0] ?? null);
 const promotionPick = computed(() => [...teams.value].filter((t) => t.teamId !== favourite.value?.teamId).sort((a, b) => b.promotion - a.promotion)[0] ?? null);
-const danger = computed(() => (zones.value?.relegationFrom ? [...teams.value].sort((a, b) => b.relegation - a.relegation)[0] ?? null : null));
-const promotionLabel = computed(() => (zones.value?.promotionUntil === 1 ? 'Ascenso' : 'Ascenso o promoción'));
+const danger = computed(() => (zones.value?.relegation.length ? [...teams.value].sort((a, b) => b.relegation - a.relegation)[0] ?? null : null));
+// «Ascenso» si la liga solo tiene ascenso directo; «Ascenso o promoción» si además hay promoción de ascenso.
+const promotionLabel = computed(() => {
+  const places = zones.value?.places ?? [];
+  if (places.length) return places.some((p) => p.kind === 'PromotionPlayoff') ? 'Ascenso o promoción' : 'Ascenso';
+  return (zones.value?.promotion.length ?? 0) > 1 ? 'Ascenso o promoción' : 'Ascenso';
+});
+const labels = computed(() => ({ ...metricLabels, promotion: promotionLabel.value }));
+const ranges = computed(() => zoneRanges(zones.value?.places));
+const span = (positions: number[]) => (positions.length === 1 ? `${positions[0]}.º` : `${positions[0]}.º–${positions.at(-1)}.º`);
 
-const barsOption = computed(() => (zones.value && teams.value.length ? predictionBarsOption(teams.value, zones.value, settings.resolvedTheme) : null));
+const barsOption = computed(() => (zones.value && teams.value.length ? predictionBarsOption(teams.value, zones.value, settings.resolvedTheme, labels.value) : null));
 const heatmapOption = computed(() => (zones.value && teams.value.length ? positionHeatmapOption(teams.value, zones.value, settings.resolvedTheme) : null));
-const metrics = computed<PredictionMetric[]>(() => (zones.value?.relegationFrom ? ['champion', 'promotion', 'relegation'] : ['champion', 'promotion']));
+const metrics = computed<PredictionMetric[]>(() => (zones.value?.relegation.length ? ['champion', 'promotion', 'relegation'] : ['champion', 'promotion']));
 const evolutionOption = computed(() =>
   evolution.value && evolution.value.teams.length && evolution.value.matchdays.length > 1
     ? predictionEvolutionOption(evolution.value, metric.value, highlighted.value, settings.resolvedTheme)
@@ -114,16 +123,20 @@ const evolutionOption = computed(() =>
         </div>
       </div>
 
-      <div v-if="data?.matchday && zones" class="mt-4 flex flex-wrap gap-2 text-xs">
+      <div v-if="data?.matchday && zones" class="mt-4 flex flex-wrap items-center gap-2 text-xs">
         <span class="rounded-full bg-surface-2 px-3 py-1 text-slate-600 ring-1 ring-line">{{ data.knownMatches }} partidos jugados hasta la jornada {{ data.matchday }}</span>
         <span class="rounded-full bg-surface-2 px-3 py-1 text-slate-600 ring-1 ring-line">{{ data.simulatedMatches }} por jugar, simulados</span>
-        <span class="rounded-full px-3 py-1 font-semibold ring-1" :style="{ color: metricColors.promotion, borderColor: metricColors.promotion }">
-          {{ promotionLabel }}: {{ zones.promotionUntil === 1 ? '1.º' : `1.º–${zones.promotionUntil}.º` }}
-        </span>
-        <span v-if="zones.relegationFrom" class="rounded-full px-3 py-1 font-semibold ring-1" :style="{ color: metricColors.relegation }">
-          Descenso: {{ zones.relegationFrom }}.º–{{ zones.teams }}.º
-        </span>
-        <span class="self-center text-slate-500">Plazas habituales de la categoría; pueden variar con los arrastres.</span>
+        <template v-if="ranges.length">
+          <span v-for="range in ranges" :key="`${range.label}-${range.from}`" class="flex items-center gap-1.5 rounded-full bg-surface-2 py-1 pl-1.5 pr-3 text-slate-700 ring-1 ring-line">
+            <span class="h-3 w-3 rounded-full ring-1 ring-black/10" :style="{ background: range.color }" />{{ range.label }}: {{ rangeText(range) }}
+          </span>
+          <span class="text-slate-500">Plazas de la clasificación de la liga en futbolasturiano.es.</span>
+        </template>
+        <template v-else>
+          <span class="rounded-full px-3 py-1 font-semibold ring-1" :style="{ color: metricColors.promotion }">{{ promotionLabel }}: {{ span(zones.promotion) }}</span>
+          <span v-if="zones.relegation.length" class="rounded-full px-3 py-1 font-semibold ring-1" :style="{ color: metricColors.relegation }">Descenso: {{ span(zones.relegation) }}</span>
+          <span class="text-slate-500">Plazas aproximadas: la liga todavía no las publica.</span>
+        </template>
       </div>
     </section>
 
@@ -180,7 +193,7 @@ const evolutionOption = computed(() =>
       <section class="card" :class="{ 'is-refreshing': loading }">
         <h3 class="font-semibold text-slate-900">¿En qué puesto acabará cada uno?</h3>
         <p class="text-xs text-slate-500">
-          Probabilidad de cada puesto final (en %). En verde, {{ promotionLabel.toLowerCase() }}<template v-if="zones.relegationFrom">; en rojo, descenso</template>.
+          Probabilidad de cada puesto final (en %). Los puestos van con el color de su plaza<template v-if="!ranges.length"> (en verde, {{ promotionLabel.toLowerCase() }}<template v-if="zones.relegation.length">; en rojo, descenso</template>)</template>.
         </p>
         <div class="mt-3 overflow-x-auto">
           <div class="min-w-[680px]">
@@ -206,10 +219,10 @@ const evolutionOption = computed(() =>
               :class="metric === option ? 'text-white' : 'text-slate-600 hover:text-slate-900'"
               :style="metric === option ? { background: metricColors[option] } : undefined"
               @click="metric = option"
-            >{{ metricLabels[option] }}</button>
+            >{{ labels[option] }}</button>
           </div>
         </div>
-        <AppChart v-if="evolutionOption" class="mt-3" :option="evolutionOption" :height="360" :label="`Evolución de la probabilidad de ${metricLabels[metric].toLowerCase()} por jornada`" />
+        <AppChart v-if="evolutionOption" class="mt-3" :option="evolutionOption" :height="360" :label="`Evolución de la probabilidad de ${labels[metric].toLowerCase()} por jornada`" />
         <p v-else-if="evolution && evolution.matchdays.length <= 1" class="mt-3 text-sm text-slate-500">Hará falta más de una jornada con resultados para ver la evolución.</p>
         <Skeleton v-else variant="table" :count="4" label="Simulando cada jornada…" class="mt-3" />
       </section>
@@ -225,7 +238,7 @@ const evolutionOption = computed(() =>
                 <th class="px-3 py-2 text-center">Pts</th>
                 <th class="px-3 py-2 text-center" title="Puntos al final de la liga, de media">Pts final</th>
                 <th class="px-3 py-2 text-center" title="Puesto final medio">Puesto final</th>
-                <th v-for="option in metrics" :key="option" class="px-3 py-2 text-center" :style="{ color: metricColors[option] }">{{ metricLabels[option] }}</th>
+                <th v-for="option in metrics" :key="option" class="px-3 py-2 text-center" :style="{ color: metricColors[option] }">{{ labels[option] }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-line">

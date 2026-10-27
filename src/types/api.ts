@@ -1051,6 +1051,8 @@ export interface LeagueTableDto {
   standings: StandingDto[];
   /** Explicación cuando no hay clasificación (temporada nueva o sin partidos). */
   notice: string | null;
+  /** Puestos destacados (ascenso, promoción, descenso) con su nombre y color. */
+  zones?: LeagueZoneDto[] | null;
 }
 
 // --- Partidos / actas ---
@@ -2052,12 +2054,27 @@ export interface SearchResultsDto {
 
 // --- Previsor de resultados (público) ---
 
+export type LeagueZoneKind = 'Champion' | 'DirectPromotion' | 'PromotionPlayoff' | 'RelegationPlayoff' | 'Relegation' | 'Other';
+
+/** Un puesto destacado de la clasificación tal como lo publica la web de la liga (color y leyenda). */
+export interface LeagueZoneDto {
+  position: number;
+  kind: LeagueZoneKind;
+  /** «Ascenso directo», «Promoción de ascenso», «Descenso»... */
+  label: string;
+  /** #rrggbb */
+  color: string;
+}
+
 export interface LeagueZonesDto {
-  /** Último puesto con ascenso o promoción. */
-  promotionUntil: number;
-  /** Primer puesto de descenso; null si no hay descenso. */
-  relegationFrom: number | null;
+  /** Puestos que cuentan como ascenso o promoción. */
+  promotion: number[];
+  /** Puestos de descenso; vacío si la liga no tiene. */
+  relegation: number[];
   teams: number;
+  /** true si son las plazas que publica la web de la liga; false si son aproximadas. */
+  published: boolean;
+  places: LeagueZoneDto[];
 }
 
 export interface TeamPredictionDto {

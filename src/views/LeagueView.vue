@@ -14,6 +14,7 @@ import { useAsync } from '@/composables/useAsync';
 import { useMyClub } from '@/composables/useMyClub';
 import { groupByLevel, levelLabels } from '@/utils/format';
 import { useSeasonStore } from '@/stores/season';
+import { rangeText, zoneRanges, zoneStyle } from '@/utils/zones';
 
 const season = useSeasonStore();
 
@@ -51,6 +52,9 @@ function showTab(value: LeagueTab) {
 
 const table = useAsync(() => api.stats.leagueTable(selectedId.value), { immediate: false });
 const myRows = computed(() => (table.data.value?.standings ?? []).filter((row) => isMine(row.teamId)));
+// Los puestos de ascenso, promoción y descenso, con los colores de la clasificación de la liga en futbolasturiano.es.
+const zones = computed(() => table.data.value?.zones ?? []);
+const ranges = computed(() => zoneRanges(zones.value));
 
 watch(selectedId, (id) => {
   if (!id) return;
@@ -155,7 +159,14 @@ watch(selectedId, (id) => {
               :key="row.teamId"
               :class="isMine(row.teamId) ? 'my-club-row font-semibold' : 'hover:bg-slate-50'"
             >
-              <td class="px-3 py-2 tabular-nums text-slate-500">{{ row.position }}</td>
+              <td class="px-2 py-1.5 sm:px-3">
+                <span
+                  class="inline-flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold tabular-nums"
+                  :class="zoneStyle(zones, row.position) ? '' : 'text-slate-500'"
+                  :style="zoneStyle(zones, row.position)"
+                  :title="zones.find((z) => z.position === row.position)?.label"
+                >{{ row.position }}</span>
+              </td>
               <td class="px-3 py-2">
                 <RouterLink :to="{ name: 'team', params: { teamId: row.teamId } }" class="flex items-center gap-2 hover:text-accent-400 hover:underline">
                   <TeamCrest :src="row.crestUrl" :name="row.teamName" size="xs" />
@@ -176,6 +187,11 @@ watch(selectedId, (id) => {
         </table>
         <p v-if="table.data.value.standings.length === 0" class="p-4 text-sm text-slate-500">El proveedor aún no publica clasificación para esta liga.</p>
       </div>
+      <ul v-if="ranges.length" class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-600" aria-label="Plazas de la liga">
+        <li v-for="range in ranges" :key="`${range.label}-${range.from}`" class="flex items-center gap-1.5">
+          <span class="h-3 w-3 rounded-sm ring-1 ring-black/10" :style="{ background: range.color }" />{{ range.label }} ({{ rangeText(range) }})
+        </li>
+      </ul>
       </div>
     </div>
   </div>
