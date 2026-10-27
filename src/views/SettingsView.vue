@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ClubCrestEditor from '@/components/clubs/ClubCrestEditor.vue';
+import ChangePasswordCard from '@/components/auth/ChangePasswordCard.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
@@ -90,5 +91,7 @@ const themes: { value: ThemePreference; label: string; description: string }[] =
         </div>
       </dl>
     </section>
+
+    <ChangePasswordCard v-if="auth.isAuthenticated && auth.account" class="mt-6" />
   </div>
 </template>

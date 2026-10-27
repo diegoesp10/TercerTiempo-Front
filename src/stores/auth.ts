@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { api } from '@/api';
-import type { AccountDto, AuthResponse, LoginRequest, PlayerDto, RegisterRequest, SquadSummaryDto } from '@/types/api';
+import type { AccountDto, AuthResponse, ChangePasswordRequest, LoginRequest, PlayerDto, RegisterRequest, SquadSummaryDto } from '@/types/api';
 import { useAdminSessionStore } from './adminSession';
 import { markActiveSession } from './sessionSync';
 
@@ -109,6 +109,11 @@ export const useAuthStore = defineStore('auth', () => {
     setSession(await api.auth.login(request));
   }
 
+  /** Cambia la contraseña: la API cierra las demás sesiones y devuelve un token nuevo para esta. */
+  async function changePassword(request: ChangePasswordRequest) {
+    setSession(await api.auth.changePassword(request));
+  }
+
   async function register(request: RegisterRequest) {
     setSession(await api.auth.register(request));
   }
@@ -140,6 +145,7 @@ export const useAuthStore = defineStore('auth', () => {
     isStaffOf,
     login,
     register,
+    changePassword,
     logout,
     reloadFromStorage,
     setAccount,

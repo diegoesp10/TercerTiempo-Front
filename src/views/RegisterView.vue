@@ -3,6 +3,8 @@ import { computed, onMounted, reactive, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import { useRoute, useRouter } from 'vue-router';
 import { ApiError, errorMessage } from '@/api/http';
+import PasswordChecklist from '@/components/auth/PasswordChecklist.vue';
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '@/utils/password';
 import ClubPicker from '@/components/clubs/ClubPicker.vue';
 import AuthPanel from '@/components/layout/AuthPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
@@ -253,9 +255,9 @@ async function submit() {
 
         <div>
           <label class="label" for="password">Contraseña</label>
-          <input id="password" v-model="form.password" type="password" autocomplete="new-password" required minlength="8" class="input" />
-          <p class="mt-1 text-xs text-slate-400">Mínimo 8 caracteres con al menos un número.</p>
-          <p v-if="fieldErrors.password" class="field-error">{{ fieldErrors.password[0] }}</p>
+          <input id="password" v-model="form.password" type="password" autocomplete="new-password" required :minlength="PASSWORD_MIN_LENGTH" :maxlength="PASSWORD_MAX_LENGTH" class="input" aria-describedby="password-rules" />
+          <PasswordChecklist id="password-rules" :password="form.password" :email="form.email" />
+          <p v-for="message in fieldErrors.password ?? []" :key="message" class="field-error">{{ message }}</p>
         </div>
 
         <label class="flex items-start gap-3 text-sm text-slate-600">

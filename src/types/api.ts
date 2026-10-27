@@ -43,6 +43,18 @@ export interface RegisterRequest {
   accessCode: string | null;
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/** Último cambio de contraseña; nextChangeAt es desde cuándo se puede volver a cambiar (null: ya se puede). */
+export interface PasswordStatusDto {
+  changedAt: string | null;
+  nextChangeAt: string | null;
+  canChange: boolean;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;

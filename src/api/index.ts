@@ -26,6 +26,8 @@ import type {
   LicensingCatalogDto,
   LicensingStatusDto,
   LoginRequest,
+  ChangePasswordRequest,
+  PasswordStatusDto,
   MatchDetailDto,
   MatchDto,
   MatchPreviewDto,
@@ -99,6 +101,9 @@ export const api = {
     invite: (inviteCode: string) => http<SquadInviteDto>(`/api/auth/invite/${encodeURIComponent(inviteCode.trim())}`),
     login: (body: LoginRequest) => http<AuthResponse>('/api/auth/login', { method: 'POST', body }),
     me: () => http<AccountDto>('/api/auth/me'),
+    /** Último cambio de contraseña y si ya se puede volver a cambiar (uno cada 24 h). */
+    passwordStatus: () => http<PasswordStatusDto>('/api/auth/password', { silent: true }),
+    changePassword: (body: ChangePasswordRequest) => http<AuthResponse>('/api/auth/password', { method: 'PUT', body }),
     /** Si el alta de clubes exige invitación (beta cerrada). */
     registrationOptions: () => http<RegistrationOptionsDto>('/api/auth/registration-options', { silent: true, cacheMs: 300_000 }),
     /** Para qué club es una invitación de la beta (404 si no vale). */
