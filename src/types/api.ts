@@ -1594,10 +1594,27 @@ export interface VideoTicketDto {
 
 // --- Administración: trabajos en segundo plano y llamadas a webs externas (/jobs) ---
 
+/** Sin segundo paso trae el token; con el MFA de publicación, solo el reto (mfa) y el token llega al verificar el código. */
 export interface AdminAuthResponse {
-  accessToken: string;
-  expiresAt: string;
+  accessToken: string | null;
+  expiresAt: string | null;
   userName: string;
+  mfa: AdminMfaChallenge | null;
+}
+
+export interface AdminMfaChallenge {
+  /** Billete de 5 minutos para mandar el código. */
+  ticket: string;
+  expiresAt: string;
+  /** Solo la primera vez: la clave para dar de alta la cuenta en Microsoft Authenticator. */
+  setup: AdminMfaSetup | null;
+}
+
+export interface AdminMfaSetup {
+  /** Base32 en grupos de 4, para escribirla a mano. */
+  sharedKey: string;
+  /** otpauth://totp/... para el QR. */
+  authenticatorUri: string;
 }
 
 export type JobRunStatus = 'running' | 'succeeded' | 'partial' | 'failed' | 'paused' | 'interrupted';

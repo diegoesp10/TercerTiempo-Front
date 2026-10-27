@@ -30,6 +30,8 @@ import type {
 export const adminApi = {
   login: (userName: string, password: string) =>
     http<AdminAuthResponse>('/api/admin/login', { method: 'POST', body: { userName, password } }),
+  verifyMfa: (ticket: string, code: string) =>
+    http<AdminAuthResponse>('/api/admin/login/mfa', { method: 'POST', body: { ticket, code } }),
   jobs: (token: string, provider: string | null, silent = false) =>
     http<JobsOverviewDto>(`/api/admin/jobs?requests=200${provider ? `&provider=${encodeURIComponent(provider)}` : ''}`, { token, silent }),
   run: (token: string, job: string) => http<JobDto>(`/api/admin/jobs/${encodeURIComponent(job)}/run`, { method: 'POST', token }),

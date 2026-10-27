@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { adminApi } from '@/api/admin';
 import { ApiError, errorMessage } from '@/api/http';
+import AdminMfaStep from '@/components/admin/AdminMfaStep.vue';
 import ClubInvitationsPanel from '@/components/admin/ClubInvitationsPanel.vue';
 import FootballSyncPanel from '@/components/admin/FootballSyncPanel.vue';
 import LicensesPanel from '@/components/admin/LicensesPanel.vue';
@@ -11,7 +12,7 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
-import type { JobDto, JobRunDto, JobRunStatus, JobsOverviewDto, ScrapeRequestDto, ScrapeSourceDto } from '@/types/api';
+import type { AdminAuthResponse, AdminMfaChallenge, JobDto, JobRunDto, JobRunStatus, JobsOverviewDto, ScrapeRequestDto, ScrapeSourceDto } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
 import AnalyticsPanel from '@/components/admin/AnalyticsPanel.vue';
 import LiveDownloadsPanel from '@/components/admin/LiveDownloadsPanel.vue';
@@ -46,6 +47,8 @@ const licensesPanel = ref<InstanceType<typeof LicensesPanel> | null>(null);
 const form = reactive({ userName: '', password: '' });
 const loggingIn = ref(false);
 const loginError = ref<string | null>(null);
+// En publicación la contraseña no basta: el login devuelve el reto del código de la app de autenticación.
+const mfa = ref<{ challenge: AdminMfaChallenge; userName: string } | null>(null);
 
 const data = ref<JobsOverviewDto | null>(null);
 const loading = ref(false);
@@ -64,14 +67,26 @@ async function login() {
   loginError.value = null;
   try {
     const response = await adminApi.login(form.userName, form.password);
-    admin.start({ token: response.accessToken, userName: response.userName, expiresAt: response.expiresAt });
     form.password = '';
-    await load();
+    if (response.mfa) mfa.value = { challenge: response.mfa, userName: response.userName };
+    else await start(response);
   } catch (e) {
     loginError.value = errorMessage(e);
   } finally {
     loggingIn.value = false;
   }
+}
+
+async function start(response: AdminAuthResponse) {
+  if (!response.accessToken || !response.expiresAt) return;
+  mfa.value = null;
+  admin.start({ token: response.accessToken, userName: response.userName, expiresAt: response.expiresAt });
+  await load();
+}
+
+function restartLogin(message: string | null) {
+  mfa.value = null;
+  loginError.value = message;
 }
 
 function logout(message: string | null = null) {
@@ -203,7 +218,10 @@ const sourceTitle = (source: ScrapeSourceDto) =>
 
 <template>
   <section v-if="!session" class="mx-auto max-w-md">
-    <div class="card">
+    <div v-if="mfa" class="card">
+      <AdminMfaStep :challenge="mfa.challenge" :user-name="mfa.userName" @verified="start" @restart="restartLogin" />
+    </div>
+    <div v-else class="card">
       <h1 class="flex items-center gap-2 text-2xl font-bold text-slate-900"><Icon icon="lock" class="h-5 w-5 text-accent-400" /> Administración</h1>
       <p class="mt-1 text-sm text-slate-500">Trabajos en segundo plano y llamadas a las webs externas. Solo para el administrador.</p>
       <form class="mt-6 space-y-4" @submit.prevent="login">

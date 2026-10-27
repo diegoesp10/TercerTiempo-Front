@@ -20,6 +20,7 @@
     "jspdf": "^4.2.1",
     "pinia": "^4.1.0",
     "plyr": "^3.8.5",
+    "qrcode": "^1.5.4",
     "three": "^0.186.1",
     "vue": "^3.5.44",
     "vue-echarts": "^8.3.2",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.5",
+    "@types/qrcode": "^1.5.5",
     "@types/three": "^0.186.0",
     "@vitejs/plugin-vue": "^6.0.10",
     "@vue/tsconfig": "^0.9.1",
