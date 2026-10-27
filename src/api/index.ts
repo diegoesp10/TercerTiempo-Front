@@ -5,6 +5,7 @@ import type {
   AuthResponse,
   BeginVideoUploadRequest,
   ClubCatalogDto,
+  ClubAlertsDto,
   ClubDto,
   ClubSquadDto,
   CoachDto,
@@ -213,6 +214,13 @@ export const api = {
   search: {
     query: (q: string, type: SearchType | null = null, limit = 6) =>
       http<SearchResultsDto>(`/api/search?q=${encodeURIComponent(q)}&limit=${limit}${type ? `&type=${type}` : ''}`, { silent: true, cacheMs: 30_000 }),
+  },
+
+  /** Avisos de la campanita del club (solo cuentas de club). */
+  alerts: {
+    mine: () => http<ClubAlertsDto>('/api/clubs/me/alerts', { silent: true }),
+    read: (alertId: string) => http<ClubAlertsDto>(`/api/clubs/me/alerts/${alertId}/read`, { method: 'POST', silent: true }),
+    readAll: () => http<ClubAlertsDto>('/api/clubs/me/alerts/read', { method: 'POST', silent: true }),
   },
 
   /** Licencia del club (primer equipo y filiales): estado de la cuenta, la licencia del club y pago (simulado de momento). */

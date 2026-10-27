@@ -28,6 +28,10 @@ const currency = ref('EUR');
 const trialDays = ref(30);
 const trialStaffSeats = ref(2);
 const maxStaffSeats = ref(30);
+// Días de aviso de caducidad, escritos separados por comas («15, 5»).
+const alertDays = ref('');
+const parseAlertDays = (text: string) =>
+  [...new Set(text.split(/[,;\s]+/).map((d) => Number(d)).filter((d) => Number.isInteger(d) && d > 0))].sort((a, b) => b - a);
 const prices = ref<PriceForm[]>([]);
 const error = ref<string | null>(null);
 const saved = ref(false);
@@ -42,6 +46,7 @@ function fill(dto: LicensingSettingsDto) {
   trialDays.value = dto.trialDays;
   trialStaffSeats.value = dto.trialStaffSeats;
   maxStaffSeats.value = dto.maxStaffSeats;
+  alertDays.value = dto.expiryAlertDays.join(', ');
   prices.value = dto.prices.map((p) => ({
     item: p.item,
     monthly: toEuros(p.monthlyPriceCents),
@@ -58,6 +63,7 @@ const dirty = computed(() => {
     || dto.trialDays !== trialDays.value
     || dto.trialStaffSeats !== trialStaffSeats.value
     || dto.maxStaffSeats !== maxStaffSeats.value
+    || dto.expiryAlertDays.join(',') !== parseAlertDays(alertDays.value).join(',')
     || prices.value.some((form) => {
       const p = dto.prices.find((x) => x.item === form.item);
       return !p || p.monthlyPriceCents !== toCents(form.monthly) || p.yearlyPriceCents !== toCents(form.yearly)
@@ -96,6 +102,7 @@ async function save() {
     trialDays: trialDays.value,
     trialStaffSeats: trialStaffSeats.value,
     maxStaffSeats: maxStaffSeats.value,
+    expiryAlertDays: parseAlertDays(alertDays.value),
     prices: prices.value.map((form) => ({
       item: form.item,
       monthlyPriceCents: toCents(form.monthly),
@@ -148,6 +155,11 @@ onMounted(load);
         <label class="w-40">
           <span class="label">Técnicos por club (tope)</span>
           <input v-model.number="maxStaffSeats" type="number" required min="1" max="200" class="input" />
+        </label>
+        <label class="w-56">
+          <span class="label">Avisos de caducidad (días antes)</span>
+          <input v-model="alertDays" type="text" inputmode="numeric" placeholder="15, 5" class="input" />
+          <span class="mt-1 block text-[11px] text-slate-500">Campanita del club si su licencia acaba sin renovarse. Vacío = sin avisos; hasta 5 valores de 1 a 90.</span>
         </label>
       </div>
 

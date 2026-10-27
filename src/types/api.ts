@@ -147,6 +147,31 @@ export interface ClubTeamDto {
   licenseValidUntil: string;
 }
 
+// --- Avisos del club (la campanita; solo cuentas de club) ---
+
+export type AlertKind = 'LicenseExpiring';
+
+export interface AlertDto {
+  id: string;
+  kind: AlertKind;
+  title: string;
+  message: string;
+  /** Ruta del frontal a la que lleva el aviso. */
+  link: string | null;
+  /** Día al que se refiere: el último con acceso, en los de caducidad. */
+  dueOn: string | null;
+  createdAt: string;
+  read: boolean;
+  /** Ya no aplica (por ejemplo, el club reactivó la renovación). */
+  resolved: boolean;
+}
+
+export interface ClubAlertsDto {
+  /** Avisos vigentes sin leer: el número de la campanita. */
+  unread: number;
+  alerts: AlertDto[];
+}
+
 // --- Licencia del club (primer equipo y filiales) ---
 
 export type LicenseStatus = 'Trial' | 'Active' | 'Expired';
@@ -1592,13 +1617,15 @@ export interface LicensingSettingsDto {
   trialStaffSeats: number;
   /** Licencias de técnico que puede tener un club como mucho. */
   maxStaffSeats: number;
+  /** Días antes del fin de una licencia que no se renueva en los que se avisa al club (vacío = sin avisos). */
+  expiryAlertDays: number[];
   prices: LicensePriceSettingsDto[];
   /** Pasarela del entorno ('mock' o 'stripe'): viene de la configuración y no se edita. */
   provider: string;
   updatedAt: string;
 }
 
-export type UpdateLicensingSettingsRequest = Pick<LicensingSettingsDto, 'currency' | 'trialDays' | 'trialStaffSeats' | 'maxStaffSeats' | 'prices'>;
+export type UpdateLicensingSettingsRequest = Pick<LicensingSettingsDto, 'currency' | 'trialDays' | 'trialStaffSeats' | 'maxStaffSeats' | 'expiryAlertDays' | 'prices'>;
 
 // --- Administración: licencias y cobros de todos los clubes ---
 

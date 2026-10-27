@@ -10,6 +10,8 @@ import Spinner from '@/components/ui/Spinner.vue';
 import PlanCards from '@/components/licensing/PlanCards.vue';
 import StaffSeatsStepper from '@/components/licensing/StaffSeatsStepper.vue';
 import { firstChargeOn, isSubscribed, priceOf, staffSeatsProration, subscriptionLabel, subscriptionPrice } from '@/components/licensing/plans';
+import { confirmResumeRenewal } from '@/components/licensing/resumeRenewal';
+import { useAlertsStore } from '@/stores/alerts';
 import { confirmDialog } from '@/composables/useConfirm';
 import { useAuthStore } from '@/stores/auth';
 import type { BillingInterval, ClubLicenseDto, LicensingCatalogDto } from '@/types/api';
@@ -50,6 +52,24 @@ async function load() {
 watch(() => auth.isClub, load, { immediate: true });
 
 const subscribed = computed(() => (license.value ? isSubscribed(license.value) : false));
+// Contratada pero con la renovación cancelada y aún vigente: se reactiva en vez de contratar otra vez.
+const resumable = computed(() => !!license.value && license.value.contracted && !license.value.autoRenew && license.value.status !== 'Expired');
+const alerts = useAlertsStore();
+
+async function resumeRenewal() {
+  if (!license.value || !catalog.value || !(await confirmResumeRenewal(license.value, catalog.value))) return;
+  busy.value = true;
+  error.value = null;
+  try {
+    license.value = await api.licensing.resumeRenewal();
+    notice.value = `Listo: la licencia de ${license.value.clubName} vuelve a renovarse sola.`;
+    void alerts.load();
+  } catch (e) {
+    error.value = errorMessage(e);
+  } finally {
+    busy.value = false;
+  }
+}
 
 // El selector arranca en la facturación que ya tiene la licencia.
 watch(license, (l) => { if (l?.interval) interval.value = l.nextInterval ?? l.interval; }, { immediate: true });
@@ -309,6 +329,9 @@ const faqs = computed(() => {
                 Pasar a facturación {{ billingIntervalLabels[interval].toLowerCase() }}
               </button>
             </template>
+            <button v-else-if="resumable" type="button" class="btn-primary w-full" v-busy="busy" :disabled="busy" @click="resumeRenewal">
+              <Icon icon="rotate-right" class="h-3.5 w-3.5" />Reactivar la renovación
+            </button>
             <button v-else type="button" class="btn-primary w-full" :disabled="busy" @click="openCheckout">
               {{ license.status === 'Expired' ? 'Renovar la licencia de club' : 'Contratar la licencia de club' }}
             </button>
@@ -326,6 +349,10 @@ const faqs = computed(() => {
               Tienes {{ staffCountLabel(license.staffSeats) }}<template v-if="license.nextStaffSeats !== null"> ({{ license.nextStaffSeats }} desde la renovación)</template>
               y {{ license.staffInUse }} {{ license.staffInUse === 1 ? 'nombrado' : 'nombrados' }}: no puedes bajar de ahí.
             </p>
+          </div>
+          <div v-else-if="resumable">
+            <button type="button" class="btn-secondary w-full" disabled>Reactiva la renovación</button>
+            <p class="mt-2 text-center text-xs text-slate-500">Con la renovación cancelada no se pueden cambiar los técnicos ({{ staffCountLabel(license.staffSeats) }} hasta el {{ formatDate(license.validUntil) }}).</p>
           </div>
           <div v-else>
             <button type="button" class="btn-secondary w-full" disabled>Primero, la licencia de club</button>

@@ -18,6 +18,7 @@ import { useSettingsStore } from '@/stores/settings';
 import { accountTypeLabels } from '@/utils/format';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import { useConsentStore } from '@/stores/consent';
+import AlertBell from '@/components/alerts/AlertBell.vue';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
@@ -117,6 +118,7 @@ function logoutAdmin() {
           <SearchTrigger v-if="canSearch" class="hidden w-44 xl:flex 2xl:w-60" />
           <SearchTrigger v-if="canSearch" compact class="xl:hidden" />
           <SeasonSwitcher class="hidden lg:block" />
+          <AlertBell v-if="auth.isClub && !admin.isActive" />
           <button type="button" class="btn-ghost px-2" :title="themeLabel" :aria-label="themeLabel" @click="settings.toggleTheme()">
             <svg v-if="settings.isDark" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
               <circle cx="12" cy="12" r="4" />

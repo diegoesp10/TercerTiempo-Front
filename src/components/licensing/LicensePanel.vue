@@ -16,6 +16,8 @@ import {
   staffCountLabel,
 } from '@/utils/format';
 import { isSubscribed, subscriptionLabel } from './plans';
+import { confirmResumeRenewal } from './resumeRenewal';
+import { useAlertsStore } from '@/stores/alerts';
 import TeamName from '@/components/teams/TeamName.vue';
 
 /**
@@ -71,13 +73,20 @@ async function cancelRenewal() {
   await act(() => api.licensing.cancelRenewal());
 }
 
-const resumeRenewal = () => act(() => api.licensing.resumeRenewal());
+async function resumeRenewal() {
+  if (!license.value || !catalog.value || !(await confirmResumeRenewal(license.value, catalog.value))) return;
+  await act(() => api.licensing.resumeRenewal());
+}
+
+// Cancelar o reactivar crea o resuelve los avisos de caducidad de la campanita.
+const alerts = useAlertsStore();
 
 async function act(call: () => Promise<ClubLicenseDto>) {
   busy.value = true;
   error.value = null;
   try {
     license.value = await call();
+    void alerts.load();
   } catch (e) {
     error.value = errorMessage(e);
   } finally {
@@ -156,6 +165,7 @@ async function act(call: () => Promise<ClubLicenseDto>) {
         </ul>
         <p v-if="license.status !== 'Expired' && license.staffInUse >= license.staffLimit" class="mt-2 text-xs text-slate-500">
           <template v-if="isSubscribed(license)">Para nombrar a otro técnico, <RouterLink :to="plansLink" class="font-medium text-accent-400 hover:underline">añade licencias de técnico</RouterLink>.</template>
+          <template v-else-if="license.contracted">Reactiva la renovación para poder añadir más técnicos.</template>
           <template v-else>Contrata la licencia de club para poder añadir más técnicos.</template>
         </p>
       </div>
