@@ -6,6 +6,7 @@ import type {
   BeginVideoUploadRequest,
   ClubCatalogDto,
   ClubDto,
+  ClubSquadDto,
   CoachDto,
   CompetitionDto,
   CompetitionMatchdayDto,
@@ -132,6 +133,9 @@ export const api = {
     me: () => http<ClubDto>('/api/clubs/me'),
     addTeam: (teamId: string) => http<ClubDto>('/api/clubs/me/teams', { method: 'POST', body: { teamId } }),
     removeTeam: (teamId: string) => http<ClubDto>(`/api/clubs/me/teams/${teamId}`, { method: 'DELETE' }),
+    /** Plantilla del equipo en la temporada del partido (o en la que se está viendo); la crea si no existe. */
+    openSquad: (teamId: string, matchId?: string) =>
+      http<ClubSquadDto>(`/api/clubs/me/teams/${teamId}/squad`, { method: 'POST', body: { matchId: matchId ?? null } }),
     addRosterEntry: (teamId: string, body: RosterEntryRequest) => http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster`, { method: 'POST', body }),
     updateRosterEntry: (teamId: string, entryId: string, body: RosterEntryRequest) =>
       http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster/${entryId}`, { method: 'PUT', body }),

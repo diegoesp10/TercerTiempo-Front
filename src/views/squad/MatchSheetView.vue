@@ -46,9 +46,18 @@ const tabs: { id: Tab; label: string }[] = [
 const canPrepare = computed(() =>
   !!data.value && (data.value.canEdit || data.value.squad.myRole !== null || !!auth.club?.teams.some((team) => team.teamId === data.value!.squad.teamId)),
 );
-const visibleTabs = computed(() => tabs.filter((t) => t.id !== 'previa' || canPrepare.value));
-const tab = computed<Tab>(() => visibleTabs.value.find((t) => t.id === route.query.tab)?.id ?? 'partido');
-const selectTab = (id: Tab) => void router.replace({ query: { ...route.query, tab: id === 'partido' ? undefined : id } });
+// Jugado y con la fecha ya pasada: lo de después del partido (acta interna, comparador y vídeo) solo existe entonces.
+const matchOver = computed(() =>
+  !!data.value && data.value.match.status === 'Played' && new Date(data.value.match.kickoffAt).getTime() <= Date.now(),
+);
+const afterMatch: Tab[] = ['interna', 'comparador', 'video'];
+const visibleTabs = computed(() =>
+  tabs.filter((t) => (t.id !== 'previa' || canPrepare.value) && (matchOver.value || !afterMatch.includes(t.id))),
+);
+// Antes del partido, quien lo prepara entra directamente en la previa.
+const defaultTab = computed<Tab>(() => (!matchOver.value && canPrepare.value ? 'previa' : 'partido'));
+const tab = computed<Tab>(() => visibleTabs.value.find((t) => t.id === route.query.tab)?.id ?? defaultTab.value);
+const selectTab = (id: Tab) => void router.replace({ query: { ...route.query, tab: id === defaultTab.value ? undefined : id } });
 
 interface Row extends MatchSheetEntryInput {
   player: SquadPlayerDto;

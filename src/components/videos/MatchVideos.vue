@@ -126,8 +126,8 @@ const canUploadHere = computed(() => props.canUpload && !!props.uploadSquadId);
       <div>
         <h2 class="font-semibold text-slate-900">Vídeo del partido</h2>
         <p class="text-xs text-slate-500">
-          Lo sube el cuerpo técnico del equipo que grabó el partido. Su plantilla lo ve gratis; los técnicos de otras plantillas
-          pueden comprar el acceso.
+          Lo sube el club o el cuerpo técnico del equipo que grabó el partido, desde su acta interna y una vez jugado. Su
+          plantilla lo ve gratis; los técnicos de otras plantillas pueden comprar el acceso.
         </p>
       </div>
     </div>

@@ -86,6 +86,7 @@ const tabs = [
       <div class="flex flex-wrap items-center gap-2">
         <Badge :tone="summary.visibility === 'Public' ? 'green' : 'slate'">Plantilla {{ visibilityLabels[summary.visibility].toLowerCase() }}</Badge>
         <Badge v-if="summary.myRole" tone="blue">{{ staffRoleLabels[summary.myRole] }}</Badge>
+        <Badge v-else-if="auth.isClub && detail?.canManage" tone="blue" title="El club hace todo lo que hace su cuerpo técnico">Tu club</Badge>
         <Badge v-else-if="isMyPlayerSquad" tone="green">Tu plantilla</Badge>
         <span class="text-xs text-slate-500">{{ summary.playersCount }} jugadores · {{ summary.staffCount }} en el staff</span>
       </div>

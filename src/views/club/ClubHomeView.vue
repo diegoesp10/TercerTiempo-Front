@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, shallowRef } from 'vue';
+import { useRouter } from 'vue-router';
 import { api } from '@/api';
 import { ApiError, errorMessage } from '@/api/http';
 import LicensePanel from '@/components/licensing/LicensePanel.vue';
@@ -19,6 +20,7 @@ import TeamName from '@/components/teams/TeamName.vue';
 import DashboardSearch from '@/components/search/DashboardSearch.vue';
 
 const auth = useAuthStore();
+const router = useRouter();
 
 const { data, loading, error, run } = useAsync(() => api.clubs.me());
 const club = computed<ClubDto | null>(() => data.value);
@@ -41,6 +43,15 @@ async function act(fn: () => Promise<string | void>) {
   } finally {
     busy.value = false;
   }
+}
+
+// El club hace todo lo que hace su cuerpo técnico: no necesita a un técnico para abrir la plantilla de su equipo.
+function openSquad(teamId: string) {
+  void act(async () => {
+    const { squadId } = await api.clubs.openSquad(teamId);
+    await auth.refreshAccount();
+    await router.push({ name: 'squad', params: { squadId } });
+  });
 }
 
 // --- Equipos del club ---
@@ -175,13 +186,19 @@ const sortedAppointments = computed(() => {
             <Badge :tone="team.activeAppointments > 0 ? 'green' : 'amber'">{{ team.activeAppointments }} {{ team.activeAppointments === 1 ? 'técnico vigente' : 'técnicos vigentes' }}</Badge>
           </template>
         </SquadAccessCard>
-        <article v-else class="card flex items-center gap-4">
+        <article v-else class="card flex flex-wrap items-center gap-4">
           <TeamCrest :src="team.teamCrestUrl" :name="team.teamName" :short-name="team.teamShortName" size="lg" />
           <div class="min-w-0 flex-1">
             <p class="eyebrow">Gestión de plantilla</p>
             <h2 class="truncate text-lg font-semibold text-slate-900">{{ team.teamName }}</h2>
-            <p class="text-sm text-slate-500">Todavía no tiene plantilla: se crea cuando un técnico canjea su nombramiento. Nómbralo más abajo.</p>
+            <p class="text-sm text-slate-500">
+              Todavía no tiene plantilla esta temporada. Ábrela para trabajar en ella como su cuerpo técnico (actas internas,
+              vídeos, lesiones y previas); los técnicos que nombres entrarán en la misma.
+            </p>
           </div>
+          <button type="button" class="btn-primary" v-busy="busy" :disabled="busy || !team.seasonId" @click="openSquad(team.teamId)">
+            <Icon icon="users" class="mr-1.5 h-3.5 w-3.5" />Abrir plantilla
+          </button>
         </article>
       </template>
     </div>

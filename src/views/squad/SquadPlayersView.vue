@@ -171,7 +171,7 @@ async function remove(player: SquadPlayerDto) {
             </button>
           </div>
           <p class="mt-2 text-xs text-slate-500">
-            <template v-if="detail.summary.visibility === 'Private'">Solo el cuerpo técnico y los jugadores vinculados ven actas y estadísticas.</template>
+            <template v-if="detail.summary.visibility === 'Private'">Solo el club, el cuerpo técnico y los jugadores vinculados ven actas y estadísticas.</template>
             <template v-else>Cualquiera puede ver las actas y estadísticas; los jugadores de la liga se comparan con ellas.</template>
           </p>
         </div>

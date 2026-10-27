@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { api } from '@/api';
+import { errorMessage } from '@/api/http';
 import OfficialSheetPanel from '@/components/sheet/OfficialSheetPanel.vue';
 import MatchVideos from '@/components/videos/MatchVideos.vue';
 import Alert from '@/components/ui/Alert.vue';
@@ -19,18 +21,36 @@ import TeamCrest from '@/components/teams/TeamCrest.vue';
 const props = defineProps<{ matchId: string }>();
 
 const auth = useAuthStore();
+const router = useRouter();
 const { data, loading, error } = useAsync(() => api.matches.get(props.matchId));
 
-/** Plantilla del usuario en este partido (para subir el vídeo). */
-const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.squadId)
-  || auth.club?.teams.some((team) => team.teamId === s.teamId)) ?? null);
+// Quien gestiona uno de los dos equipos (su club o su cuerpo técnico) ve el partido como el cuerpo técnico: con la
+// previa, el acta interna, el comparador y el vídeo. Si el club aún no tenía la plantilla de esa temporada, se abre.
+const opening = ref(false);
+const openError = ref<string | null>(null);
+watch(data, async (detail) => {
+  if (!detail?.managedTeamId) return;
+  opening.value = true;
+  try {
+    let squadId = detail.managedSquadId;
+    if (!squadId) {
+      squadId = (await api.clubs.openSquad(detail.managedTeamId, detail.match.id)).squadId;
+      void auth.refreshAccount();
+    }
+    await router.replace({ name: 'sheet', params: { squadId, matchId: detail.match.id } });
+  } catch (e) {
+    openError.value = errorMessage(e);
+    opening.value = false;
+  }
+}, { immediate: true });
 </script>
 
 <template>
-  <Spinner v-if="loading && !data" />
+  <Spinner v-if="(loading && !data) || opening" />
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">
+    <Alert v-if="openError" kind="error" class="mb-4">No se pudo abrir la vista del cuerpo técnico: {{ openError }}</Alert>
     <div class="card">
       <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
         <span>
@@ -57,11 +77,12 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
     </div>
 
     <div class="mt-6">
-      <OfficialSheetPanel :match-id="data.match.id" :highlight-team-id="mySquad?.teamId ?? null" />
+      <OfficialSheetPanel :match-id="data.match.id" :highlight-team-id="data.managedTeamId" />
     </div>
 
-    <div class="mt-6">
-      <MatchVideos :match-id="data.match.id" :upload-squad-id="mySquad?.squadId ?? null" :can-upload="mySquad !== null" />
+    <!-- El vídeo se sube desde el acta interna del equipo y solo existe cuando ya se ha jugado. -->
+    <div v-if="data.match.status === 'Played'" class="mt-6">
+      <MatchVideos :match-id="data.match.id" />
     </div>
 
     <Alert v-if="data.sheets.length === 0" kind="info" class="mt-6 leading-relaxed">
@@ -77,7 +98,7 @@ const mySquad = computed(() => data.value?.sheets.find((s) => auth.isStaffOf(s.s
         <div class="flex flex-wrap gap-x-3 gap-y-1 text-sm">
           <RouterLink v-if="sheet.visible" :to="{ name: 'squad', params: { squadId: sheet.squadId } }" class="text-accent-400 hover:underline">Ver plantilla</RouterLink>
           <RouterLink
-            v-if="auth.isStaffOf(sheet.squadId) && data.match.status === 'Played'"
+            v-if="data.managedSquadId === sheet.squadId && data.match.status === 'Played'"
             :to="{ name: 'sheet', params: { squadId: sheet.squadId, matchId: data.match.id }, query: { tab: 'interna' } }"
             class="font-medium text-accent-400 hover:underline"
           >

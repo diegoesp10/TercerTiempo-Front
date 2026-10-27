@@ -123,6 +123,12 @@ export interface CoachDto {
 
 // --- Clubes ---
 
+export interface ClubSquadDto {
+  squadId: string;
+  teamId: string;
+  seasonId: string;
+}
+
 export interface ClubTeamDto {
   teamId: string;
   teamName: string;
@@ -948,6 +954,10 @@ export interface MatchDetailDto {
   competitionName: string | null;
   seasonLabel: string | null;
   sheets: MatchSquadSheetDto[];
+  /** Equipo del partido que gestiona quien mira (su club o su cuerpo técnico vigente): lo ve como el cuerpo técnico. */
+  managedTeamId: string | null;
+  /** Plantilla de ese equipo en la temporada del partido; null si el club todavía no la ha abierto. */
+  managedSquadId: string | null;
 }
 
 // --- Sugerencias de los jugadores sobre su línea del acta ---
