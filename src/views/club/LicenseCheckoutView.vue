@@ -10,7 +10,8 @@ import PaymentEventList from '@/components/licensing/PaymentEventList.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import type { ClubLicenseDto } from '@/types/api';
-import { billingIntervalLabels, billingIntervalSuffix, formatDate, formatMoney, formatPrice, licensePlanLabels, staffCountLabel } from '@/utils/format';
+import { billingIntervalLabels, billingIntervalSuffix, formatDate, formatMoney, formatPrice, staffCountLabel } from '@/utils/format';
+import { subscriptionLabel } from '@/components/licensing/plans';
 
 /**
  * Pago de una licencia. Con la pasarela simulada es la página de pago, como Stripe Checkout con sus tarjetas de prueba:
@@ -91,7 +92,7 @@ watch(data, async (checkout) => {
         <div class="flex items-center gap-3">
           <BrandMark :size="34" />
           <div>
-            <p class="eyebrow">Licencia de equipo</p>
+            <p class="eyebrow">Licencia de club</p>
             <h1 class="text-2xl font-bold text-slate-900">{{ result || data.status === 'Paid' ? 'Suscripción activa' : 'Completa el pago' }}</h1>
           </div>
         </div>
@@ -104,7 +105,7 @@ watch(data, async (checkout) => {
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Resumen</p>
           <div class="mt-3 flex items-start justify-between gap-3">
             <div>
-              <p class="text-lg font-bold text-slate-900">Licencia {{ licensePlanLabels[data.plan] }}</p>
+              <p class="text-lg font-bold text-slate-900">Licencia de {{ subscriptionLabel(data.staffSeats).toLowerCase() }}</p>
               <p class="text-sm font-medium text-slate-700">{{ data.clubName }}</p>
               <p class="text-xs text-slate-500">{{ data.teamNames.length === 1 ? data.teamNames[0] : `${data.teamNames.length} equipos: ${data.teamNames.join(', ')}` }}</p>
             </div>
@@ -112,8 +113,8 @@ watch(data, async (checkout) => {
           </div>
 
           <ul class="mt-4 space-y-1.5 text-sm text-slate-600">
-            <li class="flex gap-2"><Icon icon="check" class="mt-1 h-3 w-3 text-emerald-600" />Plantilla entera y todas las herramientas</li>
-            <li class="flex gap-2"><Icon icon="check" class="mt-1 h-3 w-3 text-emerald-600" />{{ data.plan === 'Premium' ? 'Cuerpo técnico completo' : staffCountLabel(1) + ' con cuenta' }}</li>
+            <li class="flex gap-2"><Icon icon="check" class="mt-1 h-3 w-3 text-emerald-600" />Plantilla entera y todas las herramientas para el club</li>
+            <li class="flex gap-2"><Icon icon="check" class="mt-1 h-3 w-3 text-emerald-600" />{{ data.staffSeats > 0 ? `${staffCountLabel(data.staffSeats)} con cuenta, para cualquier equipo` : 'Técnicos con cuenta cuando los necesites' }}</li>
             <li class="flex gap-2"><Icon icon="check" class="mt-1 h-3 w-3 text-emerald-600" />Sin permanencia, cancela cuando quieras</li>
           </ul>
 
@@ -145,10 +146,10 @@ watch(data, async (checkout) => {
             <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
               <Icon icon="check" class="h-6 w-6" />
             </span>
-            <h2 class="mt-4 text-xl font-bold text-slate-900">¡Listo! {{ (result?.clubName ?? data.clubName) }} tiene licencia {{ licensePlanLabels[data.plan] }}</h2>
+            <h2 class="mt-4 text-xl font-bold text-slate-900">¡Listo! {{ (result?.clubName ?? data.clubName) }} tiene su licencia de club</h2>
             <p v-if="result" class="mx-auto mt-2 max-w-md text-sm text-slate-500">
               <template v-if="result.renewsOn">Próximo cobro: {{ formatPrice(result.renewalPriceCents ?? data.periodPriceCents, data.currency) }} el {{ formatDate(result.renewsOn) }}. </template>
-              Puedes cambiar de plan o cancelar la renovación cuando quieras desde tu club.
+              Puedes añadir técnicos, cambiar la facturación o cancelar la renovación cuando quieras desde tu club.
             </p>
             <p v-else class="mt-2 text-sm text-slate-500">Este pago ya estaba confirmado.</p>
             <div class="mt-6 flex flex-wrap justify-center gap-2">
@@ -164,7 +165,7 @@ watch(data, async (checkout) => {
               <Alert v-if="payError" kind="warning" class="text-left">{{ payError }} Si acabas de pagar, espera unos segundos y vuelve a comprobarlo.</Alert>
               <div class="mt-4 flex flex-wrap justify-center gap-2">
                 <button type="button" class="btn-primary" @click="confirm()">Comprobar el pago</button>
-                <RouterLink :to="{ name: 'licenses' }" class="btn-ghost">Volver a los planes</RouterLink>
+                <RouterLink :to="{ name: 'licenses' }" class="btn-ghost">Volver a los precios</RouterLink>
               </div>
             </template>
           </div>
@@ -188,7 +189,7 @@ watch(data, async (checkout) => {
           <template v-else>
             <MockCheckoutForm :checkout="data" @paid="onMockPaid" />
             <div class="mt-4 text-right text-xs">
-              <RouterLink :to="{ name: 'licenses' }" class="font-medium text-slate-500 hover:text-slate-800">Cambiar de plan</RouterLink>
+              <RouterLink :to="{ name: 'licenses' }" class="font-medium text-slate-500 hover:text-slate-800">Cambiar técnicos o facturación</RouterLink>
             </div>
           </template>
         </section>

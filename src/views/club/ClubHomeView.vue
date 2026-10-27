@@ -207,7 +207,7 @@ const sortedAppointments = computed(() => {
     <section v-if="club.availableFilials.length" class="card mb-6">
       <h2 class="font-semibold text-slate-900">Filiales sin añadir</h2>
       <p class="mt-1 text-sm text-slate-500">
-        Equipos de tu club que el proveedor ha publicado después de tu alta. Al añadirlos quedan cubiertos por la misma licencia, sin coste extra, con su propio cupo de técnicos.
+        Equipos de tu club que el proveedor ha publicado después de tu alta. Al añadirlos quedan cubiertos por la misma licencia, sin coste extra, y pueden usar las licencias de técnico del club.
       </p>
       <ul class="mt-3 divide-y divide-slate-100">
         <li v-for="filial in club.availableFilials" :key="filial.teamId" class="flex flex-wrap items-center gap-3 py-3">
@@ -226,7 +226,7 @@ const sortedAppointments = computed(() => {
     <!-- Equipos -->
     <section class="card mb-6">
       <h2 class="font-semibold text-slate-900">Equipos del club</h2>
-      <p class="mt-1 text-xs text-slate-500">El primer equipo y sus filiales, todos con la misma licencia del club. Cada equipo tiene su propio cupo de técnicos según el plan.</p>
+      <p class="mt-1 text-xs text-slate-500">El primer equipo y sus filiales, todos con la misma licencia del club. Las licencias de técnico son una bolsa del club que repartes entre ellos.</p>
       <p v-if="club.teams.length === 0" class="mt-2 text-sm text-slate-500">
         Ningún equipo del proveedor se reconoció con el nombre del club.
       </p>

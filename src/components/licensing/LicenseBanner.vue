@@ -25,7 +25,7 @@ watch(
 );
 
 const expired = computed(() => status.value?.licenses.filter((l) => l.status === 'Expired') ?? []);
-// Prueba a punto de acabar sin plan elegido (con plan, el cobro llega solo al acabarla).
+// Prueba a punto de acabar sin contratar la licencia (contratada, el cobro llega solo al acabarla).
 const ending = computed(() => status.value?.licenses.filter((l) => l.status === 'Trial' && l.daysLeft <= 7 && !l.autoRenew) ?? []);
 // El club ya sabe que es suyo; a técnicos y jugadores se les dice de qué club y equipo.
 const names = (list: ClubLicenseDto[]) =>
@@ -49,10 +49,10 @@ const names = (list: ClubLicenseDto[]) =>
       <Icon icon="circle-info" class="h-3.5 w-3.5" />
       <span>
         Periodo de prueba de {{ names(ending) }} hasta el {{ formatDate(ending[0]!.validUntil) }}.
-        <template v-if="auth.isClub">Elige un plan para no perder el acceso: no se cobra nada hasta que acabe.</template>
+        <template v-if="auth.isClub">Contrata la licencia de club para no perder el acceso: no se cobra nada hasta que acabe.</template>
         <template v-else>Recuérdaselo a tu club para no perder el acceso.</template>
       </span>
-      <RouterLink v-if="auth.isClub" :to="{ name: 'licenses' }" class="font-semibold underline">Elegir plan</RouterLink>
+      <RouterLink v-if="auth.isClub" :to="{ name: 'licenses' }" class="font-semibold underline">Contratar licencia</RouterLink>
     </div>
   </div>
 </template>

@@ -4,21 +4,21 @@ import { adminApi } from '@/api/admin';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
-import type { LicensePlan, LicensingSettingsDto } from '@/types/api';
-import { formatKickoff, formatMoney, licensePlanLabels } from '@/utils/format';
+import type { LicenseItem, LicensingSettingsDto } from '@/types/api';
+import { formatKickoff, formatMoney, licenseItemLabels } from '@/utils/format';
 
 /**
- * Planes, precios y prueba de las licencias, guardados en la base de datos. Los precios se editan en euros con IVA y
- * viajan en céntimos. La pasarela (simulada o Stripe) y sus claves son de cada entorno y no se tocan desde aquí.
+ * Precios y prueba de las licencias, guardados en la base de datos: la licencia de club, cada licencia de técnico, la
+ * prueba (días y técnicos) y el tope de técnicos por club. Los precios se editan en euros con IVA y viajan en céntimos.
+ * La pasarela (simulada o Stripe) y sus claves son de cada entorno y no se tocan desde aquí.
  */
 const props = defineProps<{ token: string }>();
 const emit = defineEmits<{ unauthorized: []; saved: [] }>();
 
-interface PlanForm {
-  plan: LicensePlan;
+interface PriceForm {
+  item: LicenseItem;
   monthly: string;
   yearly: string;
-  maxStaff: number;
   stripeMonthly: string;
   stripeYearly: string;
 }
@@ -26,7 +26,9 @@ interface PlanForm {
 const settings = ref<LicensingSettingsDto | null>(null);
 const currency = ref('EUR');
 const trialDays = ref(30);
-const plans = ref<PlanForm[]>([]);
+const trialStaffSeats = ref(2);
+const maxStaffSeats = ref(30);
+const prices = ref<PriceForm[]>([]);
 const error = ref<string | null>(null);
 const saved = ref(false);
 const saving = ref(false);
@@ -38,11 +40,12 @@ function fill(dto: LicensingSettingsDto) {
   settings.value = dto;
   currency.value = dto.currency;
   trialDays.value = dto.trialDays;
-  plans.value = dto.plans.map((p) => ({
-    plan: p.plan,
+  trialStaffSeats.value = dto.trialStaffSeats;
+  maxStaffSeats.value = dto.maxStaffSeats;
+  prices.value = dto.prices.map((p) => ({
+    item: p.item,
     monthly: toEuros(p.monthlyPriceCents),
     yearly: toEuros(p.yearlyPriceCents),
-    maxStaff: p.maxStaff,
     stripeMonthly: p.stripeMonthlyPriceId ?? '',
     stripeYearly: p.stripeYearlyPriceId ?? '',
   }));
@@ -53,15 +56,17 @@ const dirty = computed(() => {
   if (!dto) return false;
   return dto.currency !== currency.value.trim().toUpperCase()
     || dto.trialDays !== trialDays.value
-    || plans.value.some((form) => {
-      const p = dto.plans.find((x) => x.plan === form.plan);
-      return !p || p.monthlyPriceCents !== toCents(form.monthly) || p.yearlyPriceCents !== toCents(form.yearly) || p.maxStaff !== form.maxStaff
+    || dto.trialStaffSeats !== trialStaffSeats.value
+    || dto.maxStaffSeats !== maxStaffSeats.value
+    || prices.value.some((form) => {
+      const p = dto.prices.find((x) => x.item === form.item);
+      return !p || p.monthlyPriceCents !== toCents(form.monthly) || p.yearlyPriceCents !== toCents(form.yearly)
         || (p.stripeMonthlyPriceId ?? '') !== form.stripeMonthly.trim() || (p.stripeYearlyPriceId ?? '') !== form.stripeYearly.trim();
     });
 });
 
 /** Lo que se ahorra pagando el año frente a doce meses, para no poner por error un anual más caro. */
-function yearlySaving(form: PlanForm) {
+function yearlySaving(form: PriceForm) {
   const twelve = toCents(form.monthly) * 12;
   if (!twelve || !toCents(form.yearly)) return null;
   return Math.round((1 - toCents(form.yearly) / twelve) * 100);
@@ -89,11 +94,12 @@ async function save() {
   const result = await guard(() => adminApi.updateLicensingSettings(props.token, {
     currency: currency.value.trim().toUpperCase(),
     trialDays: trialDays.value,
-    plans: plans.value.map((form) => ({
-      plan: form.plan,
+    trialStaffSeats: trialStaffSeats.value,
+    maxStaffSeats: maxStaffSeats.value,
+    prices: prices.value.map((form) => ({
+      item: form.item,
       monthlyPriceCents: toCents(form.monthly),
       yearlyPriceCents: toCents(form.yearly),
-      maxStaff: form.maxStaff,
       stripeMonthlyPriceId: form.stripeMonthly.trim() || null,
       stripeYearlyPriceId: form.stripeYearly.trim() || null,
     })),
@@ -112,7 +118,7 @@ onMounted(load);
 <template>
   <section class="card">
     <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
-      <h2 class="font-semibold text-slate-900">Planes, precios y prueba</h2>
+      <h2 class="font-semibold text-slate-900">Precios y prueba de las licencias</h2>
       <div v-if="settings" class="flex items-center gap-2 text-xs text-slate-500">
         <Badge :tone="settings.provider === 'stripe' ? 'green' : 'amber'">{{ settings.provider === 'stripe' ? 'Stripe' : 'Pasarela simulada' }}</Badge>
         <span>Guardado {{ formatKickoff(settings.updatedAt) }}</span>
@@ -135,11 +141,19 @@ onMounted(load);
           <span class="label">Días de prueba</span>
           <input v-model.number="trialDays" type="number" required min="0" max="365" class="input" />
         </label>
+        <label class="w-40">
+          <span class="label">Técnicos en la prueba</span>
+          <input v-model.number="trialStaffSeats" type="number" required min="0" :max="maxStaffSeats" class="input" />
+        </label>
+        <label class="w-40">
+          <span class="label">Técnicos por club (tope)</span>
+          <input v-model.number="maxStaffSeats" type="number" required min="1" max="200" class="input" />
+        </label>
       </div>
 
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <fieldset v-for="form in plans" :key="form.plan" class="rounded-lg border border-slate-200 p-4">
-          <legend class="px-1 text-sm font-semibold text-slate-900">{{ licensePlanLabels[form.plan] }}</legend>
+        <fieldset v-for="form in prices" :key="form.item" class="rounded-lg border border-slate-200 p-4">
+          <legend class="px-1 text-sm font-semibold text-slate-900">{{ licenseItemLabels[form.item] }}<template v-if="form.item === 'StaffSeat'"> (cada una)</template></legend>
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label>
               <span class="label">Al mes (€)</span>
@@ -149,11 +163,7 @@ onMounted(load);
               <span class="label">Al año (€)</span>
               <input v-model="form.yearly" type="number" required min="0.5" max="100000" step="0.01" class="input" />
             </label>
-            <label>
-              <span class="label">Técnicos por equipo</span>
-              <input v-model.number="form.maxStaff" type="number" required min="1" max="50" class="input" />
-            </label>
-            <p class="self-end pb-2 text-xs text-slate-500">
+            <p class="self-end pb-2 text-xs text-slate-500 sm:col-span-2">
               <template v-if="yearlySaving(form) !== null">
                 Doce meses: {{ formatMoney(toCents(form.monthly) * 12, currency || 'EUR') }} ·
                 <span :class="yearlySaving(form)! < 0 ? 'text-red-600' : ''">el año ahorra un {{ yearlySaving(form) }} %</span>
@@ -176,7 +186,7 @@ onMounted(load);
       </p>
 
       <Alert v-if="error" kind="error">{{ error }}</Alert>
-      <Alert v-if="saved && !dirty" kind="success">Planes guardados. La web pública ya muestra los precios nuevos.</Alert>
+      <Alert v-if="saved && !dirty" kind="success">Precios guardados. La web pública ya muestra los nuevos.</Alert>
 
       <div class="flex flex-wrap gap-2">
         <button type="submit" class="btn-primary" v-busy="saving" :disabled="saving || !dirty">Guardar cambios</button>

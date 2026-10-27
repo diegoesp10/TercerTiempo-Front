@@ -7,7 +7,8 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { AdminLicenseDto, AdminLicenseState, LicensesOverviewDto, PaymentEventDto, SimulatedLicenseEvent } from '@/types/api';
-import { billingIntervalLabels, formatDate, formatKickoff, formatMoney, licensePlanLabels } from '@/utils/format';
+import { billingIntervalLabels, formatDate, formatKickoff, formatMoney } from '@/utils/format';
+import { subscriptionLabel } from '@/components/licensing/plans';
 
 /**
  * Licencias y cobros de todos los clubes para el administrador: quién está en prueba, quién paga, quién debe y cuánto,
@@ -24,7 +25,7 @@ const filter = ref<'all' | 'owes' | 'trial' | 'paying' | 'inactive'>('all');
 
 const stateLabels: Record<AdminLicenseState, string> = {
   trial: 'En prueba',
-  'trial-plan': 'En prueba con plan',
+  'trial-plan': 'En prueba, contratada',
   active: 'Al día',
   grace: 'Cobro pendiente',
   unpaid: 'Impagada',
@@ -54,7 +55,7 @@ const simulations: { event: SimulatedLicenseEvent; label: string; tone: string }
   { event: 'RenewalFailed', label: 'Cobro rechazado', tone: 'text-amber-600' },
   { event: 'SubscriptionDeleted', label: 'Fin de suscripción', tone: 'text-red-600' },
 ];
-const canSimulate = (row: AdminLicenseDto) => isMock.value && !!row.plan && row.provider === 'mock';
+const canSimulate = (row: AdminLicenseDto) => isMock.value && row.contracted && row.provider === 'mock';
 
 const filtered = computed(() => {
   const rows = data.value?.licenses ?? [];
@@ -182,7 +183,7 @@ defineExpose({ load });
               <tr>
                 <th class="px-3 py-2 text-left">Club · equipo</th>
                 <th class="px-3 py-2 text-left">Estado</th>
-                <th class="px-3 py-2 text-left">Plan</th>
+                <th class="px-3 py-2 text-left">Licencia</th>
                 <th class="px-3 py-2 text-left">Pagada hasta</th>
                 <th class="px-3 py-2 text-left">Próximo cobro</th>
                 <th class="px-3 py-2 text-right">Debe</th>
@@ -201,12 +202,12 @@ defineExpose({ load });
                   <span v-if="!row.hasAccess" class="block text-xs text-red-600">Sin acceso</span>
                 </td>
                 <td class="px-3 py-2 text-xs whitespace-nowrap text-slate-700">
-                  <template v-if="row.plan">{{ licensePlanLabels[row.plan] }} · {{ row.interval ? billingIntervalLabels[row.interval] : '—' }}</template>
-                  <template v-else>Prueba (Premium)</template>
-                  <span v-if="row.nextPlan || row.nextInterval" class="block text-slate-500">
-                    Pasa a {{ licensePlanLabels[row.nextPlan ?? row.effectivePlan] }} · {{ billingIntervalLabels[row.nextInterval ?? row.interval ?? 'Monthly'] }}
+                  <template v-if="row.contracted">{{ subscriptionLabel(row.staffSeats) }} · {{ row.interval ? billingIntervalLabels[row.interval] : '—' }}</template>
+                  <template v-else>Prueba</template>
+                  <span v-if="row.nextStaffSeats !== null || row.nextInterval" class="block text-slate-500">
+                    Pasa a {{ subscriptionLabel(row.nextStaffSeats ?? row.staffSeats) }} · {{ billingIntervalLabels[row.nextInterval ?? row.interval ?? 'Monthly'] }}
                   </span>
-                  <span v-if="row.plan && !row.autoRenew" class="block text-slate-500">Sin renovación</span>
+                  <span v-if="row.contracted && !row.autoRenew" class="block text-slate-500">Sin renovación</span>
                 </td>
                 <td class="px-3 py-2 text-xs whitespace-nowrap text-slate-600">
                   {{ row.paidUntil ? formatDate(row.paidUntil) : '—' }}
@@ -270,7 +271,7 @@ defineExpose({ load });
                   <span class="text-slate-800">{{ payment.clubName }}</span>
                 </td>
                 <td class="px-3 py-2 text-xs text-slate-700">
-                  {{ payment.kind === 'Renewal' ? 'Renovación' : 'Alta' }} · {{ licensePlanLabels[payment.plan] }} {{ billingIntervalLabels[payment.interval].toLowerCase() }}
+                  {{ payment.kind === 'Renewal' ? 'Renovación' : payment.kind === 'StaffSeats' ? 'Técnicos añadidos' : 'Alta' }} · {{ subscriptionLabel(payment.staffSeats) }} {{ billingIntervalLabels[payment.interval].toLowerCase() }}
                   <span class="block text-slate-500">{{ payment.provider === 'mock' ? 'Pago simulado' : payment.provider }}</span>
                 </td>
                 <td class="px-3 py-2">

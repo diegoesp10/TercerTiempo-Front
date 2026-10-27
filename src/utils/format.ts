@@ -4,7 +4,7 @@ import type {
   BillingInterval,
   CompetitionDto,
   CompetitionLevel,
-  LicensePlan,
+  LicenseItem,
   LicenseStatus,
   MatchDto,
   MatchStatus,
@@ -166,7 +166,7 @@ export const licenseStatusLabels: Record<LicenseStatus, string> = {
 
 export const licenseStatusTone: Record<LicenseStatus, Tone> = { Trial: 'blue', Active: 'green', Expired: 'red' };
 
-export const licensePlanLabels: Record<LicensePlan, string> = { Basic: 'Básica', Premium: 'Premium' };
+export const licenseItemLabels: Record<LicenseItem, string> = { Club: 'Licencia de club', StaffSeat: 'Licencia de técnico' };
 
 export const billingIntervalLabels: Record<BillingInterval, string> = { Monthly: 'Mensual', Yearly: 'Anual' };
 

@@ -11,18 +11,18 @@ import {
   billingIntervalLabels,
   formatDate,
   formatPrice,
-  licensePlanLabels,
   licenseStatusLabels,
   licenseStatusTone,
+  staffCountLabel,
 } from '@/utils/format';
-import { isSubscribed } from './plans';
+import { isSubscribed, subscriptionLabel } from './plans';
 import TeamName from '@/components/teams/TeamName.vue';
 
 /**
- * Licencia del club: una sola, al precio del plan (Básica o Premium), que cubre el primer equipo y sus filiales, con
- * su facturación (mensual o anual) y su renovación. Cada equipo tiene su propio cupo de técnicos según el plan. Empieza
- * con la prueba (con todo Premium); sin licencia vigente, ningún equipo del club puede ver sus datos privados hasta que
- * el club la renueve. Los planes se eligen en /licencias.
+ * Licencia del club: la licencia de club, que cubre el primer equipo y sus filiales con todas las funciones para el
+ * club, más sus licencias de técnico (una bolsa para todos sus equipos), con su facturación y su renovación. Empieza con
+ * la prueba (con unos técnicos incluidos); sin licencia vigente, ningún equipo del club puede ver sus datos privados
+ * hasta que el club la renueve. Se contrata y se amplía en /licencias.
  */
 const catalog = shallowRef<LicensingCatalogDto | null>(null);
 const license = ref<ClubLicenseDto | null>(null);
@@ -92,14 +92,14 @@ async function act(call: () => Promise<ClubLicenseDto>) {
       <div>
         <h2 class="font-semibold text-slate-900">Licencia del club</h2>
         <p class="mt-1 max-w-2xl text-xs text-slate-500">
-          Una licencia para el primer equipo y todos sus filiales, al precio del plan: <strong class="text-slate-700">Básica</strong> para el entrenador y su plantilla
-          o <strong class="text-slate-700">Premium</strong> para un cuerpo técnico completo en cada equipo, pagando cada mes o una vez al año. Sin licencia vigente, los
-          datos privados se conservan pero nadie de los equipos puede verlos.
+          La <strong class="text-slate-700">licencia de club</strong> cubre el primer equipo y todos sus filiales, y el club puede hacerlo todo él solo. Las
+          <strong class="text-slate-700">licencias de técnico</strong> dan cuenta propia al cuerpo técnico de cualquiera de tus equipos y se añaden cuando las necesites.
+          Sin licencia vigente, los datos privados se conservan pero nadie de los equipos puede verlos.
         </p>
       </div>
       <div class="flex items-center gap-2">
         <Badge v-if="catalog?.provider === 'mock'" tone="amber">Pagos simulados</Badge>
-        <RouterLink :to="plansLink" class="btn-secondary px-3 py-1.5 text-xs">Planes y precios</RouterLink>
+        <RouterLink :to="plansLink" class="btn-secondary px-3 py-1.5 text-xs">Precios</RouterLink>
       </div>
     </div>
 
@@ -114,8 +114,8 @@ async function act(call: () => Promise<ClubLicenseDto>) {
         <div class="min-w-0">
           <p class="truncate font-semibold text-slate-900">{{ license.clubName }}</p>
           <p class="text-xs text-slate-500">
-            <template v-if="license.plan">Plan {{ licensePlanLabels[license.plan] }} · {{ billingIntervalLabels[license.interval!].toLowerCase() }}</template>
-            <template v-else>Prueba con todo Premium · sin plan elegido</template>
+            <template v-if="license.contracted">{{ subscriptionLabel(license.staffSeats) }} · {{ billingIntervalLabels[license.interval!].toLowerCase() }}</template>
+            <template v-else>Prueba con {{ staffCountLabel(license.staffLimit) }} · sin contratar</template>
           </p>
         </div>
         <Badge :tone="licenseStatusTone[license.status]">{{ licenseStatusLabels[license.status] }}</Badge>
@@ -140,19 +140,23 @@ async function act(call: () => Promise<ClubLicenseDto>) {
         </div>
       </div>
 
-      <!-- Equipos cubiertos, cada uno con su cupo de técnicos -->
+      <!-- Equipos cubiertos y técnicos de la bolsa del club -->
       <div class="mt-4">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Equipos que cubre · cuerpo técnico</p>
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Equipos que cubre · técnicos</p>
+          <p class="text-xs" :class="license.staffInUse >= license.staffLimit ? 'font-semibold text-amber-500' : 'text-slate-600'">
+            <Icon icon="user-group" class="mr-1 h-3 w-3 text-slate-400" />{{ license.staffInUse }} de {{ staffCountLabel(license.staffLimit) }} nombrados
+          </p>
+        </div>
         <ul class="mt-2 grid grid-cols-1 gap-2" :class="license.teams.length > 1 ? 'lg:grid-cols-2' : ''">
           <li v-for="team in license.teams" :key="team.teamId" class="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-line bg-surface px-3 py-2 text-xs">
             <TeamName :name="team.teamName" :crest-url="team.teamCrestUrl" :team-id="team.teamId" size="sm" class="min-w-0" />
-            <span class="shrink-0" :class="team.staffCount >= license.staffLimit ? 'font-semibold text-amber-500' : 'text-slate-600'">
-              <Icon icon="user-group" class="mr-1 h-3 w-3 text-slate-400" />{{ team.staffCount }} de {{ license.staffLimit }}<template v-if="team.staffCount >= license.staffLimit"> · completo</template>
-            </span>
+            <span class="shrink-0 text-slate-600">{{ staffCountLabel(team.staffCount) }}</span>
           </li>
         </ul>
-        <p v-if="license.effectivePlan === 'Basic' && license.teams.some((t) => t.staffCount >= license!.staffLimit)" class="mt-2 text-xs text-slate-500">
-          Pasa a Premium para nombrar más técnicos en los equipos completos.
+        <p v-if="license.status !== 'Expired' && license.staffInUse >= license.staffLimit" class="mt-2 text-xs text-slate-500">
+          <template v-if="isSubscribed(license)">Para nombrar a otro técnico, <RouterLink :to="plansLink" class="font-medium text-accent-400 hover:underline">añade licencias de técnico</RouterLink>.</template>
+          <template v-else>Contrata la licencia de club para poder añadir más técnicos.</template>
         </p>
       </div>
 
@@ -161,17 +165,17 @@ async function act(call: () => Promise<ClubLicenseDto>) {
           <Icon icon="credit-card" class="h-3 w-3 text-slate-400" />
           <span>Próximo cobro: <strong class="text-slate-800">{{ formatPrice(license.renewalPriceCents ?? 0, currency) }}</strong> el {{ formatDate(license.renewsOn) }}</span>
         </li>
-        <li v-else-if="license.plan && license.status !== 'Expired'" class="flex items-center gap-2">
+        <li v-else-if="license.contracted && license.status !== 'Expired'" class="flex items-center gap-2">
           <Icon icon="circle-info" class="h-3 w-3 text-amber-400" />
           <span>No se renueva: el acceso acaba el {{ formatDate(license.validUntil) }}.</span>
         </li>
         <li v-else-if="license.status === 'Trial'" class="flex items-center gap-2">
           <Icon icon="circle-info" class="h-3 w-3 text-slate-400" />
-          <span>Elige un plan antes del {{ formatDate(license.trialEndsOn) }}: no se cobra nada hasta que acabe la prueba.</span>
+          <span>Contrata la licencia antes del {{ formatDate(license.trialEndsOn) }}: no se cobra nada hasta que acabe la prueba.</span>
         </li>
-        <li v-if="license.nextPlan || license.nextInterval" class="flex items-center gap-2">
+        <li v-if="license.nextStaffSeats !== null || license.nextInterval" class="flex items-center gap-2">
           <Icon icon="calendar-check" class="h-3 w-3 text-slate-400" />
-          <span>En la renovación pasa a {{ licensePlanLabels[license.nextPlan ?? license.plan!] }} {{ billingIntervalLabels[license.nextInterval ?? license.interval!].toLowerCase() }}.</span>
+          <span>En la renovación pasa a {{ subscriptionLabel(license.nextStaffSeats ?? license.staffSeats) }} {{ billingIntervalLabels[license.nextInterval ?? license.interval!].toLowerCase() }}.</span>
         </li>
       </ul>
 
@@ -179,10 +183,10 @@ async function act(call: () => Promise<ClubLicenseDto>) {
         <RouterLink v-if="license.status === 'Expired'" :to="plansLink" class="btn-primary px-3 py-1.5 text-xs">
           <Icon icon="credit-card" class="h-3.5 w-3.5" />Renovar licencia
         </RouterLink>
-        <RouterLink v-else-if="!license.plan" :to="plansLink" class="btn-primary px-3 py-1.5 text-xs">
-          <Icon icon="star" class="h-3.5 w-3.5" />Elegir plan
+        <RouterLink v-else-if="!license.contracted" :to="plansLink" class="btn-primary px-3 py-1.5 text-xs">
+          <Icon icon="star" class="h-3.5 w-3.5" />Contratar licencia
         </RouterLink>
-        <RouterLink v-else :to="plansLink" class="btn-secondary px-3 py-1.5 text-xs">Cambiar plan</RouterLink>
+        <RouterLink v-else :to="plansLink" class="btn-secondary px-3 py-1.5 text-xs"><Icon icon="user-group" class="h-3.5 w-3.5" />Técnicos y facturación</RouterLink>
 
         <button
           v-if="isSubscribed(license)"
@@ -193,7 +197,7 @@ async function act(call: () => Promise<ClubLicenseDto>) {
           @click="cancelRenewal"
         >Cancelar renovación</button>
         <button
-          v-else-if="license.plan && !license.autoRenew && license.status !== 'Expired'"
+          v-else-if="license.contracted && !license.autoRenew && license.status !== 'Expired'"
           type="button"
           class="btn-ghost px-3 py-1.5 text-xs"
           v-busy="busy"

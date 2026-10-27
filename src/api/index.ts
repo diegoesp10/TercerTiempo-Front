@@ -18,7 +18,6 @@ import type {
   LeagueTableDto,
   BillingInterval,
   LicenseCheckoutDto,
-  LicensePlan,
   LicensingCatalogDto,
   LicensingStatusDto,
   LoginRequest,
@@ -220,18 +219,22 @@ export const api = {
   licensing: {
     status: () => http<LicensingStatusDto>('/api/licensing/status', { silent: true }),
     club: () => http<ClubLicenseDto>('/api/licensing/club'),
-    /** Planes y precios (público). */
+    /** Precios de la licencia de club y de cada técnico (público). */
     plans: () => http<LicensingCatalogDto>('/api/licensing/plans', { silent: true }),
-    beginCheckout: (plan: LicensePlan, interval: BillingInterval) =>
-      http<LicenseCheckoutDto>('/api/licensing/club/checkout', { method: 'POST', body: { plan, interval } }),
+    /** Contratar la licencia de club, con los técnicos que se quieran ya (0 = solo el club). */
+    beginCheckout: (interval: BillingInterval, staffSeats: number) =>
+      http<LicenseCheckoutDto>('/api/licensing/club/checkout', { method: 'POST', body: { interval, staffSeats } }),
     checkout: (sessionId: string) => http<LicenseCheckoutDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}`),
     /** Pasarela simulada: el resultado de la tarjeta de prueba (nunca se envían los datos de la tarjeta). */
     simulatePayment: (sessionId: string, outcome: SimulatedPaymentOutcome) =>
       http<SimulatedPaymentDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}/simulate`, { method: 'POST', body: { outcome } }),
     confirm: (sessionId: string) => http<ClubLicenseDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}/confirm`, { method: 'POST' }),
-    /** Plan o facturación para la próxima renovación (durante la prueba, ya). */
-    changeRenewal: (plan: LicensePlan, interval: BillingInterval) =>
-      http<ClubLicenseDto>('/api/licensing/club/renewal', { method: 'PUT', body: { plan, interval } }),
+    /** Facturación de la próxima renovación (durante la prueba, ya). */
+    changeRenewal: (interval: BillingInterval) =>
+      http<ClubLicenseDto>('/api/licensing/club/renewal', { method: 'PUT', body: { interval } }),
+    /** Licencias de técnico del club: las que se añaden valen ya (cobro proporcional); las que se quitan, al renovar. */
+    changeStaffSeats: (staffSeats: number) =>
+      http<ClubLicenseDto>('/api/licensing/club/staff-seats', { method: 'PUT', body: { staffSeats } }),
     cancelRenewal: () => http<ClubLicenseDto>('/api/licensing/club/renewal/cancel', { method: 'POST' }),
     resumeRenewal: () => http<ClubLicenseDto>('/api/licensing/club/renewal/resume', { method: 'POST' }),
   },

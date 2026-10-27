@@ -8,26 +8,17 @@ import Badge from '@/components/ui/Badge.vue';
 import Modal from '@/components/ui/Modal.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import PlanCards from '@/components/licensing/PlanCards.vue';
-import { comparisonRows, firstChargeOn, isSubscribed, priceOf } from '@/components/licensing/plans';
+import StaffSeatsStepper from '@/components/licensing/StaffSeatsStepper.vue';
+import { firstChargeOn, isSubscribed, priceOf, staffSeatsProration, subscriptionLabel, subscriptionPrice } from '@/components/licensing/plans';
 import { confirmDialog } from '@/composables/useConfirm';
 import { useAuthStore } from '@/stores/auth';
-import type { BillingInterval, ClubLicenseDto, LicensePlan, LicensingCatalogDto } from '@/types/api';
-import {
-  billingIntervalLabels,
-  billingIntervalSuffix,
-  formatDate,
-  formatPrice,
-  licensePlanLabels,
-  licenseStatusLabels,
-  licenseStatusTone,
-  staffCountLabel,
-} from '@/utils/format';
+import type { BillingInterval, ClubLicenseDto, LicensingCatalogDto } from '@/types/api';
+import { billingIntervalLabels, billingIntervalSuffix, formatDate, formatPrice, licenseStatusLabels, licenseStatusTone, staffCountLabel } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 
 /**
- * Planes y precios. Para cualquiera explica qué incluye cada plan, cuánto cuesta y cómo funcionan la prueba y la
- * renovación; para un club, además, contrata o cambia su licencia: una por club, que cubre el primer equipo y sus
- * filiales, con el cupo de técnicos del plan en cada equipo.
+ * Precios. Para cualquiera explica la licencia de club y las licencias de técnico, cuánto cuestan y cómo funcionan la
+ * prueba y la renovación; para un club, además, contrata la licencia y compra o quita técnicos una vez contratada.
  */
 const auth = useAuthStore();
 const router = useRouter();
@@ -63,31 +54,31 @@ const subscribed = computed(() => (license.value ? isSubscribed(license.value) :
 // El selector arranca en la facturación que ya tiene la licencia.
 watch(license, (l) => { if (l?.interval) interval.value = l.nextInterval ?? l.interval; }, { immediate: true });
 
-const plans = computed(() => catalog.value?.plans ?? []);
-const planOf = (plan: LicensePlan) => plans.value.find((p) => p.plan === plan)!;
 const currency = computed(() => catalog.value?.currency ?? 'EUR');
-const price = (plan: LicensePlan, billing: BillingInterval = interval.value) => formatPrice(priceOf(planOf(plan), billing), currency.value);
+const money = (cents: number) => formatPrice(cents, currency.value);
+const total = (staffSeats: number, billing: BillingInterval = interval.value) => (catalog.value ? subscriptionPrice(catalog.value, billing, staffSeats) : 0);
+const seatPrice = (billing: BillingInterval = interval.value) => (catalog.value ? priceOf(catalog.value.staffSeat, billing) : 0);
+const inTrial = computed(() => !!license.value && (license.value.status === 'Trial' || !license.value.paidUntil));
 
-/** Primer equipo del club cuyo cuerpo técnico no cabe en el plan (cada equipo tiene su propio cupo). */
-const overflowing = (plan: LicensePlan) => license.value?.teams.find((t) => t.staffCount > planOf(plan).maxStaff) ?? null;
+// --- Contratar la licencia de club (con los técnicos que se quieran ya)
 
-/** Plan y facturación con los que seguirá el club en la próxima renovación. */
-const upcoming = computed(() => (license.value?.plan ? { plan: license.value.nextPlan ?? license.value.plan, interval: license.value.nextInterval ?? license.value.interval! } : null));
-const isUpcoming = (plan: LicensePlan) => upcoming.value?.plan === plan && upcoming.value.interval === interval.value;
-
-// --- Contratar
-
-const choosing = ref<LicensePlan | null>(null);
+const checkingOut = ref(false);
+const checkoutSeats = ref(0);
 const busy = ref(false);
 const chargeToday = computed(() => !!license.value && license.value.status === 'Expired');
 
+function openCheckout() {
+  checkoutSeats.value = license.value?.staffInUse ?? 0;
+  checkingOut.value = true;
+}
+
 async function checkout() {
-  if (!license.value || !choosing.value) return;
+  if (!license.value) return;
   busy.value = true;
   error.value = null;
   try {
-    const session = await api.licensing.beginCheckout(choosing.value, interval.value);
-    choosing.value = null;
+    const session = await api.licensing.beginCheckout(interval.value, checkoutSeats.value);
+    checkingOut.value = false;
     if (/^https?:\/\//.test(session.url)) window.location.assign(session.url);
     else await router.push(session.url);
   } catch (e) {
@@ -97,25 +88,42 @@ async function checkout() {
   }
 }
 
-// --- Cambiar el plan de una suscripción en marcha
+// --- Técnicos de una licencia ya contratada
 
-async function change(plan: LicensePlan) {
-  if (!license.value) return;
-  const inTrial = license.value.status === 'Trial' || !license.value.paidUntil;
-  const ok = await confirmDialog({
-    title: `Pasar a ${licensePlanLabels[plan]} ${billingIntervalLabels[interval.value].toLowerCase()}`,
-    message: inTrial
-      ? `${license.value.clubName} pasará a ${licensePlanLabels[plan]} ya mismo, con todos sus equipos. El primer cobro será de ${price(plan)} el ${formatDate(license.value.renewsOn!)}.`
-      : `El cambio se aplica en la próxima renovación, el ${formatDate(license.value.renewsOn!)}: ese día se cobrarán ${price(plan)}. Hasta entonces sigues con tu plan actual.`,
-    confirmLabel: 'Cambiar plan',
-  });
-  if (!ok) return;
+const seats = ref(0);
+watch(license, (l) => { if (l) seats.value = l.nextStaffSeats ?? l.staffSeats; }, { immediate: true });
+const seatsTarget = computed(() => (license.value ? license.value.nextStaffSeats ?? license.value.staffSeats : 0));
+// Añadir sube de los que hay ya; quitar baja de los de la renovación; entre medias, solo cambia una reducción ya pedida.
+const seatsAction = computed(() =>
+  license.value && seats.value > license.value.staffSeats ? 'Añadir' : seats.value < seatsTarget.value ? 'Quitar' : 'Cambiar',
+);
+
+async function saveSeats() {
+  const l = license.value;
+  if (!l || seats.value === seatsTarget.value) return;
+  const added = seats.value - l.staffSeats;
+  const renewal = l.renewsOn ? formatDate(l.renewsOn) : '';
+  const next = `${money(total(seats.value, l.nextInterval ?? l.interval!))}${billingIntervalSuffix[l.nextInterval ?? l.interval!]}`;
+  let message: string;
+  if (added > 0 && !inTrial.value) {
+    const now = staffSeatsProration(l, added, seatPrice(l.interval!));
+    message = `${staffCountLabel(added)} más desde ya. Hoy se cobran unos ${money(now)}, la parte de lo que queda hasta el ${renewal}; desde la renovación pagarás ${next}.`;
+  } else if (added > 0) {
+    message = `${staffCountLabel(added)} más desde ya, sin cobro hasta que acabe la prueba: el primer cobro, el ${renewal}, será de ${next}.`;
+  } else if (inTrial.value) {
+    message = `Te quedas con ${staffCountLabel(seats.value)} desde ya. El primer cobro, el ${renewal}, será de ${next}.`;
+  } else {
+    message = `Mantienes ${staffCountLabel(l.staffSeats)} hasta la renovación del ${renewal}; desde entonces serán ${staffCountLabel(seats.value)} y pagarás ${next}.`;
+  }
+  const action = seatsAction.value;
+  const title = action === 'Añadir' ? 'Añadir técnicos' : action === 'Quitar' ? 'Quitar técnicos' : 'Cambiar los técnicos de la renovación';
+  if (!(await confirmDialog({ title, message, confirmLabel: action }))) return;
+
   busy.value = true;
   error.value = null;
   try {
-    const updated = await api.licensing.changeRenewal(plan, interval.value);
-    license.value = updated;
-    notice.value = inTrial ? `Listo: ${updated.clubName} ya está en ${licensePlanLabels[plan]}.` : `Listo: ${updated.clubName} pasará a ${licensePlanLabels[plan]} el ${formatDate(updated.renewsOn!)}.`;
+    license.value = await api.licensing.changeStaffSeats(seats.value);
+    notice.value = `Listo: ${license.value.clubName} tiene ${staffCountLabel(license.value.staffSeats)}${license.value.nextStaffSeats !== null ? ` hasta la renovación y ${license.value.nextStaffSeats} después` : ''}.`;
   } catch (e) {
     error.value = errorMessage(e);
   } finally {
@@ -123,27 +131,60 @@ async function change(plan: LicensePlan) {
   }
 }
 
-const comparison = computed(() => (plans.value.length === 2 ? comparisonRows(planOf('Basic'), planOf('Premium')) : []));
+// --- Facturación de una licencia ya contratada
+
+const upcomingInterval = computed(() => license.value?.nextInterval ?? license.value?.interval ?? null);
+
+async function changeInterval() {
+  const l = license.value;
+  if (!l || !upcomingInterval.value || interval.value === upcomingInterval.value) return;
+  const ok = await confirmDialog({
+    title: `Pasar a facturación ${billingIntervalLabels[interval.value].toLowerCase()}`,
+    message: inTrial.value
+      ? `El cambio es inmediato: el primer cobro, el ${formatDate(l.renewsOn!)}, será de ${money(total(l.nextStaffSeats ?? l.staffSeats))}.`
+      : `Se aplica en la próxima renovación, el ${formatDate(l.renewsOn!)}: ese día se cobrarán ${money(total(l.nextStaffSeats ?? l.staffSeats))}.`,
+    confirmLabel: 'Cambiar facturación',
+  });
+  if (!ok) return;
+  busy.value = true;
+  error.value = null;
+  try {
+    license.value = await api.licensing.changeRenewal(interval.value);
+    notice.value = `Listo: la facturación pasa a ${billingIntervalLabels[interval.value].toLowerCase()}.`;
+  } catch (e) {
+    error.value = errorMessage(e);
+  } finally {
+    busy.value = false;
+  }
+}
+
+// --- Calculadora
+
+const calcSeats = ref(2);
 
 const faqs = computed(() => {
   const c = catalog.value;
   if (!c) return [];
   return [
     {
-      q: '¿La licencia es por club o por equipo?',
-      a: 'Por club. Una sola licencia, al precio del plan, cubre el primer equipo y todos sus filiales (el B, el juvenil…). Cada equipo tiene su propio cupo de técnicos según el plan. Solo se pueden añadir filiales del propio club, no equipos de otros clubes.',
+      q: '¿Qué incluye la licencia de club?',
+      a: 'Todo, para el club: el primer equipo y todos sus filiales (el B, el juvenil…), con actas internas, datos del equipo, lesiones, vídeos, previas y comparador. El club trabaja directamente como su cuerpo técnico, sin necesidad de técnicos con cuenta.',
+    },
+    {
+      q: '¿Para qué sirven las licencias de técnico?',
+      a: `Cada una es una cuenta para alguien del cuerpo técnico (entrenador, segundo, delegado, fisio, analista…) en cualquiera de los equipos del club: es una bolsa que repartes como quieras. Se compran una vez contratada la licencia de club, hasta ${c.maxStaffSeats} por club. Los jugadores no cuentan: la plantilla es ilimitada.`,
     },
     {
       q: '¿Qué incluye la prueba?',
-      a: `${c.trialDays} días con todo lo de Premium desde que das de alta el club, sin tarjeta. Si eliges plan durante la prueba no pierdes ni un día: el primer cobro llega cuando acaba.`,
+      a: `${c.trialDays} días con la licencia de club y ${staffCountLabel(c.trialStaffSeats)} desde que das de alta el club, sin tarjeta. Si contratas durante la prueba no pierdes ni un día: el primer cobro llega cuando acaba.`,
     },
     {
-      q: '¿Qué cuenta como técnico?',
-      a: 'Cada persona del cuerpo técnico que nombras para la temporada en un equipo (entrenador, segundo, delegado, fisio, analista…), tanto si ya ha canjeado su código como si está pendiente. El cupo es por equipo: el primer equipo y cada filial tienen el suyo. Los jugadores no cuentan: la plantilla es ilimitada en los dos planes.',
+      q: '¿Puedo añadir o quitar técnicos después?',
+      a: 'Sí, cuando quieras. Los que añades valen ya y se cobra al momento la parte que queda hasta la renovación (durante la prueba, nada). Los que quitas siguen hasta la renovación y desde entonces ya no se pagan; nunca por debajo de los técnicos que tienes nombrados.',
     },
     {
-      q: '¿Puedo cambiar de plan o de facturación?',
-      a: 'Sí, cuando quieras. Durante la prueba el cambio es inmediato; con un periodo ya pagado se aplica en la siguiente renovación, sin cobros a mitad de periodo. Para pasar a Básica ningún equipo del club puede tener más técnicos de los que admite.',
+      q: '¿Puedo cambiar de facturación?',
+      a: 'Sí, de mensual a anual o al revés. Durante la prueba es inmediato; con un periodo ya pagado se aplica en la siguiente renovación.',
     },
     {
       q: '¿Hay permanencia? ¿Cómo cancelo?',
@@ -151,7 +192,7 @@ const faqs = computed(() => {
     },
     {
       q: '¿Qué pasa si caduca la licencia?',
-      a: 'No se borra nada. El cuerpo técnico y los jugadores de todos los equipos del club dejan de ver sus datos privados (actas internas, estadísticas, lesiones, vídeos) hasta que el club la renueve; los datos públicos de la federación siguen visibles.',
+      a: 'No se borra nada. El club, el cuerpo técnico y los jugadores de todos sus equipos dejan de ver sus datos privados (actas internas, estadísticas, lesiones, vídeos) hasta que el club la renueve; los datos públicos de la federación siguen visibles.',
     },
     {
       q: '¿Qué pasa si falla un cobro?',
@@ -169,14 +210,14 @@ const faqs = computed(() => {
   <div class="mx-auto max-w-5xl">
     <!-- Cabecera -->
     <header class="text-center">
-      <p class="eyebrow">Planes y precios</p>
-      <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Una licencia por club, sin letra pequeña</h1>
+      <p class="eyebrow">Precios</p>
+      <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Paga por el club y añade técnicos cuando los necesites</h1>
       <p class="mx-auto mt-3 max-w-2xl text-sm text-slate-500 sm:text-base">
-        Un solo precio para el primer equipo y todos sus filiales, con la plantilla entera y todas las herramientas. Elige según el
-        cuerpo técnico que trabaja con cada equipo, y paga mes a mes o una vez al año.
+        La licencia de club cubre el primer equipo y todos sus filiales con todas las herramientas, y el club puede hacerlo todo
+        él solo. Si quieres que tu cuerpo técnico tenga su propia cuenta, añade licencias de técnico: mes a mes o una vez al año.
       </p>
       <div v-if="catalog" class="mt-4 flex flex-wrap justify-center gap-2 text-xs font-medium text-slate-600">
-        <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1"><Icon icon="star" class="h-3 w-3 text-amber-400" />{{ catalog.trialDays }} días de prueba con Premium</span>
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1"><Icon icon="star" class="h-3 w-3 text-amber-400" />{{ catalog.trialDays }} días de prueba con {{ staffCountLabel(catalog.trialStaffSeats) }}</span>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1"><Icon icon="credit-card" class="h-3 w-3 text-brand-500" />Sin tarjeta para probar</span>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1"><Icon icon="rotate-right" class="h-3 w-3 text-brand-500" />Sin permanencia</span>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1"><Icon icon="shield-halved" class="h-3 w-3 text-brand-500" />IVA incluido</span>
@@ -203,10 +244,10 @@ const faqs = computed(() => {
 
         <dl class="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
           <div class="rounded-lg bg-surface-2 px-3 py-2">
-            <dt class="text-xs text-slate-500">Plan</dt>
+            <dt class="text-xs text-slate-500">Licencia</dt>
             <dd class="font-semibold text-slate-900">
-              <template v-if="license.plan">{{ licensePlanLabels[license.plan] }} · {{ billingIntervalLabels[license.interval!].toLowerCase() }}</template>
-              <template v-else>Premium (prueba)</template>
+              <template v-if="license.contracted">{{ subscriptionLabel(license.staffSeats) }} · {{ billingIntervalLabels[license.interval!].toLowerCase() }}</template>
+              <template v-else>Prueba con {{ staffCountLabel(license.staffLimit) }}</template>
             </dd>
           </div>
           <div class="rounded-lg bg-surface-2 px-3 py-2">
@@ -217,65 +258,101 @@ const faqs = computed(() => {
               <template v-else>Acceso hasta el</template>
             </dt>
             <dd class="font-semibold text-slate-900">
-              <template v-if="license.renewsOn && license.status !== 'Expired'">{{ formatPrice(license.renewalPriceCents ?? 0, currency) }} el {{ formatDate(license.renewsOn) }}</template>
+              <template v-if="license.renewsOn && license.status !== 'Expired'">{{ money(license.renewalPriceCents ?? 0) }} el {{ formatDate(license.renewsOn) }}</template>
               <template v-else>{{ formatDate(license.validUntil) }}</template>
             </dd>
           </div>
           <div class="rounded-lg bg-surface-2 px-3 py-2">
-            <dt class="text-xs text-slate-500">Técnicos por equipo</dt>
-            <dd class="font-semibold text-slate-900">{{ staffCountLabel(license.staffLimit) }}</dd>
+            <dt class="text-xs text-slate-500">Técnicos nombrados</dt>
+            <dd class="font-semibold" :class="license.staffInUse >= license.staffLimit && license.staffLimit > 0 ? 'text-amber-500' : 'text-slate-900'">{{ license.staffInUse }} de {{ license.staffLimit }}</dd>
           </div>
         </dl>
 
         <div class="mt-4">
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Equipos que cubre · cuerpo técnico de cada uno</p>
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Equipos que cubre · técnicos de cada uno</p>
           <ul class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <li v-for="t in license.teams" :key="t.teamId" class="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-line px-3 py-2 text-sm">
               <TeamName :name="t.teamName" :crest-url="t.teamCrestUrl" :team-id="t.teamId" size="sm" class="min-w-0" />
-              <span class="shrink-0 text-xs font-semibold" :class="t.staffCount >= license.staffLimit ? 'text-amber-500' : 'text-slate-600'">
-                {{ t.staffCount }} de {{ license.staffLimit }}
-              </span>
+              <span class="shrink-0 text-xs font-semibold text-slate-600">{{ staffCountLabel(t.staffCount) }}</span>
             </li>
           </ul>
         </div>
-        <p v-if="license.nextPlan || license.nextInterval" class="mt-3 text-xs text-slate-500">
-          <Icon icon="calendar-check" class="mr-1 h-3 w-3" />En la próxima renovación pasa a <strong class="text-slate-700">{{ licensePlanLabels[upcoming!.plan] }} {{ billingIntervalLabels[upcoming!.interval].toLowerCase() }}</strong>.
+        <p v-if="license.nextStaffSeats !== null || license.nextInterval" class="mt-3 text-xs text-slate-500">
+          <Icon icon="calendar-check" class="mr-1 h-3 w-3" />En la próxima renovación pasa a
+          <strong class="text-slate-700">{{ subscriptionLabel(license.nextStaffSeats ?? license.staffSeats) }} {{ billingIntervalLabels[license.nextInterval ?? license.interval!].toLowerCase() }}</strong>.
         </p>
       </section>
 
       <Alert v-if="notice" kind="success" class="mx-auto mt-4 max-w-4xl">{{ notice }}</Alert>
       <Alert v-if="error" kind="error" class="mx-auto mt-4 max-w-4xl">{{ error }}</Alert>
 
-      <!-- Planes -->
-      <PlanCards v-model:interval="interval" :catalog="catalog" :current="license?.plan ?? null" class="mt-8">
-        <template #action="{ plan }">
+      <!-- Licencia de club y licencias de técnico -->
+      <PlanCards v-model:interval="interval" :catalog="catalog" class="mt-8">
+        <template #action="{ item }">
           <!-- Sin cuenta: empezar la prueba -->
           <template v-if="!auth.isAuthenticated">
-            <RouterLink to="/registro" class="w-full" :class="plan === 'Premium' ? 'btn-primary' : 'btn-secondary'">Empieza gratis {{ catalog.trialDays }} días</RouterLink>
+            <RouterLink to="/registro" class="w-full" :class="item === 'Club' ? 'btn-primary' : 'btn-secondary'">
+              {{ item === 'Club' ? `Empieza gratis ${catalog.trialDays} días` : `La prueba incluye ${staffCountLabel(catalog.trialStaffSeats)}` }}
+            </RouterLink>
           </template>
           <!-- Técnico o jugador: la contrata el club -->
           <p v-else-if="!auth.isClub" class="rounded-lg bg-surface-2 px-3 py-2 text-center text-xs text-slate-500">La licencia la contrata el club de tu equipo.</p>
           <p v-else-if="!license" class="rounded-lg bg-surface-2 px-3 py-2 text-center text-xs text-slate-500">Tu club aún no tiene equipos: no hay licencia que contratar.</p>
-          <!-- Club: plan demasiado pequeño para el cuerpo técnico de algún equipo -->
-          <div v-else-if="overflowing(plan)">
-            <button type="button" class="btn-secondary w-full" disabled>{{ licensePlanLabels[plan] }} no admite tu cuerpo técnico</button>
-            <p class="mt-2 text-center text-xs text-slate-500">{{ overflowing(plan)!.teamName }} tiene {{ staffCountLabel(overflowing(plan)!.staffCount) }}; revoca nombramientos para elegirla.</p>
-          </div>
-          <!-- Club con suscripción en marcha: cambiar para la renovación -->
-          <template v-else-if="subscribed">
-            <button v-if="isUpcoming(plan)" type="button" class="btn-secondary w-full" disabled>
-              <Icon icon="check" class="h-3.5 w-3.5" />{{ license.plan === plan && license.interval === interval ? 'Tu plan actual' : 'Elegido para la renovación' }}
-            </button>
-            <button v-else type="button" class="w-full" :class="plan === 'Premium' ? 'btn-primary' : 'btn-secondary'" v-busy="busy" :disabled="busy" @click="change(plan)">
-              Cambiar a {{ licensePlanLabels[plan] }} {{ billingIntervalLabels[interval].toLowerCase() }}
+
+          <!-- Licencia de club -->
+          <template v-else-if="item === 'Club'">
+            <template v-if="subscribed">
+              <button v-if="interval === upcomingInterval" type="button" class="btn-secondary w-full" disabled>
+                <Icon icon="check" class="h-3.5 w-3.5" />Contratada · {{ billingIntervalLabels[interval].toLowerCase() }}
+              </button>
+              <button v-else type="button" class="btn-primary w-full" v-busy="busy" :disabled="busy" @click="changeInterval">
+                Pasar a facturación {{ billingIntervalLabels[interval].toLowerCase() }}
+              </button>
+            </template>
+            <button v-else type="button" class="btn-primary w-full" :disabled="busy" @click="openCheckout">
+              {{ license.status === 'Expired' ? 'Renovar la licencia de club' : 'Contratar la licencia de club' }}
             </button>
           </template>
-          <!-- Club sin suscripción: contratar -->
-          <button v-else type="button" class="w-full" :class="plan === 'Premium' ? 'btn-primary' : 'btn-secondary'" :disabled="busy" @click="choosing = plan">
-            {{ license.status === 'Expired' ? 'Renovar con' : 'Elegir' }} {{ licensePlanLabels[plan] }}
-          </button>
+
+          <!-- Licencias de técnico: solo con la de club contratada -->
+          <div v-else-if="subscribed" class="space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <StaffSeatsStepper v-model="seats" :min="license.staffInUse" :max="catalog.maxStaffSeats" :disabled="busy" />
+              <button type="button" class="btn-primary" v-busy="busy" :disabled="busy || seats === seatsTarget" @click="saveSeats">
+                {{ seats === seatsTarget ? 'Guardar' : seatsAction }}
+              </button>
+            </div>
+            <p class="text-xs text-slate-500">
+              Tienes {{ staffCountLabel(license.staffSeats) }}<template v-if="license.nextStaffSeats !== null"> ({{ license.nextStaffSeats }} desde la renovación)</template>
+              y {{ license.staffInUse }} {{ license.staffInUse === 1 ? 'nombrado' : 'nombrados' }}: no puedes bajar de ahí.
+            </p>
+          </div>
+          <div v-else>
+            <button type="button" class="btn-secondary w-full" disabled>Primero, la licencia de club</button>
+            <p class="mt-2 text-center text-xs text-slate-500">Al contratarla puedes añadir técnicos o hacerlo más adelante.</p>
+          </div>
         </template>
       </PlanCards>
+
+      <!-- Calculadora -->
+      <section class="card mx-auto mt-10 max-w-4xl">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Calcula tu precio</h2>
+            <p class="text-sm text-slate-500">La licencia de club más los técnicos con cuenta que quieras.</p>
+          </div>
+          <StaffSeatsStepper v-model="calcSeats" :max="catalog.maxStaffSeats" label="Técnicos de la calculadora" />
+        </div>
+        <dl class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div v-for="billing in (['Monthly', 'Yearly'] as const)" :key="billing" class="rounded-xl border border-line bg-surface-2 px-4 py-3">
+            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ billingIntervalLabels[billing] }} · {{ subscriptionLabel(calcSeats) }}</dt>
+            <dd class="mt-1 font-figures text-2xl font-extrabold text-slate-900">{{ money(total(calcSeats, billing)) }}<span class="text-sm font-medium text-slate-500">{{ billingIntervalSuffix[billing] }}</span></dd>
+            <dd class="text-xs text-slate-500">
+              {{ money(priceOf(catalog.club, billing)) }} del club<template v-if="calcSeats > 0"> + {{ calcSeats }} × {{ money(seatPrice(billing)) }}</template>
+            </dd>
+          </div>
+        </dl>
+      </section>
 
       <!-- Cómo funciona -->
       <section class="mt-14">
@@ -284,17 +361,17 @@ const faqs = computed(() => {
           <li class="card">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 font-figures text-sm font-bold text-brand-500">1</span>
             <h3 class="mt-3 font-semibold text-slate-900">Pruébalo gratis</h3>
-            <p class="mt-1 text-sm text-slate-500">Al dar de alta el club empiezan {{ catalog.trialDays }} días con todo Premium para todos sus equipos. Sin tarjeta.</p>
+            <p class="mt-1 text-sm text-slate-500">Al dar de alta el club empiezan {{ catalog.trialDays }} días con todo y {{ staffCountLabel(catalog.trialStaffSeats) }}. Sin tarjeta.</p>
           </li>
           <li class="card">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 font-figures text-sm font-bold text-brand-500">2</span>
-            <h3 class="mt-3 font-semibold text-slate-900">Elige tu plan</h3>
-            <p class="mt-1 text-sm text-slate-500">Básica o Premium, mensual o anual. Si lo haces durante la prueba, no se cobra nada hasta que acaba.</p>
+            <h3 class="mt-3 font-semibold text-slate-900">Contrata la licencia de club</h3>
+            <p class="mt-1 text-sm text-slate-500">Mensual o anual. Si lo haces durante la prueba, no se cobra nada hasta que acaba.</p>
           </li>
           <li class="card">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 font-figures text-sm font-bold text-brand-500">3</span>
-            <h3 class="mt-3 font-semibold text-slate-900">Se renueva sola</h3>
-            <p class="mt-1 text-sm text-slate-500">Cada mes o cada año, con aviso del próximo cobro en tu club. Cambia de plan cuando quieras.</p>
+            <h3 class="mt-3 font-semibold text-slate-900">Añade técnicos</h3>
+            <p class="mt-1 text-sm text-slate-500">Cuando los necesites, para cualquier equipo del club. Se cobra solo la parte que queda del periodo.</p>
           </li>
           <li class="card">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 font-figures text-sm font-bold text-brand-500">4</span>
@@ -302,42 +379,6 @@ const faqs = computed(() => {
             <p class="mt-1 text-sm text-slate-500">Mantienes el acceso hasta el final de lo pagado. Tus datos no se borran nunca.</p>
           </li>
         </ol>
-      </section>
-
-      <!-- Comparativa -->
-      <section v-if="comparison.length" class="mt-14">
-        <h2 class="text-center text-2xl font-bold text-slate-900">Comparativa</h2>
-        <div class="card mx-auto mt-6 max-w-4xl overflow-x-auto p-0">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b border-line text-left">
-                <th class="px-3 py-3 sm:px-5 font-medium text-slate-500" scope="col"></th>
-                <th class="w-24 px-3 py-3 text-center font-bold text-slate-900 sm:w-44 sm:px-5" scope="col">Básica</th>
-                <th class="w-24 px-3 py-3 text-center font-bold text-slate-900 sm:w-44 sm:px-5" scope="col">Premium</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-line">
-              <tr>
-                <th class="px-3 py-3 sm:px-5 text-left font-medium text-slate-700" scope="row">Pago mensual</th>
-                <td class="px-3 py-3 sm:px-5 text-center font-figures font-semibold text-slate-900">{{ price('Basic', 'Monthly') }}{{ billingIntervalSuffix.Monthly }}</td>
-                <td class="px-3 py-3 sm:px-5 text-center font-figures font-semibold text-slate-900">{{ price('Premium', 'Monthly') }}{{ billingIntervalSuffix.Monthly }}</td>
-              </tr>
-              <tr>
-                <th class="px-3 py-3 sm:px-5 text-left font-medium text-slate-700" scope="row">Pago anual</th>
-                <td class="px-3 py-3 sm:px-5 text-center font-figures font-semibold text-slate-900">{{ price('Basic', 'Yearly') }}{{ billingIntervalSuffix.Yearly }}</td>
-                <td class="px-3 py-3 sm:px-5 text-center font-figures font-semibold text-slate-900">{{ price('Premium', 'Yearly') }}{{ billingIntervalSuffix.Yearly }}</td>
-              </tr>
-              <tr v-for="[label, basic, premium] in comparison" :key="label">
-                <th class="px-3 py-3 sm:px-5 text-left font-medium text-slate-700" scope="row">{{ label }}</th>
-                <td v-for="(value, i) in [basic, premium]" :key="i" class="px-3 py-3 sm:px-5 text-center text-slate-900">
-                  <Icon v-if="value === true" icon="check" class="h-4 w-4 text-emerald-600" aria-label="Incluido" />
-                  <span v-else-if="value === false" class="text-slate-400" aria-label="No incluido">—</span>
-                  <span v-else class="font-semibold">{{ value }}</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </section>
 
       <!-- Preguntas -->
@@ -356,11 +397,11 @@ const faqs = computed(() => {
     </template>
 
     <!-- Resumen antes de ir a la pasarela -->
-    <Modal :open="choosing !== null && license !== null" size="md" :title="choosing ? `Licencia ${licensePlanLabels[choosing]}` : ''" @close="choosing = null">
-      <template v-if="choosing && license">
+    <Modal :open="checkingOut && license !== null && catalog !== null" size="md" title="Contratar la licencia de club" @close="checkingOut = false">
+      <template v-if="license && catalog">
         <p class="text-sm text-slate-500">
-          Para <strong class="text-slate-800">{{ license.clubName }}</strong> y {{ license.teams.length === 1 ? 'su equipo' : `sus ${license.teams.length} equipos` }}
-          · {{ planOf(choosing).maxStaff === 1 ? '1 técnico' : `hasta ${planOf(choosing).maxStaff} técnicos` }} en cada uno y la plantilla entera.
+          Para <strong class="text-slate-800">{{ license.clubName }}</strong> y {{ license.teams.length === 1 ? 'su equipo' : `sus ${license.teams.length} equipos` }}, con
+          todas las herramientas para el club.
         </p>
 
         <div class="mt-4 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Facturación">
@@ -375,20 +416,32 @@ const faqs = computed(() => {
             @click="interval = option"
           >
             <span class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ billingIntervalLabels[option] }}</span>
-            <span class="mt-1 block font-figures text-xl font-extrabold text-slate-900">{{ price(choosing, option) }}<span class="text-sm font-medium text-slate-500">{{ billingIntervalSuffix[option] }}</span></span>
+            <span class="mt-1 block font-figures text-xl font-extrabold text-slate-900">{{ money(total(checkoutSeats, option)) }}<span class="text-sm font-medium text-slate-500">{{ billingIntervalSuffix[option] }}</span></span>
           </button>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line px-4 py-3">
+          <div class="min-w-0">
+            <p class="font-semibold text-slate-900">Licencias de técnico</p>
+            <p class="text-xs text-slate-500">
+              {{ money(seatPrice()) }}{{ billingIntervalSuffix[interval] }} cada una.
+              <template v-if="license.staffInUse > 0">Tienes {{ staffCountLabel(license.staffInUse) }} {{ license.staffInUse === 1 ? 'nombrado' : 'nombrados' }}: no puedes bajar de ahí.</template>
+              <template v-else>Puedes contratar solo el club y añadirlas después.</template>
+            </p>
+          </div>
+          <StaffSeatsStepper v-model="checkoutSeats" :min="license.staffInUse" :max="catalog.maxStaffSeats" />
         </div>
 
         <dl class="mt-5 divide-y divide-line rounded-xl border border-line bg-surface-2 text-sm">
           <div class="flex items-center justify-between gap-3 px-4 py-2.5">
             <dt class="text-slate-500">Hoy pagas</dt>
-            <dd class="font-figures text-lg font-extrabold text-slate-900">{{ chargeToday ? price(choosing) : formatPrice(0, currency) }}</dd>
+            <dd class="font-figures text-lg font-extrabold text-slate-900">{{ chargeToday ? money(total(checkoutSeats)) : money(0) }}</dd>
           </div>
           <div class="flex items-center justify-between gap-3 px-4 py-2.5">
             <dt class="text-slate-500">{{ chargeToday ? 'Siguiente cobro' : 'Primer cobro' }}</dt>
             <dd class="text-right text-slate-800">
-              <template v-if="chargeToday">{{ price(choosing) }} {{ interval === 'Yearly' ? 'dentro de un año' : 'dentro de un mes' }}</template>
-              <template v-else>{{ price(choosing) }} el {{ formatDate(firstChargeOn(license)) }}</template>
+              <template v-if="chargeToday">{{ money(total(checkoutSeats)) }} {{ interval === 'Yearly' ? 'dentro de un año' : 'dentro de un mes' }}</template>
+              <template v-else>{{ money(total(checkoutSeats)) }} el {{ formatDate(firstChargeOn(license)) }}</template>
             </dd>
           </div>
           <div class="flex items-center justify-between gap-3 px-4 py-2.5">
@@ -407,7 +460,7 @@ const faqs = computed(() => {
       </template>
       <template #footer>
         <div class="flex flex-wrap items-center justify-end gap-2">
-          <button type="button" class="btn-ghost" @click="choosing = null">Cancelar</button>
+          <button type="button" class="btn-ghost" @click="checkingOut = false">Cancelar</button>
           <button type="button" class="btn-primary" v-busy="busy" :disabled="busy" @click="checkout">
             <Icon icon="lock" class="h-3.5 w-3.5" />Continuar al pago
           </button>

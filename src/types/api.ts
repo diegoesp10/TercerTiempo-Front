@@ -151,11 +151,11 @@ export interface ClubTeamDto {
 
 export type LicenseStatus = 'Trial' | 'Active' | 'Expired';
 export type PaymentStatus = 'Pending' | 'Paid' | 'Cancelled' | 'Failed';
-/** Básica: un técnico. Premium: cuerpo técnico ampliado. Las dos con la plantilla entera. */
-export type LicensePlan = 'Basic' | 'Premium';
+/** Lo que se cobra: la licencia de club y, aparte, cada licencia de técnico. */
+export type LicenseItem = 'Club' | 'StaffSeat';
 export type BillingInterval = 'Monthly' | 'Yearly';
 
-/** Equipo que cubre la licencia del club, con su cuerpo técnico (cada equipo tiene su propio cupo según el plan). */
+/** Equipo que cubre la licencia del club, con su cuerpo técnico (los técnicos salen de la bolsa del club). */
 export interface LicensedTeamDto {
   teamId: string;
   teamName: string;
@@ -165,7 +165,7 @@ export interface LicensedTeamDto {
   staffCount: number;
 }
 
-/** Una licencia por club, al precio del plan: cubre el primer equipo y todos sus filiales. */
+/** Licencia de club (primer equipo y filiales, todas las funciones para el club) más sus licencias de técnico. */
 export interface ClubLicenseDto {
   clubId: string;
   clubName: string;
@@ -174,35 +174,43 @@ export interface ClubLicenseDto {
   paidUntil: string | null;
   validUntil: string;
   daysLeft: number;
-  /** Plan contratado; null mientras no se ha elegido (la prueba). */
-  plan: LicensePlan | null;
-  /** Plan con el que funciona ahora: el contratado o Premium durante la prueba. */
-  effectivePlan: LicensePlan;
+  /** true una vez contratada la licencia de club; antes, la prueba. */
+  contracted: boolean;
   interval: BillingInterval | null;
   autoRenew: boolean;
-  /** Cambio pedido para la próxima renovación. */
-  nextPlan: LicensePlan | null;
+  /** Cambio de facturación pedido para la próxima renovación. */
   nextInterval: BillingInterval | null;
+  /** Licencias de técnico contratadas: la bolsa del club para todos sus equipos. */
+  staffSeats: number;
+  /** Técnicos que quedarán en la próxima renovación si se ha pedido reducirlos. */
+  nextStaffSeats: number | null;
+  /** Técnicos que admite ahora: los de la prueba mientras no se ha contratado; después, los contratados. */
+  staffLimit: number;
+  /** Técnicos con nombramiento vigente o pendiente en todos los equipos del club. */
+  staffInUse: number;
   /** Día del próximo cobro, si se renueva. */
   renewsOn: string | null;
   renewalPriceCents: number | null;
-  /** Técnicos que admite el plan en cada equipo. */
-  staffLimit: number;
   /** Equipos cubiertos (para un técnico o un jugador, solo los suyos). */
   teams: LicensedTeamDto[];
 }
 
-export interface LicensePlanDto {
-  plan: LicensePlan;
+export interface LicensePriceDto {
   monthlyPriceCents: number;
   yearlyPriceCents: number;
-  maxStaff: number;
 }
 
 export interface LicensingCatalogDto {
-  plans: LicensePlanDto[];
+  /** Licencia de club: el primer equipo y sus filiales. */
+  club: LicensePriceDto;
+  /** Cada licencia de técnico. */
+  staffSeat: LicensePriceDto;
   currency: string;
   trialDays: number;
+  /** Técnicos que admite la prueba. */
+  trialStaffSeats: number;
+  /** Licencias de técnico que puede tener un club como mucho. */
+  maxStaffSeats: number;
   renewalGraceDays: number;
   /** «mock» = pago simulado, sin cobro real. */
   provider: string;
@@ -222,8 +230,9 @@ export interface LicenseCheckoutDto {
   clubName: string;
   /** Equipos que cubre la licencia: el primer equipo y sus filiales. */
   teamNames: string[];
-  plan: LicensePlan;
   interval: BillingInterval;
+  /** Licencias de técnico que se contratan con la de club. */
+  staffSeats: number;
   /** Lo que se cobra hoy (0 si aún queda prueba o periodo pagado). */
   amountCents: number;
   periodPriceCents: number;
@@ -1566,13 +1575,12 @@ export interface ClubInvitationLookupDto {
   clubName: string | null;
 }
 
-// --- Administración: planes, precios y prueba de las licencias (en la base de datos) ---
+// --- Administración: precios y prueba de las licencias (en la base de datos) ---
 
-export interface LicensePlanSettingsDto {
-  plan: LicensePlan;
+export interface LicensePriceSettingsDto {
+  item: LicenseItem;
   monthlyPriceCents: number;
   yearlyPriceCents: number;
-  maxStaff: number;
   stripeMonthlyPriceId: string | null;
   stripeYearlyPriceId: string | null;
 }
@@ -1580,13 +1588,17 @@ export interface LicensePlanSettingsDto {
 export interface LicensingSettingsDto {
   currency: string;
   trialDays: number;
-  plans: LicensePlanSettingsDto[];
+  /** Técnicos que admite la prueba. */
+  trialStaffSeats: number;
+  /** Licencias de técnico que puede tener un club como mucho. */
+  maxStaffSeats: number;
+  prices: LicensePriceSettingsDto[];
   /** Pasarela del entorno ('mock' o 'stripe'): viene de la configuración y no se edita. */
   provider: string;
   updatedAt: string;
 }
 
-export type UpdateLicensingSettingsRequest = Pick<LicensingSettingsDto, 'currency' | 'trialDays' | 'plans'>;
+export type UpdateLicensingSettingsRequest = Pick<LicensingSettingsDto, 'currency' | 'trialDays' | 'trialStaffSeats' | 'maxStaffSeats' | 'prices'>;
 
 // --- Administración: licencias y cobros de todos los clubes ---
 
@@ -1600,12 +1612,13 @@ export interface AdminLicenseDto {
   teamNames: string[];
   state: AdminLicenseState;
   hasAccess: boolean;
-  effectivePlan: LicensePlan;
-  plan: LicensePlan | null;
+  contracted: boolean;
   interval: BillingInterval | null;
   autoRenew: boolean;
-  nextPlan: LicensePlan | null;
   nextInterval: BillingInterval | null;
+  /** Licencias de técnico contratadas. */
+  staffSeats: number;
+  nextStaffSeats: number | null;
   trialEndsOn: string;
   paidUntil: string | null;
   renewsOn: string | null;
@@ -1620,9 +1633,10 @@ export interface AdminLicenseDto {
 export interface AdminLicensePaymentDto {
   id: string;
   clubName: string;
-  kind: 'Subscription' | 'Renewal';
-  plan: LicensePlan;
+  kind: 'Subscription' | 'Renewal' | 'StaffSeats';
   interval: BillingInterval;
+  /** Licencias de técnico de la suscripción con este pago. */
+  staffSeats: number;
   amountCents: number;
   periodPriceCents: number;
   status: PaymentStatus;

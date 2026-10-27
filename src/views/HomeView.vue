@@ -67,7 +67,7 @@ const highlights = [
         <div class="mt-8 flex flex-wrap gap-3">
           <RouterLink to="/registro" class="btn-primary px-6 py-3 text-base">Darme de alta</RouterLink>
           <RouterLink to="/liga" class="btn-secondary px-6 py-3 text-base">Ver la jornada</RouterLink>
-          <RouterLink to="/precios" class="btn-ghost px-6 py-3 text-base">Planes y precios</RouterLink>
+          <RouterLink to="/precios" class="btn-ghost px-6 py-3 text-base">Precios</RouterLink>
         </div>
         <dl class="mt-10 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
           <div v-for="item in highlights" :key="item.label" class="flex items-baseline gap-3 rounded-lg border border-line bg-surface px-4 py-3 sm:block">
