@@ -6,6 +6,10 @@ import type {
   BeginVideoUploadRequest,
   ClubCatalogDto,
   ClubAlertsDto,
+  MatchOfficialsDto,
+  PendingRefereeRatingDto,
+  RefereeDetailDto,
+  RefereeSummaryDto,
   ClubDto,
   ClubSquadDto,
   CoachDto,
@@ -214,6 +218,16 @@ export const api = {
   search: {
     query: (q: string, type: SearchType | null = null, limit = 6) =>
       http<SearchResultsDto>(`/api/search?q=${encodeURIComponent(q)}&limit=${limit}${type ? `&type=${type}` : ''}`, { silent: true, cacheMs: 30_000 }),
+  },
+
+  /** Árbitros y notas de los equipos (solo clubes y cuerpos técnicos con licencia). */
+  referees: {
+    list: (search?: string) => http<RefereeSummaryDto[]>(`/api/referees${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+    get: (refereeId: string) => http<RefereeDetailDto>(`/api/referees/${refereeId}`),
+    pending: () => http<PendingRefereeRatingDto[]>('/api/referees/pending', { silent: true }),
+    matchOfficials: (matchId: string) => http<MatchOfficialsDto>(`/api/matches/${matchId}/officials`),
+    rate: (matchId: string, refereeId: string, body: { score: number; comment: string | null; teamId?: string | null }) =>
+      http<MatchOfficialsDto>(`/api/matches/${matchId}/officials/${refereeId}/rating`, { method: 'PUT', body }),
   },
 
   /** Avisos de la campanita del club (solo cuentas de club). */

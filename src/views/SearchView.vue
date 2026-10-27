@@ -14,7 +14,7 @@ const route = useRoute();
 const router = useRouter();
 const store = useSearchStore();
 
-const types: SearchType[] = ['squad', 'competition', 'team', 'club', 'player', 'match'];
+const types: SearchType[] = ['squad', 'competition', 'team', 'club', 'player', 'match', 'referee'];
 const query = computed(() => (typeof route.query.q === 'string' ? route.query.q : ''));
 const type = computed<SearchType | null>(() => (typeof route.query.tipo === 'string' && (types as string[]).includes(route.query.tipo) ? (route.query.tipo as SearchType) : null));
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import OfficialSheetPanel from '@/components/sheet/OfficialSheetPanel.vue';
@@ -21,6 +21,7 @@ import TeamCrest from '@/components/teams/TeamCrest.vue';
 const props = defineProps<{ matchId: string }>();
 
 const auth = useAuthStore();
+const route = useRoute();
 const router = useRouter();
 const { data, loading, error } = useAsync(() => api.matches.get(props.matchId));
 
@@ -37,7 +38,7 @@ watch(data, async (detail) => {
       squadId = (await api.clubs.openSquad(detail.managedTeamId, detail.match.id)).squadId;
       void auth.refreshAccount();
     }
-    await router.replace({ name: 'sheet', params: { squadId, matchId: detail.match.id } });
+    await router.replace({ name: 'sheet', params: { squadId, matchId: detail.match.id }, query: route.query });
   } catch (e) {
     openError.value = errorMessage(e);
     opening.value = false;

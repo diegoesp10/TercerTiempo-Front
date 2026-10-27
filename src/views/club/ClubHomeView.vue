@@ -18,6 +18,7 @@ import { appointmentStatusLabels, appointmentStatusTone, formatDate, formatKicko
 import { confirmDialog } from '@/composables/useConfirm';
 import TeamName from '@/components/teams/TeamName.vue';
 import DashboardSearch from '@/components/search/DashboardSearch.vue';
+import RefereesDashboardCard from '@/components/referees/RefereesDashboardCard.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -202,6 +203,8 @@ const sortedAppointments = computed(() => {
         </article>
       </template>
     </div>
+
+    <RefereesDashboardCard v-if="club.teams.length > 0" class="mb-6" />
 
     <!-- Filiales del club publicados después del alta -->
     <section v-if="club.availableFilials.length" class="card mb-6">

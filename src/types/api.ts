@@ -147,6 +147,99 @@ export interface ClubTeamDto {
   licenseValidUntil: string;
 }
 
+// --- Árbitros (solo clubes y cuerpos técnicos con licencia) ---
+
+export type OfficialRole = 'Referee' | 'AssistantReferee1' | 'AssistantReferee2' | 'FourthOfficial';
+
+export interface RefereeStatsDto {
+  matches: number;
+  ratings: number;
+  /** Nota media 0-10; null sin notas. */
+  average: number | null;
+  /** Cuántas notas de cada valor, de 0 a 10. */
+  distribution: number[];
+}
+
+export interface RefereeRoleStatsDto {
+  role: OfficialRole;
+  matches: number;
+  ratings: number;
+  average: number | null;
+}
+
+export interface RefereeSummaryDto {
+  id: string;
+  name: string;
+  mainRole: OfficialRole;
+  matches: number;
+  ratings: number;
+  average: number | null;
+  lastMatchAt: string | null;
+}
+
+export interface RefereeRatingDto {
+  matchId: string;
+  kickoffAt: string;
+  homeTeamName: string;
+  awayTeamName: string;
+  /** Equipo que puso la nota. */
+  teamId: string;
+  teamName: string;
+  teamCrestUrl: string | null;
+  role: OfficialRole;
+  score: number;
+  comment: string | null;
+  updatedAt: string;
+}
+
+export interface RefereeMatchDto {
+  match: MatchDto;
+  role: OfficialRole;
+  ratings: number;
+  average: number | null;
+}
+
+export interface RefereeDetailDto {
+  id: string;
+  name: string;
+  /** Su ficha en futbolasturiano.es, si la publica. */
+  profileUrl: string | null;
+  stats: RefereeStatsDto;
+  byRole: RefereeRoleStatsDto[];
+  /** Las mejores notas con comentario. */
+  best: RefereeRatingDto[];
+  ratings: RefereeRatingDto[];
+  matches: RefereeMatchDto[];
+}
+
+export interface MatchOfficialDto {
+  refereeId: string;
+  name: string;
+  role: OfficialRole;
+  average: number | null;
+  ratings: number;
+  /** La nota de tu equipo en este partido, si ya la ha puesto. */
+  myScore: number | null;
+  myComment: string | null;
+}
+
+export interface MatchOfficialsDto {
+  matchId: string;
+  played: boolean;
+  canRate: boolean;
+  raterTeamId: string | null;
+  raterTeamName: string | null;
+  officials: MatchOfficialDto[];
+}
+
+export interface PendingRefereeRatingDto {
+  match: MatchDto;
+  teamId: string;
+  teamName: string;
+  officials: number;
+  rated: number;
+}
+
 // --- Avisos del club (la campanita; solo cuentas de club) ---
 
 export type AlertKind = 'LicenseExpiring';
@@ -1778,7 +1871,7 @@ export type UpsertCookieRequest = Pick<CookieDto, 'name' | 'category' | 'storage
 
 // --- Buscador ---
 
-export type SearchType = 'competition' | 'team' | 'club' | 'player' | 'match' | 'squad';
+export type SearchType = 'competition' | 'team' | 'club' | 'player' | 'match' | 'squad' | 'referee';
 
 export interface SearchItemDto {
   type: SearchType;
@@ -1789,7 +1882,7 @@ export interface SearchItemDto {
   link: string;
   /** Escudo (crest), foto del jugador (photo), escudo del local (match) o icono de liga (league). */
   imageUrl: string | null;
-  imageKind: 'crest' | 'photo' | 'match' | 'league' | 'none';
+  imageKind: 'crest' | 'photo' | 'match' | 'league' | 'referee' | 'none';
   /** Escudo del equipo del jugador o del visitante del partido. */
   secondaryImageUrl: string | null;
   /** Resultado del partido («0-1» o «vs») o jornadas de la liga. */

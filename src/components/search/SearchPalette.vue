@@ -6,6 +6,7 @@ import { errorMessage } from '@/api/http';
 import SearchResultItem from '@/components/search/SearchResultItem.vue';
 import { useSearchStore } from '@/stores/search';
 import type { SearchItemDto, SearchResultsDto, SearchType } from '@/types/api';
+import { useAuthStore } from '@/stores/auth';
 
 /**
  * Buscador de toda la app (Ctrl+K o «/»): ligas, equipos, clubes, jugadores, partidos (dos equipos: «nalón roces») y
@@ -34,8 +35,12 @@ const filters: { value: SearchType | null; label: string }[] = [
   { value: 'club', label: 'Clubes' },
   { value: 'player', label: 'Jugadores' },
   { value: 'match', label: 'Partidos' },
+  { value: 'referee', label: 'Árbitros' },
 ];
 const examples = ['nalón roces', '3ª rfef', 'vallobín', 'garcía'];
+// Los árbitros solo salen a clubes y cuerpos técnicos.
+const auth = useAuthStore();
+const visibleFilters = computed(() => filters.filter((f) => f.value !== 'referee' || auth.isClub || auth.isCoach));
 
 const counts = computed(() => new Map((results.value?.groups ?? []).map((g) => [g.type, g.total])));
 const flat = computed<SearchItemDto[]>(() => (results.value?.groups ?? []).flatMap((g) => g.items));
@@ -176,7 +181,7 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
           <!-- Filtros -->
           <div class="flex gap-1.5 overflow-x-auto border-b border-line px-4 py-2" role="radiogroup" aria-label="Tipo">
             <button
-              v-for="filter in filters"
+              v-for="filter in visibleFilters"
               :key="filter.label"
               type="button"
               role="radio"

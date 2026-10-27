@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/auth';
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, staffRoleLabels, visibilityLabels } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 import DashboardSearch from '@/components/search/DashboardSearch.vue';
+import RefereesDashboardCard from '@/components/referees/RefereesDashboardCard.vue';
 
 const auth = useAuthStore();
 
@@ -61,6 +62,8 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
         </template>
       </SquadAccessCard>
     </div>
+
+    <RefereesDashboardCard v-if="squads.length > 0" class="mt-6" />
 
     <section v-if="appointments.length > 0" class="card mt-6">
       <h2 class="font-semibold text-slate-900">Mis nombramientos</h2>

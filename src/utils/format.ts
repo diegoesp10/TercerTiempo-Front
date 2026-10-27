@@ -8,6 +8,7 @@ import type {
   LicenseStatus,
   MatchDto,
   MatchStatus,
+  OfficialRole,
   OfficialEventType,
   Position,
   SheetDifferenceDto,
@@ -61,6 +62,16 @@ export const visibilityLabels: Record<SquadVisibility, string> = {
   Private: 'Privada',
   Public: 'Pública',
 };
+
+export const officialRoleLabels: Record<OfficialRole, string> = {
+  Referee: 'Árbitro',
+  AssistantReferee1: 'Asistente 1',
+  AssistantReferee2: 'Asistente 2',
+  FourthOfficial: 'Cuarto árbitro',
+};
+
+/** Nota media con un decimal («7,5») o una raya si no hay notas. */
+export const formatScore = (score: number | null) => (score === null ? '—' : score.toFixed(1).replace('.', ','));
 
 export const matchStatusLabels: Record<MatchStatus, string> = {
   Scheduled: 'Programado',

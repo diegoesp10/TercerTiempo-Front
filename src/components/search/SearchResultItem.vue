@@ -18,6 +18,7 @@ const typeIcon: Record<SearchItemDto['type'], string> = {
   player: 'user',
   match: 'futbol',
   squad: 'users',
+  referee: 'flag',
 };
 const badgeTone = (badge: string) => (badge.startsWith('Tu') || badge.startsWith('De tu') || badge === 'Partido tuyo' ? 'blue' : 'slate');
 </script>

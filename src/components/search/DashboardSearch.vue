@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useSearchStore } from '@/stores/search';
+import { useAuthStore } from '@/stores/auth';
 
 /** Buscador grande del panel de inicio: al escribir se abre el buscador completo con lo escrito. */
 const store = useSearchStore();
+const auth = useAuthStore();
 const text = ref('');
 
 function open() {
@@ -18,7 +20,7 @@ const examples = ['nalón roces', '3ª rfef', 'vallobín', 'garcía'];
   <section class="card relative overflow-hidden">
     <div class="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-brand-500/10 blur-2xl" aria-hidden="true" />
     <p class="eyebrow">Buscador</p>
-    <h2 class="mt-1 text-lg font-bold text-slate-900">Encuentra cualquier liga, equipo, club, jugador o partido</h2>
+    <h2 class="mt-1 text-lg font-bold text-slate-900">Encuentra cualquier liga, equipo, club, jugador{{ auth.isClub || auth.isCoach ? ', partido o árbitro' : ' o partido' }}</h2>
     <form class="mt-3 flex items-center gap-3 rounded-xl border border-line bg-surface-2 px-4 py-3 focus-within:border-brand-400" role="search" @submit.prevent="open">
       <Icon icon="magnifying-glass" class="h-4 w-4 shrink-0 text-slate-400" />
       <input

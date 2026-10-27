@@ -7,6 +7,7 @@ import SheetComparison from '@/components/sheet/SheetComparison.vue';
 import TeamMatchStatsCard from '@/components/sheet/TeamMatchStatsCard.vue';
 import MatchPreview from '@/components/matches/MatchPreview.vue';
 import MatchVideos from '@/components/videos/MatchVideos.vue';
+import MatchOfficialsPanel from '@/components/referees/MatchOfficialsPanel.vue';
 import SuggestPerformanceModal from '@/components/suggestions/SuggestPerformanceModal.vue';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
@@ -34,12 +35,13 @@ const auth = useAuthStore();
 const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, props.matchId));
 
 /** «partido» es el acta pública (federación); «interna», la que rellena el cuerpo técnico. */
-type Tab = 'partido' | 'interna' | 'comparador' | 'video' | 'previa';
+type Tab = 'partido' | 'interna' | 'comparador' | 'video' | 'arbitros' | 'previa';
 const tabs: { id: Tab; label: string }[] = [
   { id: 'partido', label: 'Acta del partido' },
   { id: 'interna', label: 'Acta interna' },
   { id: 'comparador', label: 'Comparador' },
   { id: 'video', label: 'Vídeo' },
+  { id: 'arbitros', label: 'Árbitros' },
   { id: 'previa', label: 'Previa' },
 ];
 // La previa es para el cuerpo técnico y el club del equipo; los jugadores no la ven.
@@ -50,9 +52,12 @@ const canPrepare = computed(() =>
 const matchOver = computed(() =>
   !!data.value && data.value.match.status === 'Played' && new Date(data.value.match.kickoffAt).getTime() <= Date.now(),
 );
-const afterMatch: Tab[] = ['interna', 'comparador', 'video'];
+const afterMatch: Tab[] = ['interna', 'comparador', 'video', 'arbitros'];
+// Al equipo arbitral lo puntúan el club y su cuerpo técnico; los jugadores no lo ven.
+const canRateReferees = computed(() => canPrepare.value && (auth.isClub || auth.isCoach));
 const visibleTabs = computed(() =>
-  tabs.filter((t) => (t.id !== 'previa' || canPrepare.value) && (matchOver.value || !afterMatch.includes(t.id))),
+  tabs.filter((t) =>
+    (t.id !== 'previa' || canPrepare.value) && (t.id !== 'arbitros' || canRateReferees.value) && (matchOver.value || !afterMatch.includes(t.id))),
 );
 // Antes del partido, quien lo prepara entra directamente en la previa.
 const defaultTab = computed<Tab>(() => (!matchOver.value && canPrepare.value ? 'previa' : 'partido'));
@@ -307,6 +312,9 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
       <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="canPrepare" />
     </div>
 
+    <div v-else-if="tab === 'arbitros'" class="mt-6">
+      <MatchOfficialsPanel :match-id="matchId" />
+    </div>
 
     <div v-else-if="tab === 'previa'" class="mt-6">
       <MatchPreview :match-id="matchId" :my-team-id="teamId" :squad-id="squadId" />
