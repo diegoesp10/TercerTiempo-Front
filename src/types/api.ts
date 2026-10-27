@@ -230,7 +230,10 @@ export interface TeamRatingDto {
   teamName: string;
   teamCrestUrl: string | null;
   score: number;
+  /** Null si no lo hay o si la administración lo retiró. */
   comment: string | null;
+  /** Comentario retirado por la administración por no respetar las normas (la nota sigue). */
+  commentHidden: boolean;
   ratedBy: RefereeRaterDto;
   ratedAt: string;
 }
@@ -249,8 +252,60 @@ export interface RefereeRatingDto {
   role: OfficialRole;
   score: number;
   comment: string | null;
+  commentHidden: boolean;
   ratedBy: RefereeRaterDto;
   ratedAt: string;
+}
+
+/** Si un comentario se puede publicar o qué palabras prohibidas lleva. */
+export interface CommentCheckDto {
+  allowed: boolean;
+  terms: string[];
+  message: string | null;
+}
+
+// --- Moderación (administración) ---
+
+export type CommentFilter = 'All' | 'Flagged' | 'Hidden' | 'Visible';
+export type ForbiddenWordKind = 'Profanity' | 'Insult' | 'Slur' | 'Threat';
+
+export interface RefereeCommentAdminDto {
+  ratingId: string;
+  refereeId: string;
+  refereeName: string;
+  matchId: string;
+  kickoffAt: string;
+  homeTeamName: string;
+  awayTeamName: string;
+  teamName: string;
+  ratedBy: RefereeRaterDto;
+  role: OfficialRole;
+  score: number;
+  /** El comentario completo, también si está retirado. */
+  comment: string;
+  hidden: boolean;
+  hiddenAt: string | null;
+  /** Palabras de la lista actual que contiene. */
+  flaggedTerms: string[];
+  ratedAt: string;
+}
+
+export interface RefereeCommentsDto {
+  total: number;
+  flagged: number;
+  hidden: number;
+  comments: RefereeCommentAdminDto[];
+}
+
+export interface ForbiddenWordDto {
+  term: string;
+  kind: ForbiddenWordKind;
+  createdAt: string;
+}
+
+export interface ForbiddenWordsDto {
+  total: number;
+  words: ForbiddenWordDto[];
 }
 
 export interface RefereeMatchDto {

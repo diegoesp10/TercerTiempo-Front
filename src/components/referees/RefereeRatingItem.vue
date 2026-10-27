@@ -21,6 +21,7 @@ defineProps<{ rating: RefereeRatingDto }>();
       </span>
     </div>
     <p v-if="rating.comment" class="mt-2 text-sm leading-relaxed text-slate-700">“{{ rating.comment }}”</p>
+    <p v-else-if="rating.commentHidden" class="mt-2 text-xs italic text-slate-500">Comentario retirado por la administración por no respetar las normas.</p>
     <p class="mt-2 text-xs text-slate-500">
       <RouterLink :to="{ name: 'match', params: { matchId: rating.matchId } }" class="hover:text-accent-400">{{ rating.homeTeamName }} – {{ rating.awayTeamName }}</RouterLink>
       <template v-if="rating.category"> · {{ rating.category }}</template>

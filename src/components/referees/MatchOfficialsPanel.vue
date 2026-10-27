@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
-import { errorMessage } from '@/api/http';
+import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StarInput from '@/components/referees/StarInput.vue';
@@ -26,6 +26,8 @@ const error = ref<string | null>(null);
 const saving = ref<string | null>(null);
 const saved = ref<string | null>(null);
 const drafts = reactive<Record<string, { score: number | null; comment: string }>>({});
+// Por qué no se puede publicar el comentario de cada uno (palabras prohibidas), para mostrarlo bajo su casilla.
+const commentErrors = reactive<Record<string, string>>({});
 
 function fill(dto: MatchOfficialsDto) {
   data.value = dto;
@@ -58,6 +60,20 @@ async function save(official: MatchOfficialDto) {
   const score = draft.score;
   const comment = draft.comment.trim();
   const team = data.value.raterTeamName ?? 'tu equipo';
+
+  // Antes de pedir las dos confirmaciones: si el comentario lleva palabras prohibidas no se podría guardar.
+  delete commentErrors[official.refereeId];
+  if (comment) {
+    try {
+      const check = await api.referees.checkComment(comment);
+      if (!check.allowed) {
+        commentErrors[official.refereeId] = check.message ?? 'No se permiten palabras malsonantes ni insultos.';
+        return;
+      }
+    } catch {
+      // Si la comprobación falla, el guardado vuelve a mirarlo.
+    }
+  }
   const role = officialRoleLabels[official.role].toLowerCase();
 
   const first = await confirmDialog({
@@ -89,8 +105,12 @@ async function save(official: MatchOfficialDto) {
     }));
     saved.value = official.refereeId;
   } catch (e) {
-    error.value = errorMessage(e);
-    await load();
+    const field = e instanceof ApiError ? e.fieldErrors.comment?.[0] : undefined;
+    if (field) commentErrors[official.refereeId] = field;
+    else {
+      error.value = errorMessage(e);
+      await load();
+    }
   } finally {
     saving.value = null;
   }
@@ -156,9 +176,18 @@ async function save(official: MatchOfficialDto) {
               rows="2"
               maxlength="1000"
               class="input w-full text-sm"
-              placeholder="Por qué esta nota (opcional, pero ayuda a entenderla)"
+              placeholder="Por qué esta nota: decisiones, criterio, colocación… (opcional)"
               :aria-label="`Comentario sobre ${official.name}`"
+              :aria-describedby="`comment-rules-${official.refereeId}`"
+              :aria-invalid="!!commentErrors[official.refereeId]"
+              :class="commentErrors[official.refereeId] ? 'border-red-400' : ''"
+              @input="delete commentErrors[official.refereeId]"
             />
+            <p v-if="commentErrors[official.refereeId]" class="field-error">{{ commentErrors[official.refereeId] }}</p>
+            <p :id="`comment-rules-${official.refereeId}`" class="flex items-start gap-1.5 text-xs text-amber-600">
+              <Icon icon="triangle-exclamation" class="mt-0.5 h-3 w-3 shrink-0" />
+              No se permiten palabras malsonantes ni insultos: solo comentarios que dejen claro el trabajo realizado.
+            </p>
             <div class="flex flex-wrap items-center gap-3">
               <button
                 type="button"

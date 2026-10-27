@@ -5,6 +5,7 @@ import { ApiError, errorMessage } from '@/api/http';
 import ClubInvitationsPanel from '@/components/admin/ClubInvitationsPanel.vue';
 import FootballSyncPanel from '@/components/admin/FootballSyncPanel.vue';
 import LicensesPanel from '@/components/admin/LicensesPanel.vue';
+import ModerationPanel from '@/components/admin/ModerationPanel.vue';
 import LicensingSettingsPanel from '@/components/admin/LicensingSettingsPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -30,12 +31,13 @@ const admin = useAdminSessionStore();
 const auth = useAuthStore();
 const session = computed(() => admin.session);
 
-type AdminTab = 'jobs' | 'live' | 'licenses' | 'invitations' | 'analytics' | 'cookies';
+type AdminTab = 'jobs' | 'live' | 'licenses' | 'invitations' | 'moderation' | 'analytics' | 'cookies';
 const tabs: { value: AdminTab; label: string }[] = [
   { value: 'jobs', label: 'Trabajos y scrapeos' },
   { value: 'live', label: 'Descargas en directo' },
   { value: 'licenses', label: 'Licencias y cobros' },
   { value: 'invitations', label: 'Invitaciones de clubes' },
+  { value: 'moderation', label: 'Moderación' },
   { value: 'analytics', label: 'Uso de la web' },
   { value: 'cookies', label: 'Cookies' },
 ];
@@ -253,6 +255,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
     </div>
     <ClubInvitationsPanel v-else-if="tab === 'invitations'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     <AnalyticsPanel v-else-if="tab === 'analytics'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    <ModerationPanel v-else-if="tab === 'moderation'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     <CookiesAdminPanel v-else-if="tab === 'cookies'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
 
     <template v-else>

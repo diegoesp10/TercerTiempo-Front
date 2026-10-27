@@ -3,6 +3,12 @@ import type {
   AdminAuthResponse,
   AnalyticsReportDto,
   ClubScope,
+  CommentCheckDto,
+  CommentFilter,
+  ForbiddenWordKind,
+  ForbiddenWordsDto,
+  RefereeCommentAdminDto,
+  RefereeCommentsDto,
   CookiePolicyDto,
   UpsertCookieRequest,
   ClubInvitationDto,
@@ -61,4 +67,14 @@ export const adminApi = {
   createInvitation: (token: string, note: string | null, expiresInDays: number | null, teamId: string) =>
     http<ClubInvitationDto>('/api/admin/club-invitations', { method: 'POST', token, body: { note, expiresInDays, teamId } }),
   revokeInvitation: (token: string, id: string) => http<ClubInvitationDto>(`/api/admin/club-invitations/${id}/revoke`, { method: 'POST', token }),
+  refereeComments: (token: string, filter: CommentFilter, search: string) =>
+    http<RefereeCommentsDto>(`/api/admin/moderation/referee-comments?filter=${filter}${search ? `&search=${encodeURIComponent(search)}` : ''}`, { token }),
+  setCommentHidden: (token: string, ratingId: string, hidden: boolean) =>
+    http<RefereeCommentAdminDto>(`/api/admin/moderation/referee-comments/${ratingId}/hidden`, { method: 'PUT', token, body: { hidden } }),
+  forbiddenWords: (token: string) => http<ForbiddenWordsDto>('/api/admin/moderation/forbidden-words', { token }),
+  addForbiddenWord: (token: string, term: string, kind: ForbiddenWordKind) =>
+    http<ForbiddenWordsDto>('/api/admin/moderation/forbidden-words', { method: 'POST', token, body: { term, kind } }),
+  removeForbiddenWord: (token: string, term: string) =>
+    http<ForbiddenWordsDto>(`/api/admin/moderation/forbidden-words/${encodeURIComponent(term)}`, { method: 'DELETE', token }),
+  checkText: (token: string, text: string) => http<CommentCheckDto>('/api/admin/moderation/check', { method: 'POST', token, body: { text } }),
 };

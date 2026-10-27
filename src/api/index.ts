@@ -7,6 +7,7 @@ import type {
   ClubCatalogDto,
   ClubAlertsDto,
   MatchOfficialsDto,
+  CommentCheckDto,
   OfficialDuty,
   PendingRefereeRatingDto,
   RefereeCategoryDto,
@@ -239,6 +240,7 @@ export const api = {
     },
     get: (refereeId: string) => http<RefereeDetailDto>(`/api/referees/${refereeId}`, { anonymous: true }),
     pending: () => http<PendingRefereeRatingDto[]>('/api/referees/pending', { silent: true }),
+    checkComment: (text: string) => http<CommentCheckDto>('/api/referees/comments/check', { method: 'POST', body: { text }, silent: true }),
     matchOfficials: (matchId: string) => http<MatchOfficialsDto>(`/api/matches/${matchId}/officials`),
     rate: (matchId: string, refereeId: string, body: { score: number; comment: string | null; teamId?: string | null; confirmed: true }) =>
       http<MatchOfficialsDto>(`/api/matches/${matchId}/officials/${refereeId}/rating`, { method: 'PUT', body }),
