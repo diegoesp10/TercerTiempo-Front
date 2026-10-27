@@ -455,9 +455,10 @@ defineExpose({ load });
           No hay actas pedidas. Lanza los datos de las ligas con «Actas de los partidos jugados» marcado.
         </p>
 
-        <div v-else class="mt-4 space-y-4">
+        <!-- Con más de 5 jornadas, la lista va en su propio scroll (cabecera de cada jornada fija) para no alargar la página. -->
+        <div v-else class="mt-4 space-y-4" :class="groups.length > 5 ? 'max-h-[75vh] overflow-y-auto overscroll-contain pr-1' : ''">
           <div v-for="group in groups" :key="group.key" class="rounded-xl border border-line" :class="group.active ? 'border-brand-400 shadow-card' : ''">
-            <header class="flex items-center justify-between gap-2 border-b border-line bg-surface-2 px-3 py-2">
+            <header class="sticky top-0 z-10 flex items-center justify-between gap-2 rounded-t-xl border-b border-line bg-surface-2 px-3 py-2">
               <p class="truncate text-sm font-semibold text-slate-900">{{ group.competition }} · Jornada {{ group.matchday }}</p>
               <span class="shrink-0 text-xs tabular-nums text-slate-500">{{ group.done }}/{{ group.items.length }} guardadas</span>
             </header>
