@@ -1,59 +1,38 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef, watch } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
+import { useHomeCompetition } from '@/composables/useHomeCompetition';
 import { useMyClub } from '@/composables/useMyClub';
-import type { CompetitionDto, CompetitionMatchdayDto, MatchDto } from '@/types/api';
-import { formatTime, groupByLevel, levelLabels } from '@/utils/format';
+import type { CompetitionMatchdayDto, MatchDto } from '@/types/api';
+import { formatTime, levelLabels } from '@/utils/format';
 
 /**
  * Jornada en curso para la portada, con selector de categoría: datos reales en lugar de una ilustración. Cada
  * partido lleva a su página, donde se ven el acta oficial y las actas internas que las plantillas hayan hecho
  * públicas. Las ligas regionales son, de momento, solo las asturianas.
  */
-const competitions = shallowRef<CompetitionDto[]>([]);
-const selectedId = ref<string | null>(null);
+const { competition, options, selectedId, ready, select } = useHomeCompetition();
+const { isMine } = useMyClub();
+
 const matchday = shallowRef<CompetitionMatchdayDto | null>(null);
-const loading = ref(true);
-
-const { preferredCompetition, withMyClubFirst, isMine } = useMyClub();
-
-const options = computed(() =>
-  withMyClubFirst(groupByLevel(competitions.value).flatMap((group) => group.competitions.map((c) => ({ value: c.id, label: c.name, group: levelLabels[group.level] })))),
-);
-const competition = computed(() => competitions.value.find((c) => c.id === selectedId.value) ?? null);
-
-// Al abrir, la competición de tu club (si el ajuste está activo); si no, la última que se vio en este dispositivo.
-onMounted(async () => {
-  try {
-    competitions.value = await api.competitions.list();
-    const saved = localStorage.getItem('tt.home-competition');
-    selectedId.value = preferredCompetition(competitions.value)
-      ?? competitions.value.find((c) => c.id === saved)?.id
-      ?? [...competitions.value].sort((a, b) => a.sortOrder - b.sortOrder)[0]?.id
-      ?? null;
-  } catch {
-    loading.value = false;
-  }
-});
+const fetching = ref(false);
+const loading = computed(() => !ready.value || fetching.value);
 
 watch(selectedId, async (id) => {
   matchday.value = null;
   if (!id) return;
-  loading.value = true;
-  try {
-    localStorage.setItem('tt.home-competition', id);
-  } catch { /* sin almacenamiento local: se vuelve a la primera categoría la próxima vez */ }
+  fetching.value = true;
   try {
     const result = await api.competitions.matchday(id, null);
     if (selectedId.value === id) matchday.value = result;
   } catch {
     matchday.value = null;
   } finally {
-    if (selectedId.value === id) loading.value = false;
+    if (selectedId.value === id) fetching.value = false;
   }
-});
+}, { immediate: true });
 
 /** Los partidos de tu club, los primeros. */
 const isMyMatch = (m: MatchDto) => isMine(m.homeTeam.id) || isMine(m.awayTeam.id);
@@ -83,7 +62,7 @@ const outcomeClass = (m: MatchDto, side: 'home' | 'away') => {
             :options="options"
             placeholder="Elige la categoría"
             aria-label="Categoría"
-            @update:model-value="selectedId = ($event as string | null)"
+            @update:model-value="select($event as string | null)"
           />
         </div>
         <p v-if="matchday?.matchday" class="shrink-0 font-figures text-3xl font-extrabold leading-none text-slate-900">

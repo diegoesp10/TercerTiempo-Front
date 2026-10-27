@@ -5,6 +5,7 @@ import { errorMessage } from '@/api/http';
 import AppChart from '@/components/charts/AppChart.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import Alert from '@/components/ui/Alert.vue';
+import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Skeleton from '@/components/ui/Skeleton.vue';
 import {
   metricColors,
@@ -90,6 +91,10 @@ const promotionLabel = computed(() => {
 });
 const labels = computed(() => ({ ...metricLabels, promotion: promotionLabel.value }));
 const ranges = computed(() => zoneRanges(zones.value?.places));
+const matchdayOptions = computed(() => {
+  const days = data.value?.matchdays ?? [];
+  return [...days].reverse().map((day) => ({ value: day, label: `Jornada ${day}${day === days.at(-1) ? ' (la última)' : ''}` }));
+});
 const span = (positions: number[]) => (positions.length === 1 ? `${positions[0]}.º` : `${positions[0]}.º–${positions.at(-1)}.º`);
 
 const barsOption = computed(() => (zones.value && teams.value.length ? predictionBarsOption(teams.value, zones.value, settings.resolvedTheme, labels.value) : null));
@@ -114,12 +119,15 @@ const evolutionOption = computed(() =>
           </p>
         </div>
         <div v-if="data && data.matchdays.length" class="flex items-center gap-2">
-          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500" for="predictor-matchday">Con los datos de la</label>
-          <select id="predictor-matchday" v-model.number="matchday" class="input w-auto py-1.5 text-sm font-semibold">
-            <option v-for="day in [...data.matchdays].reverse()" :key="day" :value="day">
-              Jornada {{ day }}{{ day === data.matchdays.at(-1) ? ' (la última)' : '' }}
-            </option>
-          </select>
+          <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Con los datos de la</span>
+          <SearchSelect
+            class="w-48"
+            size="sm"
+            :model-value="matchday ?? data.matchday"
+            :options="matchdayOptions"
+            aria-label="Jornada del previsor"
+            @update:model-value="matchday = ($event as number | null)"
+          />
         </div>
       </div>
 
@@ -146,8 +154,7 @@ const evolutionOption = computed(() =>
 
     <template v-else-if="data && zones">
       <div class="grid grid-cols-1 gap-4 md:grid-cols-3" :class="{ 'is-refreshing': loading }">
-        <article v-if="favourite" class="card relative overflow-hidden">
-          <div class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full opacity-20 blur-2xl" :style="{ background: metricColors.champion }" />
+        <article v-if="favourite" class="card border-t-[3px]" :style="{ borderTopColor: metricColors.champion }">
           <p class="text-xs font-semibold uppercase tracking-wide" :style="{ color: metricColors.champion }"><Icon icon="trophy" class="mr-1 h-3 w-3" />Favorito al título</p>
           <div class="mt-2 flex items-center gap-3">
             <TeamCrest :src="favourite.crestUrl" :name="favourite.teamName" :short-name="favourite.shortName" size="lg" />
@@ -158,8 +165,7 @@ const evolutionOption = computed(() =>
           </div>
           <p class="mt-1 text-xs text-slate-500">Ahora {{ favourite.position }}.º con {{ favourite.points }} pts · acabaría con unos {{ num(favourite.expectedPoints) }}</p>
         </article>
-        <article v-if="promotionPick" class="card relative overflow-hidden">
-          <div class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full opacity-20 blur-2xl" :style="{ background: metricColors.promotion }" />
+        <article v-if="promotionPick" class="card border-t-[3px]" :style="{ borderTopColor: metricColors.promotion }">
           <p class="text-xs font-semibold uppercase tracking-wide" :style="{ color: metricColors.promotion }"><Icon icon="arrow-trend-up" class="mr-1 h-3 w-3" />{{ promotionLabel }}</p>
           <div class="mt-2 flex items-center gap-3">
             <TeamCrest :src="promotionPick.crestUrl" :name="promotionPick.teamName" :short-name="promotionPick.shortName" size="lg" />
@@ -170,8 +176,7 @@ const evolutionOption = computed(() =>
           </div>
           <p class="mt-1 text-xs text-slate-500">El más probable en {{ promotionLabel.toLowerCase() }} después del favorito</p>
         </article>
-        <article v-if="danger" class="card relative overflow-hidden">
-          <div class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full opacity-20 blur-2xl" :style="{ background: metricColors.relegation }" />
+        <article v-if="danger" class="card border-t-[3px]" :style="{ borderTopColor: metricColors.relegation }">
           <p class="text-xs font-semibold uppercase tracking-wide" :style="{ color: metricColors.relegation }"><Icon icon="arrow-trend-down" class="mr-1 h-3 w-3" />Más riesgo de descenso</p>
           <div class="mt-2 flex items-center gap-3">
             <TeamCrest :src="danger.crestUrl" :name="danger.teamName" :short-name="danger.shortName" size="lg" />

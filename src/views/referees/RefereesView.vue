@@ -5,6 +5,7 @@ import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
+import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StarRating from '@/components/referees/StarRating.vue';
 import { useAsync } from '@/composables/useAsync';
@@ -178,10 +179,16 @@ const rated = computed(() => ofDuty.value.filter((r) => r.ratings > 0).length);
             <input v-model="search" type="search" class="input w-full pl-9" placeholder="Buscar por nombre" />
           </label>
           <div class="flex w-full items-center gap-2 sm:w-auto">
-            <label class="text-xs font-semibold text-slate-500" for="referee-sort">Ordenar por</label>
-            <select id="referee-sort" v-model="sort" class="input min-w-0 flex-1 py-1.5 text-sm sm:w-44 sm:flex-none">
-              <option v-for="option in sorts" :key="option.value" :value="option.value">{{ option.label }}</option>
-            </select>
+            <span class="shrink-0 text-xs font-semibold text-slate-500">Ordenar por</span>
+            <SearchSelect
+              class="min-w-0 flex-1 sm:w-48 sm:flex-none"
+              size="sm"
+              :searchable="false"
+              :model-value="sort"
+              :options="sorts"
+              aria-label="Ordenar por"
+              @update:model-value="sort = ($event as RefereeSort | null) ?? 'Average'"
+            />
             <button
               type="button"
               class="btn-ghost shrink-0 px-2.5 py-1.5 text-xs"
