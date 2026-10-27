@@ -8,6 +8,7 @@ import StarRating from '@/components/referees/StarRating.vue';
 import RefereeRatingItem from '@/components/referees/RefereeRatingItem.vue';
 import TeamRatingItem from '@/components/referees/TeamRatingItem.vue';
 import { useAsync } from '@/composables/useAsync';
+import { useBackFallback } from '@/composables/useBackFallback';
 import type { RefereeMatchDto } from '@/types/api';
 import { formatDate, formatScore, officialDutyLabels, officialRoleLabels } from '@/utils/format';
 
@@ -38,21 +39,19 @@ const inCategory = <T extends { categoryKey: string | null }>(items: T[]) => (on
 const best = computed(() => inCategory(data.value?.best ?? []));
 const games = computed(() => inCategory(data.value?.matches ?? []));
 const ratingOf = (game: RefereeMatchDto, teamId: string) => game.teamRatings.find((r) => r.teamId === teamId);
-const back = computed(() => {
+useBackFallback(() => {
   const key = typeof route.query.categoria === 'string' ? route.query.categoria : data.value?.byCategory[0]?.categoryKey;
-  return { name: 'referees', query: key ? { categoria: key } : {} };
+  return { to: { name: 'referees', query: key ? { categoria: key } : {} }, label: 'Volver a los árbitros' };
 });
 </script>
 
 <template>
   <div>
-    <RouterLink :to="back" class="text-sm text-slate-500 hover:text-slate-800">← Árbitros</RouterLink>
-
     <Spinner v-if="loading && !data" class="my-12" />
-    <Alert v-else-if="error" kind="error" class="mt-4">{{ error }}</Alert>
+    <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
     <template v-else-if="data">
-      <section class="card mt-3">
+      <section class="card">
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0">
             <p class="eyebrow">Árbitro</p>

@@ -6,9 +6,9 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean;
     guestOnly?: boolean;
-    /** Página principal (sin botón «Atrás»). */
+    /** Página principal (sin botón «Volver»). */
     root?: boolean;
-    /** Página de error (sin botón «Atrás»; tiene los suyos). */
+    /** Página de error (sin botón «Volver»; tiene los suyos). */
     error?: boolean;
   }
 }
@@ -18,7 +18,7 @@ const PAGE_LEAVE_MS = 150;
 
 const router = createRouter({
   history: createWebHistory(),
-  // Página nueva: arriba del todo. «Atrás»: donde estaba. Mismo path (filtros en la query) o cambio de pestaña dentro
+  // Página nueva: arriba del todo. «Volver»: donde estaba. Mismo path (filtros en la query) o cambio de pestaña dentro
   // de la plantilla: no se mueve.
   scrollBehavior(to, from, savedPosition) {
     if (to.path === from.path) return false;

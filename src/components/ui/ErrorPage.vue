@@ -31,7 +31,7 @@ function back() {
     <p class="mt-3 max-w-md text-sm text-slate-600">{{ message }}</p>
     <div class="mt-8 flex flex-wrap justify-center gap-3">
       <button v-if="retry" type="button" class="btn-primary" @click="retryNavigation"><Icon icon="rotate-right" class="mr-2 h-3.5 w-3.5" />Reintentar</button>
-      <button type="button" class="btn-secondary" @click="back"><Icon icon="arrow-left" class="mr-2 h-3.5 w-3.5" />Atrás</button>
+      <button type="button" class="btn-secondary" @click="back"><Icon icon="arrow-left" class="mr-2 h-3.5 w-3.5" />Volver</button>
       <RouterLink to="/" class="btn-ghost"><Icon icon="house" class="mr-2 h-3.5 w-3.5" />Inicio</RouterLink>
     </div>
   </section>

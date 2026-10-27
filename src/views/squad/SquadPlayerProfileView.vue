@@ -14,6 +14,7 @@ import Badge from '@/components/ui/Badge.vue';
 import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
 import PlayerMatchLog from '@/components/players/PlayerMatchLog.vue';
 import PlayerPhotoWizard from '@/components/players/PlayerPhotoWizard.vue';
+import { useBackFallback } from '@/composables/useBackFallback';
 import { useAuthStore } from '@/stores/auth';
 import type { PlayerDto } from '@/types/api';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
@@ -27,6 +28,7 @@ const props = defineProps<{ squadId: string; squadPlayerId: string }>();
 const settings = useSettingsStore();
 
 const { data, loading, error, run } = useAsync(() => api.squads.playerProfile(props.squadId, props.squadPlayerId));
+useBackFallback(() => ({ to: { name: 'squad', params: { squadId: props.squadId } }, label: 'Volver a la plantilla' }));
 watch(() => props.squadPlayerId, () => void run());
 
 const played = computed(() => data.value?.matches.filter((m) => m.performance) ?? []);
@@ -93,10 +95,8 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">
-    <RouterLink :to="{ name: 'squad', params: { squadId } }" class="text-sm text-slate-500 hover:text-slate-800">← Plantilla</RouterLink>
-
     <PlayerHeroCard
-      class="mt-3 mb-6"
+      class="mb-6"
       :team="`${data.squad.teamName} · ${data.squad.seasonLabel}`"
       :team-crest-url="data.squad.teamCrestUrl"
       :team-id="data.squad.teamId"

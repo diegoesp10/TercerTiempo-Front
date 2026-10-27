@@ -17,16 +17,17 @@ import CardMarks from '@/components/sheet/CardMarks.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
+import { useBackFallback } from '@/composables/useBackFallback';
 import { useAuthStore } from '@/stores/auth';
 import type { MatchSheetDto, MatchSheetEntryInput, SquadPlayerDto, SuggestionDto } from '@/types/api';
 import { formatKickoff, matchStatusLabels, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, positionShortLabels, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
 import { downloadPaperSheet } from '@/utils/paperSheet';
-import TeamName from '@/components/teams/TeamName.vue';
 import PlayerName from '@/components/players/PlayerName.vue';
 import { opponentOf } from '@/utils/crests';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 
 const props = defineProps<{ squadId: string; matchId: string }>();
+useBackFallback(() => ({ to: { name: 'squad-matches', params: { squadId: props.squadId } }, label: 'Volver a los partidos de la plantilla' }));
 
 const route = useRoute();
 const router = useRouter();
@@ -259,11 +260,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">
-    <RouterLink :to="{ name: 'squad-matches', params: { squadId } }" class="text-sm text-slate-500 hover:text-slate-800">
-      ← Partidos de <TeamName :name="data.squad.teamName" :crest-url="data.squad.teamCrestUrl" :team-id="data.squad.teamId" />
-    </RouterLink>
-
-    <div class="card mt-3">
+    <div class="card">
       <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
         <span>Jornada {{ data.match.matchday }} · {{ formatKickoff(data.match.kickoffAt) }}<span v-if="data.match.venue"> · {{ data.match.venue }}</span></span>
         <span class="flex items-center gap-2">

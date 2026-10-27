@@ -14,6 +14,7 @@ import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import RosterStatsSummary from '@/components/teams/RosterStatsSummary.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
+import { useBackFallback } from '@/composables/useBackFallback';
 import { useAuthStore } from '@/stores/auth';
 import { formatKickoff, levelLabels, positionLabels, visibilityLabels } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
@@ -24,6 +25,9 @@ const auth = useAuthStore();
 const router = useRouter();
 
 const { data, loading, error } = useAsync(() => api.teams.get(props.teamId));
+useBackFallback(() => data.value
+  ? { to: { name: 'teams', query: { competition: data.value.season.competitionId } }, label: `Volver a ${data.value.season.competitionName}` }
+  : null);
 
 // Enlaces de antes (?jugador=, del buscador o de una búsqueda reciente): llevan a la ficha del jugador.
 const route = useRoute();
@@ -122,11 +126,7 @@ async function linkToClub() {
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">
-    <RouterLink :to="{ name: 'teams', query: { competition: data.season.competitionId } }" class="text-sm text-slate-500 hover:text-slate-800">
-      ← {{ data.season.competitionName }}
-    </RouterLink>
-
-    <PageHeader :title="data.name" :subtitle="`${levelLabels[data.season.level]} · ${data.season.competitionName} · ${data.season.label}`" class="mt-2">
+    <PageHeader :title="data.name" :subtitle="`${levelLabels[data.season.level]} · ${data.season.competitionName} · ${data.season.label}`">
       <template #actions>
         <TeamCrest :src="data.crestUrl" :name="data.name" :short-name="data.shortName" size="lg" />
         <RouterLink v-if="data.squad?.canView" :to="{ name: 'squad', params: { squadId: data.squad.squadId } }" class="btn-primary">
