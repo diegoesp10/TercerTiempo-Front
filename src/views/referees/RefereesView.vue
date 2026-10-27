@@ -12,8 +12,9 @@ import type { CompetitionLevel, OfficialDuty, RefereeCategoryDto, RefereeSummary
 import { formatDate, formatScore, levelLabels } from '@/utils/format';
 
 /**
- * Árbitros por categoría: primero se elige la categoría (de entrada, la de los equipos de la cuenta) y dentro van por
- * separado los principales y los asistentes, cada uno con la nota que le ponen los equipos en esa categoría y función.
+ * Árbitros por categoría, públicos como la liga y los equipos: primero se elige la categoría (de entrada, la de los
+ * equipos de la cuenta o, sin ella, la que más notas tiene) y dentro van por separado los principales y los asistentes,
+ * cada uno con la nota que le ponen los equipos en esa categoría y función.
  * La categoría y la función van en la URL (?categoria=3a-asturfutbol&funcion=asistentes) para poder enlazarlas.
  */
 const route = useRoute();
@@ -35,7 +36,7 @@ const category = computed(() => {
   const wanted = typeof route.query.categoria === 'string' ? route.query.categoria : null;
   return list.find((c) => c.key === wanted)
     ?? list.find((c) => index.value?.mine.includes(c.key))
-    ?? list[0]
+    ?? [...list].sort((a, b) => b.ratings - a.ratings || b.matches - a.matches)[0]
     ?? null;
 });
 const duty = computed<OfficialDuty>(() => (route.query.funcion === 'asistentes' ? 'Assistant' : 'Main'));
@@ -125,7 +126,7 @@ const elsewhere = computed(() =>
   <div>
     <PageHeader
       title="Árbitros"
-      subtitle="Por categoría, con los árbitros principales y los asistentes por separado y la nota de 0 a 10 que les ponen los clubes y sus cuerpos técnicos después de cada partido."
+      subtitle="Por categoría, con los árbitros principales y los asistentes por separado y la nota de 0 a 10 que les ponen los clubes y sus cuerpos técnicos después de cada partido, con quién la puso y por qué."
     />
 
     <Spinner v-if="loadingIndex && !index" class="my-12" />
@@ -263,7 +264,7 @@ const elsewhere = computed(() =>
       </section>
 
       <p class="mt-3 text-xs text-slate-500">
-        Las notas son una referencia entre clubes: las pone el club o el cuerpo técnico de cada equipo tras su partido y solo las ven otros clubes y cuerpos técnicos.
+        Las notas las pone el club o el cuerpo técnico de cada equipo tras su partido, una vez por árbitro y partido, y son definitivas: no se pueden cambiar.
         Un árbitro que pita en varias categorías, o que unas veces dirige y otras es asistente, sale en cada una con sus propias notas.
       </p>
     </template>

@@ -19,6 +19,7 @@ const unlicensed = ref(false);
 onMounted(async () => {
   const [p, c] = await Promise.allSettled([api.referees.pending(), api.referees.categories()]);
   if (p.status === 'fulfilled') pending.value = p.value;
+  else unlicensed.value = p.reason instanceof ApiError && p.reason.status === 403;
   if (c.status === 'fulfilled') {
     const index = c.value;
     const mine = index.categories.filter((item) => index.mine.includes(item.key));
@@ -30,8 +31,6 @@ onMounted(async () => {
         best.value = [];
       }
     }
-  } else {
-    unlicensed.value = c.reason instanceof ApiError && c.reason.status === 403;
   }
   loaded.value = true;
 });
@@ -41,11 +40,11 @@ onMounted(async () => {
   <section v-if="loaded" class="card">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 class="flex items-center gap-2 font-semibold text-slate-900"><Icon icon="flag" class="h-4 w-4 text-amber-400" />Árbitros</h2>
-      <RouterLink v-if="!unlicensed" :to="{ name: 'referees', query: category ? { categoria: category.key } : {} }" class="text-xs font-medium text-accent-400 hover:underline">Ver todos</RouterLink>
+      <RouterLink :to="{ name: 'referees', query: category ? { categoria: category.key } : {} }" class="text-xs font-medium text-accent-400 hover:underline">Ver todos</RouterLink>
     </div>
 
     <p v-if="unlicensed" class="mt-3 text-sm text-slate-500">
-      Con la licencia vigente puedes puntuar al equipo arbitral de tus partidos y ver las notas que les ponen los demás clubes.
+      Con la licencia vigente puedes puntuar al equipo arbitral de tus partidos.
     </p>
 
     <template v-else>
@@ -69,20 +68,20 @@ onMounted(async () => {
         </ul>
       </div>
       <p v-else class="mt-3 text-sm text-slate-500">No tienes equipos arbitrales pendientes de puntuar en el último mes.</p>
-
-      <div v-if="best.length && category" class="mt-4">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Mejores árbitros de {{ category.name }}</p>
-        <ul class="mt-2 space-y-2">
-          <li v-for="referee in best" :key="referee.id" class="flex items-center justify-between gap-3 text-sm">
-            <RouterLink :to="{ name: 'referee', params: { refereeId: referee.id }, query: { categoria: referee.categoryKey } }" class="min-w-0 truncate font-medium text-slate-900 hover:text-accent-400">{{ referee.name }}</RouterLink>
-            <span class="flex shrink-0 items-center gap-2 text-xs text-slate-500">
-              <StarRating :score="referee.average" size="sm" />
-              <strong class="font-figures text-slate-900">{{ formatScore(referee.average) }}</strong>
-              ({{ referee.ratings }})
-            </span>
-          </li>
-        </ul>
-      </div>
     </template>
+
+    <div v-if="best.length && category" class="mt-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Mejores árbitros de {{ category.name }}</p>
+      <ul class="mt-2 space-y-2">
+        <li v-for="referee in best" :key="referee.id" class="flex items-center justify-between gap-3 text-sm">
+          <RouterLink :to="{ name: 'referee', params: { refereeId: referee.id }, query: { categoria: referee.categoryKey } }" class="min-w-0 truncate font-medium text-slate-900 hover:text-accent-400">{{ referee.name }}</RouterLink>
+          <span class="flex shrink-0 items-center gap-2 text-xs text-slate-500">
+            <StarRating :score="referee.average" size="sm" />
+            <strong class="font-figures text-slate-900">{{ formatScore(referee.average) }}</strong>
+            ({{ referee.ratings }})
+          </span>
+        </li>
+      </ul>
+    </div>
   </section>
 </template>

@@ -237,7 +237,7 @@ export const api = {
     get: (refereeId: string) => http<RefereeDetailDto>(`/api/referees/${refereeId}`),
     pending: () => http<PendingRefereeRatingDto[]>('/api/referees/pending', { silent: true }),
     matchOfficials: (matchId: string) => http<MatchOfficialsDto>(`/api/matches/${matchId}/officials`),
-    rate: (matchId: string, refereeId: string, body: { score: number; comment: string | null; teamId?: string | null }) =>
+    rate: (matchId: string, refereeId: string, body: { score: number; comment: string | null; teamId?: string | null; confirmed: true }) =>
       http<MatchOfficialsDto>(`/api/matches/${matchId}/officials/${refereeId}/rating`, { method: 'PUT', body }),
   },
 

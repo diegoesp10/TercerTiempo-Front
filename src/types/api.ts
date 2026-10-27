@@ -208,6 +208,25 @@ export interface RefereeSummaryDto {
   lastMatchAt: string | null;
 }
 
+/** Quién puso una nota, tal como era al votar: el club o un técnico de su cuerpo técnico. */
+export interface RefereeRaterDto {
+  name: string;
+  club: boolean;
+  /** Función del técnico en la plantilla; null si la puso el club. */
+  staffRole: StaffRole | null;
+}
+
+/** La nota (definitiva) de un equipo a un árbitro en un partido, con quién la puso y por qué. */
+export interface TeamRatingDto {
+  teamId: string;
+  teamName: string;
+  teamCrestUrl: string | null;
+  score: number;
+  comment: string | null;
+  ratedBy: RefereeRaterDto;
+  ratedAt: string;
+}
+
 export interface RefereeRatingDto {
   matchId: string;
   kickoffAt: string;
@@ -222,7 +241,8 @@ export interface RefereeRatingDto {
   role: OfficialRole;
   score: number;
   comment: string | null;
-  updatedAt: string;
+  ratedBy: RefereeRaterDto;
+  ratedAt: string;
 }
 
 export interface RefereeMatchDto {
@@ -232,6 +252,8 @@ export interface RefereeMatchDto {
   role: OfficialRole;
   ratings: number;
   average: number | null;
+  /** Las notas de los dos equipos en ese partido, primero la del local. */
+  teamRatings: TeamRatingDto[];
 }
 
 export interface RefereeDetailDto {
@@ -264,17 +286,23 @@ export interface MatchOfficialDto {
   /** Media que le ponen en esa función (principal o asistente), en todos sus partidos. */
   average: number | null;
   ratings: number;
-  /** La nota de tu equipo en este partido, si ya la ha puesto. */
+  /** Las notas de los dos equipos en este partido, primero la del local. */
+  teamRatings: TeamRatingDto[];
+  /** La nota de tu equipo en este partido, si ya la ha puesto: es definitiva. */
   myScore: number | null;
-  myComment: string | null;
 }
 
 export interface MatchOfficialsDto {
   matchId: string;
+  homeTeam: TeamRefDto;
+  awayTeam: TeamRefDto;
   categoryKey: string | null;
   category: string | null;
   played: boolean;
+  /** La cuenta puede puntuar ahora en nombre de uno de los dos equipos (club o cuerpo técnico, con licencia). */
   canRate: boolean;
+  /** La cuenta es de uno de los dos equipos pero no tiene licencia vigente para puntuar. */
+  needsLicense: boolean;
   raterTeamId: string | null;
   raterTeamName: string | null;
   officials: MatchOfficialDto[];

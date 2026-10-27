@@ -50,8 +50,7 @@ const links = computed<NavLink[]>(() => {
     }
   }
 
-  items.push({ to: '/equipos', label: 'Equipos' }, { to: '/liga', label: 'Liga' });
-  if (auth.isClub || auth.isCoach) items.push({ to: '/arbitros', label: 'Árbitros' });
+  items.push({ to: '/equipos', label: 'Equipos' }, { to: '/liga', label: 'Liga' }, { to: '/arbitros', label: 'Árbitros' });
   return items;
 });
 

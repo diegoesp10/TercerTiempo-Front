@@ -2,9 +2,9 @@
 import StarRating from '@/components/referees/StarRating.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import type { RefereeRatingDto } from '@/types/api';
-import { formatDate, officialRoleLabels } from '@/utils/format';
+import { formatDate, officialRoleLabels, raterLabel } from '@/utils/format';
 
-/** Una nota de un equipo a un árbitro en un partido, con su comentario. */
+/** Una nota (definitiva) de un equipo a un árbitro en un partido, con su comentario y quién la puso. */
 defineProps<{ rating: RefereeRatingDto }>();
 </script>
 
@@ -26,5 +26,6 @@ defineProps<{ rating: RefereeRatingDto }>();
       <template v-if="rating.category"> · {{ rating.category }}</template>
       · {{ formatDate(rating.kickoffAt) }} · como {{ officialRoleLabels[rating.role].toLowerCase() }}
     </p>
+    <p class="mt-1 text-xs text-slate-500">Por {{ raterLabel(rating.ratedBy) }}</p>
   </article>
 </template>

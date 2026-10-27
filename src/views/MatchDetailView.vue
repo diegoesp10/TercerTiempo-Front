@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import OfficialSheetPanel from '@/components/sheet/OfficialSheetPanel.vue';
+import MatchOfficialsPanel from '@/components/referees/MatchOfficialsPanel.vue';
 import MatchVideos from '@/components/videos/MatchVideos.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -79,6 +80,11 @@ watch(data, async (detail) => {
 
     <div class="mt-6">
       <OfficialSheetPanel :match-id="data.match.id" :highlight-team-id="data.managedTeamId" />
+    </div>
+
+    <!-- El equipo arbitral y las notas de los dos equipos son públicos; se puntúa desde la vista del cuerpo técnico. -->
+    <div v-if="data.match.status === 'Played'" class="mt-6">
+      <MatchOfficialsPanel :match-id="data.match.id" />
     </div>
 
     <!-- El vídeo se sube desde el acta interna del equipo y solo existe cuando ya se ha jugado. -->

@@ -10,6 +10,7 @@ import type {
   MatchStatus,
   OfficialDuty,
   OfficialRole,
+  RefereeRaterDto,
   OfficialEventType,
   Position,
   SheetDifferenceDto,
@@ -75,6 +76,10 @@ export const officialDutyLabels: Record<OfficialDuty, string> = {
   Main: 'Árbitro principal',
   Assistant: 'Asistente',
 };
+
+/** Quién puso una nota: «CD Vallobín (club)» o «Pepe Rivero, segundo entrenador». */
+export const raterLabel = (rater: RefereeRaterDto) =>
+  rater.club ? `${rater.name} (club)` : `${rater.name}, ${rater.staffRole ? staffRoleLabels[rater.staffRole].toLowerCase() : 'cuerpo técnico'}`;
 
 /** Nota media con un decimal («7,5») o una raya si no hay notas. */
 export const formatScore = (score: number | null) => (score === null ? '—' : score.toFixed(1).replace('.', ','));

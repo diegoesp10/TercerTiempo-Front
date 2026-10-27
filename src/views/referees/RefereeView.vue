@@ -6,12 +6,15 @@ import Alert from '@/components/ui/Alert.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StarRating from '@/components/referees/StarRating.vue';
 import RefereeRatingItem from '@/components/referees/RefereeRatingItem.vue';
+import TeamRatingItem from '@/components/referees/TeamRatingItem.vue';
 import { useAsync } from '@/composables/useAsync';
+import type { RefereeMatchDto } from '@/types/api';
 import { formatDate, formatScore, officialDutyLabels, officialRoleLabels } from '@/utils/format';
 
 /**
- * Ficha de un árbitro: la nota media que le ponen los equipos y cómo se reparte, sus cifras en cada categoría como
- * principal y como asistente, y sus notas y partidos, que se pueden ver de una sola categoría (?categoria=).
+ * Ficha pública de un árbitro: la nota media que le ponen los equipos y cómo se reparte, sus cifras en cada categoría
+ * como principal y como asistente, y cada partido con la nota de los dos equipos, quién la puso y por qué. Se puede ver
+ * de una sola categoría (?categoria=).
  */
 const props = defineProps<{ refereeId: string }>();
 const route = useRoute();
@@ -32,9 +35,9 @@ const only = computed(() => {
 });
 const pick = (key: string | null) => void router.replace({ query: { ...route.query, categoria: key ?? undefined } });
 const inCategory = <T extends { categoryKey: string | null }>(items: T[]) => (only.value ? items.filter((i) => i.categoryKey === only.value) : items);
-const ratings = computed(() => inCategory(data.value?.ratings ?? []));
 const best = computed(() => inCategory(data.value?.best ?? []));
 const games = computed(() => inCategory(data.value?.matches ?? []));
+const ratingOf = (game: RefereeMatchDto, teamId: string) => game.teamRatings.find((r) => r.teamId === teamId);
 const back = computed(() => {
   const key = typeof route.query.categoria === 'string' ? route.query.categoria : data.value?.byCategory[0]?.categoryKey;
   return { name: 'referees', query: key ? { categoria: key } : {} };
@@ -123,27 +126,32 @@ const back = computed(() => {
       </section>
 
       <section class="mt-6">
-        <h2 class="text-lg font-bold text-slate-900">Todas las notas</h2>
-        <p v-if="ratings.length === 0" class="card mt-3 text-sm text-slate-500">Ningún equipo le ha puntuado todavía{{ only ? ' en esta categoría' : '' }}.</p>
-        <div v-else class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-          <RefereeRatingItem v-for="rating in ratings" :key="`${rating.matchId}-${rating.teamId}`" :rating="rating" />
-        </div>
-      </section>
-
-      <section class="mt-6">
-        <h2 class="text-lg font-bold text-slate-900">Partidos</h2>
-        <ul class="card mt-3 divide-y divide-line p-0">
-          <li v-for="game in games" :key="game.match.id" class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
-            <RouterLink :to="{ name: 'match', params: { matchId: game.match.id } }" class="min-w-0 hover:text-accent-400">
-              <span class="font-medium text-slate-900">{{ game.match.homeTeam.name }} {{ game.match.homeGoals ?? '' }} – {{ game.match.awayGoals ?? '' }} {{ game.match.awayTeam.name }}</span>
-              <span class="block text-xs text-slate-500">
-                <template v-if="game.category">{{ game.category }} · </template>Jornada {{ game.match.matchday }} · {{ formatDate(game.match.kickoffAt) }} · {{ officialRoleLabels[game.role].toLowerCase() }}
+        <h2 class="text-lg font-bold text-slate-900">Partidos y notas</h2>
+        <p class="mt-1 text-xs text-slate-500">Cada equipo le puntúa una vez por partido, con quién lo hizo y por qué. Las notas son definitivas.</p>
+        <p v-if="games.length === 0" class="card mt-3 text-sm text-slate-500">Ningún partido{{ only ? ' en esta categoría' : '' }}.</p>
+        <ul v-else class="mt-3 space-y-3">
+          <li v-for="game in games" :key="game.match.id" class="card p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
+              <RouterLink :to="{ name: 'match', params: { matchId: game.match.id } }" class="min-w-0 hover:text-accent-400">
+                <span class="font-medium text-slate-900">{{ game.match.homeTeam.name }} {{ game.match.homeGoals ?? '' }} – {{ game.match.awayGoals ?? '' }} {{ game.match.awayTeam.name }}</span>
+                <span class="block text-xs text-slate-500">
+                  <template v-if="game.category">{{ game.category }} · </template>Jornada {{ game.match.matchday }} · {{ formatDate(game.match.kickoffAt) }} · {{ officialRoleLabels[game.role].toLowerCase() }}
+                </span>
+              </RouterLink>
+              <span class="flex items-center gap-2 text-xs text-slate-500">
+                <StarRating :score="game.average" size="sm" />
+                <strong v-if="game.average !== null" class="font-figures text-slate-900">{{ formatScore(game.average) }}</strong>
+                {{ game.ratings === 0 ? 'sin notas' : game.ratings === 1 ? '1 nota' : `${game.ratings} notas` }}
               </span>
-            </RouterLink>
-            <span class="flex items-center gap-2 text-xs text-slate-500">
-              <StarRating :score="game.average" size="sm" />
-              {{ game.ratings === 0 ? 'sin notas' : game.ratings === 1 ? '1 nota' : `${game.ratings} notas` }}
-            </span>
+            </div>
+            <div v-if="game.teamRatings.length" class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+              <template v-for="team in [game.match.homeTeam, game.match.awayTeam]" :key="team.id">
+                <TeamRatingItem v-if="ratingOf(game, team.id)" :rating="ratingOf(game, team.id)!" />
+                <p v-else class="rounded-xl border border-dashed border-line p-3 text-xs text-slate-500">
+                  <strong class="text-slate-600">{{ team.name }}</strong> no le ha puesto nota.
+                </p>
+              </template>
+            </div>
           </li>
         </ul>
       </section>
