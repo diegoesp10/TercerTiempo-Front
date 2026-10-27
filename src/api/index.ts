@@ -8,6 +8,8 @@ import type {
   ClubAlertsDto,
   MatchOfficialsDto,
   CommentCheckDto,
+  LeaguePredictionDto,
+  LeaguePredictionEvolutionDto,
   OfficialDuty,
   PendingRefereeRatingDto,
   RefereeCategoryDto,
@@ -314,6 +316,11 @@ export const api = {
     sharedStreamUrl: (token: string) => `${apiBaseUrl}/api/videos/shared/${encodeURIComponent(token)}/stream`,
   },
   stats: {
+    // Previsor de resultados: público, va sin token.
+    prediction: (competitionId: string, matchday?: number | null) =>
+      http<LeaguePredictionDto>(`/api/league/predictions?competitionId=${competitionId}${matchday ? `&matchday=${matchday}` : ''}`, { anonymous: true }),
+    predictionEvolution: (competitionId: string) =>
+      http<LeaguePredictionEvolutionDto>(`/api/league/predictions/evolution?competitionId=${competitionId}`, { anonymous: true, silent: true }),
     leagueTable: (competitionId?: string | null) =>
       http<LeagueTableDto>(competitionId ? `/api/league/table?competitionId=${encodeURIComponent(competitionId)}` : '/api/league/table'),
   },

@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
+import LeaguePredictor from '@/components/league/LeaguePredictor.vue';
 import MatchdayFixtures from '@/components/matches/MatchdayFixtures.vue';
 import Alert from '@/components/ui/Alert.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
@@ -37,6 +38,17 @@ watch(competitions.data, (list) => {
   selectedId.value = preferredCompetition(list) ?? list.find((c) => c.level === 'National')?.id ?? list[0]?.id ?? null;
 });
 
+// Dos vistas de la liga elegida: la jornada con la clasificación y el previsor de resultados (?vista=previsor).
+type LeagueTab = 'clasificacion' | 'previsor';
+const tabs: { value: LeagueTab; label: string; icon: string }[] = [
+  { value: 'clasificacion', label: 'Jornada y clasificación', icon: 'table-list' },
+  { value: 'previsor', label: 'Previsor de resultados', icon: 'chart-line' },
+];
+const tab = computed<LeagueTab>(() => (route.query.vista === 'previsor' ? 'previsor' : 'clasificacion'));
+function showTab(value: LeagueTab) {
+  void router.replace({ query: { ...route.query, vista: value === 'previsor' ? 'previsor' : undefined } });
+}
+
 const table = useAsync(() => api.stats.leagueTable(selectedId.value), { immediate: false });
 const myRows = computed(() => (table.data.value?.standings ?? []).filter((row) => isMine(row.teamId)));
 
@@ -49,7 +61,7 @@ watch(selectedId, (id) => {
 
 <template>
   <PageHeader
-    title="Jornada y clasificación"
+    :title="tab === 'previsor' ? 'Previsor de resultados' : 'Jornada y clasificación'"
     :subtitle="table.data.value?.season ? `${table.data.value.season.competitionName} · ${table.data.value.season.label}` : undefined"
   >
     <template #actions>
@@ -69,6 +81,24 @@ watch(selectedId, (id) => {
   <Alert v-else-if="groups.length === 0" kind="warning">
     {{ season.isCurrent ? 'Todavía no hay ligas sincronizadas.' : `No hay ligas guardadas de la temporada ${season.selected?.label}.` }}
   </Alert>
+
+  <template v-else>
+  <div class="mb-6 flex flex-wrap gap-2" role="tablist" aria-label="Vista de la liga">
+    <button
+      v-for="item in tabs"
+      :key="item.value"
+      type="button"
+      role="tab"
+      :aria-selected="tab === item.value"
+      class="flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition"
+      :class="tab === item.value ? 'bg-action text-white shadow-glow' : 'bg-surface text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100'"
+      @click="showTab(item.value)"
+    >
+      <Icon :icon="item.icon" class="h-3.5 w-3.5" />{{ item.label }}
+    </button>
+  </div>
+
+  <LeaguePredictor v-if="tab === 'previsor' && selectedId" :competition-id="selectedId" :highlight-team-ids="myTeamIds" />
 
   <div v-else class="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
     <!-- Jornada en curso (o la elegida) -->
@@ -149,4 +179,5 @@ watch(selectedId, (id) => {
       </div>
     </div>
   </div>
+  </template>
 </template>

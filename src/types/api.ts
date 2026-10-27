@@ -2049,3 +2049,68 @@ export interface SearchResultsDto {
   indexedAt: string;
   elapsedMs: number;
 }
+
+// --- Previsor de resultados (público) ---
+
+export interface LeagueZonesDto {
+  /** Último puesto con ascenso o promoción. */
+  promotionUntil: number;
+  /** Primer puesto de descenso; null si no hay descenso. */
+  relegationFrom: number | null;
+  teams: number;
+}
+
+export interface TeamPredictionDto {
+  teamId: string;
+  teamName: string;
+  shortName: string;
+  crestUrl: string | null;
+  /** En la jornada elegida. */
+  position: number;
+  points: number;
+  played: number;
+  goalDifference: number;
+  /** Probabilidades de 0 a 1. */
+  champion: number;
+  promotion: number;
+  relegation: number;
+  expectedPoints: number;
+  expectedPosition: number;
+  /** Probabilidad de acabar en cada puesto, del 1.º al último. */
+  positionOdds: number[];
+  attack: number;
+  defense: number;
+}
+
+export interface LeaguePredictionDto {
+  season: SeasonDto | null;
+  matchday: number | null;
+  matchdays: number[];
+  totalMatchdays: number;
+  knownMatches: number;
+  simulatedMatches: number;
+  simulations: number;
+  zones: LeagueZonesDto | null;
+  /** Ordenados por el puesto final esperado. */
+  teams: TeamPredictionDto[];
+  notice: string | null;
+}
+
+export interface TeamEvolutionDto {
+  teamId: string;
+  teamName: string;
+  shortName: string;
+  crestUrl: string | null;
+  /** Una por jornada de matchdays. */
+  champion: number[];
+  promotion: number[];
+  relegation: number[];
+  position: number[];
+}
+
+export interface LeaguePredictionEvolutionDto {
+  matchdays: number[];
+  simulations: number;
+  zones: LeagueZonesDto | null;
+  teams: TeamEvolutionDto[];
+}
