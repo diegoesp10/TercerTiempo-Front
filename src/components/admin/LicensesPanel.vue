@@ -57,8 +57,16 @@ const simulations: { event: SimulatedLicenseEvent; label: string; tone: string }
 ];
 const canSimulate = (row: AdminLicenseDto) => isMock.value && row.contracted && row.provider === 'mock';
 
+// Buscar por el nombre del club o de cualquiera de sus equipos, sin distinguir tildes ni mayúsculas.
+const search = ref('');
+const normalize = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const matchesSearch = (row: AdminLicenseDto) => {
+  const needle = normalize(search.value.trim());
+  return !needle || [row.clubName, ...row.teamNames].some((name) => normalize(name).includes(needle));
+};
+
 const filtered = computed(() => {
-  const rows = data.value?.licenses ?? [];
+  const rows = (data.value?.licenses ?? []).filter(matchesSearch);
   switch (filter.value) {
     case 'owes': return rows.filter((r) => r.owedCents > 0);
     case 'trial': return rows.filter((r) => r.state === 'trial' || r.state === 'trial-plan');
@@ -163,7 +171,12 @@ defineExpose({ load });
             <p class="text-xs text-slate-500">Sin licencia vigente, nadie del club (club, cuerpo técnico ni jugadores) accede a los datos del equipo; el club solo puede pagar.</p>
             <p v-if="isMock" class="mt-1 text-xs text-amber-600">Pasarela simulada: en cada licencia con suscripción puedes lanzar los avisos que mandaría Stripe.</p>
           </div>
-          <div class="flex flex-wrap gap-1.5">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <label class="relative w-full sm:w-56">
+              <span class="sr-only">Buscar club o equipo</span>
+              <Icon icon="magnifying-glass" class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <input v-model="search" type="search" class="input w-full py-1.5 pl-9 text-sm" placeholder="Buscar club o equipo" />
+            </label>
             <button
               v-for="option in ([['all', 'Todas'], ['owes', 'Deben'], ['trial', 'En prueba'], ['paying', 'Al día'], ['inactive', 'Sin acceso']] as const)"
               :key="option[0]"
@@ -176,7 +189,9 @@ defineExpose({ load });
           </div>
         </div>
 
-        <p v-if="!filtered.length" class="text-sm text-slate-500">No hay licencias en este filtro.</p>
+        <p v-if="!filtered.length" class="text-sm text-slate-500">
+          {{ search.trim() ? `Ninguna licencia con «${search.trim()}» en este filtro.` : 'No hay licencias en este filtro.' }}
+        </p>
         <div v-else class="overflow-x-auto rounded-lg border border-slate-200">
           <table class="min-w-full text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">

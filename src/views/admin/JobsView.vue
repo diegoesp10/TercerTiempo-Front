@@ -376,9 +376,11 @@ const sourceTitle = (source: ScrapeSourceDto) =>
       <section class="card">
         <h2 class="mb-3 font-semibold text-slate-900">Ejecuciones</h2>
         <p v-if="!data.runs.length" class="text-sm text-slate-500">Todavía no hay ejecuciones guardadas.</p>
-        <div v-else class="overflow-x-auto rounded-lg border border-slate-200">
+        <!-- Unas 15 ejecuciones a la vista (el resumen ocupa como mucho dos líneas; entero, al pasar el ratón); el resto, con
+             scroll y la cabecera fija, como en «Últimas llamadas». -->
+        <div v-else class="max-h-[62rem] overflow-auto rounded-lg border border-slate-200">
           <table class="min-w-full text-sm">
-            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead class="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th class="px-3 py-2 text-left">Inicio</th>
                 <th class="px-3 py-2 text-left">Trabajo</th>
@@ -395,9 +397,9 @@ const sourceTitle = (source: ScrapeSourceDto) =>
                 <td class="px-3 py-2"><Badge :tone="statusTone[run.status]">{{ statusLabels[run.status] }}</Badge></td>
                 <td class="px-3 py-2 text-right tabular-nums whitespace-nowrap">{{ duration(run) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ run.requests }}</td>
-                <td class="max-w-md px-3 py-2 text-xs text-slate-600">
-                  <span v-if="run.scope" class="block font-medium text-slate-700">{{ run.scope }}</span>
-                  {{ run.summary ?? '—' }}<span v-if="run.errors.length" class="text-amber-700"> · {{ run.errors.length }} {{ run.errors.length === 1 ? 'error' : 'errores' }}</span>
+                <td class="min-w-80 max-w-xl px-3 py-2 text-xs text-slate-600" :title="[run.scope, run.summary].filter(Boolean).join('\n')">
+                  <span v-if="run.scope" class="block truncate font-medium text-slate-700">{{ run.scope }}</span>
+                  <span class="line-clamp-2">{{ run.summary ?? '—' }}<span v-if="run.errors.length" class="text-amber-700"> · {{ run.errors.length }} {{ run.errors.length === 1 ? 'error' : 'errores' }}</span></span>
                 </td>
               </tr>
             </tbody>
