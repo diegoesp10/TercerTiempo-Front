@@ -220,7 +220,9 @@ const faqs = computed(() => {
     },
     {
       q: '¿Cómo se paga?',
-      a: 'Con tarjeta, en la pasarela segura de Stripe: Tercer Tiempo no ve ni guarda los datos de tu tarjeta. Los precios incluyen el IVA y recibes la factura de cada cobro.',
+      a: c.provider === 'mock'
+        ? 'Ahora mismo los pagos están en modo de prueba: puedes recorrer todo el proceso, pero no se cobra nada. Cuando se conecte la pasarela se pagará con tarjeta en Stripe, con el IVA incluido y la factura de cada cobro.'
+        : 'Con tarjeta, en la pasarela segura de Stripe: Tercer Tiempo no ve ni guarda los datos de tu tarjeta. Los precios incluyen el IVA y recibes la factura de cada cobro.',
     },
   ];
 });

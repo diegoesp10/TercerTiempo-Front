@@ -44,19 +44,15 @@ watch(selectedId, (id) => {
 
 const selected = computed(() => competitions.data.value?.find((c) => c.id === selectedId.value) ?? null);
 
-const subtitle = computed(() =>
-  auth.isCoach
-    ? 'Elige nivel, liga y grupo, entra en tu equipo y crea su plantilla.'
-    : 'Elige nivel, liga y grupo para ver equipos, calendarios y plantillas.',
-);
+const subtitle = 'Elige nivel, liga y grupo para ver equipos, calendarios y plantillas.';
 </script>
 
 <template>
   <PageHeader title="Equipos" :subtitle="subtitle" />
 
   <Alert v-if="auth.isCoach && auth.coachSquads.length === 0" kind="info" class="mb-4">
-    Todavía no gestionas ninguna plantilla. Entra en tu equipo y pulsa <strong>«Crear plantilla»</strong>; si ya la creó otro
-    miembro del cuerpo técnico, <RouterLink to="/invitacion" class="font-medium underline">únete con su código</RouterLink>.
+    Todavía no estás en ninguna plantilla. Pide a tu club tu código de acceso y
+    <RouterLink to="/codigo-acceso" class="font-medium underline">canjéalo aquí</RouterLink>: entrarás directamente en la plantilla de tu equipo.
   </Alert>
 
   <Skeleton v-if="competitions.loading.value && !competitions.data.value" variant="cards" label="Cargando las competiciones…" />

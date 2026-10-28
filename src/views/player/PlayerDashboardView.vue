@@ -223,7 +223,7 @@ async function leave() {
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr><td class="py-2 text-slate-600">Goles a favor / partido</td><td class="py-2 text-center font-semibold tabular-nums">{{ formatNumber(league.teamGoalsForPerMatch) }}</td><td class="py-2 text-center tabular-nums">{{ formatNumber(league.leagueAvgGoalsForPerMatch) }}</td></tr>
-            <tr><td class="py-2 text-slate-600">Goles en contra / partido</td><td class="py-2 text-center font-semibold tabular-nums">{{ formatNumber(league.teamGoalsAgainstPerMatch) }}</td><td class="py-2 text-center tabular-nums">{{ formatNumber(league.leagueAvgGoalsForPerMatch) }}</td></tr>
+            <tr><td class="py-2 text-slate-600">Goles en contra / partido</td><td class="py-2 text-center font-semibold tabular-nums">{{ formatNumber(league.teamGoalsAgainstPerMatch) }}</td><td class="py-2 text-center tabular-nums">{{ formatNumber(league.leagueAvgGoalsAgainstPerMatch) }}</td></tr>
             <tr><td class="py-2 text-slate-600">Puntos / partido</td><td class="py-2 text-center font-semibold tabular-nums">{{ formatNumber(league.teamPointsPerMatch) }}</td><td class="py-2 text-center tabular-nums">{{ formatNumber(league.leagueAvgPointsPerMatch) }}</td></tr>
           </tbody>
         </table>

@@ -14,6 +14,7 @@ import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
+import { useViewer } from '@/composables/useViewer';
 import { formatKickoff, matchStatusLabels, positionShortLabels, visibilityLabels } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 import PlayerName from '@/components/players/PlayerName.vue';
@@ -22,6 +23,7 @@ import TeamCrest from '@/components/teams/TeamCrest.vue';
 const props = defineProps<{ matchId: string }>();
 
 const auth = useAuthStore();
+const { signedIn } = useViewer();
 const route = useRoute();
 const router = useRouter();
 const { data, loading, error } = useAsync(() => api.matches.get(props.matchId));
@@ -121,7 +123,11 @@ watch(data, async (detail) => {
         </div>
       </div>
 
-      <p v-if="!sheet.visible" class="text-sm text-slate-500">
+      <p v-if="!sheet.visible && sheet.visibility === 'Public'" class="text-sm text-slate-500">
+        Plantilla pública: su acta interna la ven las cuentas de los equipos con licencia vigente en Tercer Tiempo.
+        <template v-if="!signedIn"><RouterLink to="/login" class="font-medium text-accent-400 hover:underline">Entra con tu cuenta</RouterLink> para verla.</template>
+      </p>
+      <p v-else-if="!sheet.visible" class="text-sm text-slate-500">
         Acta privada: solo su club, su cuerpo técnico y sus jugadores vinculados pueden verla. Será pública cuando la plantilla decida compartirla.
       </p>
       <p v-else-if="sheet.entries.length === 0" class="text-sm text-slate-500">El cuerpo técnico todavía no ha registrado el acta de este partido.</p>

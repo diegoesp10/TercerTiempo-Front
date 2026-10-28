@@ -1342,6 +1342,7 @@ export interface LeagueComparisonDto {
   teamsCount: number;
   teamPosition: number | null;
   leagueAvgGoalsForPerMatch: number;
+  leagueAvgGoalsAgainstPerMatch: number;
   leagueAvgPointsPerMatch: number;
   teamGoalsForPerMatch: number | null;
   teamGoalsAgainstPerMatch: number | null;
