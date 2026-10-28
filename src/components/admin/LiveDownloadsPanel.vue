@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { adminApi } from '@/api/admin';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
@@ -7,15 +7,18 @@ import Badge from '@/components/ui/Badge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { confirmDialog } from '@/composables/useConfirm';
-import type { LiveDownloadsDto, SheetDownloadStatus, SheetQueueItemDto, SyncEventDto, SyncLeagueDto } from '@/types/api';
+import type { JobEventTone, JobLiveDto, LiveDownloadsDto, SheetDownloadStatus, SheetQueueItemDto, SyncEventDto, SyncLeagueDto } from '@/types/api';
 import { formatKickoff, formatTime } from '@/utils/format';
+import { jobIcons, jobState, runDuration, runStatusLabels, runStatusTone, scheduleText } from '@/components/admin/jobs';
 
 /**
- * Descargas en directo: lo que va trayendo la sincronización de las ligas (cada liga con su fase y cifras, y los
- * partidos, equipos, clasificaciones y plantillas según llegan) y la cola de actas pedidas a la federación, partido a
- * partido, con sus límites, la pausa si la hay y cuándo terminaría.
+ * Descargas en directo: todos los trabajos en segundo plano de un vistazo y, en detalle, lo que va trayendo la
+ * sincronización de las ligas (cada liga con su fase y cifras, y los partidos, equipos, clasificaciones y plantillas según
+ * llegan), la cola de actas pedidas a la federación partido a partido (con sus límites, la pausa si la hay y cuándo
+ * terminaría) y lo que van tocando los demás trabajos (árbitros, plazas, actas de la semana, avisos). Con `focus` se
+ * abre en el apartado del trabajo que se acaba de lanzar.
  */
-const props = defineProps<{ token: string }>();
+const props = defineProps<{ token: string; focus?: string | null }>();
 const emit = defineEmits<{ unauthorized: [] }>();
 
 const data = ref<LiveDownloadsDto | null>(null);
@@ -28,6 +31,15 @@ let tick: ReturnType<typeof setInterval> | null = null;
 const football = computed(() => data.value?.football ?? null);
 const sheets = computed(() => data.value?.sheets ?? null);
 const sheetsActive = computed(() => !!sheets.value && sheets.value.pending + sheets.value.downloading > 0);
+const jobs = computed(() => data.value?.jobs ?? []);
+const sheetsJob = computed(() => jobs.value.find((j) => j.job.name === 'official-sheets')?.job ?? null);
+// Las ligas y las actas tienen su propio detalle; el resto, un apartado cada uno en este orden.
+const detailOrder = ['match-officials', 'league-zones', 'weekly-sheets', 'license-alerts', 'license-renewals'];
+const otherJobs = computed(() =>
+  jobs.value
+    .filter((j) => j.job.name !== 'football-data' && j.job.name !== 'official-sheets')
+    .sort((a, b) => (detailOrder.indexOf(a.job.name) + 1 || 99) - (detailOrder.indexOf(b.job.name) + 1 || 99)),
+);
 const paused = computed(() => {
   const until = sheets.value?.pausedUntil;
   return until && new Date(until).getTime() > now.value ? until : null;
@@ -37,6 +49,7 @@ async function load() {
   try {
     data.value = await adminApi.liveDownloads(props.token);
     error.value = null;
+    revealFocus();
   } catch (e) {
     if ((e as { status?: number }).status === 401 || (e as { status?: number }).status === 403) {
       emit('unauthorized');
@@ -50,7 +63,7 @@ async function load() {
 function schedule() {
   if (poll) clearTimeout(poll);
   if (document.hidden) return;
-  const fast = football.value?.running || (sheetsActive.value && !paused.value);
+  const fast = football.value?.running || (sheetsActive.value && !paused.value) || jobs.value.some((j) => j.job.running);
   poll = setTimeout(() => void load(), fast ? 2_000 : 10_000);
 }
 
@@ -67,8 +80,38 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (poll) clearTimeout(poll);
   if (tick) clearInterval(tick);
+  if (glow) clearTimeout(glow);
   document.removeEventListener('visibilitychange', onVisibility);
 });
+
+// --- Ir al apartado de un trabajo (al lanzarlo desde «Trabajos y scrapeos» o al pulsar su tarjeta)
+
+const highlighted = ref<string | null>(null);
+let glow: ReturnType<typeof setTimeout> | null = null;
+let focusShown = false;
+
+async function reveal(job: string) {
+  await nextTick();
+  const section = document.getElementById(`live-${job}`);
+  if (!section) return;
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  highlighted.value = job;
+  if (glow) clearTimeout(glow);
+  glow = setTimeout(() => { highlighted.value = null; }, 2_500);
+}
+
+function revealFocus() {
+  if (focusShown || !props.focus || !data.value) return;
+  focusShown = true;
+  void reveal(props.focus);
+}
+
+watch(() => props.focus, () => {
+  focusShown = false;
+  revealFocus();
+});
+
+const ring = (job: string) => (highlighted.value === job ? 'ring-2 ring-brand-400 ring-offset-2 ring-offset-surface' : '');
 
 // --- Tiempos
 
@@ -221,6 +264,22 @@ async function clearQueue(onlyFinished: boolean) {
   }
 }
 
+// --- Los demás trabajos
+
+const toneText = { blue: 'text-brand-500', amber: 'text-amber-600', slate: 'text-slate-500', green: 'text-emerald-600', red: 'text-red-600' } as const;
+const eventIcon: Record<JobEventTone, string> = { success: 'circle-check', warning: 'triangle-exclamation', info: 'circle-info' };
+const eventTone: Record<JobEventTone, string> = { success: 'text-emerald-500', warning: 'text-amber-500', info: 'text-slate-400' };
+
+/** La línea de estado de cada tarjeta de la franja de arriba. */
+function tileText(live: JobLiveDto) {
+  const { job } = live;
+  if (job.running && job.progress) return [job.progress.current, job.progress.total ? `${job.progress.done}/${job.progress.total}` : null].filter(Boolean).join(' · ') || 'En marcha';
+  if (job.running) return live.startedAt ? `En marcha desde hace ${elapsed(live.startedAt)}` : 'En marcha';
+  const state = jobState(job).label;
+  if (job.name === 'official-sheets' && sheets.value && sheets.value.pending + sheets.value.downloading > 0) return `${state} · ${sheets.value.pending + sheets.value.downloading} en cola`;
+  return state;
+}
+
 defineExpose({ load });
 </script>
 
@@ -230,9 +289,43 @@ defineExpose({ load });
     <Spinner v-if="!data && !error" class="my-10" />
 
     <template v-if="data && football && sheets">
+      <!-- Todos los trabajos de un vistazo; cada tarjeta lleva a su apartado -->
+      <section class="card">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 class="font-semibold text-slate-900">Trabajos en segundo plano</h2>
+          <p class="text-xs text-slate-500">Pulsa uno para ir a su detalle. Se actualiza solo.</p>
+        </div>
+        <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <button
+            v-for="live in jobs"
+            :key="live.job.name"
+            type="button"
+            class="flex min-w-0 items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition hover:border-brand-400/60"
+            :class="live.job.running ? 'border-brand-400 bg-brand-500/10' : live.job.pause ? 'border-amber-400/50 bg-amber-400/5' : 'border-line bg-surface-2'"
+            @click="reveal(live.job.name)"
+          >
+            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-3">
+              <Icon v-if="live.job.running" icon="spinner" class="h-3.5 w-3.5 animate-spin text-brand-500" />
+              <Icon v-else-if="live.job.pause" :icon="live.job.pause.kind === 'rest' ? 'mug-hot' : 'pause'" class="h-3.5 w-3.5 text-amber-500" />
+              <Icon v-else :icon="jobIcons[live.job.name] ?? 'clock'" class="h-3.5 w-3.5 text-slate-500" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm font-semibold text-slate-900">{{ live.job.title }}</span>
+              <span class="block truncate text-xs" :class="toneText[jobState(live.job).tone]" :title="tileText(live)">{{ tileText(live) }}</span>
+              <span v-if="live.job.running && live.job.progress?.total" class="mt-1.5 block h-1 overflow-hidden rounded-full bg-surface-3">
+                <span class="block h-full bg-brand-500 transition-[width] duration-700" :style="{ width: `${pct(live.job.progress.done, live.job.progress.total)}%` }" />
+              </span>
+              <span v-else-if="live.job.lastRun" class="mt-0.5 block truncate text-[11px] text-slate-500">
+                Última: {{ formatKickoff(live.job.lastRun.startedAt) }} · {{ runStatusLabels[live.job.lastRun.status] }}
+              </span>
+            </span>
+          </button>
+        </div>
+      </section>
+
       <!-- Resumen: las dos descargas -->
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section class="card relative overflow-hidden">
+        <section id="live-football-data" class="card relative scroll-mt-24 overflow-hidden transition" :class="ring('football-data')">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
               <p class="eyebrow">Datos de las ligas · futbolasturiano.es</p>
@@ -262,7 +355,7 @@ defineExpose({ load });
           </details>
         </section>
 
-        <section class="card">
+        <section id="live-official-sheets" class="card scroll-mt-24 transition" :class="ring('official-sheets')">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
               <p class="eyebrow">Actas · asturfutbol.es</p>
@@ -280,6 +373,10 @@ defineExpose({ load });
               <p class="text-xs text-slate-500">actas terminadas</p>
             </div>
           </div>
+
+          <p v-if="sheetsJob?.running && sheetsJob.progress?.total" class="mt-3 text-xs text-slate-600">
+            <Icon icon="spinner" class="mr-1 h-3 w-3 animate-spin text-brand-500" />{{ sheetsJob.progress.current ?? 'Pasada de actas' }} · {{ sheetsJob.progress.done }}/{{ sheetsJob.progress.total }}
+          </p>
 
           <div v-if="sheetTotal" class="mt-4 flex h-2 overflow-hidden rounded-full bg-surface-3">
             <div class="h-full bg-emerald-500 transition-[width] duration-700" :style="{ width: `${pct(sheets.done, sheetTotal)}%` }" />
@@ -485,6 +582,73 @@ defineExpose({ load });
           </div>
         </div>
       </section>
+
+      <!-- Los demás trabajos: avance y lo último que han tocado -->
+      <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <section v-for="live in otherJobs" :id="`live-${live.job.name}`" :key="live.job.name" class="card scroll-mt-24 transition" :class="ring(live.job.name)">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="eyebrow">{{ live.job.enabled ? scheduleText(live.job) : 'Desactivado' }}</p>
+              <h2 class="mt-1 flex items-center gap-2 text-lg font-bold text-slate-900">
+                <Icon v-if="live.job.running" icon="spinner" class="h-4 w-4 animate-spin text-brand-500" />
+                <Icon v-else :icon="jobIcons[live.job.name] ?? 'clock'" class="h-4 w-4 text-slate-400" />
+                {{ live.job.title }}
+              </h2>
+              <p class="text-sm" :class="toneText[jobState(live.job).tone]">
+                {{ live.job.running ? (live.startedAt ? `En marcha desde hace ${elapsed(live.startedAt)}` : 'En marcha') : jobState(live.job).label }}
+              </p>
+            </div>
+            <div v-if="live.job.running && live.job.progress?.total" class="shrink-0 sm:text-right">
+              <p class="font-figures text-2xl font-extrabold tabular-nums text-slate-900">{{ live.job.progress.done }}<span class="text-sm font-medium text-slate-500">/{{ live.job.progress.total }}</span></p>
+            </div>
+          </div>
+          <p class="mt-2 line-clamp-2 text-xs text-slate-500" :title="live.job.description">{{ live.job.description }}</p>
+
+          <div v-if="live.job.running" class="mt-3">
+            <p class="mb-1 truncate text-xs text-slate-600">{{ live.job.progress?.current ?? 'Preparando…' }}</p>
+            <div class="h-2 overflow-hidden rounded-full bg-surface-3">
+              <div
+                class="h-full rounded-full bg-brand-500 transition-[width] duration-700"
+                :class="live.job.progress?.total ? '' : 'w-1/3 animate-pulse'"
+                :style="live.job.progress?.total ? { width: `${pct(live.job.progress.done, live.job.progress.total)}%` } : undefined"
+              />
+            </div>
+          </div>
+          <div v-else-if="live.job.lastRun" class="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-xs">
+            <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-slate-600">
+              <Badge :tone="runStatusTone[live.job.lastRun.status]">{{ runStatusLabels[live.job.lastRun.status] }}</Badge>
+              <span>Última: {{ formatKickoff(live.job.lastRun.startedAt) }} · {{ runDuration(live.job.lastRun) }} · {{ live.job.lastRun.requests }} llamadas{{ live.job.lastRun.manual ? ' · a mano' : '' }}</span>
+            </p>
+            <p v-if="live.job.lastRun.summary" class="mt-1 text-slate-700">{{ live.job.lastRun.summary }}</p>
+            <details v-if="live.job.lastRun.errors.length" class="mt-1">
+              <summary class="cursor-pointer text-amber-600">{{ live.job.lastRun.errors.length }} {{ live.job.lastRun.errors.length === 1 ? 'error' : 'errores' }}</summary>
+              <ul class="mt-1 max-h-32 space-y-1 overflow-y-auto text-slate-600"><li v-for="(message, i) in live.job.lastRun.errors" :key="i" class="break-words">{{ message }}</li></ul>
+            </details>
+          </div>
+
+          <TransitionGroup v-if="live.feed.length" tag="ul" name="feed" class="mt-3 max-h-[24rem] divide-y divide-line overflow-y-auto pr-1">
+            <li v-for="event in live.feed" :key="event.id" class="flex items-start gap-3 py-2 text-sm">
+              <Icon :icon="eventIcon[event.tone]" class="mt-0.5 h-3.5 w-3.5 shrink-0" :class="eventTone[event.tone]" />
+              <div class="min-w-0 flex-1">
+                <RouterLink
+                  v-if="event.home && event.away && event.matchId"
+                  :to="{ name: 'match', params: { matchId: event.matchId } }"
+                  class="flex min-w-0 items-center gap-1.5 text-xs text-slate-500 hover:text-accent-400"
+                >
+                  <TeamCrest :src="event.home.crestUrl" :name="event.home.name" size="xs" />
+                  <span class="truncate">{{ event.home.name }} – {{ event.away.name }}</span>
+                  <TeamCrest :src="event.away.crestUrl" :name="event.away.name" size="xs" />
+                </RouterLink>
+                <p class="break-words text-slate-800">{{ event.text }}</p>
+              </div>
+              <span class="w-12 shrink-0 text-right text-[11px] tabular-nums text-slate-500">{{ formatTime(event.at) }}</span>
+            </li>
+          </TransitionGroup>
+          <p v-else-if="!live.job.running" class="mt-3 text-xs text-slate-500">
+            Sin detalle desde que arrancó la API: al lanzarlo verás aquí, según avanza, cada cosa que toca.
+          </p>
+        </section>
+      </div>
     </template>
   </div>
 </template>

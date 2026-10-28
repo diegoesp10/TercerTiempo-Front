@@ -1763,6 +1763,15 @@ export interface LiveDownloadsDto {
   football: SyncLiveDto;
   sheets: SheetQueueDto;
   generatedAt: string;
+  /** Todos los trabajos en segundo plano (también ligas y actas) con su estado, su avance y lo último que han tocado. */
+  jobs: JobLiveDto[];
+}
+
+/** La federación está en pausa: el trabajo de las actas sigue solo a esa hora; lanzarlo antes lo deja pedido para entonces. */
+export interface JobPauseDto {
+  until: string;
+  kind: PauseKind | null;
+  reason: string | null;
 }
 
 export interface JobDto {
@@ -1777,6 +1786,26 @@ export interface JobDto {
   lastRun: JobRunDto | null;
   /** Día y hora fijos («Los lunes a las 7:00»); null si va por intervalo. */
   schedule?: string | null;
+  pause: JobPauseDto | null;
+}
+
+export type JobEventTone = 'info' | 'success' | 'warning';
+
+export interface JobEventDto {
+  id: number;
+  at: string;
+  text: string;
+  tone: JobEventTone;
+  home: SyncTeamRefDto | null;
+  away: SyncTeamRefDto | null;
+  matchId: string | null;
+}
+
+/** Un trabajo en directo: su estado y lo último que ha tocado en la ejecución en curso o en la última desde que arrancó la API. */
+export interface JobLiveDto {
+  job: JobDto;
+  startedAt: string | null;
+  feed: JobEventDto[];
 }
 
 export interface ScrapeSourceDto {

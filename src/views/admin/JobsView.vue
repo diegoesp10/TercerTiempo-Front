@@ -12,8 +12,9 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
-import type { AdminAuthResponse, AdminMfaChallenge, JobDto, JobRunDto, JobRunStatus, JobsOverviewDto, ScrapeRequestDto, ScrapeSourceDto } from '@/types/api';
+import type { AdminAuthResponse, AdminMfaChallenge, JobDto, JobsOverviewDto, ScrapeRequestDto, ScrapeSourceDto } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
+import { pauseLabels, pauseText, runDuration as duration, runStatusLabels as statusLabels, runStatusTone as statusTone, scheduleText as interval, until } from '@/components/admin/jobs';
 import AnalyticsPanel from '@/components/admin/AnalyticsPanel.vue';
 import LiveDownloadsPanel from '@/components/admin/LiveDownloadsPanel.vue';
 import { useAdminSessionStore } from '@/stores/adminSession';
@@ -43,6 +44,8 @@ const tabs: { value: AdminTab; label: string }[] = [
   { value: 'cookies', label: 'Cookies' },
 ];
 const tab = ref<AdminTab>('jobs');
+// Trabajo que se acaba de lanzar: «Descargas en directo» se abre en su apartado.
+const focus = ref<string | null>(null);
 const licensesPanel = ref<InstanceType<typeof LicensesPanel> | null>(null);
 const form = reactive({ userName: '', password: '' });
 const loggingIn = ref(false);
@@ -135,8 +138,12 @@ async function launch(job: JobDto) {
   launching.value = job.name;
   launchMessage.value = null;
   try {
-    await adminApi.run(session.value.token, job.name);
-    launchMessage.value = `«${job.title}» lanzado. La página se actualiza sola mientras dura.`;
+    const launched = await adminApi.run(session.value.token, job.name);
+    // Con la federación en pausa queda pedido: empieza solo al acabar la pausa, sin saltársela.
+    launchMessage.value = launched.pause
+      ? `«${job.title}» pedido. ${pauseText(launched)}: empieza solo entonces.`
+      : `«${job.title}» lanzado. Aquí lo ves en directo.`;
+    watchLive(job.name);
     // El trabajo arranca en segundo plano: un instante después ya figura en marcha.
     setTimeout(() => void load(true), 1_000);
   } catch (e) {
@@ -146,11 +153,20 @@ async function launch(job: JobDto) {
   }
 }
 
+function watchLive(job: string) {
+  tab.value = 'live';
+  focus.value = job;
+}
+
 function onSyncLaunched(message: string) {
   launchMessage.value = message;
-  tab.value = 'live';
+  watchLive('football-data');
   setTimeout(() => void load(true), 1_000);
 }
+
+watch(tab, (value) => {
+  if (value !== 'live') focus.value = null;
+});
 
 watch(provider, () => void load());
 
@@ -164,42 +180,7 @@ onBeforeUnmount(() => {
   stopPolling();
 });
 
-const statusLabels: Record<JobRunStatus, string> = {
-  running: 'En marcha',
-  succeeded: 'Correcta',
-  partial: 'Con errores',
-  failed: 'Fallida',
-  paused: 'En pausa',
-  interrupted: 'Interrumpida',
-};
-const statusTone: Record<JobRunStatus, 'green' | 'amber' | 'red' | 'blue' | 'slate'> = {
-  running: 'blue',
-  succeeded: 'green',
-  partial: 'amber',
-  failed: 'red',
-  paused: 'amber',
-  interrupted: 'slate',
-};
-
-function duration(run: JobRunDto) {
-  const end = run.finishedAt ? new Date(run.finishedAt).getTime() : Date.now();
-  const seconds = Math.max(0, Math.round((end - new Date(run.startedAt).getTime()) / 1000));
-  if (seconds < 60) return `${seconds} s`;
-  const minutes = Math.floor(seconds / 60);
-  return minutes < 60 ? `${minutes} min ${seconds % 60} s` : `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
-}
-
-const interval = (job: JobDto) =>
-  job.schedule ? job.schedule : job.intervalMinutes === null ? 'Solo a mano' : job.intervalMinutes % 60 === 0 ? `Cada ${job.intervalMinutes / 60} h` : `Cada ${job.intervalMinutes} min`;
-
 /** Uso del límite de peticiones (0-100), siempre dentro de la barra. */
-const pauseLabels: Record<string, string> = {
-  rest: 'Descansando',
-  session: 'Sesión cerrada',
-  retry: 'Reintentando',
-  blocked: 'Bloqueada',
-  error: 'Fallando',
-};
 const usage = (used: number | null, max: number | null) => (used === null || !max ? 0 : Math.min(100, (used / max) * 100));
 
 function origin(request: ScrapeRequestDto) {
@@ -269,7 +250,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
     </div>
     <div v-else-if="tab === 'live'" class="space-y-4">
       <Alert v-if="launchMessage" kind="success">{{ launchMessage }}</Alert>
-      <LiveDownloadsPanel :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+      <LiveDownloadsPanel :token="session.token" :focus="focus" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     </div>
     <ClubInvitationsPanel v-else-if="tab === 'invitations'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     <AnalyticsPanel v-else-if="tab === 'analytics'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
@@ -291,13 +272,22 @@ const sourceTitle = (source: ScrapeSourceDto) =>
             </div>
             <Badge v-if="!job.enabled" tone="slate">Desactivado</Badge>
             <Badge v-else-if="job.running" tone="blue">En marcha</Badge>
+            <Badge v-else-if="job.pause" tone="amber">En pausa</Badge>
             <Badge v-else tone="green">{{ interval(job) }}</Badge>
           </div>
+
+          <p v-if="job.pause" class="mt-3 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs text-slate-700">
+            <Icon :icon="job.pause.kind === 'rest' ? 'mug-hot' : 'pause'" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+            <span>
+              <strong class="text-slate-900">{{ pauseText(job) }}.</strong>
+              {{ job.pause.reason ?? 'La federación limita las peticiones.' }} Sigue sola a esa hora; si lo lanzas antes, queda pedido para entonces.
+            </span>
+          </p>
 
           <div v-if="job.progress" class="mt-3">
             <div class="mb-1 flex justify-between gap-2 text-xs text-slate-600">
               <span class="truncate">{{ job.progress.current ?? 'Preparando…' }}</span>
-              <span class="tabular-nums">{{ job.progress.done }}/{{ job.progress.total }}</span>
+              <span v-if="job.progress.total" class="tabular-nums">{{ job.progress.done }}/{{ job.progress.total }}</span>
             </div>
             <div class="h-1.5 w-full overflow-hidden rounded-full bg-surface-3">
               <div class="h-full rounded-full bg-brand-500 transition-[width] duration-700" :style="{ width: `${usage(job.progress.done, job.progress.total)}%` }" />
@@ -306,7 +296,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
 
           <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <dt class="text-slate-500">Próxima</dt>
-            <dd class="text-right text-slate-800">{{ job.running ? 'Ahora' : job.nextRunAt ? formatKickoff(job.nextRunAt) : job.enabled ? 'Solo a mano' : '—' }}</dd>
+            <dd class="text-right text-slate-800">{{ job.running ? 'Ahora' : job.pause ? `Al acabar la pausa (${until(job.pause.until)})` : job.nextRunAt ? formatKickoff(job.nextRunAt) : job.enabled ? 'Solo a mano' : '—' }}</dd>
             <template v-if="job.lastRun">
               <dt class="text-slate-500">Última</dt>
               <dd class="text-right text-slate-800">{{ formatKickoff(job.lastRun.startedAt) }} · {{ duration(job.lastRun) }}</dd>
@@ -334,16 +324,24 @@ const sourceTitle = (source: ScrapeSourceDto) =>
             @launched="onSyncLaunched"
             @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')"
           />
-          <button
-            v-else
-            type="button"
-            class="btn-primary mt-4"
-            v-busy="launching === job.name"
-            :disabled="!job.enabled || job.running || launching !== null"
-            @click="launch(job)"
-          >
-            <Icon icon="play" class="h-3.5 w-3.5" /> {{ job.running ? 'En marcha…' : 'Lanzar ahora' }}
-          </button>
+          <div v-else class="mt-4 flex flex-wrap gap-2">
+            <button v-if="job.running" type="button" class="btn-primary" @click="watchLive(job.name)">
+              <Icon icon="eye" class="h-3.5 w-3.5" /> En marcha · verlo en directo
+            </button>
+            <button
+              v-else
+              type="button"
+              class="btn-primary"
+              v-busy="launching === job.name"
+              :disabled="!job.enabled || launching !== null"
+              @click="launch(job)"
+            >
+              <Icon icon="play" class="h-3.5 w-3.5" /> {{ job.pause ? `Lanzar (empieza a ${until(job.pause.until)})` : 'Lanzar ahora' }}
+            </button>
+            <button v-if="!job.running" type="button" class="btn-ghost" @click="watchLive(job.name)">
+              <Icon icon="eye" class="h-3.5 w-3.5" /> En directo
+            </button>
+          </div>
         </article>
       </div>
 
@@ -381,7 +379,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
                 </td>
                 <td class="px-3 py-2 text-xs whitespace-nowrap">
                   <span v-if="source.pausedUntil" class="font-semibold" :class="source.pauseKind === 'blocked' ? 'text-red-600' : 'text-amber-600'" :title="source.pauseReason ?? undefined">
-                    {{ pauseLabels[source.pauseKind ?? ''] ?? 'En pausa' }} hasta {{ formatKickoff(source.pausedUntil) }}
+                    {{ source.pauseKind ? pauseLabels[source.pauseKind] : 'En pausa' }} hasta {{ formatKickoff(source.pausedUntil) }}
                   </span>
                   <span v-else-if="source.nextRequestAt" class="text-slate-600">Siguiente desde {{ formatKickoff(source.nextRequestAt) }}</span>
                   <span v-else class="text-emerald-700">Disponible</span>
