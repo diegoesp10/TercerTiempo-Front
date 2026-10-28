@@ -41,6 +41,8 @@ interface RequestOptions {
   token?: string;
   /** Lectura pública: va sin token, así que responde igual sin sesión, con una cuenta o como administrador. */
   anonymous?: boolean;
+  /** Escrituras que no cambian datos que se lean (el latido de la sesión): no vacían la caché de lecturas. */
+  keepCache?: boolean;
 }
 
 export const apiBaseUrl = baseUrl;
@@ -63,7 +65,7 @@ function adminViewerToken(): string | null {
 
 export function http<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const method = options.method ?? 'GET';
-  if (method !== 'GET') return request<T>(path, options).finally(clearHttpCache);
+  if (method !== 'GET') return request<T>(path, options).finally(() => { if (!options.keepCache) clearHttpCache(); });
 
   const key = `${options.anonymous ? '' : options.token ?? useAuthStore().token ?? adminViewerToken() ?? ''}|${useSeasonStore().selectedId ?? ''}|${path}`;
   const cached = cache.get(key);

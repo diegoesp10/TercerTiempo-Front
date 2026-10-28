@@ -18,6 +18,7 @@ import type {
   JobsOverviewDto,
   LicensesOverviewDto,
   LiveDownloadsDto,
+  PresenceOverviewDto,
   PaymentEventDto,
   SimulatedLicenseEvent,
   LicensingSettingsDto,
@@ -41,6 +42,8 @@ export const adminApi = {
   runFootballSync: (token: string, body: RunFootballSyncRequest) =>
     http<JobDto>('/api/admin/football-sync/run', { method: 'POST', token, body }),
   liveDownloads: (token: string) => http<LiveDownloadsDto>('/api/admin/live-downloads', { token, silent: true }),
+  presence: (token: string, q: string) =>
+    http<PresenceOverviewDto>(`/api/admin/presence${q ? `?q=${encodeURIComponent(q)}` : ''}`, { token, silent: true }),
   cancelSheetDownloads: (token: string, onlyFinished: boolean) =>
     http<number>(`/api/admin/sheet-downloads/cancel?onlyFinished=${onlyFinished}`, { method: 'POST', token }),
   analytics: (token: string, from: string, to: string, clubId: string | null, scope: ClubScope) =>

@@ -1765,6 +1765,37 @@ export interface SheetQueueDto {
   items: SheetQueueItemDto[];
 }
 
+/** Una sesión abierta (un inicio de sesión: la misma cuenta en dos dispositivos son dos). */
+export interface PresenceSessionDto {
+  sessionId: string;
+  userId: string;
+  accountType: AccountType;
+  name: string;
+  email: string | null;
+  /** El equipo del jugador, los de las plantillas del técnico o los del club. */
+  teams: string | null;
+  /** Página de la web en la que está. */
+  path: string | null;
+  /** «Chrome · Windows», «Safari · iPhone». */
+  device: string;
+  /** online: señales en los últimos 150 segundos; idle: en los últimos 30 minutos. */
+  status: 'online' | 'idle';
+  startedAt: string;
+  lastSeenAt: string;
+}
+
+export interface PresenceOverviewDto {
+  online: number;
+  idle: number;
+  clubs: number;
+  coaches: number;
+  players: number;
+  /** Sesiones que cumplen la búsqueda (se devuelven como mucho 500, las más recientes). */
+  matching: number;
+  sessions: PresenceSessionDto[];
+  generatedAt: string;
+}
+
 export interface LiveDownloadsDto {
   football: SyncLiveDto;
   sheets: SheetQueueDto;

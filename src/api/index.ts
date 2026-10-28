@@ -226,6 +226,15 @@ export const api = {
     deleteInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'DELETE' }),
   },
 
+  /**
+   * Latido de la sesión (la lista de gente en sesión de la administración): la página en la que está la cuenta. Con
+   * `end` y el token de la sesión que se cierra, desaparece de la lista al momento.
+   */
+  presence: {
+    ping: (path: string) => http<void>('/api/presence', { method: 'POST', body: { path }, silent: true, keepCache: true }),
+    end: (token: string) => http<void>('/api/presence', { method: 'DELETE', token, silent: true, keepCache: true }),
+  },
+
   /** Buscador de toda la app (ligas, equipos, clubes, jugadores, partidos y tus plantillas); solo con sesión. */
   search: {
     query: (q: string, type: SearchType | null = null, limit = 6) =>

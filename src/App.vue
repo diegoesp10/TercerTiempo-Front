@@ -7,10 +7,12 @@ import { useAuthStore } from '@/stores/auth';
 import { useSeasonStore } from '@/stores/season';
 import { useConsentStore } from '@/stores/consent';
 import CookieBanner from '@/components/privacy/CookieBanner.vue';
+import { usePresenceHeartbeat } from '@/composables/usePresenceHeartbeat';
 
 const auth = useAuthStore();
 const season = useSeasonStore();
 const consent = useConsentStore();
+usePresenceHeartbeat();
 
 // Al arrancar con sesión guardada, refrescamos la cuenta (plantillas, vínculos, visibilidad) sin bloquear la UI.
 // Las actualizaciones de datos de la API no se anuncian aquí: se siguen en la página oculta /jobs.

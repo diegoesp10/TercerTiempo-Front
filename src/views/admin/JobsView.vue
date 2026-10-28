@@ -17,6 +17,7 @@ import { formatKickoff } from '@/utils/format';
 import { pauseLabels, pauseText, runDuration as duration, runStatusLabels as statusLabels, runStatusTone as statusTone, scheduleText as interval, until } from '@/components/admin/jobs';
 import AnalyticsPanel from '@/components/admin/AnalyticsPanel.vue';
 import LiveDownloadsPanel from '@/components/admin/LiveDownloadsPanel.vue';
+import PresencePanel from '@/components/admin/PresencePanel.vue';
 import { useAdminSessionStore } from '@/stores/adminSession';
 import { useAuthStore } from '@/stores/auth';
 import CookiesAdminPanel from '@/components/admin/CookiesAdminPanel.vue';
@@ -33,10 +34,11 @@ const admin = useAdminSessionStore();
 const auth = useAuthStore();
 const session = computed(() => admin.session);
 
-type AdminTab = 'jobs' | 'live' | 'licenses' | 'invitations' | 'moderation' | 'analytics' | 'cookies';
+type AdminTab = 'jobs' | 'live' | 'presence' | 'licenses' | 'invitations' | 'moderation' | 'analytics' | 'cookies';
 const tabs: { value: AdminTab; label: string }[] = [
   { value: 'jobs', label: 'Trabajos y scrapeos' },
   { value: 'live', label: 'Descargas en directo' },
+  { value: 'presence', label: 'Gente en sesión' },
   { value: 'licenses', label: 'Licencias y cobros' },
   { value: 'invitations', label: 'Invitaciones de clubes' },
   { value: 'moderation', label: 'Moderación' },
@@ -252,6 +254,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
       <Alert v-if="launchMessage" kind="success">{{ launchMessage }}</Alert>
       <LiveDownloadsPanel :token="session.token" :focus="focus" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     </div>
+    <PresencePanel v-else-if="tab === 'presence'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     <ClubInvitationsPanel v-else-if="tab === 'invitations'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     <AnalyticsPanel v-else-if="tab === 'analytics'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     <ModerationPanel v-else-if="tab === 'moderation'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
