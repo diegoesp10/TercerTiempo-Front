@@ -8,11 +8,11 @@ import VideoUploader from '@/components/videos/VideoUploader.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
-import { useAuthStore } from '@/stores/auth';
 import type { MatchVideoDto } from '@/types/api';
 import { formatBytes, formatKickoff, formatMoney, videoAccessLabels, videoPartLabels } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
 import TeamName from '@/components/teams/TeamName.vue';
+import { useViewer } from '@/composables/useViewer';
 
 const props = defineProps<{
   matchId: string;
@@ -21,7 +21,7 @@ const props = defineProps<{
   canUpload?: boolean;
 }>();
 
-const auth = useAuthStore();
+const { signedIn } = useViewer();
 
 const videos = shallowRef<MatchVideoDto[]>([]);
 const loading = ref(false);
@@ -115,7 +115,7 @@ async function toggleVisibility(video: MatchVideoDto) {
 }
 
 const accessTone = (video: MatchVideoDto) =>
-  video.access === 'Owner' || video.access === 'Purchased' || video.access === 'Free' ? 'green' : video.access === 'Locked' ? 'amber' : 'slate';
+  video.access === 'Owner' || video.access === 'Purchased' || video.access === 'Free' || video.access === 'Admin' ? 'green' : video.access === 'Locked' ? 'amber' : 'slate';
 
 const canUploadHere = computed(() => props.canUpload && !!props.uploadSquadId);
 </script>
@@ -160,7 +160,7 @@ const canUploadHere = computed(() => props.canUpload && !!props.uploadSquadId);
               <button v-else-if="video.access === 'Locked'" type="button" class="btn-secondary px-3 py-1 text-xs" v-busy="busy === video.id" :disabled="busy === video.id" @click="purchase(video)">
                 {{ busy === video.id ? 'Comprando…' : `Comprar por ${formatMoney(video.priceCents, video.currency)}` }}
               </button>
-              <span v-else-if="!auth.isAuthenticated" class="text-xs text-slate-500">
+              <span v-else-if="!signedIn" class="text-xs text-slate-500">
                 <RouterLink to="/login" class="text-accent-400 hover:underline">Entra</RouterLink> para verlo
               </span>
               <template v-if="video.canDelete">

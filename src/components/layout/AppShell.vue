@@ -26,6 +26,7 @@ const season = useSeasonStore();
 const consent = useConsentStore();
 const router = useRouter();
 const route = useRoute();
+const admin = useAdminSessionStore();
 const menuOpen = ref(false);
 
 interface NavLink {
@@ -38,6 +39,7 @@ interface NavLink {
 const links = computed<NavLink[]>(() => {
   const items: NavLink[] = [];
 
+  if (admin.isActive && !auth.isAuthenticated) items.push({ to: '/jobs', label: 'Administración' });
   if (auth.isCoach) items.push({ to: '/', label: 'Mis plantillas', exact: true });
   if (auth.isClub) items.push({ to: '/', label: 'Mi club', exact: true });
 
@@ -82,9 +84,8 @@ function logout() {
 }
 
 // La sesión de administrador va aparte de la de las cuentas (nunca a la vez): se enseña como tal y se cierra aquí.
-const admin = useAdminSessionStore();
-// El buscador es para las cuentas (club, técnico o jugador), no para el administrador.
-const canSearch = computed(() => auth.isAuthenticated && !admin.isActive);
+// Con ella se navega por toda la web en solo lectura, buscador incluido (encuentra también las plantillas internas).
+const canSearch = computed(() => auth.isAuthenticated || admin.isActive);
 function logoutAdmin() {
   admin.end();
   menuOpen.value = false;
@@ -220,6 +221,11 @@ function logoutAdmin() {
     </header>
 
     <LoadingBar />
+    <div v-if="admin.isActive" class="border-b border-red-400/30 bg-red-500/10 px-4 py-2 text-center text-sm text-slate-700">
+      <Icon icon="eye" class="mr-1.5 h-3.5 w-3.5 text-red-500" />
+      <strong class="text-slate-900">Modo administrador:</strong> ves lo de todos los clubes, técnicos y jugadores solo para consultar; cada cuenta edita lo suyo.
+      <RouterLink to="/jobs" class="ml-1 font-semibold text-accent-400 hover:underline">Ir a la administración</RouterLink>
+    </div>
     <div v-if="!season.isCurrent && season.selected" class="border-b border-amber-400/40 bg-amber-500/10 px-4 py-2 text-center text-sm text-amber-700">
       Estás viendo la temporada <strong class="tabular-nums">{{ season.selected.label }}</strong>: solo consulta.
       <button type="button" class="ml-1 font-semibold underline hover:no-underline" @click="season.select(null)">

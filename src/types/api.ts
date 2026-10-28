@@ -5,7 +5,8 @@ export type AppointmentStatus = 'Pending' | 'Active' | 'Expired' | 'Revoked';
 export type MatchSide = 'Home' | 'Away';
 export type OfficialSheetAvailability = 'NotPlayed' | 'Pending' | 'Available' | 'Unavailable' | 'Fetching';
 export type OfficialEventType = 'Goal' | 'PenaltyGoal' | 'OwnGoal' | 'YellowCard' | 'SecondYellow' | 'RedCard' | 'Substitution';
-export type VideoAccessLevel = 'None' | 'Locked' | 'Owner' | 'Purchased' | 'Free';
+/** Admin: el administrador lo ve para el mantenimiento de la web, sin comprarlo ni gestionarlo. */
+export type VideoAccessLevel = 'None' | 'Locked' | 'Owner' | 'Purchased' | 'Free' | 'Admin';
 /** El partido se sube entero o en dos partes, nunca mezclado. */
 export type VideoPart = 'Full' | 'FirstHalf' | 'SecondHalf';
 /** Private: plantilla, club y compradores. Public: cualquiera que llegue al partido, sin pagar. */

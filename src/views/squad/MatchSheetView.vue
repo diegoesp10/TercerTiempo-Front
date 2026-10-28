@@ -25,6 +25,7 @@ import { downloadPaperSheet } from '@/utils/paperSheet';
 import PlayerName from '@/components/players/PlayerName.vue';
 import { opponentOf } from '@/utils/crests';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
+import { useViewer } from '@/composables/useViewer';
 
 const props = defineProps<{ squadId: string; matchId: string }>();
 useBackFallback(() => ({ to: { name: 'squad-matches', params: { squadId: props.squadId } }, label: 'Volver a los partidos de la plantilla' }));
@@ -32,6 +33,7 @@ useBackFallback(() => ({ to: { name: 'squad-matches', params: { squadId: props.s
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const { isAdmin } = useViewer();
 
 const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, props.matchId));
 
@@ -45,9 +47,9 @@ const tabs: { id: Tab; label: string }[] = [
   { id: 'arbitros', label: 'Árbitros' },
   { id: 'previa', label: 'Previa' },
 ];
-// La previa es para el cuerpo técnico y el club del equipo; los jugadores no la ven.
+// La previa es para el cuerpo técnico y el club del equipo (y el administrador, que solo mira); los jugadores no la ven.
 const canPrepare = computed(() =>
-  !!data.value && (data.value.canEdit || data.value.squad.myRole !== null || !!auth.club?.teams.some((team) => team.teamId === data.value!.squad.teamId)),
+  !!data.value && (isAdmin.value || data.value.canEdit || data.value.squad.myRole !== null || !!auth.club?.teams.some((team) => team.teamId === data.value!.squad.teamId)),
 );
 // Jugado y con la fecha ya pasada: lo de después del partido (acta interna, comparador y vídeo) solo existe entonces.
 const matchOver = computed(() =>
@@ -55,7 +57,7 @@ const matchOver = computed(() =>
 );
 const afterMatch: Tab[] = ['interna', 'comparador', 'video', 'arbitros'];
 // Al equipo arbitral lo puntúan el club y su cuerpo técnico; los jugadores no lo ven.
-const canRateReferees = computed(() => canPrepare.value && (auth.isClub || auth.isCoach));
+const canRateReferees = computed(() => canPrepare.value && (auth.isClub || auth.isCoach) && !isAdmin.value);
 const visibleTabs = computed(() =>
   tabs.filter((t) =>
     (t.id !== 'previa' || canPrepare.value) && (t.id !== 'arbitros' || canRateReferees.value) && (matchOver.value || !afterMatch.includes(t.id))),
@@ -306,7 +308,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
     </div>
 
     <div v-else-if="tab === 'video'" class="mt-6">
-      <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="canPrepare" />
+      <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="canPrepare && !isAdmin" />
     </div>
 
     <div v-else-if="tab === 'arbitros'" class="mt-6">

@@ -16,12 +16,14 @@ import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useBackFallback } from '@/composables/useBackFallback';
 import { useAuthStore } from '@/stores/auth';
+import { useViewer } from '@/composables/useViewer';
 import { formatKickoff, levelLabels, positionLabels, visibilityLabels } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 
 const props = defineProps<{ teamId: string }>();
 
 const auth = useAuthStore();
+const { signedIn } = useViewer();
 const router = useRouter();
 
 const { data, loading, error } = useAsync(() => api.teams.get(props.teamId));
@@ -31,7 +33,7 @@ useBackFallback(() => data.value
 
 // Enlaces de antes (?jugador=, del buscador o de una búsqueda reciente): llevan a la ficha del jugador.
 const route = useRoute();
-if (typeof route.query.jugador === 'string' && auth.isAuthenticated)
+if (typeof route.query.jugador === 'string' && signedIn.value)
   void router.replace({ name: 'player-card', params: { teamId: props.teamId, entryId: route.query.jugador } });
 const matches = useAsync(() => api.teams.matches(props.teamId));
 
@@ -300,7 +302,7 @@ async function linkToClub() {
                     <PlayerAvatar :src="entry.photoUrl" :name="entry.fullName" size="sm" />
                     <span>
                       <RouterLink
-                        v-if="auth.isAuthenticated"
+                        v-if="signedIn"
                         :to="{ name: 'player-card', params: { teamId: data.id, entryId: entry.id } }"
                         class="font-medium text-slate-800 hover:text-brand-500 hover:underline"
                       >{{ entry.fullName }}</RouterLink>

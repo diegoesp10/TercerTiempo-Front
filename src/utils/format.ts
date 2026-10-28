@@ -237,6 +237,7 @@ export const videoAccessLabels: Record<VideoAccessLevel, string> = {
   Owner: 'Tu plantilla',
   Purchased: 'Comprado',
   Free: 'Gratis',
+  Admin: 'Administración',
 };
 
 /** "5,00 €" a partir de céntimos. */

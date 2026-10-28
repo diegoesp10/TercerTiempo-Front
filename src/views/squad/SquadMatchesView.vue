@@ -11,6 +11,7 @@ import { useSquad } from '@/composables/useSquad';
 import { downloadPaperSheet } from '@/utils/paperSheet';
 import TeamName from '@/components/teams/TeamName.vue';
 import { opponentOf } from '@/utils/crests';
+import { useViewer } from '@/composables/useViewer';
 
 const { squadId, detail } = useSquad();
 
@@ -20,6 +21,8 @@ const teamId = computed(() => detail.value?.summary.teamId ?? '');
 const canManage = computed(() => detail.value?.canManage ?? false);
 // El club propietario y el cuerpo técnico revisan las sugerencias de los jugadores y preparan los partidos (previa).
 const canReview = computed(() => detail.value?.canInvitePlayers ?? false);
+// El administrador las ve, pero no las resuelve.
+const { isAdmin } = useViewer();
 
 const played = computed(() => (data.value ?? []).filter((m) => m.match.status === 'Played').reverse());
 const upcoming = computed(() => (data.value ?? []).filter((m) => m.match.status !== 'Played'));
@@ -65,7 +68,7 @@ function downloadPaper(withNextMatch: boolean) {
       </div>
     </div>
 
-    <SuggestionsPanel v-if="canReview" class="mb-8" :squad-id="squadId" :team-id="teamId" @changed="run" />
+    <SuggestionsPanel v-if="canReview || isAdmin" class="mb-8" :squad-id="squadId" :team-id="teamId" :readonly="!canReview" @changed="run" />
 
     <section class="mb-8">
       <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Disputados</h2>

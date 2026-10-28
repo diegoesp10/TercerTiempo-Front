@@ -13,6 +13,7 @@ import type { Position, SquadPlayerDto, SquadPlayerRequest, SquadVisibility } fr
 import { formatDate, positionLabels, positionOptions, staffRoleLabels, visibilityLabels } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
 import PlayerName from '@/components/players/PlayerName.vue';
+import { useViewer } from '@/composables/useViewer';
 
 const { squadId, detail, reload } = useSquad();
 const auth = useAuthStore();
@@ -20,8 +21,9 @@ const auth = useAuthStore();
 const canManage = computed(() => detail.value?.canManage ?? false);
 const canInvitePlayers = computed(() => detail.value?.canInvitePlayers ?? false);
 const active = computed(() => (detail.value?.players ?? []).filter((p) => p.status === 'Active'));
-// Las lesiones solo llegan al cuerpo técnico y a los jugadores vinculados: si la API las manda, se muestra el panel.
-const seesInjuries = computed(() => canManage.value || myEntryId.value !== null);
+// Las lesiones solo llegan al cuerpo técnico, a los jugadores vinculados y al administrador (que solo mira).
+const { isAdmin } = useViewer();
+const seesInjuries = computed(() => canManage.value || myEntryId.value !== null || isAdmin.value);
 const left = computed(() => (detail.value?.players ?? []).filter((p) => p.status !== 'Active'));
 const myEntryId = computed(() => (auth.playerSquad?.squadId === squadId.value ? auth.playerSquad.squadPlayerId : null));
 

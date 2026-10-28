@@ -16,7 +16,8 @@ import { opponentOf } from '@/utils/crests';
  * Sugerencias de los jugadores sobre sus líneas del acta, para el club y el cuerpo técnico: cada una muestra lo que
  * hay en el acta frente a lo que propone el jugador y su mensaje; se aprueban (se escriben en el acta) o se rechazan.
  */
-const props = defineProps<{ squadId: string; teamId: string }>();
+// readonly: el administrador las ve sin poder aprobarlas ni rechazarlas (eso es del club o del cuerpo técnico).
+const props = defineProps<{ squadId: string; teamId: string; readonly?: boolean }>();
 const emit = defineEmits<{ changed: [] }>();
 
 const suggestions = shallowRef<SuggestionDto[]>([]);
@@ -148,7 +149,8 @@ async function resolve(s: SuggestionDto, approve: boolean) {
           </table>
         </div>
 
-        <div v-if="s.status === 'Pending'" class="mt-3 flex flex-wrap items-end gap-2">
+        <p v-if="s.status === 'Pending' && readonly" class="mt-3 text-xs text-slate-500">Pendiente: la revisan el club o el cuerpo técnico.</p>
+        <div v-else-if="s.status === 'Pending'" class="mt-3 flex flex-wrap items-end gap-2">
           <div class="min-w-56 flex-1">
             <label class="label" :for="`note-${s.id}`">Nota para el jugador <span class="font-normal text-slate-400">(opcional)</span></label>
             <input :id="`note-${s.id}`" v-model="notes[s.id]" type="text" maxlength="500" class="input" placeholder="Por ejemplo: «Revisado con el vídeo, tienes razón»." />

@@ -1,10 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { useAdminSessionStore } from '@/stores/adminSession';
 import { useAuthStore } from '@/stores/auth';
 import { useLoadingStore } from '@/stores/loading';
 
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean;
+    /** Hace algo con la cuenta propia (club, técnico o jugador): el administrador, que solo mira, no entra. */
+    profileOnly?: boolean;
     guestOnly?: boolean;
     /** Página principal (sin botón «Volver»). */
     root?: boolean;
@@ -32,10 +35,10 @@ const router = createRouter({
     { path: '/', name: 'home', component: () => import('@/views/HomeView.vue'), meta: { root: true } },
     { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { guestOnly: true, root: true } },
     { path: '/registro', name: 'register', component: () => import('@/views/RegisterView.vue'), meta: { guestOnly: true, root: true } },
-    { path: '/invitacion/:code?', name: 'join', component: () => import('@/views/JoinView.vue'), props: true, meta: { requiresAuth: true } },
-    { path: '/codigo-acceso', name: 'redeem', component: () => import('@/views/coach/RedeemView.vue'), meta: { requiresAuth: true } },
+    { path: '/invitacion/:code?', name: 'join', component: () => import('@/views/JoinView.vue'), props: true, meta: { requiresAuth: true, profileOnly: true } },
+    { path: '/codigo-acceso', name: 'redeem', component: () => import('@/views/coach/RedeemView.vue'), meta: { requiresAuth: true, profileOnly: true } },
     { path: '/licencias', alias: '/precios', name: 'licenses', component: () => import('@/views/club/LicensePlansView.vue'), meta: { root: true } },
-    { path: '/pago/:sessionId', name: 'license-checkout', component: () => import('@/views/club/LicenseCheckoutView.vue'), props: true, meta: { requiresAuth: true } },
+    { path: '/pago/:sessionId', name: 'license-checkout', component: () => import('@/views/club/LicenseCheckoutView.vue'), props: true, meta: { requiresAuth: true, profileOnly: true } },
     { path: '/ajustes', name: 'settings', component: () => import('@/views/SettingsView.vue'), meta: { root: true } },
     // Página oculta del administrador (sin enlace en el menú; pide su propio usuario y contraseña).
     { path: '/jobs', alias: '/cargatrabajo', name: 'jobs', component: () => import('@/views/admin/JobsView.vue'), meta: { root: true } },
@@ -84,6 +87,8 @@ router.beforeEach((to) => {
   useLoadingStore().navigating = true;
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    // El administrador entra en todo lo que es para mirar (fichas, buscador...), no en lo que es de una cuenta.
+    if (useAdminSessionStore().isActive) return to.meta.profileOnly ? { name: 'home' } : true;
     return { name: 'login', query: { redirect: to.fullPath } };
   }
 

@@ -1,4 +1,5 @@
 import type { ProblemDetails } from '@/types/api';
+import { useAdminSessionStore } from '@/stores/adminSession';
 import { useAuthStore } from '@/stores/auth';
 import { useLoadingStore } from '@/stores/loading';
 import { useSeasonStore } from '@/stores/season';
@@ -54,11 +55,17 @@ export function clearHttpCache() {
   cache.clear();
 }
 
+// Sin cuenta abierta, la sesión del administrador sirve para leer toda la web (visor de solo lectura): la API solo le
+// deja hacer GET en las rutas de las cuentas.
+function adminViewerToken(): string | null {
+  return useAuthStore().token ? null : useAdminSessionStore().session?.token ?? null;
+}
+
 export function http<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const method = options.method ?? 'GET';
   if (method !== 'GET') return request<T>(path, options).finally(clearHttpCache);
 
-  const key = `${options.anonymous ? '' : options.token ?? useAuthStore().token ?? ''}|${useSeasonStore().selectedId ?? ''}|${path}`;
+  const key = `${options.anonymous ? '' : options.token ?? useAuthStore().token ?? adminViewerToken() ?? ''}|${useSeasonStore().selectedId ?? ''}|${path}`;
   const cached = cache.get(key);
   if (cached && cached.expires > Date.now()) return Promise.resolve(cached.data as T);
 
@@ -81,7 +88,8 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
 
   const isForm = options.body instanceof FormData;
   if (options.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
-  const token = options.anonymous ? null : options.token ?? auth.token;
+  const viewerToken = options.anonymous || options.token ? null : adminViewerToken();
+  const token = options.anonymous ? null : options.token ?? auth.token ?? viewerToken;
   if (token) headers.Authorization = `Bearer ${token}`;
   // Todos los datos se leen de la temporada elegida (sin cabecera, la actual).
   const season = useSeasonStore().selectedId;
@@ -109,6 +117,8 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
 
     if (!response.ok) {
       if (response.status === 401 && auth.token && !options.token) auth.logout();
+      // Token del administrador caducado (un 401 sin código del catálogo): se cierra su sesión.
+      if (response.status === 401 && viewerToken && !(data as ProblemDetails | null)?.code) useAdminSessionStore().end();
       const problem = (data as ProblemDetails | null) ?? { status: response.status, title: response.statusText };
       throw new ApiError(response.status, problem);
     }
