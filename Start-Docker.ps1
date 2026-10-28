@@ -1,10 +1,10 @@
 ﻿# Construye y arranca la web de Tercer Tiempo en Docker (tercer-tiempo-web). Si la API no está en marcha y el
 # repositorio del backend está junto a este, la arranca antes con su propio script y en el mismo entorno.
-#   -Environment  Development (por defecto) o Production: entorno de la API (ver Start-Docker.ps1 del backend).
+#   -Environment  Development (por defecto), Production o Pilot: entorno de la API (ver Start-Docker.ps1 del backend).
 #   -SkipBuild    reutiliza las imágenes existentes.
 #   -BackendPath  carpeta del repositorio del backend (por defecto ..\backend).
 param(
-    [ValidateSet('Development', 'Production')][string]$Environment = 'Development',
+    [ValidateSet('Development', 'Production', 'Pilot')][string]$Environment = 'Development',
     [switch]$SkipBuild,
     [string]$BackendPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'backend')
 )
