@@ -49,7 +49,7 @@ async function submit() {
   fieldErrors.value = {};
   done.value = false;
   try {
-    await auth.changePassword({ currentPassword: form.currentPassword, newPassword: form.newPassword });
+    await auth.changePassword({ currentPassword: form.currentPassword, newPassword: form.newPassword, confirmNewPassword: form.confirm });
     Object.assign(form, { currentPassword: '', newPassword: '', confirm: '' });
     show.value = false;
     done.value = true;
@@ -131,6 +131,7 @@ async function submit() {
           class="input"
         />
         <p v-if="mismatch" class="field-error">No coincide con la contraseña nueva.</p>
+        <p v-for="message in fieldErrors.confirmNewPassword ?? []" :key="message" class="field-error">{{ message }}</p>
       </div>
 
       <div>

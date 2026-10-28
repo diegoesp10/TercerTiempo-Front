@@ -33,6 +33,8 @@ export interface ProblemDetails {
 export interface RegisterRequest {
   email: string;
   password: string;
+  /** La misma contraseña otra vez: el servidor comprueba que coinciden. */
+  confirmPassword: string;
   /** Cuerpo técnico y club. Los jugadores no lo mandan: su nombre es el de la ficha del código. */
   displayName: string | null;
   accountType: AccountType;
@@ -46,6 +48,8 @@ export interface RegisterRequest {
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
+  /** La nueva otra vez: el servidor comprueba que coinciden. */
+  confirmNewPassword: string;
 }
 
 /** Último cambio de contraseña; nextChangeAt es desde cuándo se puede volver a cambiar (null: ya se puede). */

@@ -23,12 +23,14 @@ const form = reactive<{
   accountType: AccountType;
   email: string;
   password: string;
+  confirmPassword: string;
   displayName: string;
   accessCode: string;
 }>({
   accountType: typeof route.query.invite === 'string' ? 'Player' : typeof route.query.beta === 'string' ? 'Club' : 'Coach',
   email: '',
   password: '',
+  confirmPassword: '',
   displayName: '',
   accessCode: typeof route.query.invite === 'string' ? route.query.invite.toUpperCase() : typeof route.query.code === 'string' ? route.query.code.toUpperCase() : '',
 });
@@ -78,6 +80,10 @@ const accountTypes: { value: AccountType; title: string; description: string }[]
   { value: 'Club', title: 'Club', description: 'Das de alta a los técnicos de tus equipos cada temporada con un código de acceso.' },
 ];
 
+// La contraseña se escribe dos veces y tienen que coincidir (también lo comprueba el servidor).
+const passwordMismatch = computed(() => form.confirmPassword.length > 0 && form.confirmPassword !== form.password);
+const passwordsMatch = computed(() => form.password.length > 0 && form.confirmPassword === form.password);
+
 const loading = ref(false);
 const error = ref<string | null>(null);
 const fieldErrors = ref<Record<string, string[]>>({});
@@ -116,6 +122,7 @@ async function submit() {
     await auth.register({
       email: form.email,
       password: form.password,
+      confirmPassword: form.confirmPassword,
       displayName: isPlayer.value ? null : form.displayName,
       accountType: form.accountType,
       position: null,
@@ -260,6 +267,13 @@ async function submit() {
           <p v-for="message in fieldErrors.password ?? []" :key="message" class="field-error">{{ message }}</p>
         </div>
 
+        <div>
+          <label class="label" for="confirm-password">Repite la contraseña</label>
+          <input id="confirm-password" v-model="form.confirmPassword" type="password" autocomplete="new-password" required :maxlength="PASSWORD_MAX_LENGTH" class="input" />
+          <p v-if="passwordMismatch" class="field-error">No coincide con la contraseña.</p>
+          <p v-for="message in fieldErrors.confirmPassword ?? []" :key="message" class="field-error">{{ message }}</p>
+        </div>
+
         <label class="flex items-start gap-3 text-sm text-slate-600">
           <input v-model="acceptsTerms" type="checkbox" required class="mt-1 h-4 w-4 shrink-0 accent-brand-500" />
           <span>
@@ -272,7 +286,7 @@ async function submit() {
           </span>
         </label>
 
-        <button type="submit" class="btn-primary w-full" v-busy="loading" :disabled="loading || !acceptsTerms || (isClub && !form.displayName) || (isClub && clubInviteRequired && !clubInvite.trim()) || (isPlayer && !invite)">
+        <button type="submit" class="btn-primary w-full" v-busy="loading" :disabled="loading || !acceptsTerms || !passwordsMatch || (isClub && !form.displayName) || (isClub && clubInviteRequired && !clubInvite.trim()) || (isPlayer && !invite)">
           {{ loading ? 'Creando cuenta…' : isPlayer ? 'Crear mi cuenta y vincular mi ficha' : isClub ? 'Crear cuenta de club' : 'Crear cuenta y canjear el código' }}
         </button>
       </form>
