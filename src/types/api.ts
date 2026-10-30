@@ -136,6 +136,36 @@ export interface CoachDto {
   /** Plantillas con nombramiento vigente. */
   squads: SquadSummaryDto[];
   appointments: CoachAppointmentDto[];
+  /** Foto que ha subido el propio técnico; null si no tiene. */
+  photoUrl?: string | null;
+}
+
+/** Perfil de un técnico para cualquier cuenta con sesión. */
+export interface CoachProfileDto {
+  id: string;
+  displayName: string;
+  photoUrl: string | null;
+  /** true si es el perfil de la cuenta que lo mira: solo entonces se puede cambiar la foto. */
+  isMe: boolean;
+  /** Equipos que dirige o ha dirigido, los vigentes primero. */
+  teams: CoachTeamDto[];
+}
+
+export interface CoachTeamDto {
+  teamId: string;
+  teamName: string;
+  teamShortName: string;
+  teamCrestUrl: string | null;
+  clubName: string;
+  competitionName: string;
+  seasonLabel: string;
+  role: StaffRole;
+  validFrom: string;
+  validUntil: string;
+  /** true mientras el nombramiento está vigente. */
+  current: boolean;
+  /** Plantilla de ese equipo en esa temporada (privada: solo la abren quienes tienen acceso). */
+  squadId: string | null;
 }
 
 // --- Clubes ---
@@ -625,6 +655,8 @@ export interface SquadStaffDto {
   joinedAt: string;
   /** Último día del nombramiento del club. */
   validUntil: string | null;
+  /** Foto que ha subido el propio técnico; null si no tiene. */
+  photoUrl?: string | null;
 }
 
 /** Ficha de un jugador dentro de la plantilla (venga del proveedor o añadida a mano). */

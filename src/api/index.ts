@@ -20,6 +20,7 @@ import type {
   ClubDto,
   ClubSquadDto,
   CoachDto,
+  CoachProfileDto,
   CompetitionDto,
   CompetitionMatchdayDto,
   CreateAppointmentRequest,
@@ -138,9 +139,16 @@ export const api = {
     suggestions: () => http<SuggestionDto[]>('/api/players/me/suggestions'),
   },
 
-  /** Técnicos con cuenta: canjear los códigos de acceso que les entrega su club. */
+  /** Técnicos: su perfil (lo ve cualquier cuenta con sesión), su foto y los códigos de acceso que les entrega su club. */
   coaches: {
     redeem: (accessCode: string) => http<CoachDto>('/api/coaches/me/appointments/redeem', { method: 'POST', body: { accessCode } }),
+    profile: (coachId: string) => http<CoachProfileDto>(`/api/coaches/${coachId}`),
+    uploadPhoto: (file: File) => {
+      const body = new FormData();
+      body.append('file', file, file.name);
+      return http<CoachDto>('/api/coaches/me/photo', { method: 'PUT', body });
+    },
+    deletePhoto: () => http<CoachDto>('/api/coaches/me/photo', { method: 'DELETE' }),
   },
 
   /** Clubes: sus equipos y los nombramientos de sus técnicos. */

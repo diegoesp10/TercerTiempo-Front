@@ -344,7 +344,8 @@ const sortedAppointments = computed(() => {
                 <td class="py-2 pr-3">
                   <p class="font-medium" :class="appointment.status === 'Active' || appointment.status === 'Pending' ? 'text-slate-800' : ''">{{ appointment.coachName }}</p>
                   <p class="text-xs text-slate-500">
-                    {{ staffRoleLabels[appointment.role] }}<template v-if="appointment.coachDisplayName"> · cuenta: {{ appointment.coachDisplayName }}</template><template v-else-if="appointment.email"> · {{ appointment.email }}</template>
+                    {{ staffRoleLabels[appointment.role] }}<template v-if="appointment.coachDisplayName && appointment.coachId"> · cuenta:
+                      <RouterLink :to="{ name: 'coach', params: { coachId: appointment.coachId } }" class="font-medium text-accent-400 hover:underline">{{ appointment.coachDisplayName }}</RouterLink></template><template v-else-if="appointment.email"> · {{ appointment.email }}</template>
                   </p>
                 </td>
                 <td class="col-sm py-2 pr-3">

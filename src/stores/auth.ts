@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { api } from '@/api';
-import type { AccountDto, AuthResponse, ChangePasswordRequest, LoginRequest, PlayerDto, RegisterRequest, SquadSummaryDto } from '@/types/api';
+import type { AccountDto, AuthResponse, ChangePasswordRequest, CoachDto, LoginRequest, PlayerDto, RegisterRequest, SquadSummaryDto } from '@/types/api';
 import { useAdminSessionStore } from './adminSession';
 import { markActiveSession } from './sessionSync';
 
@@ -92,6 +92,11 @@ export const useAuthStore = defineStore('auth', () => {
     setAccount({ ...account.value, coach: { ...account.value.coach, squads } });
   }
 
+  function setCoach(value: CoachDto) {
+    if (!account.value) return;
+    setAccount({ ...account.value, coach: value });
+  }
+
   function logout() {
     token.value = null;
     account.value = null;
@@ -151,6 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
     setAccount,
     setPlayer,
     setCoachSquads,
+    setCoach,
     refreshAccount,
   };
 });

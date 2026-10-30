@@ -13,6 +13,7 @@ import type { Position, SquadPlayerDto, SquadPlayerRequest, SquadVisibility } fr
 import { formatDate, positionLabels, positionOptions, staffRoleLabels, visibilityLabels } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
 import PlayerName from '@/components/players/PlayerName.vue';
+import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import { useViewer } from '@/composables/useViewer';
 
 const { squadId, detail, reload } = useSquad();
@@ -326,10 +327,15 @@ async function remove(player: SquadPlayerDto) {
         <h2 class="mb-3 font-semibold text-slate-900">Cuerpo técnico</h2>
         <ul class="divide-y divide-slate-100 text-sm">
           <li v-for="member in detail.staff" :key="member.coachId" class="py-2">
-            <p class="font-medium text-slate-800">{{ member.displayName }}</p>
-            <p class="text-xs text-slate-500">
-              {{ staffRoleLabels[member.role] }} · desde {{ formatDate(member.joinedAt) }}<template v-if="member.validUntil"> · hasta {{ formatDate(member.validUntil) }}</template>
-            </p>
+            <RouterLink :to="{ name: 'coach', params: { coachId: member.coachId } }" class="group flex items-center gap-3" :title="`Ver el perfil de ${member.displayName}`">
+              <PlayerAvatar :src="member.photoUrl" :name="member.displayName" size="md" />
+              <span class="min-w-0">
+                <span class="block truncate font-medium text-slate-800 group-hover:text-accent-400">{{ member.displayName }}</span>
+                <span class="block text-xs text-slate-500">
+                  {{ staffRoleLabels[member.role] }} · desde {{ formatDate(member.joinedAt) }}<template v-if="member.validUntil"> · hasta {{ formatDate(member.validUntil) }}</template>
+                </span>
+              </span>
+            </RouterLink>
           </li>
         </ul>
         <p v-if="canManage" class="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
