@@ -6,6 +6,7 @@ import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import type { MatchDto, TeamStatsAveragesDto } from '@/types/api';
 import { formatNumber, formatPct } from '@/utils/format';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
 import TeamName from '@/components/teams/TeamName.vue';
 import { opponentOf } from '@/utils/crests';
 
@@ -29,8 +30,9 @@ const averageRows: { label: string; mine: keyof TeamStatsAveragesDto; theirs: ke
   { label: 'de ellos, de penalti (total)', mine: 'penaltyGoalsFor', theirs: 'penaltyGoalsAgainst', total: true },
 ];
 
-/** Ancho de la barra de cada lado, sobre la suma de ambos (nunca se desborda). */
-const share = (mine: number, theirs: number) => (mine + theirs > 0 ? (mine / (mine + theirs)) * 100 : 50);
+/** Parte de cada lado sobre la suma de los dos (nunca se desborda); con los dos a 0 no se pinta ninguna. */
+const share = (mine: number, theirs: number) => (mine + theirs > 0 ? (mine / (mine + theirs)) * 100 : 0);
+const rivalShare = (mine: number, theirs: number) => (mine + theirs > 0 ? 100 - share(mine, theirs) : 0);
 
 const venue = (match: MatchDto) => (match.homeTeam.id === props.teamId ? 'Casa' : 'Fuera');
 const score = (match: MatchDto) => {
@@ -39,6 +41,12 @@ const score = (match: MatchDto) => {
 };
 
 const averages = computed(() => data.value?.averages ?? null);
+/** Tu equipo (nombre y escudo), sacado de cualquiera de sus partidos con datos. */
+const ownTeam = computed(() => {
+  const match = data.value?.matches[0]?.match;
+  if (!match) return null;
+  return match.homeTeam.id === props.teamId ? match.homeTeam : match.awayTeam;
+});
 /** Redondeada antes de restar, para que la de tu equipo y la del rival sumen siempre 100. */
 const possession = computed(() => (averages.value?.possessionPct == null ? null : Math.round(averages.value.possessionPct)));
 </script>
@@ -59,25 +67,51 @@ const possession = computed(() => (averages.value?.possessionPct == null ? null 
     </p>
 
     <template v-else>
+      <!-- De quién es cada lado: tu equipo con su escudo a la izquierda y la media de sus rivales a la derecha. -->
+      <div class="mb-4 flex items-center justify-between gap-3 rounded-xl bg-surface-2 px-3 py-2.5">
+        <div class="flex min-w-0 items-center gap-2.5">
+          <TeamCrest v-if="ownTeam" :src="ownTeam.crestUrl" :name="ownTeam.name" :short-name="ownTeam.shortName" size="md" />
+          <div class="min-w-0">
+            <p class="flex items-center gap-1.5 whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide text-accent-400">
+              <span class="h-2 w-2 shrink-0 rounded-full bg-accent-400" />Tu equipo
+            </p>
+            <p class="truncate text-sm font-semibold text-slate-900">{{ ownTeam?.name ?? 'Tu equipo' }}</p>
+          </div>
+        </div>
+        <span class="shrink-0 text-xs font-semibold text-slate-400">vs</span>
+        <div class="flex min-w-0 items-center justify-end gap-2.5 text-right">
+          <div class="min-w-0">
+            <p class="flex items-center justify-end gap-1.5 whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              Media en contra<span class="h-2 w-2 shrink-0 rounded-full bg-slate-400" />
+            </p>
+            <p class="truncate text-sm font-semibold text-slate-900">Sus rivales</p>
+          </div>
+          <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-3 text-slate-500 ring-1 ring-line">
+            <Icon icon="users" class="text-sm" />
+          </span>
+        </div>
+      </div>
+
       <div class="space-y-3">
         <div v-if="averages.possessionPct !== null">
-          <div class="mb-1 flex justify-between text-xs"><span class="font-semibold text-accent-400">{{ formatPct(possession) }}</span><span class="text-slate-600">Posesión media</span><span class="text-slate-500">{{ formatPct(possession === null ? null : 100 - possession) }}</span></div>
-          <div class="flex h-2 w-full overflow-hidden rounded-full bg-surface-3">
+          <div class="mb-1 flex justify-between text-xs"><span class="font-semibold text-accent-400">{{ formatPct(possession) }}</span><span class="text-slate-600">Posesión media</span><span class="font-semibold text-slate-500">{{ formatPct(possession === null ? null : 100 - possession) }}</span></div>
+          <div class="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-surface-3">
             <div class="h-full bg-accent-400" :style="{ width: `${Math.min(100, Math.max(0, averages.possessionPct))}%` }" />
+            <div class="h-full flex-1 bg-slate-400/70" />
           </div>
         </div>
         <div v-for="row in averageRows" :key="row.mine">
           <div class="mb-1 flex justify-between text-xs">
             <span class="font-semibold tabular-nums text-accent-400">{{ row.total ? averages[row.mine] : formatNumber(averages[row.mine] as number, 1) }}</span>
             <span class="text-center text-slate-600">{{ row.label }}</span>
-            <span class="tabular-nums text-slate-500">{{ row.total ? averages[row.theirs] : formatNumber(averages[row.theirs] as number, 1) }}</span>
+            <span class="font-semibold tabular-nums text-slate-500">{{ row.total ? averages[row.theirs] : formatNumber(averages[row.theirs] as number, 1) }}</span>
           </div>
-          <div class="flex h-2 w-full overflow-hidden rounded-full bg-surface-3">
+          <div class="flex h-2 w-full justify-between gap-0.5 overflow-hidden rounded-full bg-surface-3">
             <div class="h-full bg-accent-400" :style="{ width: `${share(averages[row.mine] as number, averages[row.theirs] as number)}%` }" />
+            <div class="h-full bg-slate-400/70" :style="{ width: `${rivalShare(averages[row.mine] as number, averages[row.theirs] as number)}%` }" />
           </div>
         </div>
       </div>
-      <p class="mt-2 text-xs text-slate-500">Izquierda: tu equipo. Derecha: los rivales.</p>
 
       <div v-if="!compact && data" class="mt-5 overflow-x-auto rounded-lg border border-slate-200">
         <table class="min-w-full text-sm">
