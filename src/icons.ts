@@ -60,6 +60,7 @@ import {
   faPause,
   faSpinner,
   faUsers,
+  faCommentDots,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
@@ -128,6 +129,7 @@ library.add(
   faPause,
   faSpinner,
   faUsers,
+  faCommentDots,
 );
 
 export { FontAwesomeIcon as Icon };
