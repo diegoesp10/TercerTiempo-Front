@@ -6,15 +6,23 @@ import BrandMark from '@/components/layout/BrandMark.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Modal from '@/components/ui/Modal.vue';
 import { cutOutFigure, type CutOut } from '@/utils/figureCutout';
-import type { PlayerDto } from '@/types/api';
+import type { CoachDto, PlayerDto } from '@/types/api';
 
 /**
- * Asistente para que el jugador suba su foto como las de los futbolistas profesionales: consejos para hacerla, recorte
- * automático de la figura en el propio navegador (la foto original no sale del dispositivo), encuadre con zoom y altura
- * sobre el fondo de la ficha, y subida del resultado en PNG con fondo transparente.
+ * Asistente para que el jugador (o el técnico, con kind="coach") suba su foto como las de los profesionales: consejos para
+ * hacerla, recorte automático de la figura en el propio navegador (la foto original no sale del dispositivo), encuadre con
+ * zoom y altura sobre el fondo de la ficha, y subida del resultado en PNG con fondo transparente. Cada uno sube la suya:
+ * el jugador recibe su cuenta en «saved» y el técnico en «savedCoach».
  */
-const props = defineProps<{ open: boolean; hasPhoto: boolean }>();
-const emit = defineEmits<{ close: []; saved: [player: PlayerDto] }>();
+const props = withDefaults(defineProps<{ open: boolean; hasPhoto: boolean; kind?: 'player' | 'coach' }>(), { kind: 'player' });
+const emit = defineEmits<{ close: []; saved: [player: PlayerDto]; savedCoach: [coach: CoachDto] }>();
+
+const forCoach = computed(() => props.kind === 'coach');
+
+async function upload(file: File) {
+  if (forCoach.value) emit('savedCoach', await api.coaches.uploadPhoto(file));
+  else emit('saved', await api.players.uploadPhoto(file));
+}
 
 type Step = 'tips' | 'working' | 'frame';
 const step = ref<Step>('tips');
@@ -109,8 +117,7 @@ async function save() {
     let blob = await new Promise<Blob | null>((resolve) => out.toBlob(resolve, 'image/png'));
     if (blob && blob.size > 2.8 * 1024 * 1024) blob = await new Promise<Blob | null>((resolve) => out.toBlob(resolve, 'image/webp', 0.9));
     if (!blob) throw new Error('el navegador no ha podido generar la imagen');
-    const player = await api.players.uploadPhoto(new File([blob], blob.type === 'image/png' ? 'foto.png' : 'foto.webp', { type: blob.type }));
-    emit('saved', player);
+    await upload(new File([blob], blob.type === 'image/png' ? 'foto.png' : 'foto.webp', { type: blob.type }));
     emit('close');
   } catch (e) {
     error.value = errorMessage(e);
@@ -123,7 +130,8 @@ async function removePhoto() {
   busy.value = true;
   error.value = null;
   try {
-    emit('saved', await api.players.deletePhoto());
+    if (forCoach.value) emit('savedCoach', await api.coaches.deletePhoto());
+    else emit('saved', await api.players.deletePhoto());
     emit('close');
   } catch (e) {
     error.value = errorMessage(e);
@@ -132,15 +140,19 @@ async function removePhoto() {
   }
 }
 
-const tips = [
-  { icon: 'user', title: 'De cintura para arriba', text: 'Mirando a cámara, con la equipación si la tienes a mano.' },
+const tips = computed(() => [
+  {
+    icon: 'user',
+    title: 'De cintura para arriba',
+    text: forCoach.value ? 'Mirando a cámara, con el chándal o el polo del club si lo tienes a mano.' : 'Mirando a cámara, con la equipación si la tienes a mano.',
+  },
   { icon: 'circle-info', title: 'Fondo liso y buena luz', text: 'Una pared clara y la luz de frente: el recorte sale mucho más limpio.' },
   { icon: 'camera', title: 'Sin gorra ni gafas de sol', text: 'Que se te vea bien la cara; puedes repetirla cuando quieras.' },
-];
+]);
 </script>
 
 <template>
-  <Modal :open="open" title="Tu foto de jugador" size="lg" @close="emit('close')">
+  <Modal :open="open" :title="forCoach ? 'Tu foto de técnico' : 'Tu foto de jugador'" size="lg" @close="emit('close')">
     <Alert v-if="error" kind="warning" class="mb-4">{{ error }}</Alert>
 
     <template v-if="step === 'tips'">

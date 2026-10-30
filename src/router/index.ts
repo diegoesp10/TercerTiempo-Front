@@ -37,6 +37,7 @@ const router = createRouter({
     { path: '/registro', name: 'register', component: () => import('@/views/RegisterView.vue'), meta: { guestOnly: true, root: true } },
     { path: '/invitacion/:code?', name: 'join', component: () => import('@/views/JoinView.vue'), props: true, meta: { requiresAuth: true, profileOnly: true } },
     { path: '/codigo-acceso', name: 'redeem', component: () => import('@/views/coach/RedeemView.vue'), meta: { requiresAuth: true, profileOnly: true } },
+    { path: '/tecnicos/:coachId', name: 'coach', component: () => import('@/views/coach/CoachProfileView.vue'), props: true, meta: { requiresAuth: true } },
     { path: '/licencias', alias: '/precios', name: 'licenses', component: () => import('@/views/club/LicensePlansView.vue'), meta: { root: true } },
     { path: '/pago/:sessionId', name: 'license-checkout', component: () => import('@/views/club/LicenseCheckoutView.vue'), props: true, meta: { requiresAuth: true, profileOnly: true } },
     { path: '/ajustes', name: 'settings', component: () => import('@/views/SettingsView.vue'), meta: { root: true } },

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from 'vue';
+import { useMediaQuery } from '@vueuse/core';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import AppChart from '@/components/charts/AppChart.vue';
+import PredictionList from '@/components/league/PredictionList.vue';
+import TeamForecast from '@/components/league/TeamForecast.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import Alert from '@/components/ui/Alert.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
@@ -10,11 +13,13 @@ import Skeleton from '@/components/ui/Skeleton.vue';
 import {
   metricColors,
   metricLabels,
+  percent as pct,
   positionHeatmapOption,
   predictionBarsOption,
   predictionEvolutionOption,
   type PredictionMetric,
 } from '@/charts/predictions';
+import { useAuthStore } from '@/stores/auth';
 import { useSettingsStore } from '@/stores/settings';
 import type { LeaguePredictionDto, LeaguePredictionEvolutionDto, TeamPredictionDto } from '@/types/api';
 import { rangeText, zoneRanges } from '@/utils/zones';
@@ -26,6 +31,9 @@ import { rangeText, zoneRanges } from '@/utils/zones';
  */
 const props = defineProps<{ competitionId: string; highlightTeamIds?: string[] }>();
 const settings = useSettingsStore();
+const auth = useAuthStore();
+// En pantallas estrechas el gráfico de barras agrupadas no cabe: se cambia por una lista (PredictionList).
+const wide = useMediaQuery('(min-width: 768px)');
 
 const matchday = ref<number | null>(null);
 const data = shallowRef<LeaguePredictionDto | null>(null);
@@ -77,7 +85,8 @@ const zones = computed(() => data.value?.zones ?? null);
 const teams = computed(() => data.value?.teams ?? []);
 const highlighted = computed(() => props.highlightTeamIds ?? []);
 const isMine = (team: TeamPredictionDto) => highlighted.value.includes(team.teamId);
-const pct = (value: number) => `${(value * 100).toLocaleString('es-ES', { maximumFractionDigits: value > 0 && value < 0.01 ? 1 : 0 })} %`;
+const myTeams = computed(() => teams.value.filter(isMine));
+const myTitle = computed(() => (auth.isClub ? 'Tu club' : 'Tu equipo'));
 const num = (value: number) => value.toLocaleString('es-ES', { maximumFractionDigits: 1 });
 
 const favourite = computed(() => [...teams.value].sort((a, b) => b.champion - a.champion)[0] ?? null);
@@ -98,7 +107,10 @@ const matchdayOptions = computed(() => {
 const span = (positions: number[]) => (positions.length === 1 ? `${positions[0]}.º` : `${positions[0]}.º–${positions.at(-1)}.º`);
 
 const barsOption = computed(() => (zones.value && teams.value.length ? predictionBarsOption(teams.value, zones.value, settings.resolvedTheme, labels.value) : null));
-const heatmapOption = computed(() => (zones.value && teams.value.length ? positionHeatmapOption(teams.value, zones.value, settings.resolvedTheme) : null));
+const heatmapOption = computed(() =>
+  zones.value && teams.value.length ? positionHeatmapOption(teams.value, zones.value, settings.resolvedTheme, wide.value ? 150 : 92) : null);
+// Ancho mínimo del mapa de puestos: una casilla legible por puesto más la columna de nombres; lo que no quepa se desplaza.
+const heatmapWidth = computed(() => `${(zones.value?.teams ?? 20) * 28 + (wide.value ? 170 : 104)}px`);
 const metrics = computed<PredictionMetric[]>(() => (zones.value?.relegation.length ? ['champion', 'promotion', 'relegation'] : ['champion', 'promotion']));
 const evolutionOption = computed(() =>
   evolution.value && evolution.value.teams.length && evolution.value.matchdays.length > 1
@@ -118,10 +130,10 @@ const evolutionOption = computed(() =>
             de cada equipo (y la ventaja de jugar en casa) y se juega el resto de la liga {{ data?.simulations ? data.simulations.toLocaleString('es-ES') : 'miles de' }} veces.
           </p>
         </div>
-        <div v-if="data && data.matchdays.length" class="flex items-center gap-2">
-          <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Con los datos de la</span>
+        <div v-if="data && data.matchdays.length" class="flex w-full flex-col gap-1.5 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
+          <span class="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-slate-500">Con los datos de la</span>
           <SearchSelect
-            class="w-48"
+            class="w-full sm:w-48"
             size="sm"
             :model-value="matchday ?? data.matchday"
             :options="matchdayOptions"
@@ -153,6 +165,17 @@ const evolutionOption = computed(() =>
     <Alert v-else-if="data && data.notice" kind="info">{{ data.notice }}</Alert>
 
     <template v-else-if="data && zones">
+      <TeamForecast
+        v-for="team in myTeams"
+        :key="team.teamId"
+        :team="team"
+        :zones="zones"
+        :labels="labels"
+        :title="myTitle"
+        :class="{ 'is-refreshing': loading }"
+      />
+
+      <p v-if="myTeams.length" class="eyebrow -mb-3 pt-2">Toda la liga</p>
       <div class="grid grid-cols-1 gap-4 md:grid-cols-3" :class="{ 'is-refreshing': loading }">
         <article v-if="favourite" class="card border-t-[3px]" :style="{ borderTopColor: metricColors.champion }">
           <p class="text-xs font-semibold uppercase tracking-wide" :style="{ color: metricColors.champion }"><Icon icon="trophy" class="mr-1 h-3 w-3" />Favorito al título</p>
@@ -191,8 +214,11 @@ const evolutionOption = computed(() =>
 
       <section class="card" :class="{ 'is-refreshing': loading }">
         <h3 class="font-semibold text-slate-900">Probabilidades de cada equipo</h3>
-        <p class="text-xs text-slate-500">Ordenados por el puesto final esperado. Pasa por encima de un equipo para ver sus puntos esperados.</p>
-        <AppChart v-if="barsOption" class="mt-3" :option="barsOption" :height="teams.length * 34 + 60" label="Probabilidad de cada equipo de ser campeón, ascender o promocionar y descender" />
+        <p class="text-xs text-slate-500">
+          Ordenados por el puesto final esperado.<template v-if="wide"> Pasa por encima de un equipo para ver sus puntos esperados.</template>
+        </p>
+        <AppChart v-if="barsOption && wide" class="mt-3" :option="barsOption" :height="teams.length * 34 + 60" label="Probabilidad de cada equipo de ser campeón, ascender o promocionar y descender" />
+        <PredictionList v-else-if="!wide" :teams="teams" :metrics="metrics" :labels="labels" :highlight-team-ids="highlighted" />
       </section>
 
       <section class="card" :class="{ 'is-refreshing': loading }">
@@ -200,8 +226,9 @@ const evolutionOption = computed(() =>
         <p class="text-xs text-slate-500">
           Probabilidad de cada puesto final (en %). Los puestos van con el color de su plaza<template v-if="!ranges.length"> (en verde, {{ promotionLabel.toLowerCase() }}<template v-if="zones.relegation.length">; en rojo, descenso</template>)</template>.
         </p>
+        <p v-if="!wide" class="mt-1 text-xs text-slate-500">Desliza a los lados para ver todos los puestos.</p>
         <div class="mt-3 overflow-x-auto">
-          <div class="min-w-[680px]">
+          <div :style="{ minWidth: heatmapWidth }">
             <AppChart v-if="heatmapOption" :option="heatmapOption" :height="teams.length * 30 + 120" label="Probabilidad de cada puesto final por equipo" />
           </div>
         </div>
@@ -238,7 +265,7 @@ const evolutionOption = computed(() =>
           <table class="min-w-full text-sm">
             <thead class="border-y border-line bg-surface-2 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th class="px-3 py-2 text-left">Equipo</th>
+                <th class="sticky left-0 z-10 bg-surface-2 px-3 py-2 text-left">Equipo</th>
                 <th class="px-3 py-2 text-center" title="Puesto en la jornada elegida">Ahora</th>
                 <th class="px-3 py-2 text-center">Pts</th>
                 <th class="px-3 py-2 text-center" title="Puntos al final de la liga, de media">Pts final</th>
@@ -247,11 +274,15 @@ const evolutionOption = computed(() =>
               </tr>
             </thead>
             <tbody class="divide-y divide-line">
-              <tr v-for="team in teams" :key="team.teamId" :class="isMine(team) ? 'bg-accent-500/10' : ''">
-                <td class="px-3 py-2">
+              <tr v-for="team in teams" :key="team.teamId" :class="{ 'my-club-row': isMine(team) }">
+                <!-- Columna fija al desplazar la tabla en el móvil: necesita un fondo opaco (el de su fila, mezclado). -->
+                <td
+                  class="sticky left-0 z-10 px-3 py-2"
+                  :class="isMine(team) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_15%,var(--color-surface))]' : 'bg-surface'"
+                >
                   <RouterLink :to="{ name: 'team', params: { teamId: team.teamId } }" class="flex items-center gap-2 font-medium text-slate-900 hover:text-accent-400">
                     <TeamCrest :src="team.crestUrl" :name="team.teamName" :short-name="team.shortName" size="xs" />
-                    <span class="truncate">{{ team.teamName }}</span>
+                    <span class="max-w-[8.5rem] truncate sm:max-w-none">{{ team.teamName }}</span>
                   </RouterLink>
                 </td>
                 <td class="px-3 py-2 text-center font-figures">{{ team.position }}.º</td>

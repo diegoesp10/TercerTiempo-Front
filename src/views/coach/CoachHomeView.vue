@@ -9,6 +9,7 @@ import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, staffRoleLabels, visibilityLabels } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
+import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import DashboardSearch from '@/components/search/DashboardSearch.vue';
 import RefereesDashboardCard from '@/components/referees/RefereesDashboardCard.vue';
 
@@ -25,6 +26,9 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
 <template>
   <PageHeader :title="`Hola, ${auth.displayName}`" subtitle="Plantillas en las que formas parte del cuerpo técnico esta temporada.">
     <template #actions>
+      <RouterLink v-if="auth.coach" :to="{ name: 'coach', params: { coachId: auth.coach.id } }" class="btn-secondary" title="Tu perfil de técnico, con tu foto">
+        <PlayerAvatar :src="auth.coach.photoUrl" :name="auth.displayName" size="xs" />Mi perfil
+      </RouterLink>
       <RouterLink to="/codigo-acceso" :class="squads.length > 0 ? 'btn-secondary' : 'btn-primary'">Canjear un código de acceso</RouterLink>
     </template>
   </PageHeader>

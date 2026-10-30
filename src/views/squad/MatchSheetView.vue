@@ -14,6 +14,7 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import CardIcon from '@/components/ui/CardIcon.vue';
 import CardMarks from '@/components/sheet/CardMarks.vue';
+import PlayerNoteModal from '@/components/sheet/PlayerNoteModal.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
@@ -188,6 +189,15 @@ function onSuggestionSent(suggestion: SuggestionDto) {
 }
 const playedRows = computed(() => rows.value.filter((r) => r.played));
 const outcome = computed(() => (data.value ? outcomeFor(data.value.match, teamId.value) : null));
+
+// Notas de cada línea en un modal: en la tabla solo cabe un trozo y la casilla cortaba lo escrito.
+const noteRow = ref<Row | null>(null);
+const hasNote = (row: Row) => !!row.notes?.trim();
+const noteContext = computed(() => (data.value ? `Jornada ${data.value.match.matchday} · ${opponentLabel(data.value.match, teamId.value)}` : ''));
+function applyNote(note: string | null) {
+  if (noteRow.value) noteRow.value.notes = note;
+  noteRow.value = null;
+}
 
 /** Al marcar «jugó» proponemos 90 minutos como titular; al desmarcar se conservan los valores por si se vuelve a marcar. */
 function onPlayedChange(row: Row) {
@@ -410,6 +420,14 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
               <td class="px-3 py-1 whitespace-nowrap">
                 <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium" :class="row.played ? 'text-slate-800' : ''" />
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
+                <button
+                  v-if="hasNote(row)"
+                  type="button"
+                  class="ml-1.5 text-accent-400 hover:text-accent-300"
+                  :title="`Tiene nota: ${row.notes}`"
+                  :aria-label="`Ver la nota de ${row.player.fullName}`"
+                  @click="noteRow = row"
+                ><Icon icon="comment-dots" class="text-[12px]" /></button>
               </td>
               <td class="px-2 py-1 text-center">
                 <input v-model="row.started" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-accent-400" :disabled="!row.played" aria-label="Titular" />
@@ -430,7 +448,20 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
                 <RatingBadge v-if="row.played" :rating="row.rating" size="sm" />
               </td>
               <td class="px-3 py-1">
-                <input v-model="row.notes" type="text" maxlength="1000" class="input min-w-40 px-2 py-1" :disabled="!row.played" placeholder="Opcional" aria-label="Notas" />
+                <button
+                  type="button"
+                  class="inline-flex w-44 items-center gap-1.5 rounded-lg border px-2 py-1 text-left text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
+                  :class="hasNote(row)
+                    ? 'border-accent-400/60 bg-accent-500/10 text-slate-800 hover:bg-accent-500/20'
+                    : 'border-dashed border-slate-300 text-slate-500 hover:border-accent-400 hover:text-slate-800'"
+                  :disabled="!row.played"
+                  :title="hasNote(row) ? row.notes ?? '' : 'Añadir una nota a su partido'"
+                  :aria-label="hasNote(row) ? `Editar la nota de ${row.player.fullName}` : `Añadir una nota a ${row.player.fullName}`"
+                  @click="noteRow = row"
+                >
+                  <Icon :icon="hasNote(row) ? 'circle-check' : 'plus'" class="shrink-0 text-[12px]" :class="hasNote(row) ? 'text-accent-400' : ''" />
+                  <span class="truncate">{{ hasNote(row) ? row.notes : 'Añadir nota' }}</span>
+                </button>
               </td>
             </tr>
           </tbody>
@@ -441,6 +472,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
                 <span v-if="row.shirtNumber ?? row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.shirtNumber ?? row.player.shirtNumber }}</span>
                 <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium text-slate-800" />
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
+                <Icon v-if="hasNote(row)" icon="comment-dots" class="ml-1.5 text-[12px] text-accent-400" :title="`Tiene nota: ${row.notes}`" />
               </td>
               <td class="px-2 py-2 text-center">{{ row.started ? '●' : '' }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ row.minutesPlayed }}</td>
@@ -448,7 +480,19 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
               <td class="px-2 py-2 text-center"><CardMarks :yellow-cards="row.yellowCards" :red-card="false" /></td>
               <td class="px-2 py-2 text-center"><CardIcon v-if="row.redCard" kind="red" /></td>
               <td class="px-2 py-2 text-center"><RatingBadge :rating="row.rating" size="sm" /></td>
-              <td class="px-3 py-2 text-slate-600">{{ row.notes ?? '' }}</td>
+              <td class="px-3 py-2">
+                <button
+                  v-if="hasNote(row)"
+                  type="button"
+                  class="inline-flex w-48 items-center gap-1.5 rounded-lg border border-accent-400/60 bg-accent-500/10 px-2 py-1 text-left text-xs text-slate-800 hover:bg-accent-500/20"
+                  :title="row.notes ?? ''"
+                  :aria-label="`Leer la nota de ${row.player.fullName}`"
+                  @click="noteRow = row"
+                >
+                  <Icon icon="comment-dots" class="shrink-0 text-[12px] text-accent-400" />
+                  <span class="truncate">{{ row.notes }}</span>
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -467,6 +511,16 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
         resultado (según los minutos jugados). Escala de 3,0 a 10,0.
       </p>
     </section>
+    <PlayerNoteModal
+      :open="noteRow !== null"
+      :player-name="noteRow?.player.fullName ?? ''"
+      :photo-url="noteRow?.player.photoUrl"
+      :context="noteContext"
+      :note="noteRow?.notes ?? null"
+      :readonly="!canEdit"
+      @close="noteRow = null"
+      @save="applyNote"
+    />
     <SuggestPerformanceModal
       v-if="canSuggest"
       :open="suggesting"
