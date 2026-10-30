@@ -18,7 +18,8 @@ export const metricColors: Record<PredictionMetric, string> = {
   relegation: palette.rose,
 };
 
-const percent = (value: number) => `${(value * 100).toLocaleString('es-ES', { maximumFractionDigits: value < 0.01 && value > 0 ? 1 : 0 })} %`;
+/** Probabilidad de 0 a 1 como «26 %» (con un decimal por debajo del 1 %). */
+export const percent = (value: number) => `${(value * 100).toLocaleString('es-ES', { maximumFractionDigits: value < 0.01 && value > 0 ? 1 : 0 })} %`;
 
 const dot = (color: string) =>
   `<span style="display:inline-block;width:8px;height:8px;border-radius:9999px;background:${color};margin-right:6px"></span>`;
@@ -82,8 +83,11 @@ export function predictionBarsOption(
   };
 }
 
-/** Dónde puede acabar cada equipo: probabilidad de cada puesto final, con los puestos coloreados como en la web de la liga. */
-export function positionHeatmapOption(teams: TeamPredictionDto[], zones: LeagueZonesDto, theme: ChartTheme): EChartsOption {
+/**
+ * Dónde puede acabar cada equipo: probabilidad de cada puesto final, con los puestos coloreados como en la web de la liga.
+ * En pantallas estrechas los nombres van en una columna más corta para que se vean más puestos sin desplazar.
+ */
+export function positionHeatmapOption(teams: TeamPredictionDto[], zones: LeagueZonesDto, theme: ChartTheme, labelWidth = 150): EChartsOption {
   const colors = chartPalettes[theme];
   const positions = Array.from({ length: zones.teams }, (_, i) => i + 1);
   const data = teams.flatMap((team, row) => team.positionOdds.map((odds, col) => [col, row, Math.round(odds * 1000) / 10]));
@@ -113,7 +117,7 @@ export function positionHeatmapOption(teams: TeamPredictionDto[], zones: LeagueZ
       inverse: true,
       data: teams.map((t) => t.teamName),
       splitArea: { show: true },
-      axisLabel: { width: 150, overflow: 'truncate', color: colors.text, fontSize: 12 },
+      axisLabel: { width: labelWidth, overflow: 'truncate', color: colors.text, fontSize: labelWidth < 120 ? 11 : 12 },
     },
     visualMap: {
       min: 0,
@@ -155,6 +159,10 @@ export function predictionEvolutionOption(
   const ranked = [...evolution.teams].sort((a, b) => (b[metric].at(-1) ?? 0) - (a[metric].at(-1) ?? 0));
   const shown = new Set([...ranked.slice(0, 6).map((t) => t.teamId), ...highlighted]);
   const linePalette = [...seriesColors, palette.teal, palette.orange, '#e879f9', '#a3e635', '#fb7185', '#38bdf8'];
+  // El eje llega hasta el valor más alto (redondeado a la decena de arriba), no siempre al 100 %: con todos por debajo
+  // del 30 % las líneas ocupaban un tercio del gráfico.
+  const highest = Math.max(0, ...evolution.teams.flatMap((t) => t[metric])) * 100;
+  const yMax = Math.min(100, Math.max(10, Math.ceil((highest + 2) / 10) * 10));
 
   return {
     grid: { left: 8, right: 16, top: 64, bottom: 8, containLabel: true },
@@ -177,7 +185,7 @@ export function predictionEvolutionOption(
     yAxis: {
       type: 'value',
       min: 0,
-      max: 100,
+      max: yMax,
       axisLabel: { formatter: '{value} %' },
     },
     series: ranked.map((team, i) => {
