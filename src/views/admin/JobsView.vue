@@ -67,6 +67,19 @@ const anyRunning = computed(() => data.value?.jobs.some((j) => j.running) ?? fal
 const jobTitles = computed(() => new Map((data.value?.jobs ?? []).map((j) => [j.name, j.title])));
 const runsById = computed(() => new Map((data.value?.runs ?? []).map((r) => [r.id, r])));
 
+/** Los datos reales (ligas, partidos, actas oficiales) los descarga un solo entorno a la vez y los demás los copian. */
+const ingester = computed(() => {
+  const current = data.value?.ingester;
+  if (!data.value) return null;
+  if (!current) return { tone: 'amber' as const, text: 'Ahora no los descarga ningún entorno: se actualizarán en cuanto arranque uno que pueda descargar.' };
+  const since = formatKickoff(current.since);
+  if (current.thisProcess) return { tone: 'green' as const, text: `Los descarga este entorno (${current.environment}) desde ${since}.` };
+  return {
+    tone: 'blue' as const,
+    text: `Los descarga ${current.environment} desde ${since}; este entorno los copia cada pocos minutos${current.thisEnvironmentCanIngest ? ' y tomará el relevo si ese entorno se para' : ''}.`,
+  };
+});
+
 async function login() {
   loggingIn.value = true;
   loginError.value = null;
@@ -266,6 +279,10 @@ const sourceTitle = (source: ScrapeSourceDto) =>
     <Spinner v-if="loading && !data" />
 
     <div v-if="data" class="space-y-6">
+      <p v-if="ingester" class="flex items-start gap-2 rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-slate-700">
+        <Icon icon="database" class="mt-0.5 h-3.5 w-3.5 shrink-0" :class="ingester.tone === 'green' ? 'text-emerald-500' : ingester.tone === 'amber' ? 'text-amber-500' : 'text-brand-400'" />
+        <span><strong class="text-slate-900">Datos reales.</strong> {{ ingester.text }}</span>
+      </p>
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <article v-for="job in data.jobs" :key="job.name" class="card" :class="job.name === 'football-data' ? 'lg:col-span-2' : ''">
           <div class="flex flex-wrap items-start justify-between gap-3">
@@ -308,7 +325,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
                 <dd class="text-right text-slate-800">{{ job.lastRun.scope }}</dd>
               </template>
               <dt class="text-slate-500">Resultado</dt>
-              <dd class="text-right"><Badge :tone="statusTone[job.lastRun.status]">{{ statusLabels[job.lastRun.status] }}</Badge> <span class="text-xs text-slate-500">{{ job.lastRun.requests }} llamadas{{ job.lastRun.manual ? ' · a mano' : '' }}</span></dd>
+              <dd class="text-right"><Badge :tone="statusTone[job.lastRun.status]">{{ statusLabels[job.lastRun.status] }}</Badge> <span class="text-xs text-slate-500">{{ job.lastRun.requests }} llamadas{{ job.lastRun.manual ? ' · a mano' : '' }}{{ job.realData && job.lastRun.environment ? ` · ${job.lastRun.environment}` : '' }}</span></dd>
             </template>
           </dl>
           <p v-if="job.lastRun?.summary" class="mt-2 text-xs text-slate-600">{{ job.lastRun.summary }}</p>
@@ -415,7 +432,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
             <tbody class="divide-y divide-slate-100">
               <tr v-for="run in data.runs" :key="run.id">
                 <td class="px-3 py-2 whitespace-nowrap text-slate-700">{{ formatKickoff(run.startedAt) }}</td>
-                <td class="px-3 py-2 whitespace-nowrap">{{ jobTitles.get(run.job) ?? run.job }}<span class="text-xs text-slate-500"> · {{ run.manual ? 'a mano' : 'automática' }}</span></td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ jobTitles.get(run.job) ?? run.job }}<span class="text-xs text-slate-500"> · {{ run.manual ? 'a mano' : 'automática' }}{{ run.environment ? ` · ${run.environment}` : '' }}</span></td>
                 <td class="px-3 py-2"><Badge :tone="statusTone[run.status]">{{ statusLabels[run.status] }}</Badge></td>
                 <td class="px-3 py-2 text-right tabular-nums whitespace-nowrap">{{ duration(run) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ run.requests }}</td>

@@ -1669,6 +1669,8 @@ export interface JobRunDto {
   requests: number;
   /** Datos de las ligas: «Jornada en curso (21 oct – 28 oct)», «Temporada completa»… */
   scope: string | null;
+  /** Entorno que la hizo (en las descargas, el que tenía el bloqueo). */
+  environment?: string | null;
 }
 
 export type SyncScopeKind = 'CurrentRound' | 'DateRange' | 'FullSeason';
@@ -1856,6 +1858,8 @@ export interface JobDto {
   /** Día y hora fijos («Los lunes a las 7:00»); null si va por intervalo. */
   schedule?: string | null;
   pause: JobPauseDto | null;
+  /** Descarga de las webs a la base de datos reales: solo la hace el entorno que tiene el bloqueo. */
+  realData?: boolean;
 }
 
 export type JobEventTone = 'info' | 'success' | 'warning';
@@ -1913,6 +1917,19 @@ export interface JobsOverviewDto {
   runs: JobRunDto[];
   requests: ScrapeRequestDto[];
   generatedAt: string;
+  /** Quién descarga ahora los datos reales (la base que comparten todos los entornos); null si nadie. */
+  ingester?: RealDataIngesterDto | null;
+}
+
+export interface RealDataIngesterDto {
+  environment: string;
+  machine: string;
+  since: string;
+  heartbeatAt: string;
+  /** Es este mismo proceso. */
+  thisProcess: boolean;
+  /** Este entorno puede descargar cuando el otro pare. */
+  thisEnvironmentCanIngest: boolean;
 }
 
 export interface RegistrationOptionsDto {
