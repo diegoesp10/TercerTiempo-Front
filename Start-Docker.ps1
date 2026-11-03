@@ -21,7 +21,13 @@ function Invoke-Native([scriptblock]$Command, [string]$Message) {
 $dockerOs = docker info --format '{{.OSType}}' 2>$null
 if ($LASTEXITCODE -ne 0 -or $dockerOs -ne 'linux') { throw 'Docker Desktop debe estar iniciado con contenedores Linux.' }
 
-$apiRunning = [bool](docker ps --filter 'name=^tercer-tiempo-api$' --filter 'status=running' --format '{{.Names}}')
+# El contenedor de la API lleva el entorno en el nombre: tercer-tiempo-api-development, -fakedatos, -pilot o -production.
+$apiRunning = docker ps --filter 'name=^tercer-tiempo-api-' --filter 'status=running' --format '{{.Names}}'
+$wanted = "tercer-tiempo-api-$($Environment.ToLowerInvariant())"
+if ($apiRunning -and $apiRunning -ne $wanted) {
+    # No se cambia sola: con el piloto en marcha, reconstruir la web no debe tirar la API de los clubes.
+    Write-Warning "La API en marcha es $apiRunning, no ${wanted}: la web hablará con esa. Para cambiarla, ejecuta el Start-Docker.ps1 del backend con -Environment $Environment."
+}
 if (-not $apiRunning) {
     $backendScript = Join-Path $BackendPath 'Start-Docker.ps1'
     if (Test-Path -LiteralPath $backendScript) {
