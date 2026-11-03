@@ -21,7 +21,7 @@ import { useAsync } from '@/composables/useAsync';
 import { useBackFallback } from '@/composables/useBackFallback';
 import { useAuthStore } from '@/stores/auth';
 import type { MatchSheetDto, MatchSheetEntryInput, SquadPlayerDto, SuggestionDto } from '@/types/api';
-import { formatKickoff, matchStatusLabels, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, positionShortLabels, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
+import { awaitingResultHint, formatKickoff, matchDisplayLabels, matchDisplayStatus, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, positionShortLabels, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
 import { downloadPaperSheet } from '@/utils/paperSheet';
 import PlayerName from '@/components/players/PlayerName.vue';
 import { opponentOf } from '@/utils/crests';
@@ -277,7 +277,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
         <span>Jornada {{ data.match.matchday }} · {{ formatKickoff(data.match.kickoffAt) }}<span v-if="data.match.venue"> · {{ data.match.venue }}</span></span>
         <span class="flex items-center gap-2">
           <Badge v-if="outcome" :tone="outcomeTone(outcome)">{{ outcomeLabels[outcome] }}</Badge>
-          <Badge :tone="data.match.status === 'Played' ? 'slate' : 'blue'">{{ matchStatusLabels[data.match.status] }}</Badge>
+          <Badge :tone="['Played', 'AwaitingResult'].includes(matchDisplayStatus(data.match)) ? 'slate' : 'blue'" :title="matchDisplayStatus(data.match) === 'AwaitingResult' ? awaitingResultHint : undefined">{{ matchDisplayLabels[matchDisplayStatus(data.match)] }}</Badge>
         </span>
       </div>
       <div class="mt-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-center">

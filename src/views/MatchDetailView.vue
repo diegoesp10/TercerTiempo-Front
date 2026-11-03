@@ -15,7 +15,7 @@ import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import { useViewer } from '@/composables/useViewer';
-import { formatKickoff, matchStatusLabels, positionShortLabels, visibilityLabels } from '@/utils/format';
+import { awaitingResultHint, formatKickoff, matchDisplayLabels, matchDisplayStatus, positionShortLabels, visibilityLabels } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 import PlayerName from '@/components/players/PlayerName.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
@@ -62,7 +62,7 @@ watch(data, async (detail) => {
           <template v-if="data.seasonLabel"> · temporada {{ data.seasonLabel }}</template>
           · Jornada {{ data.match.matchday }} · {{ formatKickoff(data.match.kickoffAt) }}<span v-if="data.match.venue"> · {{ data.match.venue }}</span>
         </span>
-        <Badge :tone="data.match.status === 'Played' ? 'slate' : 'blue'">{{ matchStatusLabels[data.match.status] }}</Badge>
+        <Badge :tone="['Played', 'AwaitingResult'].includes(matchDisplayStatus(data.match)) ? 'slate' : 'blue'" :title="matchDisplayStatus(data.match) === 'AwaitingResult' ? awaitingResultHint : undefined">{{ matchDisplayLabels[matchDisplayStatus(data.match)] }}</Badge>
       </div>
       <div class="mt-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-center">
         <RouterLink :to="{ name: 'team', params: { teamId: data.match.homeTeam.id } }" class="flex min-w-0 flex-col items-center gap-2 break-words text-sm font-semibold text-slate-900 hover:text-accent-400 sm:text-lg">

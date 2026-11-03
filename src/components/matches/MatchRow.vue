@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import type { RouteLocationRaw } from 'vue-router';
 import Badge from '@/components/ui/Badge.vue';
 import type { MatchDto } from '@/types/api';
-import { formatKickoff, matchStatusLabels, outcomeFor, outcomeLabels, outcomeTone, scoreLabel } from '@/utils/format';
+import { awaitingResultHint, formatKickoff, matchDisplayLabels, matchDisplayStatus, outcomeFor, outcomeLabels, outcomeTone, scoreLabel } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 
 const props = defineProps<{
@@ -18,6 +18,7 @@ const isHome = computed(() => props.match.homeTeam.id === props.teamId);
 const opponent = computed(() => (isHome.value ? props.match.awayTeam : props.match.homeTeam));
 const outcome = computed(() => outcomeFor(props.match, props.teamId));
 const score = computed(() => scoreLabel(props.match));
+const status = computed(() => matchDisplayStatus(props.match));
 const target = computed<RouteLocationRaw>(() => props.to ?? { name: 'match', params: { matchId: props.match.id } });
 </script>
 
@@ -48,7 +49,7 @@ const target = computed<RouteLocationRaw>(() => props.to ?? { name: 'match', par
         <span class="text-lg font-semibold tabular-nums text-slate-900">{{ score }}</span>
         <Badge v-if="outcome" :tone="outcomeTone(outcome)">{{ outcomeLabels[outcome] }}</Badge>
       </template>
-      <Badge v-else>{{ matchStatusLabels[match.status] }}</Badge>
+      <Badge v-else :title="status === 'AwaitingResult' ? awaitingResultHint : undefined">{{ matchDisplayLabels[status] }}</Badge>
     </div>
   </RouterLink>
 </template>

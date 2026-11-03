@@ -7,7 +7,7 @@ import Badge from '@/components/ui/Badge.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { CompetitionMatchdayDto, MatchDto } from '@/types/api';
-import { formatDayHeading, formatDayRange, formatTime, localDayKey, matchStatusLabels } from '@/utils/format';
+import { awaitingResultHint, formatDayHeading, formatDayRange, formatTime, localDayKey, matchDisplayLabels, matchDisplayStatus } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 
@@ -62,17 +62,25 @@ const next = computed(() =>
   index.value >= 0 && index.value < matchdays.value.length - 1 ? matchdays.value[index.value + 1]?.number ?? null : null,
 );
 
-/** Estado de la jornada mostrada respecto a hoy. */
+/**
+ * Estado de la jornada mostrada respecto a hoy. Pendientes son solo los partidos por jugar (con la hora por llegar o
+ * aplazados); los que ya pasaron de hora sin resultado están jugados y solo les falta el resultado.
+ */
 const state = computed<{ label: string; tone: 'green' | 'blue' | 'slate' | 'amber' } | null>(() => {
   const s = summary.value;
   if (!s) return null;
-  if (s.played === s.matches) return { label: 'Disputada', tone: 'slate' };
+  const statuses = (data.value?.matches ?? []).map((m) => matchDisplayStatus(m));
+  const pending = statuses.filter((st) => st === 'Scheduled' || st === 'Postponed').length;
+  const awaiting = statuses.filter((st) => st === 'AwaitingResult' || st === 'InProgress').length;
+  if (pending === 0 && awaiting === 0) return { label: 'Disputada', tone: 'slate' };
   if (s.number === current.value) {
     return s.played > 0 || new Date(s.startsAt) <= new Date()
       ? { label: 'Jornada en curso', tone: 'green' }
       : { label: 'Próxima jornada', tone: 'blue' };
   }
-  if (current.value !== null && s.number < current.value) return { label: 'Con partidos pendientes', tone: 'amber' };
+  if (current.value !== null && s.number < current.value) {
+    return pending > 0 ? { label: 'Con partidos pendientes', tone: 'amber' } : { label: 'Faltan resultados', tone: 'slate' };
+  }
   return null;
 });
 
@@ -185,8 +193,9 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
                 <span v-if="hasScore(match)" class="rounded bg-brand-500 px-2 py-0.5 font-semibold tabular-nums text-white">
                   {{ match.homeGoals }} - {{ match.awayGoals }}
                 </span>
-                <span v-else-if="match.status === 'Scheduled'" class="tabular-nums text-slate-600">{{ formatTime(match.kickoffAt) }}</span>
-                <Badge v-else tone="amber">{{ matchStatusLabels[match.status] }}</Badge>
+                <span v-else-if="matchDisplayStatus(match) === 'Scheduled'" class="tabular-nums text-slate-600">{{ formatTime(match.kickoffAt) }}</span>
+                <Badge v-else-if="matchDisplayStatus(match) === 'AwaitingResult'" tone="slate" :title="awaitingResultHint">{{ matchDisplayLabels.AwaitingResult }}</Badge>
+                <Badge v-else tone="amber">{{ matchDisplayLabels[matchDisplayStatus(match)] }}</Badge>
               </span>
               <TeamName
                 :name="match.awayTeam.name"

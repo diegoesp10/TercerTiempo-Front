@@ -12,6 +12,8 @@ import { downloadPaperSheet } from '@/utils/paperSheet';
 import TeamName from '@/components/teams/TeamName.vue';
 import { opponentOf } from '@/utils/crests';
 import { useViewer } from '@/composables/useViewer';
+import { isPendingMatch, matchDisplayStatus } from '@/utils/format';
+import type { MatchDto } from '@/types/api';
 
 const { squadId, detail } = useSquad();
 
@@ -24,10 +26,13 @@ const canReview = computed(() => detail.value?.canInvitePlayers ?? false);
 // El administrador las ve, pero no las resuelve.
 const { isAdmin } = useViewer();
 
-const played = computed(() => (data.value ?? []).filter((m) => m.match.status === 'Played').reverse());
-const upcoming = computed(() => (data.value ?? []).filter((m) => m.match.status !== 'Played'));
-const pending = computed(() => played.value.filter((m) => m.entriesRecorded === 0).length);
-const nextMatch = computed(() => upcoming.value[0]?.match ?? null);
+// Los que ya pasaron de hora sin resultado van con los disputados («Sin resultado»); su acta interna se abre cuando
+// llega el resultado.
+const isPlayed = (m: { match: MatchDto }) => ['Played', 'AwaitingResult'].includes(matchDisplayStatus(m.match));
+const played = computed(() => (data.value ?? []).filter(isPlayed).reverse());
+const upcoming = computed(() => (data.value ?? []).filter((m) => !isPlayed(m)));
+const pending = computed(() => played.value.filter((m) => m.match.status === 'Played' && m.entriesRecorded === 0).length);
+const nextMatch = computed(() => upcoming.value.find((m) => isPendingMatch(m.match))?.match ?? null);
 
 /** Acta en papel para apuntar en directo: la del próximo partido sale con la cabecera rellena. */
 function downloadPaper(withNextMatch: boolean) {
@@ -83,7 +88,7 @@ function downloadPaper(withNextMatch: boolean) {
         >
           <template #badge>
             <Badge v-if="item.entriesRecorded > 0" tone="blue">{{ item.entriesRecorded }} en el acta</Badge>
-            <Badge v-else-if="canManage" tone="amber">Sin acta</Badge>
+            <Badge v-else-if="canManage && item.match.status === 'Played'" tone="amber">Sin acta</Badge>
           </template>
         </MatchRow>
       </div>

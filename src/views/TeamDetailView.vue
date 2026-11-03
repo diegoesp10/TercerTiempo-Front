@@ -17,7 +17,8 @@ import { useAsync } from '@/composables/useAsync';
 import { useBackFallback } from '@/composables/useBackFallback';
 import { useAuthStore } from '@/stores/auth';
 import { useViewer } from '@/composables/useViewer';
-import { formatKickoff, levelLabels, positionLabels, visibilityLabels } from '@/utils/format';
+import { formatKickoff, levelLabels, matchDisplayStatus, positionLabels, visibilityLabels } from '@/utils/format';
+import type { MatchDto } from '@/types/api';
 import TeamName from '@/components/teams/TeamName.vue';
 
 const props = defineProps<{ teamId: string }>();
@@ -37,8 +38,10 @@ if (typeof route.query.jugador === 'string' && signedIn.value)
   void router.replace({ name: 'player-card', params: { teamId: props.teamId, entryId: route.query.jugador } });
 const matches = useAsync(() => api.teams.matches(props.teamId));
 
-const played = computed(() => (matches.data.value ?? []).filter((m) => m.status === 'Played').reverse());
-const upcoming = computed(() => (matches.data.value ?? []).filter((m) => m.status !== 'Played'));
+// Los que ya pasaron de hora sin resultado van con los jugados (con «Sin resultado»), no con los próximos.
+const isPlayed = (m: MatchDto) => ['Played', 'AwaitingResult'].includes(matchDisplayStatus(m));
+const played = computed(() => (matches.data.value ?? []).filter(isPlayed).reverse());
+const upcoming = computed(() => (matches.data.value ?? []).filter((m) => !isPlayed(m)));
 
 /** Próximo partido por fecha (no por jornada: un aplazado de una jornada anterior puede jugarse más tarde). */
 const nextMatch = computed(() => {

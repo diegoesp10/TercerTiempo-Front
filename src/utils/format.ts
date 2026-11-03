@@ -92,6 +92,31 @@ export const matchStatusLabels: Record<MatchStatus, string> = {
   Cancelled: 'Cancelado',
 };
 
+/**
+ * Estado que se enseña de un partido. Uno «Programado» cuya hora ya pasó (o «En juego» desde hace más de tres horas) ya
+ * se ha jugado: no está pendiente, solo falta que llegue su resultado de futbolasturiano.es.
+ */
+export type MatchDisplayStatus = MatchStatus | 'AwaitingResult';
+
+const MATCH_LENGTH_MS = 3 * 60 * 60 * 1000;
+
+export function matchDisplayStatus(match: Pick<MatchDto, 'status' | 'kickoffAt'>, now = Date.now()): MatchDisplayStatus {
+  const kickoff = new Date(match.kickoffAt).getTime();
+  if (match.status === 'Scheduled' && kickoff <= now) return 'AwaitingResult';
+  if (match.status === 'InProgress' && kickoff + MATCH_LENGTH_MS <= now) return 'AwaitingResult';
+  return match.status;
+}
+
+export const matchDisplayLabels: Record<MatchDisplayStatus, string> = { ...matchStatusLabels, AwaitingResult: 'Sin resultado' };
+
+export const awaitingResultHint = 'Ya se ha jugado: el resultado aparecerá en cuanto llegue de futbolasturiano.es.';
+
+/** Por jugar: con la hora por llegar o aplazado (un partido en juego o sin resultado ya no está pendiente). */
+export const isPendingMatch = (match: Pick<MatchDto, 'status' | 'kickoffAt'>) => {
+  const status = matchDisplayStatus(match);
+  return status === 'Scheduled' || status === 'Postponed';
+};
+
 export const levelLabels: Record<CompetitionLevel, string> = {
   Professional: 'Profesional',
   National: 'Nacional',
