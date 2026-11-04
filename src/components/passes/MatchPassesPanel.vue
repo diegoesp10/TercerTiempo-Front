@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
@@ -10,7 +10,12 @@ import type { MatchPassDto, MatchPassesDto, MatchPassStatus } from '@/types/api'
 import { formatKickoff, passContents, passPrice, passStatusLabels } from '@/utils/format';
 import { centsToEuros, eurosToCents, passLink } from '@/components/passes/passes';
 
-const props = defineProps<{ squadId: string; matchId: string }>();
+const props = defineProps<{
+  squadId: string;
+  matchId: string;
+  /** Se llega desde el vídeo recién subido (o desde el acta interna): el formulario viene marcado y a la vista. */
+  preset?: 'video' | 'sheet' | null;
+}>();
 
 const data = shallowRef<MatchPassesDto | null>(null);
 const loading = ref(false);
@@ -50,6 +55,30 @@ watch(includesVideo, (video) => { if (!video) allowsDownload.value = false; });
 
 const priceCents = computed(() => eurosToCents(price.value));
 const priceInvalid = computed(() => priceCents.value === null);
+
+// Con preset, el formulario se marca según de dónde se viene y se lleva a la vista.
+const formRef = ref<HTMLFormElement | null>(null);
+const presetNote = ref<'video' | 'sheet' | null>(null);
+watch(
+  () => [data.value, props.preset] as const,
+  async ([loaded, preset]) => {
+    if (!loaded || !preset) return;
+    if (preset === 'video') {
+      includesVideo.value = loaded.hasVideo;
+      includesSheet.value = loaded.hasSheet;
+      allowsDownload.value = false;
+    } else {
+      includesSheet.value = true;
+      includesVideo.value = false;
+      allowsDownload.value = false;
+    }
+    priceTouched.value = false;
+    presetNote.value = preset;
+    await nextTick();
+    formRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  },
+  { immediate: true },
+);
 
 async function create() {
   if (!includesSheet.value && !includesVideo.value) return;
@@ -131,7 +160,14 @@ const statusTone: Record<MatchPassStatus, 'green' | 'amber' | 'red' | 'slate' | 
         <template v-else> La plantilla es privada: nadie puede pedir acceso, solo lo tendrá quien reciba un pase.</template>
       </p>
 
-      <form class="mt-4 space-y-3 rounded-lg border border-line bg-surface-2 p-3" @submit.prevent="create">
+      <p v-if="presetNote === 'video'" class="mt-4 text-sm font-medium text-slate-900">
+        <Icon icon="video" class="mr-1.5 h-3.5 w-3.5 text-accent-400" />Pase del vídeo que has subido: marca qué incluye, pon el precio y genera el código.
+      </p>
+      <p v-else-if="presetNote === 'sheet'" class="mt-4 text-sm font-medium text-slate-900">
+        <Icon icon="clipboard-list" class="mr-1.5 h-3.5 w-3.5 text-accent-400" />Pase del acta interna: marca qué incluye, pon el precio y genera el código.
+      </p>
+
+      <form ref="formRef" class="mt-4 space-y-3 rounded-lg border bg-surface-2 p-3 transition" :class="presetNote ? 'border-brand-400 ring-2 ring-brand-400/40' : 'border-line'" @submit.prevent="create">
         <div class="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-800">
           <label class="flex items-center gap-2" :class="data.hasSheet ? '' : 'text-slate-400'" :title="data.hasSheet ? undefined : 'Todavía no hay acta interna registrada'">
             <input v-model="includesSheet" type="checkbox" class="h-4 w-4 accent-brand-500" />Acta interna

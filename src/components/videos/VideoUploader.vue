@@ -12,7 +12,11 @@ import { formatBytes, videoPartLabels } from '@/utils/format';
 // Subida de un vídeo de partido por trozos: progreso real, reintentos por trozo y reanudación (también tras recargar
 // la página, mientras la sesión de subida no caduque en la API).
 const props = defineProps<{ squadId: string; matchId: string; existing: MatchVideoDto[] }>();
-const emit = defineEmits<{ uploaded: [video: MatchVideoDto] }>();
+// share: al terminar, quien lo subió quiere darle un pase a alguien de fuera.
+const emit = defineEmits<{ uploaded: [video: MatchVideoDto]; share: [video: MatchVideoDto] }>();
+
+// El último vídeo subido en esta visita: se le ofrece compartirlo con un pase hasta que lo descarte.
+const uploaded = ref<MatchVideoDto | null>(null);
 
 // Un partido entero en 1080p ronda los 6 GB; el límite de la API (Videos:MaxSizeMb) es de 20 GB.
 const MAX_BYTES = 20 * 1024 ** 3;
@@ -181,6 +185,7 @@ async function sendChunks(f: File, s: VideoUploadDto) {
   const video = await api.squads.completeVideoUpload(props.squadId, s.uploadId);
   remember(null);
   status.value = 'done';
+  uploaded.value = video;
   emit('uploaded', video);
   reset(false);
 }
@@ -223,6 +228,25 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
 
 <template>
   <div class="border-t border-slate-100 pt-4">
+    <div v-if="uploaded" class="mb-4 rounded-xl border border-emerald-300/40 bg-emerald-100 p-4 text-sm text-emerald-800" role="status">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+          <Icon icon="circle-check" class="mt-0.5 h-5 w-5 shrink-0" />
+          <div class="min-w-0">
+            <p class="font-semibold">Vídeo subido: <span class="font-normal">{{ uploaded.title }}</span></p>
+            <p class="mt-1 text-xs">
+              {{ videoPartLabels[uploaded.part] }} · {{ formatBytes(uploaded.sizeBytes) }}. Ya lo puede ver tu plantilla. ¿Quieres que lo vea alguien de
+              fuera? Genera un pase: un código de un solo uso que da acceso a este partido, gratis o al precio que pongas.
+            </p>
+          </div>
+        </div>
+        <div class="flex shrink-0 flex-wrap gap-2 lg:pl-3">
+          <button type="button" class="btn-primary px-3 py-1.5 text-xs" @click="emit('share', uploaded)"><Icon icon="ticket" class="mr-1.5 h-3 w-3" />Generar un pase</button>
+          <button type="button" class="btn-ghost px-3 py-1.5 text-xs" @click="uploaded = null">Ahora no</button>
+        </div>
+      </div>
+    </div>
+
     <div class="mb-3 rounded-lg border border-line bg-surface-2 px-4 py-3 text-xs text-slate-600">
       <p class="font-semibold text-slate-800"><Icon icon="circle-info" class="mr-1.5 h-3.5 w-3.5 text-accent-400" />Antes de subir</p>
       <ul class="mt-1 list-disc space-y-0.5 pl-5">
@@ -230,7 +254,7 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
         <li>Vale el partido entero tal cual sale de la cámara: <strong>1080p, hora y media, unos 6 GB</strong>.</li>
         <li>Máximo <strong>20 GB por archivo</strong>. Si pesa más, súbelo en dos partes (1ª y 2ª parte).</li>
         <li>La subida va por trozos y puede tardar (6 GB con 20 Mbps de subida ≈ 45 min): si se corta, vuelve a elegir el mismo archivo y continúa donde se quedó. Se guarda 24 horas desde el último trozo.</li>
-        <li>Solo lo ve tu plantilla. Para que alguien de fuera lo vea o lo descargue, dale un pase del partido desde el acta interna.</li>
+        <li>Solo lo ve tu plantilla. Para que alguien de fuera lo vea o lo descargue, dale un pase del partido: se te ofrece al terminar la subida y siempre está en la pestaña <strong>Pases</strong>.</li>
       </ul>
     </div>
 

@@ -8,9 +8,11 @@ import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import { useAsync } from '@/composables/useAsync';
+import { useAuthStore } from '@/stores/auth';
 import type { MatchDto, MatchPassRequestStatus, MyPassRequestDto } from '@/types/api';
 import { formatKickoff, passContents, passPrice, passRequestStatusLabels } from '@/utils/format';
 
+const auth = useAuthStore();
 const { data, loading, error, run } = useAsync(() => api.passes.mine(), { redirectOnError: false });
 
 const fixture = (match: MatchDto) => `${match.homeTeam.name} - ${match.awayTeam.name}`;
@@ -47,6 +49,12 @@ async function cancel(request: MyPassRequestDto) {
     <div class="mb-4 flex justify-end">
       <RouterLink :to="{ name: 'pass' }" class="btn-secondary"><Icon icon="ticket" class="mr-1.5 h-3.5 w-3.5" />Canjear un código</RouterLink>
     </div>
+
+    <Alert v-if="auth.isClub || auth.isCoach" kind="info" class="mb-4">
+      Aquí están los pases que has canjeado tú. Los que das a otros (de vuestra acta interna o vuestro vídeo) se generan en cada partido de
+      la plantilla, en la pestaña <strong>Pases</strong> de su acta interna<template v-if="auth.isClub">, y se gestionan en
+      <RouterLink to="/club/pases" class="font-medium underline">Pases del club</RouterLink></template>.
+    </Alert>
 
     <Alert v-if="error" kind="error" class="mb-4">{{ error }}</Alert>
     <Alert v-if="actionError" kind="error" class="mb-4">{{ actionError }}</Alert>

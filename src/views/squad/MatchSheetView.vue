@@ -95,7 +95,10 @@ const visibleTabs = computed(() =>
 // Antes del partido, quien lo prepara entra directamente en la previa.
 const defaultTab = computed<Tab>(() => (!matchOver.value && canPrepare.value ? 'previa' : 'partido'));
 const tab = computed<Tab>(() => visibleTabs.value.find((t) => t.id === route.query.tab)?.id ?? defaultTab.value);
-const selectTab = (id: Tab) => void router.replace({ query: { ...route.query, tab: id === defaultTab.value ? undefined : id } });
+const selectTab = (id: Tab) => void router.replace({ query: { ...route.query, pase: undefined, tab: id === defaultTab.value ? undefined : id } });
+// Desde el vídeo (recién subido o ya en la lista): a la pestaña de pases con el formulario marcado para el vídeo.
+const passPreset = computed(() => (route.query.pase === 'video' ? 'video' : null));
+const shareVideo = () => void router.replace({ query: { ...route.query, tab: 'pases', pase: 'video' } });
 
 interface Row extends MatchSheetEntryInput {
   player: SquadPlayerDto;
@@ -381,11 +384,11 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
     </div>
 
     <div v-else-if="tab === 'video'" class="mt-6">
-      <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="canPrepare && !isAdmin" :requestable="rivalRequestable" @request="requestRival(true)" />
+      <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="canPrepare && !isAdmin" :requestable="rivalRequestable" @request="requestRival(true)" @share="shareVideo" />
     </div>
 
     <div v-else-if="tab === 'pases'" class="mt-6">
-      <MatchPassesPanel :squad-id="squadId" :match-id="matchId" />
+      <MatchPassesPanel :squad-id="squadId" :match-id="matchId" :preset="passPreset" />
     </div>
 
     <div v-else-if="tab === 'arbitros'" class="mt-6">
