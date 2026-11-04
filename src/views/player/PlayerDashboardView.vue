@@ -236,11 +236,11 @@ async function leave() {
             <PercentileBar label="Nota media" :value="league.ratingPercentile" />
             <PercentileBar label="Minutos jugados" :value="league.minutesPercentile" />
             <p class="text-xs text-slate-500">
-              Percentil entre {{ league.playersCompared }} jugadores con minutos en plantillas públicas de la liga (y la tuya). P75 = mejor que el 75%.
+              Percentil entre {{ league.playersCompared }} jugadores con minutos en las plantillas de la liga abiertas a solicitudes (y la tuya); solo se usan sus cifras agregadas. P75 = mejor que el 75%.
             </p>
           </div>
           <p v-else class="text-sm text-slate-500">
-            La comparativa se activa cuando al menos dos jugadores de la liga tienen minutos en actas visibles (plantillas públicas o la tuya).
+            La comparativa se activa cuando al menos dos jugadores de la liga tienen minutos en actas registradas (de plantillas abiertas a solicitudes o de la tuya).
           </p>
         </div>
       </section>

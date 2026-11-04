@@ -20,6 +20,7 @@ import type {
   LiveDownloadsDto,
   PresenceOverviewDto,
   PaymentEventDto,
+  PlatformPassEarningsDto,
   SimulatedLicenseEvent,
   LicensingSettingsDto,
   RunFootballSyncRequest,
@@ -58,6 +59,8 @@ export const adminApi = {
   publishCookiePolicy: (token: string, version: string) =>
     http<CookiePolicyDto>('/api/admin/cookies/policy', { method: 'POST', token, body: { version } }),
   licenses: (token: string) => http<LicensesOverviewDto>('/api/admin/licenses', { token }),
+  /** Pases vendidos en toda la plataforma: total, parte de los clubes y parte de la plataforma, por club. */
+  passEarnings: (token: string) => http<PlatformPassEarningsDto>('/api/admin/pass-earnings', { token }),
   paymentEvents: (token: string, licenseId: string | null = null) =>
     http<PaymentEventDto[]>(`/api/admin/payment-events?max=100${licenseId ? `&licenseId=${licenseId}` : ''}`, { token, silent: true }),
   retryPaymentEvent: (token: string, id: string) => http<boolean>(`/api/admin/payment-events/${id}/retry`, { method: 'POST', token }),

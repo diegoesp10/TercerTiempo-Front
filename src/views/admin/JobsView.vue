@@ -6,6 +6,7 @@ import AdminMfaStep from '@/components/admin/AdminMfaStep.vue';
 import ClubInvitationsPanel from '@/components/admin/ClubInvitationsPanel.vue';
 import FootballSyncPanel from '@/components/admin/FootballSyncPanel.vue';
 import LicensesPanel from '@/components/admin/LicensesPanel.vue';
+import PassEarningsPanel from '@/components/admin/PassEarningsPanel.vue';
 import ModerationPanel from '@/components/admin/ModerationPanel.vue';
 import LicensingSettingsPanel from '@/components/admin/LicensingSettingsPanel.vue';
 import Alert from '@/components/ui/Alert.vue';
@@ -262,6 +263,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
     <div v-if="tab === 'licenses'" class="space-y-6">
       <LicensingSettingsPanel :token="session.token" @saved="licensesPanel?.load()" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
       <LicensesPanel ref="licensesPanel" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+      <PassEarningsPanel :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     </div>
     <div v-else-if="tab === 'live'" class="space-y-4">
       <Alert v-if="launchMessage" kind="success">{{ launchMessage }}</Alert>

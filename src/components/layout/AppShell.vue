@@ -52,6 +52,10 @@ const links = computed<NavLink[]>(() => {
     }
   }
 
+  // Pases por partido: el club gestiona solicitudes, precios y ventas; el resto de cuentas, los que ha canjeado.
+  if (auth.isClub) items.push({ to: '/club/pases', label: 'Pases' });
+  else if (auth.isAuthenticated) items.push({ to: '/mis-pases', label: 'Mis pases' });
+
   items.push({ to: '/equipos', label: 'Equipos' }, { to: '/liga', label: 'Liga' }, { to: '/arbitros', label: 'Árbitros' });
   return items;
 });
@@ -97,9 +101,10 @@ function logoutAdmin() {
   <div class="flex min-h-screen flex-col">
     <header class="sticky top-0 z-20 border-b border-line bg-surface/95">
       <div class="mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
-        <RouterLink to="/" class="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
+        <RouterLink to="/" class="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3" aria-label="Tercer Tiempo: inicio">
           <BrandMark :size="34" />
-          <span class="whitespace-nowrap font-display text-xl font-bold uppercase tracking-wide text-slate-900 sm:text-2xl">Tercer <span class="text-brand-500">Tiempo</span></span>
+          <!-- Entre lg y xl el menú completo no cabe con el nombre: queda el escudo. -->
+          <span class="whitespace-nowrap font-display text-xl font-bold uppercase tracking-wide text-slate-900 sm:text-2xl lg:hidden xl:inline">Tercer <span class="text-brand-500">Tiempo</span></span>
         </RouterLink>
 
         <nav class="hidden items-center gap-1 lg:flex" aria-label="Principal">
@@ -107,7 +112,7 @@ function logoutAdmin() {
             v-for="link in links"
             :key="link.to"
             :to="link.to"
-            class="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold transition"
+            class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-semibold transition 2xl:px-3"
             :class="isActive(link) ? 'bg-action text-white' : 'text-slate-600 hover:bg-surface-2 hover:text-slate-900'"
           >
             {{ link.label }}
@@ -143,7 +148,7 @@ function logoutAdmin() {
               <RouterLink to="/ajustes" class="flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" :title="`Ajustes · ${accountTypeLabels[auth.account.type]}`">
                 <TeamCrest v-if="auth.isClub" :src="auth.clubCrestUrl" :name="auth.displayName" size="sm" />
                 <PlayerAvatar v-else-if="auth.isPlayer" :src="auth.player?.photoUrl" :name="auth.displayName" size="xs" />
-                <span class="min-w-[3rem] max-w-40 truncate font-medium">{{ auth.displayName }}</span>
+                <span class="min-w-[3rem] max-w-40 truncate font-medium" :class="auth.isClub || auth.isPlayer ? 'hidden xl:inline' : ''">{{ auth.displayName }}</span>
                 <span class="hidden shrink-0 2xl:inline-flex"><Badge :tone="accountTone">{{ accountTypeLabels[auth.account.type] }}</Badge></span>
                 <span v-if="teamLabel" class="hidden shrink-0 items-center gap-1 text-slate-400 2xl:flex">
                   · <TeamCrest v-if="teamCrest !== undefined" :src="teamCrest" :name="teamLabel" size="xs" /> {{ teamLabel }}

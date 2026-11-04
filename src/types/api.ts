@@ -5,12 +5,13 @@ export type AppointmentStatus = 'Pending' | 'Active' | 'Expired' | 'Revoked';
 export type MatchSide = 'Home' | 'Away';
 export type OfficialSheetAvailability = 'NotPlayed' | 'Pending' | 'Available' | 'Unavailable' | 'Fetching';
 export type OfficialEventType = 'Goal' | 'PenaltyGoal' | 'OwnGoal' | 'YellowCard' | 'SecondYellow' | 'RedCard' | 'Substitution';
-/** Admin: el administrador lo ve para el mantenimiento de la web, sin comprarlo ni gestionarlo. */
-export type VideoAccessLevel = 'None' | 'Locked' | 'Owner' | 'Purchased' | 'Free' | 'Admin';
+/**
+ * Locked: plantilla pública, se puede pedir acceso al club. Owner: es de la plantilla (club, cuerpo técnico, jugadores).
+ * Pass: lo abre un pase del partido. Admin: el administrador, para el mantenimiento de la web.
+ */
+export type VideoAccessLevel = 'None' | 'Locked' | 'Owner' | 'Pass' | 'Admin';
 /** El partido se sube entero o en dos partes, nunca mezclado. */
 export type VideoPart = 'Full' | 'FirstHalf' | 'SecondHalf';
-/** Private: plantilla, club y compradores. Public: cualquiera que llegue al partido, sin pagar. */
-export type VideoVisibility = 'Private' | 'Public';
 export type Position = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Forward';
 export type MatchStatus = 'Scheduled' | 'InProgress' | 'Played' | 'Postponed' | 'Cancelled';
 export type CompetitionLevel = 'Professional' | 'National' | 'Regional' | 'Cup' | 'Youth' | 'Other';
@@ -416,7 +417,7 @@ export interface PendingRefereeRatingDto {
 
 // --- Avisos del club (la campanita; solo cuentas de club) ---
 
-export type AlertKind = 'LicenseExpiring';
+export type AlertKind = 'LicenseExpiring' | 'PassRequest';
 
 export interface AlertDto {
   id: string;
@@ -1249,9 +1250,31 @@ export interface MatchSquadSheetDto {
   squadId: string;
   teamId: string;
   teamName: string;
+  /** Public: acepta solicitudes de acceso a cada partido; nada se ve sin un pase. */
   visibility: SquadVisibility;
   visible: boolean;
+  /** Es de dentro (club, cuerpo técnico, jugadores o administrador): puede abrir la plantilla y el comparador. */
+  insider: boolean;
   entries: PerformanceDto[];
+  /** Para los de fuera: lo que le abren sus pases y cómo pedir el acceso; null para los de dentro. */
+  access: MatchSheetAccessDto | null;
+}
+
+export interface MatchSheetAccessDto {
+  sheetPass: boolean;
+  videoPass: boolean;
+  downloadPass: boolean;
+  /** Plantilla pública de un club con licencia y partido jugado: se puede solicitar. */
+  canRequest: boolean;
+  hasVideo: boolean;
+  sheetPriceCents: number;
+  videoPriceCents: number;
+  currency: string;
+  /** Última solicitud de quien mira para este partido. */
+  requestStatus: MatchPassRequestStatus | null;
+  /** Pase aprobado para quien mira y todavía sin canjear. */
+  readyPassCode: string | null;
+  readyPassPriceCents: number | null;
 }
 
 export interface MatchDetailDto {
@@ -1562,17 +1585,16 @@ export interface MatchVideoDto {
   teamId: string;
   teamName: string;
   part: VideoPart;
-  visibility: VideoVisibility;
   title: string;
   fileName: string;
   contentType: string;
   sizeBytes: number;
-  priceCents: number;
-  currency: string;
   uploadedAt: string;
   uploadedBy: string;
   access: VideoAccessLevel;
   canWatch: boolean;
+  /** El club y el cuerpo técnico vigente, o un pase con descarga. */
+  canDownload: boolean;
   canDelete: boolean;
 }
 
@@ -1601,33 +1623,222 @@ export interface BeginVideoUploadRequest {
   sizeBytes: number;
 }
 
-export interface VideoShareLinkDto {
-  id: string;
-  videoId: string;
-  token: string;
-  createdAt: string;
-  expiresAt: string;
-  active: boolean;
-}
-
-/** Vídeo visto a través de un enlace compartido (sin sesión). */
-export interface SharedVideoDto {
-  videoId: string;
-  title: string;
-  part: VideoPart;
-  teamName: string;
-  match: MatchDto;
-  contentType: string;
-  sizeBytes: number;
-  expiresAt: string;
-  teamId: string;
-  teamCrestUrl: string | null;
-}
-
 export interface VideoTicketDto {
   videoId: string;
   ticket: string;
   expiresAt: string;
+}
+
+// --- Pases por partido: lo único que abre lo interno (acta interna y vídeo) a quien no es de la plantilla ---
+
+export type MatchPassStatus = 'Pending' | 'Redeemed' | 'Revoked' | 'Expired';
+export type MatchPassRequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
+
+export interface MatchPassDto {
+  id: string;
+  code: string;
+  includesSheet: boolean;
+  includesVideo: boolean;
+  allowsDownload: boolean;
+  priceCents: number;
+  currency: string;
+  /** Para quién es, como nota del club. */
+  recipient: string | null;
+  status: MatchPassStatus;
+  fromRequest: boolean;
+  createdAt: string;
+  /** Hasta cuándo se puede canjear. */
+  expiresAt: string;
+  redeemedAt: string | null;
+  redeemedBy: string | null;
+  canRevoke: boolean;
+}
+
+export interface MatchPassesDto {
+  squadId: string;
+  matchId: string;
+  sheetPriceCents: number;
+  videoPriceCents: number;
+  currency: string;
+  /** Lo que se queda el club de cada venta; el resto es de la plataforma. */
+  clubSharePercent: number;
+  hasSheet: boolean;
+  hasVideo: boolean;
+  openToRequests: boolean;
+  passes: MatchPassDto[];
+}
+
+export interface CreateMatchPassRequest {
+  includesSheet: boolean;
+  includesVideo: boolean;
+  allowsDownload: boolean;
+  /** Céntimos; null = el precio del club para ese partido. */
+  priceCents: number | null;
+  recipient: string | null;
+}
+
+export interface PassPreviewDto {
+  code: string;
+  status: MatchPassStatus;
+  squadId: string;
+  teamId: string;
+  teamName: string;
+  clubName: string;
+  match: MatchDto;
+  includesSheet: boolean;
+  includesVideo: boolean;
+  allowsDownload: boolean;
+  priceCents: number;
+  currency: string;
+  expiresAt: string;
+  /** Ya lo canjeó esta cuenta. */
+  mine: boolean;
+  /** Es de una solicitud de otra persona: esta cuenta no puede canjearlo. */
+  forSomeoneElse: boolean;
+}
+
+export interface MyPassDto {
+  id: string;
+  code: string;
+  squadId: string;
+  teamId: string;
+  teamName: string;
+  match: MatchDto;
+  includesSheet: boolean;
+  includesVideo: boolean;
+  allowsDownload: boolean;
+  priceCents: number;
+  currency: string;
+  redeemedAt: string;
+}
+
+export interface MyPassRequestDto {
+  id: string;
+  squadId: string;
+  teamId: string;
+  teamName: string;
+  match: MatchDto;
+  wantsSheet: boolean;
+  wantsVideo: boolean;
+  message: string | null;
+  status: MatchPassRequestStatus;
+  createdAt: string;
+  decidedAt: string | null;
+  /** Código del pase aprobado (para canjearlo). */
+  passCode: string | null;
+  passPriceCents: number | null;
+  passIncludesSheet: boolean;
+  passIncludesVideo: boolean;
+  passRedeemed: boolean;
+}
+
+export interface MyPassesDto {
+  passes: MyPassDto[];
+  requests: MyPassRequestDto[];
+}
+
+export interface PassAccessRequest {
+  squadId: string;
+  matchId: string;
+  wantsSheet: boolean;
+  wantsVideo: boolean;
+  message: string | null;
+}
+
+export interface ClubPassRequestDto {
+  id: string;
+  squadId: string;
+  teamId: string;
+  teamName: string;
+  match: MatchDto;
+  requesterName: string;
+  wantsSheet: boolean;
+  wantsVideo: boolean;
+  message: string | null;
+  status: MatchPassRequestStatus;
+  createdAt: string;
+  decidedAt: string | null;
+  hasVideo: boolean;
+  sheetPriceCents: number;
+  videoPriceCents: number;
+  currency: string;
+  passCode: string | null;
+  passRedeemed: boolean;
+}
+
+export interface ApprovePassRequest {
+  includesSheet: boolean;
+  includesVideo: boolean;
+  allowsDownload: boolean;
+  priceCents: number | null;
+}
+
+export interface MatchPassPriceDto {
+  squadId: string;
+  matchId: string;
+  teamId: string;
+  teamName: string;
+  match: MatchDto;
+  hasSheet: boolean;
+  hasVideo: boolean;
+  openToRequests: boolean;
+  /** Precio propio del partido; null = el del club. */
+  sheetPriceCents: number | null;
+  videoPriceCents: number | null;
+  effectiveSheetPriceCents: number;
+  effectiveVideoPriceCents: number;
+}
+
+export interface ClubPassPricesDto {
+  sheetPriceCents: number;
+  videoPriceCents: number;
+  currency: string;
+  /** Lo que se queda el club de cada venta (el resto es de la plataforma). */
+  clubSharePercent: number;
+  matches: MatchPassPriceDto[];
+}
+
+export interface PassSaleDto {
+  id: string;
+  paidAt: string;
+  teamName: string;
+  match: MatchDto | null;
+  buyer: string | null;
+  includesSheet: boolean;
+  includesVideo: boolean;
+  amountCents: number;
+  clubShareCents: number;
+  platformShareCents: number;
+  currency: string;
+  provider: string;
+}
+
+export interface PassEarningsDto {
+  salesCount: number;
+  grossCents: number;
+  clubShareCents: number;
+  platformShareCents: number;
+  currency: string;
+  clubSharePercent: number;
+  recent: PassSaleDto[];
+}
+
+export interface ClubEarningsRowDto {
+  clubId: string;
+  clubName: string;
+  salesCount: number;
+  grossCents: number;
+  clubShareCents: number;
+  platformShareCents: number;
+}
+
+export interface PlatformPassEarningsDto {
+  salesCount: number;
+  grossCents: number;
+  clubShareCents: number;
+  platformShareCents: number;
+  currency: string;
+  clubs: ClubEarningsRowDto[];
 }
 
 // --- Administración: trabajos en segundo plano y llamadas a webs externas (/jobs) ---

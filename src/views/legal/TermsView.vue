@@ -44,7 +44,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
         <li>Solo el cuerpo técnico con un nombramiento vigente del club puede gestionar la plantilla de un equipo y registrar sus actas. Los nombramientos no superan la temporada; el club puede acortarlos, prorrogarlos o revocarlos en cualquier momento.</li>
         <li>El club y su cuerpo técnico son responsables de la licitud y la exactitud de los datos que introducen sobre sus jugadores, de informarles de que usan Tercer Tiempo y, en el caso de menores, de contar con la autorización de sus padres o tutores.</li>
         <li>Las observaciones del acta deben referirse únicamente al juego. No se admiten comentarios ofensivos, discriminatorios ni ajenos al rendimiento deportivo.</li>
-        <li>Las plantillas nacen privadas. Hacerlas públicas es una decisión del cuerpo técnico, que asume sus consecuencias frente a sus jugadores.</li>
+        <li>Las plantillas son privadas. Abrirlas a solicitudes y dar pases de sus partidos es una decisión del club y de su cuerpo técnico, que asumen sus consecuencias frente a sus jugadores.</li>
         <li>Cuando un nombramiento caduca o se revoca, el técnico pierde el acceso; las actas que registró se conservan como datos de la plantilla.</li>
       </ul>
     </section>
@@ -60,12 +60,13 @@ import { dataSources, legalEntity } from '@/legal/entity';
     </section>
 
     <section>
-      <h2>6. Acceso de pago a vídeos</h2>
+      <h2>6. Pases de un partido (acta interna y vídeo)</h2>
       <ul>
-        <li>La plantilla que sube un vídeo (su cuerpo técnico vigente y sus jugadores vinculados) lo ve sin coste. Los técnicos de otras plantillas pueden comprar el acceso al precio indicado, impuestos incluidos, mediante la pasarela de pago. Tercer Tiempo emitirá la factura correspondiente.</li>
-        <li>El acceso comprado es <strong>personal e intransferible</strong>, para visualización en la plataforma: no incluye la descarga, la copia, la difusión ni ningún uso comercial del vídeo.</li>
-        <li>Como consumidor, dispones de un plazo de desistimiento de 14 días; al iniciar la visualización consientes expresamente que el contenido digital se te suministre de inmediato y reconoces que pierdes el derecho de desistimiento. Si el vídeo se elimina o deja de estar disponible por causa de Tercer Tiempo o de quien lo subió, se te reembolsará el importe.</li>
-        <li>El reparto del precio con el club o el cuerpo técnico que sube el vídeo, si lo hubiera, se regirá por el acuerdo específico con ese club.</li>
+        <li>El acta interna y el vídeo de un partido solo los ven el club, su cuerpo técnico y sus jugadores vinculados. Cualquier otra persona necesita un <strong>pase de ese partido</strong> que le dé el club, a iniciativa propia o aprobando su solicitud.</li>
+        <li>Cada pase es un código de <strong>un solo uso</strong>: al canjearlo queda ligado a la cuenta que lo canjea, de forma <strong>personal e intransferible</strong>, para verlo dentro de la plataforma. Solo incluye la descarga del vídeo si el club la autoriza expresamente; en ningún caso permite la difusión ni el uso comercial.</li>
+        <li>Cada club fija el precio de sus pases (puede ser gratuito), impuestos incluidos, y se paga al canjear el código mediante la pasarela de pago. De cada venta, el <strong>60 %</strong> corresponde al club y el <strong>40 %</strong> a Tercer Tiempo por la gestión de la plataforma. Tercer Tiempo emitirá la factura correspondiente.</li>
+        <li>Como consumidor, dispones de un plazo de desistimiento de 14 días; al canjear el pase consientes expresamente que el contenido digital se te suministre de inmediato y reconoces que pierdes el derecho de desistimiento. Si el contenido se elimina o deja de estar disponible por causa de Tercer Tiempo o del club, se te reembolsará el importe.</li>
+        <li>Un pase pagado y canjeado no se puede revocar. Uno gratuito, el club lo puede retirar en cualquier momento.</li>
       </ul>
     </section>
 

@@ -46,7 +46,8 @@ const pageLabels: Record<string, string> = {
   squad: 'Plantilla', 'squad-matches': 'Partidos de la plantilla', 'squad-stats': 'Estadísticas', 'squad-compare': 'Comparador',
   'squad-player': 'Ficha de jugador', sheet: 'Acta del partido', login: 'Entrar', register: 'Alta', join: 'Unirse a una plantilla',
   redeem: 'Canjear código', licenses: 'Licencias', 'license-checkout': 'Pago de licencia', settings: 'Ajustes',
-  'shared-video': 'Vídeo compartido', privacy: 'Privacidad', terms: 'Condiciones', cookies: 'Cookies', jobs: 'Administración',
+  pass: 'Canjear pase', 'my-passes': 'Mis pases', 'club-passes': 'Pases del club',
+  'shared-video': 'Vídeo compartido (ya no existe)', privacy: 'Privacidad', terms: 'Condiciones', cookies: 'Cookies', jobs: 'Administración',
 };
 const actorLabels: Record<string, string> = { Anonymous: 'Sin cuenta', Player: 'Jugadores', Coach: 'Cuerpos técnicos', Club: 'Clubes' };
 const entityLabels: Record<AnalyticsEntity, string> = { Team: 'Equipo', Club: 'Club', Competition: 'Liga', Match: 'Partido', Squad: 'Plantilla' };

@@ -7,6 +7,8 @@ import SheetComparison from '@/components/sheet/SheetComparison.vue';
 import TeamMatchStatsCard from '@/components/sheet/TeamMatchStatsCard.vue';
 import MatchPreview from '@/components/matches/MatchPreview.vue';
 import MatchVideos from '@/components/videos/MatchVideos.vue';
+import MatchPassesPanel from '@/components/passes/MatchPassesPanel.vue';
+import RequestAccessModal from '@/components/passes/RequestAccessModal.vue';
 import MatchOfficialsPanel from '@/components/referees/MatchOfficialsPanel.vue';
 import SuggestPerformanceModal from '@/components/suggestions/SuggestPerformanceModal.vue';
 import { ApiError, errorMessage } from '@/api/http';
@@ -21,7 +23,7 @@ import { useAsync } from '@/composables/useAsync';
 import { useBackFallback } from '@/composables/useBackFallback';
 import { useAuthStore } from '@/stores/auth';
 import type { MatchSheetDto, MatchSheetEntryInput, SquadPlayerDto, SuggestionDto } from '@/types/api';
-import { awaitingResultHint, formatKickoff, matchDisplayLabels, matchDisplayStatus, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, positionShortLabels, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
+import { awaitingResultHint, formatKickoff, matchDisplayLabels, matchDisplayStatus, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, passPrice, positionShortLabels, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
 import { downloadPaperSheet } from '@/utils/paperSheet';
 import PlayerName from '@/components/players/PlayerName.vue';
 import { opponentOf } from '@/utils/crests';
@@ -39,12 +41,13 @@ const { isAdmin } = useViewer();
 const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, props.matchId));
 
 /** «partido» es el acta pública (federación); «interna», la que rellena el cuerpo técnico. */
-type Tab = 'partido' | 'interna' | 'comparador' | 'video' | 'arbitros' | 'previa';
+type Tab = 'partido' | 'interna' | 'comparador' | 'video' | 'pases' | 'arbitros' | 'previa';
 const tabs: { id: Tab; label: string }[] = [
   { id: 'partido', label: 'Acta del partido' },
   { id: 'interna', label: 'Acta interna' },
   { id: 'comparador', label: 'Comparador' },
   { id: 'video', label: 'Vídeo' },
+  { id: 'pases', label: 'Pases' },
   { id: 'arbitros', label: 'Árbitros' },
   { id: 'previa', label: 'Previa' },
 ];
@@ -56,12 +59,38 @@ const canPrepare = computed(() =>
 const matchOver = computed(() =>
   !!data.value && data.value.match.status === 'Played' && new Date(data.value.match.kickoffAt).getTime() <= Date.now(),
 );
-const afterMatch: Tab[] = ['interna', 'comparador', 'video', 'arbitros'];
+const afterMatch: Tab[] = ['interna', 'comparador', 'video', 'pases', 'arbitros'];
 // Al equipo arbitral lo puntúan el club y su cuerpo técnico; los jugadores no lo ven.
 const canRateReferees = computed(() => canPrepare.value && (auth.isClub || auth.isCoach) && !isAdmin.value);
+// Los pases (quién de fuera ve el acta interna y el vídeo de este partido) los dan el club y su cuerpo técnico.
+const canGivePasses = computed(() => canPrepare.value && (auth.isClub || auth.isCoach) && !isAdmin.value);
+// Lo interno del rival en este partido (acta interna y vídeo): se ve con un pase de su club, que se le puede pedir si
+// su plantilla está abierta a solicitudes. Se consulta como visitante, igual que desde la página del partido.
+const visitor = useAsync(() => api.matches.get(props.matchId), { immediate: false, redirectOnError: false });
+watch(
+  () => [matchOver.value, canGivePasses.value] as const,
+  ([over, staff]) => { if (over && staff && !visitor.data.value && !visitor.loading.value) void visitor.run(); },
+  { immediate: true },
+);
+const rival = computed(() => visitor.data.value?.sheets.find((s) => s.squadId !== props.squadId && !s.insider && s.access) ?? null);
+const rivalRequestable = computed(() => (rival.value?.access?.canRequest && !rival.value.access.videoPass ? [rival.value.squadId] : []));
+const requestingRival = ref(false);
+const requestPreferVideo = ref(false);
+const rivalRequested = ref(false);
+function requestRival(video: boolean) {
+  requestPreferVideo.value = video;
+  requestingRival.value = true;
+}
+async function onRivalRequested() {
+  requestingRival.value = false;
+  rivalRequested.value = true;
+  await visitor.run();
+}
+
 const visibleTabs = computed(() =>
   tabs.filter((t) =>
-    (t.id !== 'previa' || canPrepare.value) && (t.id !== 'arbitros' || canRateReferees.value) && (matchOver.value || !afterMatch.includes(t.id))),
+    (t.id !== 'previa' || canPrepare.value) && (t.id !== 'arbitros' || canRateReferees.value) && (t.id !== 'pases' || canGivePasses.value)
+      && (matchOver.value || !afterMatch.includes(t.id))),
 );
 // Antes del partido, quien lo prepara entra directamente en la previa.
 const defaultTab = computed<Tab>(() => (!matchOver.value && canPrepare.value ? 'previa' : 'partido'));
@@ -296,6 +325,40 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
       </div>
     </div>
 
+    <div v-if="matchOver && rival?.access" class="card mt-4 flex flex-wrap items-center justify-between gap-3 py-3 text-sm text-slate-600">
+      <template v-if="rival.access.sheetPass || rival.access.videoPass">
+        <p><Icon icon="ticket" class="mr-1.5 h-3.5 w-3.5 text-accent-400" />Tienes un pase de lo interno de <strong class="text-slate-900">{{ rival.teamName }}</strong> en este partido.</p>
+        <RouterLink :to="{ name: 'match', params: { matchId }, query: { vista: 'visitante' } }" class="btn-secondary px-3 py-1 text-xs">Verlo</RouterLink>
+      </template>
+      <template v-else-if="rival.access.readyPassCode">
+        <p>El club de <strong class="text-slate-900">{{ rival.teamName }}</strong> ha aprobado tu solicitud ({{ passPrice(rival.access.readyPassPriceCents ?? 0, rival.access.currency) }}).</p>
+        <RouterLink :to="{ name: 'pass', params: { code: rival.access.readyPassCode } }" class="btn-primary px-3 py-1 text-xs"><Icon icon="ticket" class="mr-1.5 h-3 w-3" />Canjear el pase</RouterLink>
+      </template>
+      <template v-else-if="rival.access.requestStatus === 'Pending' || rivalRequested">
+        <p><Icon icon="hourglass-half" class="mr-1 h-3.5 w-3.5 text-amber-500" />Tu solicitud a <strong class="text-slate-900">{{ rival.teamName }}</strong> está pendiente: su club todavía no la ha decidido.</p>
+        <RouterLink :to="{ name: 'my-passes' }" class="btn-ghost px-3 py-1 text-xs">Mis pases</RouterLink>
+      </template>
+      <template v-else-if="rival.access.canRequest">
+        <p>
+          <strong class="text-slate-900">{{ rival.teamName }}</strong> da acceso a lo interno de este partido:
+          acta interna {{ passPrice(rival.access.sheetPriceCents, rival.access.currency) }}<template v-if="rival.access.hasVideo"> · vídeo {{ passPrice(rival.access.videoPriceCents, rival.access.currency) }}</template>.
+        </p>
+        <button type="button" class="btn-secondary px-3 py-1 text-xs" @click="requestRival(false)"><Icon icon="ticket" class="mr-1.5 h-3 w-3" />Solicitar acceso</button>
+      </template>
+    </div>
+
+    <RequestAccessModal
+      v-if="rival?.access"
+      :open="requestingRival"
+      :squad-id="rival.squadId"
+      :match-id="matchId"
+      :team-name="rival.teamName"
+      :access="rival.access"
+      :prefer-video="requestPreferVideo"
+      @close="requestingRival = false"
+      @requested="onRivalRequested"
+    />
+
     <nav class="mt-6 flex gap-1 overflow-x-auto border-b border-slate-200 whitespace-nowrap" aria-label="Secciones del partido">
       <button
         v-for="item in visibleTabs"
@@ -318,7 +381,11 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
     </div>
 
     <div v-else-if="tab === 'video'" class="mt-6">
-      <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="canPrepare && !isAdmin" />
+      <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="canPrepare && !isAdmin" :requestable="rivalRequestable" @request="requestRival(true)" />
+    </div>
+
+    <div v-else-if="tab === 'pases'" class="mt-6">
+      <MatchPassesPanel :squad-id="squadId" :match-id="matchId" />
     </div>
 
     <div v-else-if="tab === 'arbitros'" class="mt-6">

@@ -34,7 +34,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
       @click="open = !open"
     >
       <Icon icon="calendar-check" class="h-3.5 w-3.5" />
-      <span v-if="!compact" class="hidden text-xs font-medium text-slate-500 lg:inline">Temporada</span>
+      <span v-if="!compact" class="hidden text-xs font-medium text-slate-500 2xl:inline">Temporada</span>
       <span class="tabular-nums">{{ season.selected.label }}</span>
       <Icon icon="chevron-down" class="h-3 w-3 transition-transform" :class="open ? 'rotate-180' : ''" />
     </button>

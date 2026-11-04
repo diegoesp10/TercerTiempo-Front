@@ -14,7 +14,8 @@ import { formatBytes, videoPartLabels } from '@/utils/format';
 const props = defineProps<{ squadId: string; matchId: string; existing: MatchVideoDto[] }>();
 const emit = defineEmits<{ uploaded: [video: MatchVideoDto] }>();
 
-const MAX_BYTES = 4 * 1024 ** 3;
+// Un partido entero en 1080p ronda los 6 GB; el límite de la API (Videos:MaxSizeMb) es de 20 GB.
+const MAX_BYTES = 20 * 1024 ** 3;
 const ALLOWED = new Map<string, string>([['mp4', 'video/mp4'], ['m4v', 'video/mp4'], ['webm', 'video/webm']]);
 const MAX_RETRIES = 4;
 
@@ -58,7 +59,7 @@ function pick(picked: File | null) {
     return;
   }
   if (picked.size > MAX_BYTES) {
-    fileError.value = `El archivo ocupa ${formatBytes(picked.size)} y el máximo son 4 GB. Reexpórtalo a 720p con 2–3 Mbps o súbelo en dos partes.`;
+    fileError.value = `El archivo ocupa ${formatBytes(picked.size)} y el máximo son 20 GB. Reexpórtalo con menos calidad o súbelo en dos partes.`;
     return;
   }
   file.value = picked;
@@ -226,9 +227,10 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
       <p class="font-semibold text-slate-800"><Icon icon="circle-info" class="mr-1.5 h-3.5 w-3.5 text-accent-400" />Antes de subir</p>
       <ul class="mt-1 list-disc space-y-0.5 pl-5">
         <li>Formato <strong>MP4 (H.264)</strong> o WebM; MOV y MKV no se reproducen en el navegador.</li>
-        <li>Exporta a <strong>720p con 2–3 Mbps</strong>: un partido entero queda en 2–3 GB y se ve perfectamente para analizar.</li>
-        <li>Máximo <strong>4 GB por archivo</strong>. Si pesa más, súbelo en dos partes (1ª y 2ª parte).</li>
-        <li>La subida va por trozos: si se corta, vuelve a elegir el mismo archivo y continúa donde se quedó.</li>
+        <li>Vale el partido entero tal cual sale de la cámara: <strong>1080p, hora y media, unos 6 GB</strong>.</li>
+        <li>Máximo <strong>20 GB por archivo</strong>. Si pesa más, súbelo en dos partes (1ª y 2ª parte).</li>
+        <li>La subida va por trozos y puede tardar (6 GB con 20 Mbps de subida ≈ 45 min): si se corta, vuelve a elegir el mismo archivo y continúa donde se quedó. Se guarda 24 horas desde el último trozo.</li>
+        <li>Solo lo ve tu plantilla. Para que alguien de fuera lo vea o lo descargue, dale un pase del partido desde el acta interna.</li>
       </ul>
     </div>
 
@@ -258,7 +260,7 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
           </template>
           <template v-else>
             <p class="text-sm font-medium text-slate-800">{{ isOverDropZone ? 'Suéltalo aquí' : 'Arrastra el vídeo aquí o haz clic para elegirlo' }}</p>
-            <p class="text-xs text-slate-500">MP4 o WebM, hasta 4 GB</p>
+            <p class="text-xs text-slate-500">MP4 o WebM, hasta 20 GB</p>
           </template>
         </div>
         <p v-if="fileError" class="field-error">{{ fileError }}</p>

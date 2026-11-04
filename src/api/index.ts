@@ -1,5 +1,18 @@
 import { apiBaseUrl, http } from './http';
 import type {
+  ApprovePassRequest,
+  ClubPassPricesDto,
+  ClubPassRequestDto,
+  CreateMatchPassRequest,
+  MatchPassDto,
+  MatchPassesDto,
+  MatchPassPriceDto,
+  MyPassDto,
+  MyPassesDto,
+  MyPassRequestDto,
+  PassAccessRequest,
+  PassEarningsDto,
+  PassPreviewDto,
   AccountDto,
   AppointmentDto,
   AuthResponse,
@@ -51,7 +64,6 @@ import type {
   RosterEntryDetailDto,
   RosterEntryDto,
   RosterEntryRequest,
-  SharedVideoDto,
   SheetComparisonDto,
   SquadDetailDto,
   RegistrationOptionsDto,
@@ -82,10 +94,8 @@ import type {
   SearchType,
   TeamSummaryDto,
   VideoPart,
-  VideoShareLinkDto,
   VideoTicketDto,
   VideoUploadDto,
-  VideoVisibility,
 } from '@/types/api';
 
 /** Listas de referencia (competiciones, catálogo de clubes): cambian con la sincronización diaria, no al navegar. */
@@ -319,18 +329,36 @@ export const api = {
     preview: (matchId: string) => http<MatchPreviewDto>(`/api/matches/${matchId}/preview`),
   },
   videos: {
-    purchase: (videoId: string) => http<MatchVideoDto>(`/api/videos/${videoId}/purchase`, { method: 'POST' }),
     ticket: (videoId: string) => http<VideoTicketDto>(`/api/videos/${videoId}/ticket`, { method: 'POST' }),
+    /** Ticket para descargar el archivo: solo el club, el cuerpo técnico o un pase con descarga. */
+    downloadTicket: (videoId: string) => http<VideoTicketDto>(`/api/videos/${videoId}/download-ticket`, { method: 'POST' }),
     remove: (videoId: string) => http<boolean>(`/api/videos/${videoId}`, { method: 'DELETE' }),
     /** URL que se pasa al reproductor (el ticket sustituye al JWT). */
     streamUrl: (ticket: VideoTicketDto) => `${apiBaseUrl}/api/videos/${ticket.videoId}/stream?ticket=${encodeURIComponent(ticket.ticket)}`,
-    setVisibility: (videoId: string, visibility: VideoVisibility) => http<MatchVideoDto>(`/api/videos/${videoId}/visibility`, { method: 'PUT', body: { visibility } }),
-    createShare: (videoId: string, expiresInHours: number | null) => http<VideoShareLinkDto>(`/api/videos/${videoId}/shares`, { method: 'POST', body: { expiresInHours } }),
-    shares: (videoId: string) => http<VideoShareLinkDto[]>(`/api/videos/${videoId}/shares`),
-    revokeShare: (videoId: string, linkId: string) => http<VideoShareLinkDto[]>(`/api/videos/${videoId}/shares/${linkId}`, { method: 'DELETE' }),
-    /** Visor público por enlace compartido (sin sesión). */
-    shared: (token: string) => http<SharedVideoDto>(`/api/videos/shared/${encodeURIComponent(token)}`),
-    sharedStreamUrl: (token: string) => `${apiBaseUrl}/api/videos/shared/${encodeURIComponent(token)}/stream`,
+    downloadUrl: (ticket: VideoTicketDto) => `${apiBaseUrl}/api/videos/${ticket.videoId}/download?ticket=${encodeURIComponent(ticket.ticket)}`,
+  },
+  /** Pases por partido: lo único que abre el acta interna y el vídeo a quien no es de la plantilla. */
+  passes: {
+    forMatch: (squadId: string, matchId: string) => http<MatchPassesDto>(`/api/squads/${squadId}/matches/${matchId}/passes`),
+    create: (squadId: string, matchId: string, body: CreateMatchPassRequest) =>
+      http<MatchPassDto>(`/api/squads/${squadId}/matches/${matchId}/passes`, { method: 'POST', body }),
+    revoke: (squadId: string, matchId: string, passId: string) =>
+      http<MatchPassesDto>(`/api/squads/${squadId}/matches/${matchId}/passes/${passId}`, { method: 'DELETE' }),
+    mine: () => http<MyPassesDto>('/api/passes/mine'),
+    preview: (code: string) => http<PassPreviewDto>(`/api/passes/${encodeURIComponent(code)}`),
+    redeem: (code: string) => http<MyPassDto>(`/api/passes/${encodeURIComponent(code)}/redeem`, { method: 'POST' }),
+    request: (body: PassAccessRequest) => http<MyPassRequestDto>('/api/passes/requests', { method: 'POST', body }),
+    cancelRequest: (requestId: string) => http<boolean>(`/api/passes/requests/${requestId}`, { method: 'DELETE' }),
+    clubRequests: () => http<ClubPassRequestDto[]>('/api/clubs/me/passes/requests'),
+    approve: (requestId: string, body: ApprovePassRequest) =>
+      http<ClubPassRequestDto>(`/api/clubs/me/passes/requests/${requestId}/approve`, { method: 'POST', body }),
+    reject: (requestId: string) => http<ClubPassRequestDto>(`/api/clubs/me/passes/requests/${requestId}/reject`, { method: 'POST' }),
+    prices: () => http<ClubPassPricesDto>('/api/clubs/me/passes/prices'),
+    setPrices: (sheetPriceCents: number, videoPriceCents: number) =>
+      http<ClubPassPricesDto>('/api/clubs/me/passes/prices', { method: 'PUT', body: { sheetPriceCents, videoPriceCents } }),
+    setMatchPrice: (squadId: string, matchId: string, sheetPriceCents: number | null, videoPriceCents: number | null) =>
+      http<MatchPassPriceDto>(`/api/clubs/me/passes/prices/squads/${squadId}/matches/${matchId}`, { method: 'PUT', body: { sheetPriceCents, videoPriceCents } }),
+    earnings: () => http<PassEarningsDto>('/api/clubs/me/passes/earnings'),
   },
   stats: {
     // Previsor de resultados: público, va sin token.

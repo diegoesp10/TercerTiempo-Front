@@ -63,10 +63,10 @@ const tabs = [
       <template v-else> Pídeselo a tu club.</template>
     </Alert>
     <Alert v-else-if="licenseCode === 'license.viewer_required'" kind="warning">
-      Para ver las actas internas de otros equipos tu cuenta debe pertenecer a un equipo con licencia vigente. Los resultados y las actas públicas siguen visibles.
+      Lo interno de otros equipos es privado: solo se ve el acta interna o el vídeo de un partido con un pase que te dé su club, desde la página del partido. Los resultados y las actas públicas siguen visibles.
     </Alert>
     <Alert v-else-if="forbidden" kind="warning">
-      Esta plantilla es <strong>privada</strong>: solo su cuerpo técnico y sus jugadores vinculados pueden ver sus actas y estadísticas.
+      Esta plantilla es <strong>privada</strong>: solo su club, su cuerpo técnico y sus jugadores vinculados ven sus actas y estadísticas. Para un partido concreto, su club puede darte un pase desde la página del partido.
       <template v-if="auth.isCoach"> ¿Eres de su cuerpo técnico? Tu club te entrega un código de acceso: <RouterLink to="/codigo-acceso" class="font-medium underline">canjéalo</RouterLink>.</template>
       <template v-else-if="auth.isPlayer"> ¿Juegas en el equipo? <RouterLink to="/invitacion" class="font-medium underline">Vincúlate con el código de tu cuerpo técnico</RouterLink>.</template>
       <template v-else> <RouterLink to="/login" class="font-medium underline">Entra</RouterLink> si formas parte del equipo.</template>

@@ -7,6 +7,8 @@ import type {
   LicenseItem,
   LicenseStatus,
   MatchDto,
+  MatchPassRequestStatus,
+  MatchPassStatus,
   MatchStatus,
   OfficialDuty,
   OfficialRole,
@@ -62,7 +64,7 @@ export const staffRoleOptions = (Object.keys(staffRoleLabels) as StaffRole[]).ma
 
 export const visibilityLabels: Record<SquadVisibility, string> = {
   Private: 'Privada',
-  Public: 'Pública',
+  Public: 'Abierta a solicitudes',
 };
 
 export const officialRoleLabels: Record<OfficialRole, string> = {
@@ -258,12 +260,34 @@ export const sheetFieldLabels: Record<SheetDifferenceDto['field'], string> = {
 
 export const videoAccessLabels: Record<VideoAccessLevel, string> = {
   None: 'Sin acceso',
-  Locked: 'De pago',
+  Locked: 'Privado',
   Owner: 'Tu plantilla',
-  Purchased: 'Comprado',
-  Free: 'Gratis',
+  Pass: 'Con tu pase',
   Admin: 'Administración',
 };
+
+export const passStatusLabels: Record<MatchPassStatus, string> = {
+  Pending: 'Sin canjear',
+  Redeemed: 'Canjeado',
+  Revoked: 'Revocado',
+  Expired: 'Caducado',
+};
+
+export const passRequestStatusLabels: Record<MatchPassRequestStatus, string> = {
+  Pending: 'Pendiente',
+  Approved: 'Aprobada',
+  Rejected: 'Rechazada',
+  Cancelled: 'Retirada',
+};
+
+/** Qué abre un pase: «Acta interna», «Vídeo» o «Acta interna y vídeo» (+ descarga). */
+export const passContents = (sheet: boolean, video: boolean, download = false) =>
+  [sheet && video ? 'Acta interna y vídeo' : sheet ? 'Acta interna' : video ? 'Vídeo' : '', download ? 'con descarga' : '']
+    .filter(Boolean)
+    .join(' ');
+
+/** Precio de un pase: «Gratis» o el importe. */
+export const passPrice = (cents: number, currency = 'EUR') => (cents === 0 ? 'Gratis' : formatPrice(cents, currency));
 
 /** "5,00 €" a partir de céntimos. */
 export const formatMoney = (cents: number, currency = 'EUR') =>

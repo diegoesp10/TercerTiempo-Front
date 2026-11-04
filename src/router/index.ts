@@ -74,7 +74,10 @@ const router = createRouter({
     { path: '/arbitros/:refereeId', name: 'referee', component: () => import('@/views/referees/RefereeView.vue'), props: true },
     { path: '/buscar', name: 'search', component: () => import('@/views/SearchView.vue'), meta: { requiresAuth: true, root: true } },
     { path: '/liga', name: 'league', component: () => import('@/views/LeagueView.vue'), meta: { root: true } },
-    { path: '/ver/:token', name: 'shared-video', component: () => import('@/views/SharedVideoView.vue'), props: true, meta: { root: true } },
+    // Pases por partido: canjear un código (o el enlace /pase/CÓDIGO), los pases propios y, para el club, solicitudes, precios y ventas.
+    { path: '/pase/:code?', name: 'pass', component: () => import('@/views/passes/PassRedeemView.vue'), props: true, meta: { requiresAuth: true, profileOnly: true } },
+    { path: '/mis-pases', name: 'my-passes', component: () => import('@/views/passes/MyPassesView.vue'), meta: { requiresAuth: true, profileOnly: true, root: true } },
+    { path: '/club/pases', name: 'club-passes', component: () => import('@/views/club/ClubPassesView.vue'), meta: { requiresAuth: true, profileOnly: true, root: true } },
     { path: '/privacidad', name: 'privacy', component: () => import('@/views/legal/PrivacyView.vue') },
     { path: '/condiciones', name: 'terms', component: () => import('@/views/legal/TermsView.vue') },
     { path: '/cookies', name: 'cookies', component: () => import('@/views/legal/CookiesView.vue') },

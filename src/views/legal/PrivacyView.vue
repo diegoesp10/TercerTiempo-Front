@@ -119,10 +119,11 @@ import { dataSources, legalEntity } from '@/legal/entity';
     <section>
       <h2>6. Quién ve qué: privacidad por defecto</h2>
       <ul>
-        <li>Cada plantilla es <strong>privada</strong> al crearse: sus actas internas, notas y estadísticas solo las ven su cuerpo técnico vigente y los jugadores vinculados a ella.</li>
-        <li>El cuerpo técnico puede hacer pública la plantilla; en ese caso sus actas y estadísticas son visibles para cualquier visitante. El club y su cuerpo técnico son responsables de esa decisión y de informar a sus jugadores.</li>
+        <li>Cada plantilla es <strong>privada</strong>: sus actas internas, notas, estadísticas y vídeos solo los ven su club, su cuerpo técnico vigente y los jugadores vinculados a ella.</li>
+        <li>El club o su cuerpo técnico pueden dar a una persona concreta un <strong>pase de un partido</strong> (un código de un solo uso, gratuito o de pago) que le deja ver dentro de la plataforma el acta interna o el vídeo de ese partido. El pase queda ligado a la cuenta que lo canjea; el club ve el nombre de esa cuenta, nunca su correo.</li>
+        <li>Si la plantilla se abre a solicitudes, cualquier usuario puede pedir ese pase al club, que decide si lo concede. Abrirla no hace visible nada por sí mismo. El club y su cuerpo técnico son responsables de a quién dan acceso y de informar a sus jugadores.</li>
         <li>Los calendarios, resultados, clasificaciones y actas públicas de la federación son públicos, como lo son en sus fuentes.</li>
-        <li>Las estadísticas comparativas «frente a la liga» se calculan únicamente con actas visibles para quien las consulta.</li>
+        <li>Las estadísticas comparativas «frente a la liga» de un jugador usan, solo de forma agregada (percentiles), las actas de su plantilla y las de las plantillas abiertas a solicitudes; nunca muestran los datos de otro jugador.</li>
         <li>Un jugador vinculado puede desvincularse de su ficha en cualquier momento desde su panel.</li>
       </ul>
     </section>

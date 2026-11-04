@@ -62,6 +62,8 @@ import {
   faUsers,
   faCommentDots,
   faDatabase,
+  faTicket,
+  faCopy,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
@@ -132,6 +134,8 @@ library.add(
   faUsers,
   faCommentDots,
   faDatabase,
+  faTicket,
+  faCopy,
 );
 
 export { FontAwesomeIcon as Icon };

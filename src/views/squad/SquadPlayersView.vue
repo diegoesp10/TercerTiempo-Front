@@ -76,8 +76,8 @@ function setVisibility(visibility: SquadVisibility) {
     detail.value = await api.squads.setVisibility(squadId.value, visibility);
     await auth.refreshAccount();
     return visibility === 'Public'
-      ? 'La plantilla ya es pública: cualquiera puede ver sus actas y estadísticas.'
-      : 'La plantilla vuelve a ser privada.';
+      ? 'La plantilla ya acepta solicitudes: quien quiera ver el acta interna o el vídeo de un partido se lo pedirá al club.'
+      : 'La plantilla vuelve a ser privada: nadie puede pedir acceso (los pases que ya diste siguen valiendo).';
   });
 }
 
@@ -174,8 +174,8 @@ async function remove(player: SquadPlayerDto) {
             </button>
           </div>
           <p class="mt-2 text-xs text-slate-500">
-            <template v-if="detail.summary.visibility === 'Private'">Solo el club, el cuerpo técnico y los jugadores vinculados ven actas y estadísticas.</template>
-            <template v-else>Cualquiera puede ver las actas y estadísticas; los jugadores de la liga se comparan con ellas.</template>
+            <template v-if="detail.summary.visibility === 'Private'">Solo el club, el cuerpo técnico y los jugadores vinculados ven actas, estadísticas y vídeos. Nadie de fuera puede pedir acceso; solo quien reciba un pase.</template>
+            <template v-else>Lo interno sigue siendo privado, pero cualquiera puede pedirle al club el acta interna o el vídeo de un partido; solo lo ve quien canjee el pase que le des (gratis o con precio). Sus medias cuentan en la comparativa de la liga.</template>
           </p>
         </div>
 
