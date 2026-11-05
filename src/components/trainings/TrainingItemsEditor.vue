@@ -114,7 +114,7 @@ function remove(index: number) {
         <p class="label">De la biblioteca</p>
         <div class="flex gap-2">
           <SearchSelect v-model="fromLibrary" :options="libraryOptions" placeholder="Elige un ejercicio" :disabled="library.length === 0 || full" class="min-w-0 flex-1" aria-label="Ejercicio de la biblioteca" />
-          <button type="button" class="btn-secondary shrink-0 px-3" :disabled="!fromLibrary || full" @click="addFromLibrary"><Icon icon="plus" class="h-3.5 w-3.5" /></button>
+          <button type="button" class="btn-secondary shrink-0 px-3" :disabled="!fromLibrary || full" aria-label="Añadir el ejercicio de la biblioteca" @click="addFromLibrary"><Icon icon="plus" class="h-3.5 w-3.5" /></button>
         </div>
         <p v-if="library.length === 0" class="mt-1 text-xs text-slate-500">La biblioteca está vacía: crea ejercicios para reutilizarlos en cada sesión.</p>
       </div>
@@ -124,7 +124,7 @@ function remove(index: number) {
           <input v-model="adHoc.name" type="text" maxlength="120" class="input min-w-0 flex-1 basis-32 px-2 py-1.5" placeholder="Nombre" aria-label="Nombre del ejercicio suelto" :disabled="full" />
           <SearchSelect v-model="adHoc.type" :options="typeOptions" size="sm" class="w-36" aria-label="Tipo del ejercicio suelto" :disabled="full" />
           <input v-model.number="adHoc.durationMinutes" type="number" min="1" max="300" class="input w-16 px-2 py-1.5" aria-label="Minutos del ejercicio suelto" :disabled="full" />
-          <button type="submit" class="btn-secondary shrink-0 px-3" :disabled="!adHoc.name.trim() || full"><Icon icon="plus" class="h-3.5 w-3.5" /></button>
+          <button type="submit" class="btn-secondary shrink-0 px-3" :disabled="!adHoc.name.trim() || full" aria-label="Añadir el ejercicio suelto"><Icon icon="plus" class="h-3.5 w-3.5" /></button>
         </div>
       </form>
     </div>
