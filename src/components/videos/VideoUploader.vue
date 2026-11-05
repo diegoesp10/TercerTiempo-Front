@@ -100,7 +100,7 @@ async function resumableSession(f: File): Promise<VideoUploadDto | null> {
   const saved = remembered();
   if (!saved || saved.fileName !== f.name || saved.sizeBytes !== f.size) return null;
   try {
-    const s = await api.squads.videoUpload(props.squadId, saved.uploadId);
+    const s = await api.videos.uploadSession(props.squadId, saved.uploadId);
     return s;
   } catch {
     remember(null);
@@ -119,7 +119,7 @@ async function start() {
     let s = await resumableSession(f);
     if (s) part.value = s.part;
     else {
-      s = await api.squads.beginVideoUpload(props.squadId, props.matchId, {
+      s = await api.videos.beginUpload(props.squadId, props.matchId, {
         part: part.value,
         title: title.value.trim() || null,
         fileName: f.name,
@@ -170,7 +170,7 @@ async function sendChunks(f: File, s: VideoUploadDto) {
         if ((e as DOMException)?.name === 'AbortError') throw e;
         // Un trozo fuera de orden significa que la API ya lo tenía (respuesta perdida): se pregunta por dónde va.
         if (e instanceof ApiError && e.status >= 400 && e.status < 500 && e.status !== 408 && e.status !== 429) {
-          const current = await api.squads.videoUpload(props.squadId, s.uploadId);
+          const current = await api.videos.uploadSession(props.squadId, s.uploadId);
           if (current.nextChunk !== index) { sentBytes.value = current.receivedBytes; index = current.nextChunk; break; }
           throw e;
         }
@@ -182,7 +182,7 @@ async function sendChunks(f: File, s: VideoUploadDto) {
 
   uploadController.signal.throwIfAborted();
   status.value = 'finishing';
-  const video = await api.squads.completeVideoUpload(props.squadId, s.uploadId);
+  const video = await api.videos.completeUpload(props.squadId, s.uploadId);
   remember(null);
   status.value = 'done';
   uploaded.value = video;
@@ -200,7 +200,7 @@ async function cancel() {
   operation += 1;
   controller?.abort();
   if (session.value) {
-    try { await api.squads.cancelVideoUpload(props.squadId, session.value.uploadId); } catch { /* ya no existía */ }
+    try { await api.videos.cancelUpload(props.squadId, session.value.uploadId); } catch { /* ya no existía */ }
   }
   remember(null);
   reset(true);
@@ -235,8 +235,10 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
           <div class="min-w-0">
             <p class="font-semibold">Vídeo subido: <span class="font-normal">{{ uploaded.title }}</span></p>
             <p class="mt-1 text-xs">
-              {{ videoPartLabels[uploaded.part] }} · {{ formatBytes(uploaded.sizeBytes) }}. Ya lo puede ver tu plantilla. ¿Quieres que lo vea alguien de
-              fuera? Genera un pase: un código de un solo uso que da acceso a este partido, gratis o al precio que pongas.
+              {{ videoPartLabels[uploaded.part] }} · {{ formatBytes(uploaded.sizeBytes) }}. Ya lo puede ver tu plantilla. Se comprimirá en el servidor
+              sin bajar de 1080p para que ocupe la mitad o menos (un partido entero tarda alrededor de una hora); mientras tanto se ve
+              tal cual. ¿Quieres que lo vea alguien de fuera? Genera un pase: un código de un solo uso que da acceso a este partido,
+              gratis o al precio que pongas.
             </p>
           </div>
         </div>
@@ -251,7 +253,7 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
       <p class="font-semibold text-slate-800"><Icon icon="circle-info" class="mr-1.5 h-3.5 w-3.5 text-accent-400" />Antes de subir</p>
       <ul class="mt-1 list-disc space-y-0.5 pl-5">
         <li>Formato <strong>MP4 (H.264)</strong> o WebM; MOV y MKV no se reproducen en el navegador.</li>
-        <li>Vale el partido entero tal cual sale de la cámara: <strong>1080p, hora y media, unos 6 GB</strong>.</li>
+        <li>Vale el partido entero tal cual sale de la cámara: <strong>1080p, hora y media, unos 6 GB</strong>. El servidor lo comprime después sin bajar de 1080p; no hace falta que lo reexportes.</li>
         <li>Máximo <strong>20 GB por archivo</strong>. Si pesa más, súbelo en dos partes (1ª y 2ª parte).</li>
         <li>La subida va por trozos y puede tardar (6 GB con 20 Mbps de subida ≈ 45 min): si se corta, vuelve a elegir el mismo archivo y continúa donde se quedó. Se guarda 24 horas desde el último trozo.</li>
         <li>Solo lo ve tu plantilla. Para que alguien de fuera lo vea o lo descargue, dale un pase del partido: se te ofrece al terminar la subida y siempre está en la pestaña <strong>Pases</strong>.</li>

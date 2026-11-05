@@ -5,9 +5,11 @@ RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY . .
-# La API se sirve en el mismo origen (Nginx reenvía /api al contenedor de la API): las llamadas son relativas.
+# La API y el servicio de vídeo se sirven en el mismo origen (Nginx reenvía /api y /media a sus contenedores): las
+# llamadas son relativas.
 ARG VITE_API_URL=
-ENV VITE_API_URL=${VITE_API_URL}
+ARG VITE_MEDIA_URL=
+ENV VITE_API_URL=${VITE_API_URL} VITE_MEDIA_URL=${VITE_MEDIA_URL}
 RUN pnpm build
 
 FROM nginxinc/nginx-unprivileged:stable-alpine AS runtime

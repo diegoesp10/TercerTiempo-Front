@@ -1,4 +1,4 @@
-import { ApiError, apiBaseUrl } from '@/api/http';
+import { ApiError, mediaBaseUrl } from '@/api/http';
 import { useAuthStore } from '@/stores/auth';
 import type { ProblemDetails, VideoUploadDto } from '@/types/api';
 
@@ -15,7 +15,7 @@ export function uploadVideoChunk(
 
   return new Promise<VideoUploadDto>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('PUT', `${apiBaseUrl}/api/squads/${squadId}/video-uploads/${uploadId}/chunks/${index}`);
+    xhr.open('PUT', `${mediaBaseUrl}/media/squads/${squadId}/video-uploads/${uploadId}/chunks/${index}`);
     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
     xhr.setRequestHeader('Accept', 'application/json');
     if (auth.token) xhr.setRequestHeader('Authorization', `Bearer ${auth.token}`);

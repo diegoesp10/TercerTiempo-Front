@@ -1578,6 +1578,9 @@ export interface SheetComparisonDto {
 
 // --- Vídeos ---
 
+/** Uploaded (en cola para comprimir), Processing, Ready o Failed. Se ve y se descarga en todos: hasta Ready se sirve el original. */
+export type VideoStatus = 'Uploaded' | 'Processing' | 'Ready' | 'Failed';
+
 export interface MatchVideoDto {
   id: string;
   matchId: string;
@@ -1596,6 +1599,16 @@ export interface MatchVideoDto {
   /** El club y el cuerpo técnico vigente, o un pase con descarga. */
   canDownload: boolean;
   canDelete: boolean;
+  status: VideoStatus;
+  /** Avance de la compresión en %, mientras está en Processing. */
+  progress: number;
+  /** Lo que ocupaba el archivo subido, cuando se ha sustituido por el comprimido. */
+  originalSizeBytes: number | null;
+  durationSeconds: number | null;
+  /** Alto en píxeles (1080 = Full HD) cuando se conoce. */
+  height: number | null;
+  /** Por qué no se pudo comprimir (solo para el club y el cuerpo técnico). */
+  processingError: string | null;
 }
 
 /** Sesión de subida por trozos (reanudable mientras no caduque). */
@@ -2071,6 +2084,8 @@ export interface JobDto {
   pause: JobPauseDto | null;
   /** Descarga de las webs a la base de datos reales: solo la hace el entorno que tiene el bloqueo. */
   realData?: boolean;
+  /** Lo ejecuta otro proceso (el servicio de vídeo) cuando le llega trabajo: sin horario ni lanzamiento a mano. */
+  external?: boolean;
 }
 
 export type JobEventTone = 'info' | 'success' | 'warning';

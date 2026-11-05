@@ -21,6 +21,7 @@ import type {
   SuggestionStatus,
   VideoAccessLevel,
   VideoPart,
+  VideoStatus,
 } from '@/types/api';
 
 export const accountTypeLabels: Record<AccountType, string> = {
@@ -302,6 +303,15 @@ export const videoPartLabels: Record<VideoPart, string> = {
   FirstHalf: '1ª parte',
   SecondHalf: '2ª parte',
 };
+
+export const videoStatusLabels: Record<VideoStatus, string> = {
+  Uploaded: 'En cola para comprimir',
+  Processing: 'Comprimiendo',
+  Ready: 'Listo',
+  Failed: 'Sin comprimir',
+};
+
+export const formatMinutes = (seconds: number) => `${Math.round(seconds / 60)} min`;
 
 export const formatBytes = (bytes: number) =>
   bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : bytes >= 1024 ** 2 ? `${(bytes / 1024 ** 2).toFixed(0)} MB` : `${Math.ceil(bytes / 1024)} KB`;

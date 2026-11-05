@@ -6,6 +6,10 @@ import { useSeasonStore } from '@/stores/season';
 import { describeRequest } from '@/api/loadingLabels';
 
 const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:5080').replace(/\/$/, '');
+// El servicio de vídeo (subida, reproducción, descarga) es otro proceso: en desarrollo escucha en su puerto y en Docker
+// Nginx le reenvía /media, igual que /api a la API.
+const mediaUrl = (import.meta.env.VITE_MEDIA_URL ?? 'http://localhost:5081').replace(/\/$/, '');
+const originOf = (path: string) => (path.startsWith('/media') ? mediaUrl : baseUrl);
 
 export class ApiError extends Error {
   readonly status: number;
@@ -46,6 +50,7 @@ interface RequestOptions {
 }
 
 export const apiBaseUrl = baseUrl;
+export const mediaBaseUrl = mediaUrl;
 
 // GET en vuelo y respuestas cacheadas, por sesión y ruta: dos componentes que piden lo mismo a la vez comparten una
 // sola petición, y las listas de referencia (competiciones, tipos de lesión...) no se repiten al cambiar de página.
@@ -103,14 +108,14 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
     let response: Response;
     let text: string;
     try {
-      response = await fetch(`${baseUrl}${path}`, {
+      response = await fetch(`${originOf(path)}${path}`, {
         method: options.method ?? 'GET',
         headers,
         body: options.body === undefined ? undefined : isForm ? (options.body as FormData) : JSON.stringify(options.body),
       });
       text = await response.text();
     } catch {
-      throw new ApiError(0, { title: 'Sin conexión', detail: 'No se ha podido contactar con la API. ¿Está arrancada?' });
+      throw new ApiError(0, { title: 'Sin conexión', detail: path.startsWith('/media') ? 'No se ha podido contactar con el servicio de vídeo. ¿Está arrancado?' : 'No se ha podido contactar con la API. ¿Está arrancada?' });
     }
     let data: unknown = null;
     try { data = text ? JSON.parse(text) : null; } catch {

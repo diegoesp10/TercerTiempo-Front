@@ -1,4 +1,4 @@
-import { apiBaseUrl, http } from './http';
+import { http, mediaBaseUrl } from './http';
 import type {
   ApprovePassRequest,
   ClubPassPricesDto,
@@ -213,19 +213,6 @@ export const api = {
     /** Compara con el acta guardada; las descargas pendientes las gestiona el backend. */
     compareSheet: (squadId: string, matchId: string) =>
       http<SheetComparisonDto>(`/api/squads/${squadId}/matches/${matchId}/sheet/comparison`),
-    uploadVideo: (squadId: string, matchId: string, file: File, title: string | null, part: VideoPart = 'Full') => {
-      const body = new FormData();
-      body.append('file', file, file.name);
-      body.append('part', part);
-      if (title) body.append('title', title);
-      return http<MatchVideoDto>(`/api/squads/${squadId}/matches/${matchId}/video`, { method: 'POST', body });
-    },
-    /** Subida por trozos: begin → uploadVideoChunk (api/videoUpload.ts) en orden → complete. */
-    beginVideoUpload: (squadId: string, matchId: string, body: BeginVideoUploadRequest) =>
-      http<VideoUploadDto>(`/api/squads/${squadId}/matches/${matchId}/video/uploads`, { method: 'POST', body }),
-    videoUpload: (squadId: string, uploadId: string) => http<VideoUploadDto>(`/api/squads/${squadId}/video-uploads/${uploadId}`),
-    completeVideoUpload: (squadId: string, uploadId: string) => http<MatchVideoDto>(`/api/squads/${squadId}/video-uploads/${uploadId}/complete`, { method: 'POST' }),
-    cancelVideoUpload: (squadId: string, uploadId: string) => http<boolean>(`/api/squads/${squadId}/video-uploads/${uploadId}`, { method: 'DELETE' }),
     stats: (squadId: string) => http<SquadStatsDto>(`/api/squads/${squadId}/stats`, { cacheMs: SQUAD_READ_CACHE_MS }),
     seasonTable: (squadId: string) => http<SquadSeasonTableDto>(`/api/squads/${squadId}/season-table`, { cacheMs: SQUAD_READ_CACHE_MS }),
     suggestions: (squadId: string) => http<SuggestionDto[]>(`/api/squads/${squadId}/suggestions`),
@@ -324,18 +311,33 @@ export const api = {
     /** Acta pública del partido, de la federación (o por qué aún no está). */
     officialSheet: (matchId: string) =>
       http<OfficialSheetDto>(`/api/matches/${matchId}/official-sheet`),
-    videos: (matchId: string) => http<MatchVideoDto[]>(`/api/matches/${matchId}/videos`),
+    /** silent: sondeo mientras un vídeo se comprime, sin encender la barra de carga. */
+    videos: (matchId: string, silent = false) => http<MatchVideoDto[]>(`/api/matches/${matchId}/videos`, { silent }),
     /** Previa con probabilidades y análisis del rival (solo cuerpo técnico). */
     preview: (matchId: string) => http<MatchPreviewDto>(`/api/matches/${matchId}/preview`),
   },
+  /** Servicio de vídeo (rutas /media): subida, tickets, reproducción, descarga y borrado; la lista de vídeos de un partido la da la API. */
   videos: {
-    ticket: (videoId: string) => http<VideoTicketDto>(`/api/videos/${videoId}/ticket`, { method: 'POST' }),
+    upload: (squadId: string, matchId: string, file: File, title: string | null, part: VideoPart = 'Full') => {
+      const body = new FormData();
+      body.append('file', file, file.name);
+      body.append('part', part);
+      if (title) body.append('title', title);
+      return http<MatchVideoDto>(`/media/squads/${squadId}/matches/${matchId}/video`, { method: 'POST', body });
+    },
+    /** Subida por trozos: beginUpload → uploadVideoChunk (api/videoUpload.ts) en orden → completeUpload. */
+    beginUpload: (squadId: string, matchId: string, body: BeginVideoUploadRequest) =>
+      http<VideoUploadDto>(`/media/squads/${squadId}/matches/${matchId}/video/uploads`, { method: 'POST', body }),
+    uploadSession: (squadId: string, uploadId: string) => http<VideoUploadDto>(`/media/squads/${squadId}/video-uploads/${uploadId}`),
+    completeUpload: (squadId: string, uploadId: string) => http<MatchVideoDto>(`/media/squads/${squadId}/video-uploads/${uploadId}/complete`, { method: 'POST' }),
+    cancelUpload: (squadId: string, uploadId: string) => http<boolean>(`/media/squads/${squadId}/video-uploads/${uploadId}`, { method: 'DELETE' }),
+    ticket: (videoId: string) => http<VideoTicketDto>(`/media/videos/${videoId}/ticket`, { method: 'POST' }),
     /** Ticket para descargar el archivo: solo el club, el cuerpo técnico o un pase con descarga. */
-    downloadTicket: (videoId: string) => http<VideoTicketDto>(`/api/videos/${videoId}/download-ticket`, { method: 'POST' }),
-    remove: (videoId: string) => http<boolean>(`/api/videos/${videoId}`, { method: 'DELETE' }),
+    downloadTicket: (videoId: string) => http<VideoTicketDto>(`/media/videos/${videoId}/download-ticket`, { method: 'POST' }),
+    remove: (videoId: string) => http<boolean>(`/media/videos/${videoId}`, { method: 'DELETE' }),
     /** URL que se pasa al reproductor (el ticket sustituye al JWT). */
-    streamUrl: (ticket: VideoTicketDto) => `${apiBaseUrl}/api/videos/${ticket.videoId}/stream?ticket=${encodeURIComponent(ticket.ticket)}`,
-    downloadUrl: (ticket: VideoTicketDto) => `${apiBaseUrl}/api/videos/${ticket.videoId}/download?ticket=${encodeURIComponent(ticket.ticket)}`,
+    streamUrl: (ticket: VideoTicketDto) => `${mediaBaseUrl}/media/videos/${ticket.videoId}/stream?ticket=${encodeURIComponent(ticket.ticket)}`,
+    downloadUrl: (ticket: VideoTicketDto) => `${mediaBaseUrl}/media/videos/${ticket.videoId}/download?ticket=${encodeURIComponent(ticket.ticket)}`,
   },
   /** Pases por partido: lo único que abre el acta interna y el vídeo a quien no es de la plantilla. */
   passes: {

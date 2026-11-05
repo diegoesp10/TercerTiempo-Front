@@ -71,8 +71,9 @@ npm install
 npm run dev
 ```
 
-La aplicación queda en `http://localhost:5173`. La URL de la API se configura en `.env.development`
-(`VITE_API_URL`); `.env.example` documenta las variables disponibles.
+La aplicación queda en `http://localhost:5173`. Las URL de la API (`VITE_API_URL`, puerto 5080) y del servicio de
+vídeo del backend (`VITE_MEDIA_URL`, puerto 5081: subida, reproducción y descarga de los vídeos, rutas `/media`) se
+configuran en `.env.development`; `.env.example` documenta las variables disponibles.
 
 Flujo de prueba como **club**: *Darme de alta* (Club, eligiendo el club del desplegable: sus equipos quedan vinculados) →
 **«Nombrar a un técnico»** (equipo, nombre, rol y validez; por defecto hasta el final de la temporada) → aparece el
@@ -109,9 +110,10 @@ hora y resultado, y se puede navegar al resto de jornadas; la ficha de cada equi
 
 ## Docker
 
-La web se sirve con Nginx en un contenedor (`tercer-tiempo-web`) que reenvía `/api` a la API
-([TercerTiempo-Back](https://github.com/diegoesp10/TercerTiempo-Back)) por la red `tercer-tiempo-net`: web y API
-comparten origen, así que la imagen se construye con `VITE_API_URL` vacío. Con Docker Desktop en modo Linux:
+La web se sirve con Nginx en un contenedor (`tercer-tiempo-web`) que reenvía `/api` a la API y `/media` al servicio de
+vídeo ([TercerTiempo-Back](https://github.com/diegoesp10/TercerTiempo-Back), contenedores `api` y `videos`) por la red
+`tercer-tiempo-net`: web, API y servicio de vídeo comparten origen, así que la imagen se construye con `VITE_API_URL` y
+`VITE_MEDIA_URL` vacíos. Con Docker Desktop en modo Linux:
 
 ```powershell
 .\Start-Docker.ps1                          # web + API de desarrollo (con su SQL Server) en http://127.0.0.1:8180

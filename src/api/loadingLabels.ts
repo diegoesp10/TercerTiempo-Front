@@ -46,9 +46,6 @@ const rules: { test: RegExp; method?: string; label: string }[] = [
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/sheet\/comparison/, label: 'Comparando con el acta pública' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/sheet/, method: 'PUT', label: 'Guardando el acta' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/sheet/, label: 'Cargando el acta' },
-  { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/video\/uploads/, label: 'Preparando la subida' },
-  { test: /^\/api\/squads\/[^/]+\/video-uploads\/[^/]+\/chunks/, label: 'Subiendo el vídeo' },
-  { test: /^\/api\/squads\/[^/]+\/video-uploads\/[^/]+\/complete/, label: 'Publicando el vídeo' },
   { test: /^\/api\/squads\/[^/]+\/matches/, label: 'Cargando partidos y actas' },
   { test: /^\/api\/squads\/[^/]+\/stats/, label: 'Calculando estadísticas' },
   { test: /^\/api\/squads\/[^/]+\/timeline/, label: 'Cargando la evolución' },
@@ -81,9 +78,13 @@ const rules: { test: RegExp; method?: string; label: string }[] = [
   { test: /^\/api\/clubs\/me\/teams\/[^/]+\/roster/, label: 'Guardando la ficha' },
   { test: /^\/api\/clubs\/me\/teams/, label: 'Actualizando los equipos' },
   { test: /^\/api\/clubs\/me/, label: 'Cargando tu club' },
-  { test: /^\/api\/videos\/[^/]+\/ticket/, label: 'Preparando el vídeo' },
-  { test: /^\/api\/videos\/[^/]+\/download-ticket/, label: 'Preparando la descarga' },
-  { test: /^\/api\/videos\/[^/]+/, method: 'DELETE', label: 'Eliminando el vídeo' },
+  // Servicio de vídeo (otro proceso, rutas /media).
+  { test: /^\/media\/squads\/[^/]+\/matches\/[^/]+\/video\/uploads/, label: 'Preparando la subida' },
+  { test: /^\/media\/squads\/[^/]+\/video-uploads\/[^/]+\/chunks/, label: 'Subiendo el vídeo' },
+  { test: /^\/media\/squads\/[^/]+\/video-uploads\/[^/]+\/complete/, label: 'Publicando el vídeo' },
+  { test: /^\/media\/videos\/[^/]+\/ticket/, label: 'Preparando el vídeo' },
+  { test: /^\/media\/videos\/[^/]+\/download-ticket/, label: 'Preparando la descarga' },
+  { test: /^\/media\/videos\/[^/]+/, method: 'DELETE', label: 'Eliminando el vídeo' },
   { test: /^\/api\/stats/, label: 'Calculando estadísticas' },
 ];
 

@@ -318,7 +318,7 @@ const sourceTitle = (source: ScrapeSourceDto) =>
 
           <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <dt class="text-slate-500">Próxima</dt>
-            <dd class="text-right text-slate-800">{{ job.running ? 'Ahora' : job.pause ? `Al acabar la pausa (${until(job.pause.until)})` : job.nextRunAt ? formatKickoff(job.nextRunAt) : job.enabled ? 'Solo a mano' : '—' }}</dd>
+            <dd class="text-right text-slate-800">{{ job.running ? 'Ahora' : job.external ? 'Al subir un vídeo' : job.pause ? `Al acabar la pausa (${until(job.pause.until)})` : job.nextRunAt ? formatKickoff(job.nextRunAt) : job.enabled ? 'Solo a mano' : '—' }}</dd>
             <template v-if="job.lastRun">
               <dt class="text-slate-500">Última</dt>
               <dd class="text-right text-slate-800">{{ formatKickoff(job.lastRun.startedAt) }} · {{ duration(job.lastRun) }}</dd>
@@ -346,6 +346,9 @@ const sourceTitle = (source: ScrapeSourceDto) =>
             @launched="onSyncLaunched"
             @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')"
           />
+          <p v-else-if="job.external" class="mt-4 text-xs text-slate-500">
+            Lo hace el servicio de vídeo, en su propio proceso, cada vez que se sube un vídeo: aquí solo se ve su historial.
+          </p>
           <div v-else class="mt-4 flex flex-wrap gap-2">
             <button v-if="job.running" type="button" class="btn-primary" @click="watchLive(job.name)">
               <Icon icon="eye" class="h-3.5 w-3.5" /> En marcha · verlo en directo
