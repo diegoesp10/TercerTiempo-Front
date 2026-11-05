@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, type RouteParamsGeneric } from 'vue-router';
 import { useAdminSessionStore } from '@/stores/adminSession';
 import { useAuthStore } from '@/stores/auth';
 import { useLoadingStore } from '@/stores/loading';
@@ -86,9 +86,28 @@ const router = createRouter({
   ],
 });
 
+// Los ids de las direcciones son GUID y la API los da en minúsculas; las páginas los comparan con los suyos tal cual
+// (la plantilla del vídeo con la de la dirección, por ejemplo), así que una dirección escrita con mayúsculas va a la
+// misma página con los ids en minúsculas. Los códigos (invitación, pase, pago) no son GUID y se dejan como están.
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function lowerCaseIds(params: RouteParamsGeneric): RouteParamsGeneric | null {
+  let changed = false;
+  const result: RouteParamsGeneric = {};
+  for (const [key, value] of Object.entries(params)) {
+    const lower = typeof value === 'string' && GUID.test(value) ? value.toLowerCase() : value;
+    if (lower !== value) changed = true;
+    result[key] = lower;
+  }
+  return changed ? result : null;
+}
+
 router.beforeEach((to) => {
   const auth = useAuthStore();
   useLoadingStore().navigating = true;
+
+  const params = lowerCaseIds(to.params);
+  if (params && to.name) return { name: to.name, params, query: to.query, hash: to.hash, replace: true };
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     // El administrador entra en todo lo que es para mirar (fichas, buscador...), no en lo que es de una cuenta.
