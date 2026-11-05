@@ -357,16 +357,14 @@ export const attendanceStatusTone: Record<AttendanceStatus, 'green' | 'amber' | 
 };
 
 export const callUpResponseLabels: Record<CallUpResponse, string> = {
-  Pending: 'Sin contestar',
-  Confirmed: 'Confirmado',
-  Declined: 'No puede',
+  Pending: 'Sin firmar',
+  Confirmed: 'Firmada',
   Acknowledged: 'Enterado',
 };
 
 export const callUpResponseTone: Record<CallUpResponse, 'green' | 'amber' | 'red' | 'slate' | 'blue'> = {
   Pending: 'amber',
   Confirmed: 'green',
-  Declined: 'red',
   Acknowledged: 'slate',
 };
 

@@ -17,7 +17,8 @@ import { callUpResponseLabels, callUpResponseTone, formatKickoff, positionLabels
 
 /**
  * La convocatoria de un partido: el cuerpo técnico elige quién va, pone la cita y la publica (se avisa a toda la
- * plantilla, al que va y al que no); cada jugador la firma desde aquí o desde «Mis convocatorias».
+ * plantilla, al que va y al que no); cada jugador la firma desde aquí o desde «Mis convocatorias». No hay «no puedo»
+ * para los partidos: lo que cambie se habla con el cuerpo técnico, que es quien emite la convocatoria.
  */
 const props = defineProps<{ matchId: string }>();
 
@@ -37,8 +38,6 @@ const called = ref(new Set<string>());
 const meet = ref({ date: '', time: '', place: '', notes: '' });
 const busy = ref<'draft' | 'publish' | 'respond' | null>(null);
 const actionError = ref<string | null>(null);
-const responseNote = ref('');
-const declineOpen = ref(false);
 
 function take(dto: MatchCallUpDto) {
   called.value = new Set(dto.entries.filter((e) => e.called).map((e) => e.squadPlayerId));
@@ -104,9 +103,7 @@ async function respond(response: CallUpResponse) {
   busy.value = 'respond';
   actionError.value = null;
   try {
-    await api.trainings.respondCallUp(data.value.id, response, response === 'Declined' ? responseNote.value.trim() || null : null);
-    declineOpen.value = false;
-    responseNote.value = '';
+    await api.trainings.respondCallUp(data.value.id, response);
     await run();
     void alerts.load();
   } catch (e) {
@@ -156,23 +153,15 @@ async function respond(response: CallUpResponse) {
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <Badge :tone="data.mine.called ? callUpResponseTone[data.mine.response] : data.mine.response === 'Acknowledged' ? 'slate' : 'amber'">
-            {{ data.mine.called ? callUpResponseLabels[data.mine.response] : data.mine.response === 'Acknowledged' ? 'Enterado' : 'Sin confirmar' }}
+            {{ data.mine.called ? callUpResponseLabels[data.mine.response] : data.mine.response === 'Acknowledged' ? 'Enterado' : 'Sin firmar' }}
           </Badge>
           <template v-if="!data.closed">
-            <template v-if="data.mine.called">
-              <button v-if="data.mine.response !== 'Confirmed'" type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy === 'respond'" :disabled="busy !== null" @click="respond('Confirmed')">Confirmo que voy</button>
-              <button v-if="data.mine.response !== 'Declined' && !declineOpen" type="button" class="btn-secondary px-3 py-1.5 text-xs" :disabled="busy !== null" @click="declineOpen = true">No puedo ir</button>
-            </template>
-            <button v-else-if="data.mine.response !== 'Acknowledged'" type="button" class="btn-secondary px-3 py-1.5 text-xs" v-busy="busy === 'respond'" :disabled="busy !== null" @click="respond('Acknowledged')">Enterado</button>
+            <button v-if="data.mine.called && data.mine.response !== 'Confirmed'" type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy === 'respond'" :disabled="busy !== null" @click="respond('Confirmed')"><Icon icon="check" class="mr-1.5 h-3 w-3" />Firmar la convocatoria</button>
+            <button v-else-if="!data.mine.called && data.mine.response !== 'Acknowledged'" type="button" class="btn-secondary px-3 py-1.5 text-xs" v-busy="busy === 'respond'" :disabled="busy !== null" @click="respond('Acknowledged')">Enterado</button>
           </template>
         </div>
       </div>
-      <form v-if="declineOpen" class="mt-3 flex flex-wrap gap-2" @submit.prevent="respond('Declined')">
-        <input v-model="responseNote" type="text" maxlength="300" class="input min-w-0 flex-1 px-2 py-1 text-sm" placeholder="Motivo (opcional): lesión, trabajo…" />
-        <button type="submit" class="btn-primary px-3 py-1 text-xs" v-busy="busy === 'respond'" :disabled="busy !== null">Avisar de que no puedo</button>
-        <button type="button" class="btn-ghost px-2 py-1 text-xs" @click="declineOpen = false">Cancelar</button>
-      </form>
-      <p v-if="data.mine.responseNote" class="mt-2 text-xs text-slate-500">Tu nota: {{ data.mine.responseNote }}</p>
+      <p v-if="data.mine.called && !data.closed" class="mt-2 text-xs text-slate-500">Si no vas a poder ir, díselo a tu cuerpo técnico: la convocatoria la cambian ellos.</p>
     </section>
 
     <div class="grid gap-6 lg:grid-cols-[1fr_18rem]">
@@ -200,7 +189,6 @@ async function respond(response: CallUpResponse) {
               <Badge v-if="e.called" :tone="callUpResponseTone[e.response]">{{ callUpResponseLabels[e.response] }}</Badge>
               <Badge v-else-if="e.response === 'Acknowledged'" tone="slate">Enterado</Badge>
               <Badge v-else-if="e.linked" tone="slate">No va</Badge>
-              <span v-if="e.responseNote" class="basis-full pl-14 text-xs text-slate-500 sm:basis-auto sm:pl-0">{{ e.responseNote }}</span>
             </template>
             <span v-if="!e.linked" class="text-xs text-slate-400" title="Sin cuenta en la app: no recibe el aviso">sin cuenta</span>
           </li>
@@ -235,11 +223,10 @@ async function respond(response: CallUpResponse) {
         </section>
 
         <section v-if="data.status === 'Published'" class="card text-sm">
-          <h3 class="mb-2 font-semibold text-slate-900">Respuestas</h3>
+          <h3 class="mb-2 font-semibold text-slate-900">Firmas</h3>
           <ul class="space-y-1">
-            <li class="flex justify-between"><span class="text-slate-600">Confirmados</span><strong class="tabular-nums text-emerald-600">{{ data.counts.confirmed }}</strong></li>
-            <li class="flex justify-between"><span class="text-slate-600">No pueden</span><strong class="tabular-nums text-red-600">{{ data.counts.declined }}</strong></li>
-            <li class="flex justify-between"><span class="text-slate-600">Sin contestar</span><strong class="tabular-nums text-amber-600">{{ data.counts.pending }}</strong></li>
+            <li class="flex justify-between"><span class="text-slate-600">Convocados que han firmado</span><strong class="tabular-nums text-emerald-600">{{ data.counts.confirmed }}</strong></li>
+            <li class="flex justify-between"><span class="text-slate-600">Sin firmar</span><strong class="tabular-nums text-amber-600">{{ data.counts.pending }}</strong></li>
             <li class="flex justify-between"><span class="text-slate-600">No convocados enterados</span><strong class="tabular-nums text-slate-700">{{ data.counts.acknowledged }}</strong></li>
           </ul>
           <p v-if="data.publishedAt" class="mt-2 text-xs text-slate-500">Publicada el {{ formatKickoff(data.publishedAt) }}.</p>
@@ -251,8 +238,8 @@ async function respond(response: CallUpResponse) {
             <Icon icon="bell" class="mr-1.5 h-3.5 w-3.5" />{{ data.status === 'Published' ? 'Guardar y avisar a quien cambie' : 'Publicar y avisar a la plantilla' }}
           </button>
           <p class="text-xs text-slate-500">
-            <template v-if="data.status === 'Published'">Al guardar, solo reciben aviso los jugadores que entran o salen de la convocatoria; su respuesta anterior se borra.</template>
-            <template v-else>El borrador solo lo ve el cuerpo técnico. Al publicar, cada jugador con cuenta recibe el aviso de si va o no y lo firma desde la app.</template>
+            <template v-if="data.status === 'Published'">Al guardar, solo reciben aviso los jugadores que entran o salen de la convocatoria; su firma anterior se borra.</template>
+            <template v-else>El borrador solo lo ve el cuerpo técnico. Al publicar, cada jugador con cuenta recibe el aviso de si va o no y la firma desde la app.</template>
           </p>
         </div>
       </aside>

@@ -155,9 +155,11 @@ src/
 │                 teams (TeamCrest: escudo servido por la API o insignia con iniciales; ClubRosterEditor: el club
 │                 corrige la plantilla publicada de sus equipos), matches (MatchPreview: previa con probabilidades y
 │                 análisis del rival para el técnico), ui (SearchSelect: el desplegable único con buscador),
-│                 trainings (TrainingCalendar: mes con las sesiones; TrainingPlanModal: nuevo entrenamiento o serie
-│                 semanal; TrainingSessionModal: datos, ejercicios y asistencia de una sesión; TrainingItemsEditor:
-│                 ejercicios de la biblioteca o sueltos, en orden; ExerciseLibraryModal: biblioteca de la plantilla),
+│                 trainings (TrainingCalendar: mes con las sesiones, en el móvil rejilla compacta con un punto por
+│                 sesión y el día elegido debajo; TrainingPlanModal: nuevo entrenamiento o serie semanal;
+│                 TrainingSessionModal: datos, ejercicios y asistencia de una sesión, con los jugadores a prueba y
+│                 «Hacerle ficha»; TrainingItemsEditor: ejercicios de la biblioteca o sueltos, en orden;
+│                 ExerciseLibraryModal: biblioteca de la plantilla; TrialPlayersModal: los que vienen a prueba),
 │                 alerts (AlertBell: campanita de cualquier cuenta)
 └── views/        Home (landing / panel del club / panel del técnico / panel del jugador), Login, Registro (tres tipos
                   de cuenta; el técnico con código de acceso), Invitación (jugadores), Equipos, Equipo, Partido (acta
@@ -166,7 +168,8 @@ src/
     ├── club/     ClubHomeView (equipos del club con cambio de escudo, vincular otro, nombramientos y códigos de acceso)
     ├── coach/    CoachHomeView (mis plantillas y nombramientos), RedeemView (canjear un código de acceso)
     ├── player/   PlayerDashboardView (vínculo con la plantilla, convocatorias y entrenamientos pendientes, estadísticas),
-    │             MyCallUpsView (firmar las convocatorias y avisar de que falta a un entrenamiento)
+    │             MyCallUpsView (firmar las convocatorias y avisar de que falta a un entrenamiento; los avisos son solo
+    │             de entrenamientos: la convocatoria la emite el cuerpo técnico)
     └── squad/    SquadLayoutView (cabecera + pestañas) con SquadPlayersView (fichas, staff, código, visibilidad),
                   SquadMatchesView (partidos con estado del acta), SquadStatsView (gráficos del equipo + tabla
                   ordenable), SquadCompareView (comparador de hasta 4 jugadores), SquadPlayerProfileView (ficha y

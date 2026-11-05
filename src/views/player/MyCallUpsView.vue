@@ -14,7 +14,10 @@ import type { CallUpResponse, MyCallUpDto, MyTrainingDto } from '@/types/api';
 import { opponentOf } from '@/utils/crests';
 import { attendanceStatusLabels, attendanceStatusTone, callUpResponseLabels, callUpResponseTone, formatDayHeading, formatDurationMinutes, formatKickoff, formatTime } from '@/utils/format';
 
-/** Lado del jugador: las convocatorias que tiene que firmar y los próximos entrenamientos, para avisar si falta. */
+/**
+ * Lado del jugador: las convocatorias que tiene que firmar y los próximos entrenamientos, para avisar si falta. Los
+ * avisos de «no puedo» son solo de entrenamientos: la convocatoria la emite el cuerpo técnico y el jugador la firma.
+ */
 const auth = useAuthStore();
 const alerts = useAlertsStore();
 const squad = computed(() => auth.playerSquad);
@@ -27,8 +30,6 @@ const past = computed(() => (callUps.data.value ?? []).filter((c) => c.closed));
 
 const busy = ref<string | null>(null);
 const actionError = ref<string | null>(null);
-const declineFor = ref<string | null>(null);
-const note = ref('');
 const absenceFor = ref<string | null>(null);
 const absenceReason = ref('');
 
@@ -36,9 +37,7 @@ async function respond(callUp: MyCallUpDto, response: CallUpResponse) {
   busy.value = callUp.callUpId;
   actionError.value = null;
   try {
-    await api.trainings.respondCallUp(callUp.callUpId, response, response === 'Declined' ? note.value.trim() || null : null);
-    declineFor.value = null;
-    note.value = '';
+    await api.trainings.respondCallUp(callUp.callUpId, response);
     await callUps.run();
     void alerts.load();
   } catch (e) {
@@ -90,7 +89,7 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
                 <p class="flex flex-wrap items-center gap-2 text-lg font-semibold text-slate-900">
                   {{ c.mine.called ? 'Vas convocado' : 'No vas convocado' }}
                   <Badge :tone="c.mine.called ? callUpResponseTone[c.mine.response] : c.mine.response === 'Acknowledged' ? 'slate' : 'amber'">
-                    {{ c.mine.called ? callUpResponseLabels[c.mine.response] : c.mine.response === 'Acknowledged' ? 'Enterado' : 'Sin confirmar' }}
+                    {{ c.mine.called ? callUpResponseLabels[c.mine.response] : c.mine.response === 'Acknowledged' ? 'Enterado' : 'Sin firmar' }}
                   </Badge>
                 </p>
                 <p class="text-sm text-slate-700">
@@ -99,22 +98,14 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
                 </p>
                 <p v-if="c.mine.called && c.meetAt" class="text-sm text-slate-600">Cita: {{ formatKickoff(c.meetAt) }}<template v-if="c.meetPlace"> en {{ c.meetPlace }}</template>.</p>
                 <p v-if="c.notes" class="mt-1 whitespace-pre-line text-sm text-slate-600">{{ c.notes }}</p>
-                <p v-if="c.mine.responseNote" class="mt-1 text-xs text-slate-500">Tu nota: {{ c.mine.responseNote }}</p>
               </div>
               <div class="flex flex-wrap gap-2">
-                <template v-if="c.mine.called">
-                  <button v-if="c.mine.response !== 'Confirmed'" type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy === c.callUpId" :disabled="busy !== null" @click="respond(c, 'Confirmed')">Confirmo que voy</button>
-                  <button v-if="c.mine.response !== 'Declined' && declineFor !== c.callUpId" type="button" class="btn-secondary px-3 py-1.5 text-xs" :disabled="busy !== null" @click="declineFor = c.callUpId">No puedo ir</button>
-                </template>
-                <button v-else-if="c.mine.response !== 'Acknowledged'" type="button" class="btn-secondary px-3 py-1.5 text-xs" v-busy="busy === c.callUpId" :disabled="busy !== null" @click="respond(c, 'Acknowledged')">Enterado</button>
+                <button v-if="c.mine.called && c.mine.response !== 'Confirmed'" type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy === c.callUpId" :disabled="busy !== null" @click="respond(c, 'Confirmed')"><Icon icon="check" class="mr-1.5 h-3 w-3" />Firmar la convocatoria</button>
+                <button v-else-if="!c.mine.called && c.mine.response !== 'Acknowledged'" type="button" class="btn-secondary px-3 py-1.5 text-xs" v-busy="busy === c.callUpId" :disabled="busy !== null" @click="respond(c, 'Acknowledged')">Enterado</button>
                 <RouterLink :to="{ name: 'squad-callup', params: { squadId: c.squadId, matchId: c.match.id } }" class="btn-ghost px-3 py-1.5 text-xs">Ver la convocatoria</RouterLink>
               </div>
             </div>
-            <form v-if="declineFor === c.callUpId" class="mt-3 flex flex-wrap gap-2" @submit.prevent="respond(c, 'Declined')">
-              <input v-model="note" type="text" maxlength="300" class="input min-w-0 flex-1 px-2 py-1 text-sm" placeholder="Motivo (opcional): lesión, trabajo…" />
-              <button type="submit" class="btn-primary px-3 py-1 text-xs" v-busy="busy === c.callUpId" :disabled="busy !== null">Avisar de que no puedo</button>
-              <button type="button" class="btn-ghost px-2 py-1 text-xs" @click="declineFor = null">Cancelar</button>
-            </form>
+            <p v-if="c.mine.called" class="mt-2 text-xs text-slate-500">Si no vas a poder ir, díselo a tu cuerpo técnico: la convocatoria la cambian ellos.</p>
           </li>
         </ul>
         <details v-if="past.length > 0" class="mt-3">

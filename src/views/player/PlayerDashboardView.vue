@@ -187,9 +187,9 @@ async function leave() {
           </p>
           <p class="mt-1 flex flex-wrap items-center gap-2 text-xs">
             <Badge :tone="nextCallUp.mine.called ? callUpResponseTone[nextCallUp.mine.response] : nextCallUp.mine.response === 'Acknowledged' ? 'slate' : 'amber'">
-              {{ nextCallUp.mine.called ? callUpResponseLabels[nextCallUp.mine.response] : nextCallUp.mine.response === 'Acknowledged' ? 'Enterado' : 'Sin confirmar' }}
+              {{ nextCallUp.mine.called ? callUpResponseLabels[nextCallUp.mine.response] : nextCallUp.mine.response === 'Acknowledged' ? 'Enterado' : 'Sin firmar' }}
             </Badge>
-            <RouterLink v-if="nextCallUp.mine.response === 'Pending'" to="/mis-convocatorias" class="btn-primary px-3 py-1 text-xs">Contestar</RouterLink>
+            <RouterLink v-if="nextCallUp.mine.response === 'Pending'" to="/mis-convocatorias" class="btn-primary px-3 py-1 text-xs">{{ nextCallUp.mine.called ? 'Firmar' : 'Darme por enterado' }}</RouterLink>
           </p>
         </template>
       </div>

@@ -101,6 +101,10 @@ import type {
   AttendanceInput,
   CallUpRequest,
   CallUpResponse,
+  PromoteTrialPlayerRequest,
+  TrialPlayerDto,
+  TrialPlayerRequest,
+  TrainingTrialPlayerRequest,
   CallUpSummaryDto,
   ExerciseDto,
   ExerciseRequest,
@@ -305,6 +309,18 @@ export const api = {
       http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}/attendance`, { method: 'PUT', body: { entries } }),
     remove: (squadId: string, sessionId: string, series = false) =>
       http<boolean>(`/api/squads/${squadId}/trainings/${sessionId}${series ? '?series=true' : ''}`, { method: 'DELETE' }),
+    /** Jugadores de prueba: sin ficha, se apuntan a las sesiones a las que vienen; con ficha pasan a la plantilla. */
+    addTrialToTraining: (squadId: string, sessionId: string, body: TrainingTrialPlayerRequest) =>
+      http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}/trial-players`, { method: 'POST', body }),
+    removeTrialFromTraining: (squadId: string, sessionId: string, trialPlayerId: string) =>
+      http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}/trial-players/${trialPlayerId}`, { method: 'DELETE' }),
+    trialPlayers: (squadId: string) => http<TrialPlayerDto[]>(`/api/squads/${squadId}/trial-players`),
+    createTrialPlayer: (squadId: string, body: TrialPlayerRequest) => http<TrialPlayerDto>(`/api/squads/${squadId}/trial-players`, { method: 'POST', body }),
+    updateTrialPlayer: (squadId: string, trialPlayerId: string, body: TrialPlayerRequest) =>
+      http<TrialPlayerDto>(`/api/squads/${squadId}/trial-players/${trialPlayerId}`, { method: 'PUT', body }),
+    deleteTrialPlayer: (squadId: string, trialPlayerId: string) => http<boolean>(`/api/squads/${squadId}/trial-players/${trialPlayerId}`, { method: 'DELETE' }),
+    promoteTrialPlayer: (squadId: string, trialPlayerId: string, body: PromoteTrialPlayerRequest) =>
+      http<SquadPlayerDto>(`/api/squads/${squadId}/trial-players/${trialPlayerId}/promote`, { method: 'POST', body }),
     callUps: (squadId: string) => http<CallUpSummaryDto[]>(`/api/squads/${squadId}/callups`),
     callUp: (squadId: string, matchId: string) => http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup`),
     saveCallUp: (squadId: string, matchId: string, body: CallUpRequest) =>
@@ -314,8 +330,8 @@ export const api = {
     reportAbsence: (sessionId: string, willMiss: boolean, reason: string | null) =>
       http<TrainingSessionDto>(`/api/players/me/trainings/${sessionId}/absence`, { method: 'PUT', body: { willMiss, reason } }),
     myCallUps: () => http<MyCallUpDto[]>('/api/players/me/callups'),
-    respondCallUp: (callUpId: string, response: CallUpResponse, note: string | null) =>
-      http<MyCallUpDto>(`/api/players/me/callups/${callUpId}/response`, { method: 'PUT', body: { response, note } }),
+    respondCallUp: (callUpId: string, response: CallUpResponse) =>
+      http<MyCallUpDto>(`/api/players/me/callups/${callUpId}/response`, { method: 'PUT', body: { response } }),
   },
 
   /** Licencia del club (primer equipo y filiales): estado de la cuenta, la licencia del club y pago (simulado de momento). */

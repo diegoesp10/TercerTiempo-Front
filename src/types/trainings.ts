@@ -1,4 +1,4 @@
-import type { MatchDto } from './api';
+import type { MatchDto, Position } from './api';
 
 // --- Entrenamientos, ejercicios, asistencia y convocatorias (preparación semanal del cuerpo técnico) ---
 
@@ -7,8 +7,8 @@ export type ExerciseType = 'Warmup' | 'Technical' | 'Tactical' | 'Physical' | 'G
 /** Cuenta con venir, ha avisado de que falta, vino o faltó sin avisar. */
 export type AttendanceStatus = 'Expected' | 'WillMiss' | 'Attended' | 'Missed';
 export type CallUpStatus = 'Draft' | 'Published';
-/** El convocado confirma o dice que no puede; el que no va se da por enterado. */
-export type CallUpResponse = 'Pending' | 'Confirmed' | 'Declined' | 'Acknowledged';
+/** El convocado firma la convocatoria; el que no va se da por enterado. No hay «no puedo» para los partidos. */
+export type CallUpResponse = 'Pending' | 'Confirmed' | 'Acknowledged';
 export type Weekday = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
 
 export interface TrainingKindDto {
@@ -72,14 +72,51 @@ export interface TrainingItemInput {
 }
 
 export interface TrainingAttendanceDto {
-  squadPlayerId: string;
+  /** Ficha de la plantilla; null si la línea es de un jugador de prueba. */
+  squadPlayerId: string | null;
+  /** Jugador de prueba (sin ficha); null si la línea es de un jugador de la plantilla. */
+  trialPlayerId: string | null;
   playerName: string;
   shirtNumber: number | null;
   /** Tiene cuenta vinculada: puede avisar de que falta desde la app. */
   linked: boolean;
+  /** Viene a prueba, sin ficha en la plantilla. */
+  trial: boolean;
   status: AttendanceStatus;
   reason: string | null;
   updatedAt: string;
+}
+
+/** Alguien que viene a entrenar a prueba, sin ficha: se le pasa lista y, si le hacen ficha, pasa a la plantilla. */
+export interface TrialPlayerDto {
+  id: string;
+  fullName: string;
+  notes: string | null;
+  createdAt: string;
+  /** Entrenamientos en los que se le ha apuntado. */
+  sessions: number;
+  /** Entrenamientos a los que vino. */
+  attended: number;
+  /** Ficha de la plantilla que se le hizo; null mientras siga a prueba. */
+  promotedSquadPlayerId: string | null;
+  promotedAt: string | null;
+}
+
+export interface TrialPlayerRequest {
+  fullName: string;
+  notes: string | null;
+}
+
+export interface PromoteTrialPlayerRequest {
+  position: Position | null;
+  shirtNumber: number | null;
+}
+
+/** Apuntar a un jugador de prueba a una sesión: uno conocido (trialPlayerId) o uno nuevo por su nombre. */
+export interface TrainingTrialPlayerRequest {
+  trialPlayerId: string | null;
+  fullName: string | null;
+  notes: string | null;
 }
 
 export interface AttendanceCountsDto {
@@ -144,8 +181,10 @@ export interface TrainingRequest {
   repeatUntil: string | null;
 }
 
+/** Una línea por jugador de la plantilla (squadPlayerId) o de prueba (trialPlayerId). */
 export interface AttendanceInput {
-  squadPlayerId: string;
+  squadPlayerId: string | null;
+  trialPlayerId: string | null;
   status: AttendanceStatus;
   reason: string | null;
 }
@@ -164,14 +203,12 @@ export interface CallUpEntryDto {
   linked: boolean;
   called: boolean;
   response: CallUpResponse;
-  responseNote: string | null;
   respondedAt: string | null;
 }
 
 export interface CallUpCountsDto {
   called: number;
   confirmed: number;
-  declined: number;
   pending: number;
   acknowledged: number;
 }

@@ -7,17 +7,18 @@ import ExerciseLibraryModal from '@/components/trainings/ExerciseLibraryModal.vu
 import TrainingCalendar from '@/components/trainings/TrainingCalendar.vue';
 import TrainingPlanModal from '@/components/trainings/TrainingPlanModal.vue';
 import TrainingSessionModal from '@/components/trainings/TrainingSessionModal.vue';
+import TrialPlayersModal from '@/components/trainings/TrialPlayersModal.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import TeamName from '@/components/teams/TeamName.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useSquad } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
-import type { CallUpSummaryDto, ExerciseDto, SquadMatchDto, TrainingSummaryDto } from '@/types/api';
+import type { CallUpSummaryDto, ExerciseDto, SquadMatchDto, TrainingSummaryDto, TrialPlayerDto } from '@/types/api';
 import { opponentOf } from '@/utils/crests';
 import { callUpResponseLabels, callUpResponseTone, formatDayHeading, formatDurationMinutes, formatKickoff, formatTime, isPendingMatch, toDateKey } from '@/utils/format';
 
-const { squadId, detail } = useSquad();
+const { squadId, detail, reload } = useSquad();
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
@@ -66,6 +67,26 @@ async function loadLibrary() {
   }
 }
 void loadLibrary();
+
+// Jugadores a prueba: los apunta quien prepara los entrenamientos; con ficha pasan a la plantilla.
+const trials = ref<TrialPlayerDto[]>([]);
+const trialsOpen = ref(false);
+async function loadTrials() {
+  if (!canManage.value) return;
+  try {
+    trials.value = await api.trainings.trialPlayers(squadId.value);
+  } catch (e) {
+    libraryError.value = errorMessage(e);
+  }
+}
+watch(canManage, () => void loadTrials(), { immediate: true });
+const activeTrials = computed(() => trials.value.filter((t) => !t.promotedSquadPlayerId).length);
+
+// Le han hecho ficha a uno de prueba: la plantilla tiene un jugador más (fotos, lista) y la lista de prueba cambia.
+async function onPromoted() {
+  await Promise.all([reload(), loadTrials()]);
+  void sessions.run();
+}
 
 // Convocatorias: los partidos que quedan, con el estado de la de cada uno.
 const matches = useAsync(() => api.squads.matches(squadId.value), { redirectOnError: false });
@@ -122,6 +143,10 @@ function onCreated() {
     </div>
     <div class="flex flex-wrap gap-2">
       <button type="button" class="btn-secondary" @click="libraryOpen = true"><Icon icon="list-ol" class="mr-1.5 h-3.5 w-3.5" />Biblioteca de ejercicios</button>
+      <button v-if="canManage" type="button" class="btn-secondary" @click="trialsOpen = true">
+        <Icon icon="user" class="mr-1.5 h-3.5 w-3.5" />A prueba
+        <Badge v-if="activeTrials" tone="amber">{{ activeTrials }}</Badge>
+      </button>
       <button v-if="canManage" type="button" class="btn-primary" @click="plan(null)"><Icon icon="plus" class="mr-1.5 h-3.5 w-3.5" />Nuevo entrenamiento</button>
     </div>
   </div>
@@ -173,8 +198,7 @@ function onCreated() {
                 <template v-else-if="item.callUp.status === 'Draft'"><Badge tone="amber">Borrador · {{ item.callUp.counts.called }} convocados</Badge></template>
                 <template v-else>
                   <Badge tone="green">{{ item.callUp.counts.called }} convocados</Badge>
-                  <Badge v-if="canManage && item.callUp.counts.pending" tone="amber">{{ item.callUp.counts.pending }} sin contestar</Badge>
-                  <Badge v-if="canManage && item.callUp.counts.declined" tone="red">{{ item.callUp.counts.declined }} no pueden</Badge>
+                  <Badge v-if="canManage && item.callUp.counts.pending" tone="amber">{{ item.callUp.counts.pending }} sin firmar</Badge>
                   <Badge v-if="item.callUp.mine" :tone="item.callUp.mine.called ? callUpResponseTone[item.callUp.mine.response] : 'slate'">
                     {{ item.callUp.mine.called ? `Vas · ${callUpResponseLabels[item.callUp.mine.response]}` : 'No vas' }}
                   </Badge>
@@ -187,7 +211,20 @@ function onCreated() {
     </aside>
   </div>
 
-  <TrainingSessionModal :open="selectedId !== null" :squad-id="squadId" :session-id="selectedId" :library="library" :catalog="catalog.data.value" :photos="photos" @close="closeSession" @changed="sessions.run" />
+  <TrainingSessionModal
+    :open="selectedId !== null"
+    :squad-id="squadId"
+    :session-id="selectedId"
+    :library="library"
+    :catalog="catalog.data.value"
+    :photos="photos"
+    :trial-players="trials"
+    @close="closeSession"
+    @changed="sessions.run"
+    @trials-changed="loadTrials"
+    @promoted="onPromoted"
+  />
   <TrainingPlanModal :open="planOpen" :squad-id="squadId" :date="planDate" :library="library" :catalog="catalog.data.value" @close="planOpen = false" @created="onCreated" />
   <ExerciseLibraryModal :open="libraryOpen" :squad-id="squadId" :exercises="library" :exercise-types="catalog.data.value?.exerciseTypes ?? []" :readonly="!canManage" @close="libraryOpen = false" @changed="library = $event" />
+  <TrialPlayersModal :open="trialsOpen" :squad-id="squadId" :trial-players="trials" :readonly="!canManage" @close="trialsOpen = false" @changed="loadTrials" @promoted="onPromoted" />
 </template>

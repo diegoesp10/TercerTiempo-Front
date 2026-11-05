@@ -246,6 +246,34 @@
     background: color-mix(in oklab, var(--t-brand-500) 35%, transparent);
   }
 
+  /* Todo lo que se puede pulsar enseña la mano al pasar el ratón (Tailwind 4 deja los botones con la flecha), y lo
+     desactivado, la señal de prohibido. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"],
+  [role="option"]:not([aria-disabled="true"]),
+  [role="radio"],
+  [role="switch"],
+  [role="menuitem"],
+  [role="link"],
+  a[href],
+  area[href],
+  summary,
+  select:not(:disabled),
+  label[for],
+  label:has(input:not(:disabled)),
+  input:where([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="submit"], [type="button"], [type="reset"]):not(:disabled),
+  ::file-selector-button {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"],
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    cursor: not-allowed;
+  }
+
   thead {
     font-family: var(--font-display);
     font-variation-settings: "wdth" 90;
