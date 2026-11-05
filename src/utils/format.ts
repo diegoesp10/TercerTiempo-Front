@@ -22,6 +22,11 @@ import type {
   VideoAccessLevel,
   VideoPart,
   VideoStatus,
+  AttendanceStatus,
+  CallUpResponse,
+  ExerciseType,
+  TrainingKind,
+  Weekday,
 } from '@/types/api';
 
 export const accountTypeLabels: Record<AccountType, string> = {
@@ -315,3 +320,71 @@ export const formatMinutes = (seconds: number) => `${Math.round(seconds / 60)} m
 
 export const formatBytes = (bytes: number) =>
   bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : bytes >= 1024 ** 2 ? `${(bytes / 1024 ** 2).toFixed(0)} MB` : `${Math.ceil(bytes / 1024)} KB`;
+
+// --- Entrenamientos y convocatorias ---
+export const trainingKindLabels: Record<TrainingKind, string> = {
+  Season: 'Entrenamiento de la semana',
+  Preseason: 'Pretemporada',
+  Recovery: 'Recuperación',
+  MatchPreparation: 'Preparación del partido',
+  Other: 'Otro',
+};
+
+export const exerciseTypeLabels: Record<ExerciseType, string> = {
+  Warmup: 'Calentamiento',
+  Technical: 'Técnico',
+  Tactical: 'Táctico',
+  Physical: 'Físico',
+  Goalkeeping: 'Porteros',
+  SetPieces: 'Balón parado',
+  Game: 'Partidillo',
+  Cooldown: 'Vuelta a la calma',
+  Other: 'Otro',
+};
+
+export const attendanceStatusLabels: Record<AttendanceStatus, string> = {
+  Expected: 'Cuenta con venir',
+  WillMiss: 'Va a faltar',
+  Attended: 'Vino',
+  Missed: 'Faltó',
+};
+
+export const attendanceStatusTone: Record<AttendanceStatus, 'green' | 'amber' | 'red' | 'slate' | 'blue'> = {
+  Expected: 'blue',
+  WillMiss: 'amber',
+  Attended: 'green',
+  Missed: 'red',
+};
+
+export const callUpResponseLabels: Record<CallUpResponse, string> = {
+  Pending: 'Sin contestar',
+  Confirmed: 'Confirmado',
+  Declined: 'No puede',
+  Acknowledged: 'Enterado',
+};
+
+export const callUpResponseTone: Record<CallUpResponse, 'green' | 'amber' | 'red' | 'slate' | 'blue'> = {
+  Pending: 'amber',
+  Confirmed: 'green',
+  Declined: 'red',
+  Acknowledged: 'slate',
+};
+
+export const weekdayLabels: Record<Weekday, string> = {
+  Monday: 'Lunes',
+  Tuesday: 'Martes',
+  Wednesday: 'Miércoles',
+  Thursday: 'Jueves',
+  Friday: 'Viernes',
+  Saturday: 'Sábado',
+  Sunday: 'Domingo',
+};
+
+export const weekdays: Weekday[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+/** Día local en formato YYYY-MM-DD (el calendario y las fechas de la API van por días). */
+export const toDateKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+export const formatDurationMinutes = (minutes: number) =>
+  minutes >= 60 ? `${Math.floor(minutes / 60)} h${minutes % 60 ? ` ${minutes % 60} min` : ''}` : `${minutes} min`;

@@ -49,6 +49,7 @@ const links = computed<NavLink[]>(() => {
     if (squad) {
       items.push({ to: `/plantillas/${squad.squadId}`, label: 'Mi plantilla', exact: true });
       items.push({ to: `/plantillas/${squad.squadId}/partidos`, label: 'Partidos' });
+      items.push({ to: '/mis-convocatorias', label: 'Mis convocatorias' });
     }
   }
 
@@ -124,7 +125,7 @@ function logoutAdmin() {
           <SearchTrigger v-if="canSearch" class="hidden w-44 xl:flex 2xl:w-60" />
           <SearchTrigger v-if="canSearch" compact class="xl:hidden" />
           <SeasonSwitcher class="hidden lg:block" />
-          <AlertBell v-if="auth.isClub && !admin.isActive" />
+          <AlertBell v-if="auth.isAuthenticated && !admin.isActive" />
           <button type="button" class="btn-ghost px-2" :title="themeLabel" :aria-label="themeLabel" @click="settings.toggleTheme()">
             <svg v-if="settings.isDark" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
               <circle cx="12" cy="12" r="4" />

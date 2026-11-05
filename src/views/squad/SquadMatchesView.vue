@@ -12,8 +12,9 @@ import { downloadPaperSheet } from '@/utils/paperSheet';
 import TeamName from '@/components/teams/TeamName.vue';
 import { opponentOf } from '@/utils/crests';
 import { useViewer } from '@/composables/useViewer';
-import { isPendingMatch, matchDisplayStatus } from '@/utils/format';
-import type { MatchDto } from '@/types/api';
+import { useAuthStore } from '@/stores/auth';
+import { callUpResponseLabels, isPendingMatch, matchDisplayStatus } from '@/utils/format';
+import type { CallUpSummaryDto, MatchDto } from '@/types/api';
 
 const { squadId, detail } = useSquad();
 
@@ -33,6 +34,11 @@ const played = computed(() => (data.value ?? []).filter(isPlayed).reverse());
 const upcoming = computed(() => (data.value ?? []).filter((m) => !isPlayed(m)));
 const pending = computed(() => played.value.filter((m) => m.match.status === 'Played' && m.entriesRecorded === 0).length);
 const nextMatch = computed(() => upcoming.value.find((m) => isPendingMatch(m.match))?.match ?? null);
+
+// Convocatorias de los próximos partidos (solo quien es de la plantilla las ve; a los demás la API no se las da).
+const isInsider = computed(() => canReview.value || detail.value?.summary.myRole !== null || useAuthStore().playerSquad?.squadId === squadId.value);
+const callUps = useAsync(() => (isInsider.value ? api.trainings.callUps(squadId.value) : Promise.resolve([] as CallUpSummaryDto[])), { redirectOnError: false });
+const callUpOf = (matchId: string) => callUps.data.value?.find((c) => c.matchId === matchId) ?? null;
 
 /** Acta en papel para apuntar en directo: la del próximo partido sale con la cabecera rellena. */
 function downloadPaper(withNextMatch: boolean) {
@@ -105,8 +111,15 @@ function downloadPaper(withNextMatch: boolean) {
           :team-id="teamId"
           :to="canReview ? { name: 'sheet', params: { squadId, matchId: item.match.id }, query: { tab: 'previa' } } : undefined"
         >
-          <template v-if="canReview" #badge>
-            <span class="inline-flex items-center gap-1 text-xs font-medium text-brand-500"><Icon icon="chart-line" class="h-3 w-3" />Previa</span>
+          <template v-if="canReview || callUpOf(item.match.id)" #badge>
+            <template v-if="callUpOf(item.match.id)?.status === 'Published'">
+              <Badge v-if="callUpOf(item.match.id)!.mine" :tone="callUpOf(item.match.id)!.mine!.called ? 'green' : 'slate'">
+                {{ callUpOf(item.match.id)!.mine!.called ? `Convocado · ${callUpResponseLabels[callUpOf(item.match.id)!.mine!.response]}` : 'No convocado' }}
+              </Badge>
+              <Badge v-else tone="green">{{ callUpOf(item.match.id)!.counts.called }} convocados</Badge>
+            </template>
+            <Badge v-else-if="canReview && callUpOf(item.match.id)" tone="amber">Convocatoria en borrador</Badge>
+            <span v-if="canReview" class="inline-flex items-center gap-1 text-xs font-medium text-brand-500"><Icon icon="chart-line" class="h-3 w-3" />Previa</span>
           </template>
         </MatchRow>
       </div>

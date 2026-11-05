@@ -7,7 +7,7 @@ import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
 import PlayerPhotoWizard from '@/components/players/PlayerPhotoWizard.vue';
-import type { PlayerDto } from '@/types/api';
+import type { MyCallUpDto, MyTrainingDto, PlayerDto } from '@/types/api';
 import PercentileBar from '@/components/ui/PercentileBar.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
@@ -20,7 +20,13 @@ import { useAuthStore } from '@/stores/auth';
 import { useSettingsStore } from '@/stores/settings';
 import { confirmDialog } from '@/composables/useConfirm';
 import {
+  attendanceStatusLabels,
+  attendanceStatusTone,
+  callUpResponseLabels,
+  callUpResponseTone,
   formatDate,
+  formatDayHeading,
+  formatKickoff,
   formatNumber,
   formatPct,
   outcomeFor,
@@ -87,6 +93,13 @@ const league = computed(() => data.value?.league ?? null);
 const hasPercentiles = computed(() => league.value !== null && league.value.playersCompared >= 2);
 
 const suggestions = useAsync(() => (auth.playerSquad ? api.players.suggestions() : Promise.resolve([])));
+
+// Lo que el jugador tiene que contestar: convocatorias publicadas sin firmar y los próximos entrenamientos.
+const callUps = useAsync(() => (auth.playerSquad ? api.trainings.myCallUps() : Promise.resolve([] as MyCallUpDto[])), { redirectOnError: false });
+const trainings = useAsync(() => (auth.playerSquad ? api.trainings.mine() : Promise.resolve([] as MyTrainingDto[])), { redirectOnError: false });
+const pendingCallUps = computed(() => (callUps.data.value ?? []).filter((c) => !c.closed && c.mine.response === 'Pending'));
+const nextCallUp = computed(() => (callUps.data.value ?? []).find((c) => !c.closed) ?? null);
+const nextTrainings = computed(() => (trainings.data.value ?? []).slice(0, 3));
 
 const photoOpen = ref(false);
 function onPhotoSaved(player: PlayerDto) {
@@ -158,6 +171,44 @@ async function leave() {
     <DashboardSearch class="mb-8" />
 
     <PlayerPhotoWizard :open="photoOpen" :has-photo="!!auth.player?.photoUrl" @close="photoOpen = false" @saved="onPhotoSaved" />
+
+    <!-- Convocatorias y entrenamientos: lo que el jugador tiene que contestar esta semana -->
+    <section class="mb-8 grid gap-4 lg:grid-cols-2">
+      <div class="card" :class="pendingCallUps.length > 0 ? 'border-brand-500/50' : ''">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="flex items-center gap-2 font-semibold text-slate-900"><Icon icon="clipboard-list" class="h-4 w-4 text-accent-400" />Convocatorias</h2>
+          <RouterLink to="/mis-convocatorias" class="text-sm text-accent-400 hover:underline">Ver todas</RouterLink>
+        </div>
+        <p v-if="!nextCallUp" class="text-sm text-slate-500">Ninguna convocatoria publicada para los próximos partidos.</p>
+        <template v-else>
+          <p class="text-sm text-slate-700">
+            <strong>{{ nextCallUp.mine.called ? 'Vas convocado' : 'No vas convocado' }}</strong> · J{{ nextCallUp.match.matchday }}
+            <TeamName prefix="vs" :name="opponentOf(nextCallUp.match, squad.teamId).name" :crest-url="opponentOf(nextCallUp.match, squad.teamId).crestUrl" /> · {{ formatKickoff(nextCallUp.match.kickoffAt) }}
+          </p>
+          <p class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+            <Badge :tone="nextCallUp.mine.called ? callUpResponseTone[nextCallUp.mine.response] : nextCallUp.mine.response === 'Acknowledged' ? 'slate' : 'amber'">
+              {{ nextCallUp.mine.called ? callUpResponseLabels[nextCallUp.mine.response] : nextCallUp.mine.response === 'Acknowledged' ? 'Enterado' : 'Sin confirmar' }}
+            </Badge>
+            <RouterLink v-if="nextCallUp.mine.response === 'Pending'" to="/mis-convocatorias" class="btn-primary px-3 py-1 text-xs">Contestar</RouterLink>
+          </p>
+        </template>
+      </div>
+      <div class="card">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="flex items-center gap-2 font-semibold text-slate-900"><Icon icon="calendar-check" class="h-4 w-4 text-accent-400" />Próximos entrenamientos</h2>
+          <RouterLink :to="{ name: 'squad-trainings', params: { squadId: squad.squadId } }" class="text-sm text-accent-400 hover:underline">Calendario</RouterLink>
+        </div>
+        <p v-if="nextTrainings.length === 0" class="text-sm text-slate-500">Tu cuerpo técnico no ha preparado todavía ningún entrenamiento.</p>
+        <ul v-else class="space-y-1.5 text-sm">
+          <li v-for="t in nextTrainings" :key="t.session.id" class="flex flex-wrap items-center justify-between gap-2">
+            <RouterLink :to="{ name: 'squad-trainings', params: { squadId: t.squadId }, query: { sesion: t.session.id } }" class="min-w-0 text-slate-700 hover:text-accent-400">
+              {{ formatDayHeading(t.session.startsAt) }} · {{ t.session.title }}
+            </RouterLink>
+            <Badge v-if="t.session.mine" :tone="attendanceStatusTone[t.session.mine.status]">{{ attendanceStatusLabels[t.session.mine.status] }}</Badge>
+          </li>
+        </ul>
+      </div>
+    </section>
 
     <Alert v-if="data.individual.matchesLogged === 0" kind="info" class="mb-6">
       Tu cuerpo técnico todavía no ha registrado ninguna acta con tu ficha. En cuanto lo haga, aquí aparecerán tus números.

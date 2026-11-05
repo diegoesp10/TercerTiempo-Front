@@ -8,6 +8,7 @@ import Badge from '@/components/ui/Badge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { squadKey } from '@/composables/useSquad';
+import { useViewer } from '@/composables/useViewer';
 import { useAuthStore } from '@/stores/auth';
 import type { SquadDetailDto } from '@/types/api';
 import { levelLabels, staffRoleLabels, visibilityLabels } from '@/utils/format';
@@ -45,12 +46,16 @@ provide(squadKey, { squadId: toRef(props, 'squadId'), detail, reload });
 const summary = computed(() => detail.value?.summary ?? null);
 const isMyPlayerSquad = computed(() => auth.playerSquad?.squadId === props.squadId);
 
-const tabs = [
+const { isAdmin } = useViewer();
+// Entrenamientos y convocatorias: lo interno de la plantilla (club, cuerpo técnico y sus jugadores; el administrador mira).
+const tabs = computed(() => [
   { name: 'squad', label: 'Plantilla' },
   { name: 'squad-matches', label: 'Partidos y actas' },
+  ...(detail.value?.canManage || isMyPlayerSquad.value || isAdmin.value ? [{ name: 'squad-trainings', label: 'Entrenamientos' }] : []),
   { name: 'squad-stats', label: 'Estadísticas' },
   { name: 'squad-compare', label: 'Comparador' },
-] as const;
+]);
+const activeTab = computed(() => (route.name === 'squad-callup' ? 'squad-trainings' : route.name));
 </script>
 
 <template>
@@ -98,8 +103,8 @@ const tabs = [
         :key="tab.name"
         :to="{ name: tab.name, params: { squadId } }"
         class="-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition"
-        :class="route.name === tab.name ? 'border-brand-500 text-brand-500' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'"
-        :aria-current="route.name === tab.name ? 'page' : undefined"
+        :class="activeTab === tab.name ? 'border-brand-500 text-brand-500' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'"
+        :aria-current="activeTab === tab.name ? 'page' : undefined"
       >
         {{ tab.label }}
       </RouterLink>

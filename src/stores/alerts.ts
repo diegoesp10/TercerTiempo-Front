@@ -7,8 +7,8 @@ import { useAuthStore } from './auth';
 const REFRESH_MS = 5 * 60_000;
 
 /**
- * Avisos de la campanita, solo para cuentas de club. Se cargan al entrar como club, cada cinco minutos y al volver a la
- * pestaña; las acciones de la licencia que los crean o resuelven (cancelar o reactivar la renovación) llaman a load().
+ * Avisos de la campanita de cualquier cuenta (club, cuerpo técnico o jugador). Se cargan al entrar, cada cinco minutos
+ * y al volver a la pestaña; las acciones que los crean o resuelven (licencia, convocatorias, ausencias) llaman a load().
  */
 export const useAlertsStore = defineStore('alerts', () => {
   const auth = useAuthStore();
@@ -20,7 +20,7 @@ export const useAlertsStore = defineStore('alerts', () => {
   const unread = computed(() => data.value?.unread ?? 0);
 
   async function load() {
-    if (!auth.isClub) return;
+    if (!auth.isAuthenticated) return;
     loading.value = true;
     try {
       data.value = await api.alerts.mine();
@@ -40,11 +40,11 @@ export const useAlertsStore = defineStore('alerts', () => {
 
   const onVisible = () => { if (document.visibilityState === 'visible') void load(); };
 
-  watch(() => auth.isClub, (isClub) => {
+  watch(() => auth.isAuthenticated, (signedIn) => {
     if (timer) clearInterval(timer);
     timer = null;
     document.removeEventListener('visibilitychange', onVisible);
-    if (!isClub) {
+    if (!signedIn) {
       data.value = null;
       return;
     }

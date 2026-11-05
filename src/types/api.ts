@@ -417,7 +417,7 @@ export interface PendingRefereeRatingDto {
 
 // --- Avisos del club (la campanita; solo cuentas de club) ---
 
-export type AlertKind = 'LicenseExpiring' | 'PassRequest';
+export type AlertKind = 'LicenseExpiring' | 'PassRequest' | 'CallUp' | 'NotCalledUp' | 'CallUpDeclined' | 'TrainingAbsence';
 
 export interface AlertDto {
   id: string;
@@ -2489,3 +2489,5 @@ export interface LeaguePredictionEvolutionDto {
   zones: LeagueZonesDto | null;
   teams: TeamEvolutionDto[];
 }
+
+export * from './trainings';

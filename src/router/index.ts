@@ -55,6 +55,8 @@ const router = createRouter({
         { path: 'partidos', name: 'squad-matches', component: () => import('@/views/squad/SquadMatchesView.vue') },
         { path: 'estadisticas', name: 'squad-stats', component: () => import('@/views/squad/SquadStatsView.vue') },
         { path: 'comparador', name: 'squad-compare', component: () => import('@/views/squad/SquadCompareView.vue') },
+        { path: 'entrenamientos', name: 'squad-trainings', component: () => import('@/views/squad/SquadTrainingsView.vue') },
+        { path: 'convocatorias/:matchId', name: 'squad-callup', component: () => import('@/views/squad/SquadCallUpView.vue'), props: true },
         {
           path: 'jugadores/:squadPlayerId',
           name: 'squad-player',
@@ -76,6 +78,7 @@ const router = createRouter({
     { path: '/liga', name: 'league', component: () => import('@/views/LeagueView.vue'), meta: { root: true } },
     // Pases por partido: canjear un código (o el enlace /pase/CÓDIGO), los pases propios y, para el club, solicitudes, precios y ventas.
     { path: '/pase/:code?', name: 'pass', component: () => import('@/views/passes/PassRedeemView.vue'), props: true, meta: { requiresAuth: true, profileOnly: true } },
+    { path: '/mis-convocatorias', name: 'my-callups', component: () => import('@/views/player/MyCallUpsView.vue'), meta: { requiresAuth: true, profileOnly: true, root: true } },
     { path: '/mis-pases', name: 'my-passes', component: () => import('@/views/passes/MyPassesView.vue'), meta: { requiresAuth: true, profileOnly: true, root: true } },
     { path: '/club/pases', name: 'club-passes', component: () => import('@/views/club/ClubPassesView.vue'), meta: { requiresAuth: true, profileOnly: true, root: true } },
     { path: '/privacidad', name: 'privacy', component: () => import('@/views/legal/PrivacyView.vue') },

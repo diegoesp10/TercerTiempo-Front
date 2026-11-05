@@ -6,7 +6,7 @@ import { useAlertsStore } from '@/stores/alerts';
 import type { AlertDto } from '@/types/api';
 import { formatDate, formatKickoff } from '@/utils/format';
 
-/** Campanita del club en la cabecera: avisos de la app (de momento, que su licencia va a acabar). */
+/** Campanita de la cabecera: avisos de la app (licencia y solicitudes del club, convocatorias del jugador, bajas y ausencias del cuerpo técnico). */
 const store = useAlertsStore();
 const router = useRouter();
 
@@ -57,7 +57,7 @@ async function openAlert(alert: AlertDto) {
       v-if="open"
       class="absolute right-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-line bg-surface shadow-card"
       role="dialog"
-      aria-label="Avisos del club"
+      aria-label="Avisos"
     >
       <div class="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
         <p class="font-semibold text-slate-900">Avisos</p>

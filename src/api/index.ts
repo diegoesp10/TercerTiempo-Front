@@ -97,6 +97,22 @@ import type {
   VideoTicketDto,
   VideoUploadDto,
 } from '@/types/api';
+import type {
+  AttendanceInput,
+  CallUpRequest,
+  CallUpResponse,
+  CallUpSummaryDto,
+  ExerciseDto,
+  ExerciseRequest,
+  MatchCallUpDto,
+  MyCallUpDto,
+  MyTrainingDto,
+  TrainingCatalogDto,
+  TrainingItemInput,
+  TrainingRequest,
+  TrainingSessionDto,
+  TrainingSummaryDto,
+} from '@/types/trainings';
 
 /** Listas de referencia (competiciones, catálogo de clubes): cambian con la sincronización diaria, no al navegar. */
 const REFERENCE_CACHE_MS = 5 * 60_000;
@@ -263,10 +279,43 @@ export const api = {
   },
 
   /** Avisos de la campanita del club (solo cuentas de club). */
+  /** Campanita de cualquier cuenta: club (licencia, solicitudes), jugador (convocatorias) y cuerpo técnico (bajas y ausencias). */
   alerts: {
-    mine: () => http<ClubAlertsDto>('/api/clubs/me/alerts', { silent: true }),
-    read: (alertId: string) => http<ClubAlertsDto>(`/api/clubs/me/alerts/${alertId}/read`, { method: 'POST', silent: true }),
-    readAll: () => http<ClubAlertsDto>('/api/clubs/me/alerts/read', { method: 'POST', silent: true }),
+    mine: () => http<ClubAlertsDto>('/api/alerts', { silent: true }),
+    read: (alertId: string) => http<ClubAlertsDto>(`/api/alerts/${alertId}/read`, { method: 'POST', silent: true }),
+    readAll: () => http<ClubAlertsDto>('/api/alerts/read', { method: 'POST', silent: true }),
+  },
+
+  /** Preparación semanal del cuerpo técnico: biblioteca de ejercicios, entrenamientos con asistencia y convocatorias. */
+  trainings: {
+    catalog: () => http<TrainingCatalogDto>('/api/trainings/catalog', { cacheMs: REFERENCE_CACHE_MS }),
+    exercises: (squadId: string) => http<ExerciseDto[]>(`/api/squads/${squadId}/exercises`),
+    createExercise: (squadId: string, body: ExerciseRequest) => http<ExerciseDto[]>(`/api/squads/${squadId}/exercises`, { method: 'POST', body }),
+    updateExercise: (squadId: string, exerciseId: string, body: ExerciseRequest) =>
+      http<ExerciseDto[]>(`/api/squads/${squadId}/exercises/${exerciseId}`, { method: 'PUT', body }),
+    deleteExercise: (squadId: string, exerciseId: string) => http<ExerciseDto[]>(`/api/squads/${squadId}/exercises/${exerciseId}`, { method: 'DELETE' }),
+    /** Sesiones entre dos días (YYYY-MM-DD, ambos incluidos). */
+    list: (squadId: string, from: string, to: string) => http<TrainingSummaryDto[]>(`/api/squads/${squadId}/trainings?from=${from}&to=${to}`),
+    get: (squadId: string, sessionId: string) => http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}`),
+    plan: (squadId: string, body: TrainingRequest) => http<TrainingSummaryDto[]>(`/api/squads/${squadId}/trainings`, { method: 'POST', body }),
+    update: (squadId: string, sessionId: string, body: TrainingRequest) => http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}`, { method: 'PUT', body }),
+    setItems: (squadId: string, sessionId: string, items: TrainingItemInput[]) =>
+      http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}/items`, { method: 'PUT', body: { items } }),
+    setAttendance: (squadId: string, sessionId: string, entries: AttendanceInput[]) =>
+      http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}/attendance`, { method: 'PUT', body: { entries } }),
+    remove: (squadId: string, sessionId: string, series = false) =>
+      http<boolean>(`/api/squads/${squadId}/trainings/${sessionId}${series ? '?series=true' : ''}`, { method: 'DELETE' }),
+    callUps: (squadId: string) => http<CallUpSummaryDto[]>(`/api/squads/${squadId}/callups`),
+    callUp: (squadId: string, matchId: string) => http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup`),
+    saveCallUp: (squadId: string, matchId: string, body: CallUpRequest) =>
+      http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup`, { method: 'PUT', body }),
+    /** Lado del jugador. */
+    mine: () => http<MyTrainingDto[]>('/api/players/me/trainings'),
+    reportAbsence: (sessionId: string, willMiss: boolean, reason: string | null) =>
+      http<TrainingSessionDto>(`/api/players/me/trainings/${sessionId}/absence`, { method: 'PUT', body: { willMiss, reason } }),
+    myCallUps: () => http<MyCallUpDto[]>('/api/players/me/callups'),
+    respondCallUp: (callUpId: string, response: CallUpResponse, note: string | null) =>
+      http<MyCallUpDto>(`/api/players/me/callups/${callUpId}/response`, { method: 'PUT', body: { response, note } }),
   },
 
   /** Licencia del club (primer equipo y filiales): estado de la cuenta, la licencia del club y pago (simulado de momento). */
