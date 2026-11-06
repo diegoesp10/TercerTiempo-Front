@@ -8,8 +8,8 @@ import { formatKickoff } from '@/utils/format';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 
 /**
- * Datos del equipo en el partido que no trae el acta pública (posesión, córners, saques de banda, tiros, fueras de
- * juego, faltas, penaltis y goles a balón parado, con los de penalti aparte). El cuerpo técnico los rellena; el resto de
+ * Datos del equipo en el partido que no trae el acta pública (posesión, córners, saques de banda y de puerta, tiros,
+ * fueras de juego, faltas, penaltis y goles a balón parado, con los de penalti aparte). El cuerpo técnico los rellena; el resto de
  * quien ve la plantilla los consulta. Cada valor va bajo el escudo y el nombre de su equipo.
  */
 const props = defineProps<{
@@ -31,6 +31,7 @@ type CountKey = Exclude<keyof TeamMatchStatsInput, 'possessionPct' | 'notes'>;
 const rows: { label: string; mine: CountKey; theirs: CountKey; max: number; sub?: boolean }[] = [
   { label: 'Córners', mine: 'cornersFor', theirs: 'cornersAgainst', max: 50 },
   { label: 'Saques de banda', mine: 'throwInsFor', theirs: 'throwInsAgainst', max: 150 },
+  { label: 'Saques de puerta', mine: 'goalKicksFor', theirs: 'goalKicksAgainst', max: 100 },
   { label: 'Tiros', mine: 'shotsFor', theirs: 'shotsAgainst', max: 100 },
   { label: 'Tiros a puerta', mine: 'shotsOnTargetFor', theirs: 'shotsOnTargetAgainst', max: 100 },
   { label: 'Fueras de juego', mine: 'offsidesFor', theirs: 'offsidesAgainst', max: 50 },
@@ -60,6 +61,8 @@ const empty = (): TeamMatchStatsInput => ({
   penaltyGoalsAgainst: 0,
   throwInsFor: 0,
   throwInsAgainst: 0,
+  goalKicksFor: 0,
+  goalKicksAgainst: 0,
   notes: null,
 });
 
@@ -112,7 +115,7 @@ async function save() {
       <div>
         <h2 class="font-semibold text-slate-900">Datos del equipo</h2>
         <p class="text-xs text-slate-500">
-          Lo que no trae el acta pública: posesión, córners, saques de banda, tiros, fueras de juego, faltas, penaltis y goles a balón parado.
+          Lo que no trae el acta pública: posesión, córners, saques de banda y de puerta, tiros, fueras de juego, faltas, penaltis y goles a balón parado.
           <template v-if="saved"> Actualizado el {{ formatKickoff(saved.updatedAt) }}.</template>
         </p>
       </div>

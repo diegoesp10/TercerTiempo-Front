@@ -85,7 +85,12 @@ un código personal junto al nombre de cada jugador) → *Partidos y actas* → 
 **«Guardar acta»** (la nota de cada jugador se calcula sola con los datos) → pestaña **«Comparador con la
 federación»** (acta interna frente a la oficial, con las discrepancias marcadas y las líneas oficiales sin ficha; si la
 federación aún no la ha publicado, el backend comprueba los datos pendientes como máximo una vez al día) → pestaña **«Vídeo»** (subir el vídeo del partido; los técnicos
-de otras plantillas lo compran) →
+de otras plantillas lo compran; cuando termina de comprimirse se analiza solo) → de vuelta en **«Acta interna»**, la
+sección **«Del vídeo»** (`VideoProposalPanel`): estado del análisis (en cola, analizando con su %, listo o fallido), la
+calidad (fotogramas con balón y con el campo calibrado, con aviso cuando es baja), cuál de los dos equipos detectados
+es el tuyo, los datos de equipo propuestos frente a los del acta con una casilla cada uno, los jugadores seguidos con
+su recorte y un `SearchSelect` para asignarlos a una ficha, y **«Volcar al acta»** (doble confirmación si cambia algo
+ya apuntado) →
 *Estadísticas* (gráficos del equipo: resultados y puntos, nota media por partido, reparto de goles, minutos y ranking de
 nota; cada nombre abre la ficha del jugador con su nota partido a partido, el desglose de la nota y su radar por 90') →
 *Comparador* (hasta 4 jugadores: radar superpuesto, cara a cara, nota por partido y acciones por 90'). En *Plantilla* se añaden o editan fichas, se regenera
@@ -149,11 +154,14 @@ src/
 │                 three (BallScene, Ball), ui (StatCard, Badge, Alert, Spinner y BallLoader,
 │                 PageHeader, PercentileBar, RatingBadge), charts (AppChart, ChartCard), competitions (CompetitionPicker:
 │                 nivel → liga/grupo), matches (MatchRow, MatchdayFixtures: jornada con navegación),
-│                 sheet (OfficialSheetPanel: acta oficial con estado y reintento; SheetComparison: comparador),
+│                 sheet (OfficialSheetPanel: acta oficial con estado y reintento; SheetComparison: comparador;
+│                 VideoProposalPanel: la propuesta «Del vídeo» del acta interna, con VideoCrop para los recortes de
+│                 los jugadores seguidos, que se piden con el token),
 │                 videos (MatchVideos: lista, reproductor con ticket, compra, subida), legal (LegalPage),
 │                 clubs (ClubPicker: desplegable con búsqueda sobre el catálogo de clubes del registro),
 │                 teams (TeamCrest: escudo servido por la API o insignia con iniciales; ClubRosterEditor: el club
-│                 corrige la plantilla publicada de sus equipos), matches (MatchPreview: previa con probabilidades y
+│                 corrige la plantilla publicada de sus equipos; TeamPitchEditor: el club apunta en la ficha de su
+│                 equipo las medidas del terreno de juego, que usa el analizador de vídeo), matches (MatchPreview: previa con probabilidades y
 │                 análisis del rival para el técnico), ui (SearchSelect: el desplegable único con buscador),
 │                 trainings (TrainingCalendar: mes con las sesiones, en el móvil rejilla compacta con un punto por
 │                 sesión y el día elegido debajo; TrainingPlanModal: nuevo entrenamiento o serie semanal;
@@ -175,7 +183,8 @@ src/
                   ordenable), SquadCompareView (comparador de hasta 4 jugadores), SquadPlayerProfileView (ficha y
                   gráficos de un jugador), SquadTrainingsView (calendario de entrenamientos, próximas sesiones y
                   convocatorias), SquadCallUpView (la convocatoria de un partido: convocados, cita, publicar y respuestas)
-                  y MatchSheetView (pestañas: acta interna, comparador con la federación, vídeo)
+                  y MatchSheetView (pestañas: acta interna —con la sección «Del vídeo»—, comparador con la
+                  federación, vídeo)
 ```
 
 Convenciones:

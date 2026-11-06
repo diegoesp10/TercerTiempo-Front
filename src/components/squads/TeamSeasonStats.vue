@@ -21,6 +21,7 @@ const { data, loading, error } = useAsync(() => teamStatsApi.season(props.squadI
 const averageRows: { label: string; mine: keyof TeamStatsAveragesDto; theirs: keyof TeamStatsAveragesDto; total?: boolean }[] = [
   { label: 'Córners', mine: 'cornersFor', theirs: 'cornersAgainst' },
   { label: 'Saques de banda', mine: 'throwInsFor', theirs: 'throwInsAgainst' },
+  { label: 'Saques de puerta', mine: 'goalKicksFor', theirs: 'goalKicksAgainst' },
   { label: 'Tiros', mine: 'shotsFor', theirs: 'shotsAgainst' },
   { label: 'Tiros a puerta', mine: 'shotsOnTargetFor', theirs: 'shotsOnTargetAgainst' },
   { label: 'Fueras de juego', mine: 'offsidesFor', theirs: 'offsidesAgainst' },

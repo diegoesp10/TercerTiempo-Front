@@ -54,6 +54,10 @@ import type {
   MatchPreviewDto,
   MatchSheetDto,
   MatchSheetEntryInput,
+  ApplyVideoAnalysisRequest,
+  ApplyVideoAnalysisResultDto,
+  MatchVideoAnalysisDto,
+  TeamProfileDto,
   MatchVideoDto,
   OfficialSheetDto,
   PerformanceWithMatchDto,
@@ -190,6 +194,9 @@ export const api = {
     /** Plantilla del equipo en la temporada del partido (o en la que se está viendo); la crea si no existe. */
     openSquad: (teamId: string, matchId?: string) =>
       http<ClubSquadDto>(`/api/clubs/me/teams/${teamId}/squad`, { method: 'POST', body: { matchId: matchId ?? null } }),
+    /** Medidas del terreno de juego (metros); los dos a null para quitarlas. Las usa el analizador de vídeo. */
+    setTeamPitch: (teamId: string, lengthM: number | null, widthM: number | null) =>
+      http<TeamProfileDto>(`/api/clubs/me/teams/${teamId}/pitch`, { method: 'PUT', body: { lengthM, widthM } }),
     addRosterEntry: (teamId: string, body: RosterEntryRequest) => http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster`, { method: 'POST', body }),
     updateRosterEntry: (teamId: string, entryId: string, body: RosterEntryRequest) =>
       http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster/${entryId}`, { method: 'PUT', body }),
@@ -230,6 +237,15 @@ export const api = {
     sheet: (squadId: string, matchId: string) => http<MatchSheetDto>(`/api/squads/${squadId}/matches/${matchId}/sheet`),
     recordSheet: (squadId: string, matchId: string, entries: MatchSheetEntryInput[]) =>
       http<MatchSheetDto>(`/api/squads/${squadId}/matches/${matchId}/sheet`, { method: 'PUT', body: { entries } }),
+    /** Propuesta de acta interna que sale del vídeo del partido (estado del análisis, calidad, equipos y jugadores seguidos). */
+    videoAnalysis: (squadId: string, matchId: string, silent = false) =>
+      http<MatchVideoAnalysisDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis`, { silent }),
+    /** Analiza (o vuelve a analizar) el vídeo indicado, o todos los de la plantilla en el partido. */
+    requestVideoAnalysis: (squadId: string, matchId: string, videoId?: string) =>
+      http<MatchVideoAnalysisDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis`, { method: 'POST', body: { videoId: videoId ?? null } }),
+    /** Vuelca al acta lo aceptado; 409 (video_analysis.overwrite) si pisa datos y no va confirmado. */
+    applyVideoAnalysis: (squadId: string, matchId: string, body: ApplyVideoAnalysisRequest) =>
+      http<ApplyVideoAnalysisResultDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis/apply`, { method: 'POST', body }),
     /** Compara con el acta guardada; las descargas pendientes las gestiona el backend. */
     compareSheet: (squadId: string, matchId: string) =>
       http<SheetComparisonDto>(`/api/squads/${squadId}/matches/${matchId}/sheet/comparison`),
