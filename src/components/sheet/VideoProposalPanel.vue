@@ -110,13 +110,19 @@ const percent = (value: number) => value.toLocaleString('es-ES', { maximumFracti
 const metres = (value: number) => value.toLocaleString('es-ES', { maximumFractionDigits: 1 });
 const teamLetter = (index: number) => (index === 0 ? 'A' : 'B');
 
+/** Cuánto va a tardar: más o menos lo que dura el vídeo. */
+const duration = (part: VideoAnalysisPartDto) =>
+  part.durationSeconds ? `unos ${Math.max(1, Math.round(part.durationSeconds / 60))} minutos` : 'más o menos lo que dura el vídeo';
+
 const requesting = ref<string | null>(null);
 const requestError = ref<string | null>(null);
 async function request(part: VideoAnalysisPartDto) {
-  if (part.state === 'Ready' && !(await confirmDialog({
-    title: 'Volver a analizar el vídeo',
-    message: 'Se olvida la propuesta actual y lo que hubieras asignado; el acta no se toca. El análisis de un partido entero puede tardar más de una hora.',
-    confirmLabel: 'Volver a analizar',
+  const again = part.state === 'Ready';
+  if (!(await confirmDialog({
+    title: again ? 'Volver a analizar el vídeo' : 'Analizar el vídeo',
+    message: `El análisis tarda ${duration(part)} y se hace en segundo plano: puedes cerrar esta página y volver luego. `
+      + (again ? 'Se olvida la propuesta actual y lo que hubieras asignado; el acta no se toca.' : 'Lo que salga es una propuesta: nada se escribe en el acta hasta que lo vuelques.'),
+    confirmLabel: again ? 'Volver a analizar' : 'Analizar',
   }))) return;
 
   requesting.value = part.videoId;
@@ -315,7 +321,7 @@ async function apply(overwrite = false) {
 </script>
 
 <template>
-  <section class="card" aria-labelledby="video-proposal-title">
+  <section id="video-proposal" class="card scroll-mt-20" aria-labelledby="video-proposal-title">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 id="video-proposal-title" class="font-semibold text-slate-900"><Icon icon="video" class="mr-1.5 h-3.5 w-3.5 text-accent-400" />Del vídeo</h2>
@@ -365,11 +371,13 @@ async function apply(overwrite = false) {
             v-if="canManage && analysis.enabled && ['NotRequested', 'Ready', 'Failed'].includes(part.state)"
             v-busy="requesting === part.videoId"
             type="button"
-            :class="part.state === 'NotRequested' ? 'btn-primary' : 'btn-ghost'"
+            :class="part.state === 'Ready' ? 'btn-secondary' : 'btn-primary'"
             class="px-3 py-1 text-xs"
             :disabled="requesting !== null || applying"
+            :title="`Tarda ${duration(part)}`"
             @click="request(part)"
           >
+            <Icon :icon="part.state === 'NotRequested' ? 'magnifying-glass' : 'rotate-right'" class="h-3 w-3" />
             {{ part.state === 'NotRequested' ? 'Analizar el vídeo' : part.state === 'Failed' ? 'Volver a intentarlo' : 'Volver a analizar' }}
           </button>
         </div>
@@ -384,7 +392,8 @@ async function apply(overwrite = false) {
           <template v-else>El análisis de vídeo no está disponible en este servidor: hace falta una máquina con tarjeta gráfica.</template>
         </p>
         <p v-else-if="part.state === 'Pending'" class="mt-2 text-sm text-slate-600">
-          <Icon icon="clock" class="mr-1 h-3.5 w-3.5 text-amber-500" />En cola: empieza en cuanto el analizador quede libre (los vídeos se analizan de uno en uno).
+          <Icon icon="clock" class="mr-1 h-3.5 w-3.5 text-amber-500" />En cola: empieza en cuanto el analizador quede libre (los vídeos van de uno en uno) y tarda {{ duration(part) }}.
+          Si no hay ningún analizador en marcha, se queda esperando.
         </p>
         <div v-else-if="part.state === 'Running'" class="mt-3">
           <div
@@ -397,7 +406,7 @@ async function apply(overwrite = false) {
           >
             <div class="h-full rounded-full bg-brand-500 transition-[width] duration-500" :style="{ width: `${part.progress}%` }" />
           </div>
-          <p class="mt-2 text-xs text-slate-500">Siguiendo a los jugadores y al balón fotograma a fotograma. Un partido entero tarda más o menos lo que dura; puedes cerrar esta página y volver luego.</p>
+          <p class="mt-2 text-xs text-slate-500">Siguiendo a los jugadores y al balón fotograma a fotograma: tarda {{ duration(part) }}. Puedes cerrar esta página y volver luego.</p>
         </div>
         <Alert v-else-if="part.state === 'Failed'" kind="error" class="mt-3">
           No se ha podido analizar el vídeo: {{ part.error ?? 'error desconocido' }}
@@ -424,15 +433,19 @@ async function apply(overwrite = false) {
                 <template v-if="part.quality.pitchLengthM && part.quality.pitchWidthM">{{ metres(part.quality.pitchLengthM) }} × {{ metres(part.quality.pitchWidthM) }} m</template>
                 <template v-else>—</template>
               </dd>
-              <dd v-if="part.quality.genericPitch" class="text-[11px] text-amber-600">Genérico: faltan las medidas reales</dd>
+              <dd v-if="part.quality.genericPitch" class="text-[11px] text-slate-500">medidas genéricas</dd>
             </div>
           </dl>
           <Alert v-if="part.quality.lowBall || part.quality.lowCalibration" kind="warning" class="mt-3">
             <strong>Calidad baja: tómalo como orientación.</strong>
             <template v-if="part.quality.lowBall"> El balón solo se ve en el {{ percent(part.quality.ballFramesPct) }} % de los fotogramas, así que la posesión y los pases bailan de una pasada a otra.</template>
             <template v-if="part.quality.lowCalibration"> El campo solo se ha podido calibrar en el {{ percent(part.quality.calibratedFramesPct) }} %: fueras, córners y tiros salen de menos.</template>
-            Mejora con una cámara fija y alta, con todo el campo en plano<template v-if="part.quality.genericPitch">, y con las medidas reales del campo, que el club del equipo local apunta en la ficha de su equipo</template>.
+            Mejora con una cámara fija y alta y el juego lo más cerca posible.
           </Alert>
+          <p v-if="part.quality.genericPitch" class="mt-2 text-xs text-slate-500">
+            El campo se ha calibrado con medidas genéricas (120 × 70 m). No hacen falta para la posesión ni para los tiros; las reales, que el club del equipo local
+            puede apuntar en la ficha de su equipo, afinan las distancias y los tercios del campo.
+          </p>
 
           <!-- Cuál de los dos equipos es el nuestro -->
           <fieldset class="mt-4">

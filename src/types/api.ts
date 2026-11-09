@@ -1692,6 +1692,8 @@ export interface VideoAnalysisPartDto {
   title: string;
   videoStatus: VideoStatus;
   videoProgress: number;
+  /** Duración del vídeo en segundos, cuando se conoce: el análisis tarda más o menos lo mismo. */
+  durationSeconds: number | null;
   state: VideoAnalysisState;
   progress: number;
   error: string | null;
@@ -1709,7 +1711,7 @@ export interface VideoAnalysisPartDto {
 }
 
 export interface MatchVideoAnalysisDto {
-  /** El análisis de vídeo está activado en este servidor; si no, no se puede pedir. */
+  /** Se pueden pedir análisis en este servidor; los atiende el analizador que esté en marcha (si no hay ninguno, esperan en cola). */
   enabled: boolean;
   /** Club propietario o cuerpo técnico vigente; el administrador solo lo ve. */
   canManage: boolean;

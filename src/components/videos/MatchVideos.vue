@@ -20,11 +20,14 @@ const props = defineProps<{
   canUpload?: boolean;
   /** Plantillas abiertas a solicitudes para este partido: solo en sus vídeos privados se ofrece pedir acceso. */
   requestable?: string[];
+  /** El partido ya se jugó y quien mira puede llevar el acta interna: en sus vídeos se ofrece ir a analizarlos. */
+  analyzable?: boolean;
 }>();
 
 // request: un vídeo privado de una plantilla abierta a solicitudes, quien lo ve pide acceso al club (lo resuelve la
 // página). share: quien lo subió quiere darle un pase a alguien de fuera (la página abre la pestaña de pases).
-const emit = defineEmits<{ request: [squadId: string]; share: [video: MatchVideoDto] }>();
+// analyze: quien lo subió quiere analizarlo (la página abre la sección «Del vídeo» del acta interna).
+const emit = defineEmits<{ request: [squadId: string]; share: [video: MatchVideoDto]; analyze: [] }>();
 
 const { signedIn } = useViewer();
 
@@ -231,10 +234,18 @@ const accessIcon = (video: MatchVideoDto) => (video.access === 'Locked' ? 'lock'
                 <Icon icon="triangle-exclamation" class="mr-1.5 h-3 w-3 text-amber-500" />No se pudo comprimir<template v-if="video.processingError">: {{ video.processingError }}</template>. Se sirve tal cual se subió.
               </p>
               <p><Icon icon="lock" class="mr-1.5 h-3 w-3 text-slate-400" />Solo lo ve tu plantilla. Para que alguien de fuera lo vea o lo descargue, dale un pase de este partido.</p>
+              <p v-if="analyzable">
+                <Icon icon="magnifying-glass" class="mr-1.5 h-3 w-3 text-accent-400" />El analizador saca del vídeo una propuesta para el acta interna (tiros, posesión, quién jugó); tarda más o menos lo que dura el vídeo.
+              </p>
             </div>
-            <button type="button" class="btn-secondary px-3 py-1.5 text-xs" @click="emit('share', video)">
-              <Icon icon="ticket" class="mr-1.5 h-3 w-3" />Generar un pase
-            </button>
+            <div class="flex flex-wrap items-center gap-2">
+              <button v-if="analyzable" type="button" class="btn-secondary px-3 py-1.5 text-xs" :disabled="video.status === 'Uploaded' || video.status === 'Processing'" :title="video.status === 'Uploaded' || video.status === 'Processing' ? 'Cuando termine de comprimirse' : 'Ir a la sección «Del vídeo» del acta interna'" @click="emit('analyze')">
+                <Icon icon="magnifying-glass" class="mr-1.5 h-3 w-3" />Analizar el vídeo
+              </button>
+              <button type="button" class="btn-secondary px-3 py-1.5 text-xs" @click="emit('share', video)">
+                <Icon icon="ticket" class="mr-1.5 h-3 w-3" />Generar un pase
+              </button>
+            </div>
           </div>
 
           <div v-if="playing === video.id && streamUrl" class="border-t border-line p-3">

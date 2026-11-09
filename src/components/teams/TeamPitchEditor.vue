@@ -59,8 +59,8 @@ async function save() {
     <p v-if="error" class="field-error">{{ error }}</p>
     <p v-else-if="done && !dirty" class="mt-1 text-xs text-emerald-700">Medidas guardadas.</p>
     <p class="mt-2 text-[11px] leading-relaxed text-slate-500">
-      Con ellas el analizador de vídeo calibra el campo en los partidos que se juegan aquí (sin ellas usa un campo genérico de 120 × 70 m).
-      Deja los dos huecos vacíos para quitarlas.
+      Opcionales. El analizador de vídeo las usa en los partidos que se juegan aquí para afinar las distancias y los tercios del campo (sin ellas
+      calibra con un campo genérico de 120 × 70 m; la posesión y los tiros salen igual). Deja los dos huecos vacíos para quitarlas.
     </p>
   </form>
 </template>
