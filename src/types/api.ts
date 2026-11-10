@@ -1643,12 +1643,19 @@ export interface VideoAnalysisQualityDto {
 }
 
 /** Uno de los dos equipos que separa el analizador por su equipación: él no sabe cuál es el del club. */
+/** Confianza de la posesión: el analizador la mide solo sobre el tiempo con balón. Con Low se enseña, pero no se vuelca al acta. */
+export type VideoPossessionConfidence = 'Low' | 'Medium' | 'High';
+
 export interface VideoAnalysisTeamDto {
   index: number;
   /** Color medio de la equipación (#rrggbb). */
   color: string | null;
   players: number;
   possessionPct: number | null;
+  /** null en análisis anteriores al dato. */
+  possessionConfidence: VideoPossessionConfidence | null;
+  /** % del tramo con balón visto o interpolado, sobre el que se midió la posesión. */
+  possessionBallPct: number | null;
   shots: number;
   shotsOnTarget: number;
   corners: number;

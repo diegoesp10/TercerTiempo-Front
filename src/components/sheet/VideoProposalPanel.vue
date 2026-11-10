@@ -15,6 +15,7 @@ import type {
   VideoAnalysisPlayerDto,
   VideoAnalysisState,
   VideoPlayerActions,
+  VideoPossessionConfidence,
   VideoTeamField,
 } from '@/types/api';
 import { formatKickoff, positionShortLabels, videoPartLabels } from '@/utils/format';
@@ -107,6 +108,9 @@ const stateTones: Record<VideoAnalysisState, 'green' | 'amber' | 'red' | 'blue' 
 };
 
 const percent = (value: number) => value.toLocaleString('es-ES', { maximumFractionDigits: 1 });
+/** % del tramo con balón visto o interpolado (lo que el analizador usó para la posesión); null en análisis anteriores. */
+const ballKnownPct = (part: VideoAnalysisPartDto) => part.teams.find((t) => t.possessionBallPct !== null)?.possessionBallPct ?? null;
+const confidenceLabels: Record<VideoPossessionConfidence, string> = { Low: 'confianza baja: no se vuelca', Medium: 'confianza media', High: 'confianza alta' };
 const metres = (value: number) => value.toLocaleString('es-ES', { maximumFractionDigits: 1 });
 const teamLetter = (index: number) => (index === 0 ? 'A' : 'B');
 
@@ -145,6 +149,8 @@ interface TeamRow {
   label: string;
   video: [number | null, number | null];
   current: [number | null, number | null];
+  /** Por qué no se propone, cuando el vídeo sí tiene el dato pero no se vuelca (la posesión de confianza baja). */
+  note?: string;
 }
 
 const stats = computed<TeamMatchStatsDto | null>(() => props.sheet.teamStats ?? null);
@@ -158,13 +164,19 @@ const teamRows = computed<TeamRow[]>(() => {
   type Counter = 'shots' | 'shotsOnTarget' | 'corners' | 'throwIns' | 'goalKicks';
   const sum = (side: typeof mine, key: Counter) => chosen.reduce((total, part) => total + (side(part)?.[key] ?? 0), 0);
 
-  // La posesión de las dos partes, ponderada por lo que se analizó de cada una (como hace la API al volcar).
+  // La posesión de las dos partes, ponderada por lo que se analizó de cada una (como hace la API al volcar). La de
+  // confianza baja (el balón se vio poco) se enseña en la tarjeta del equipo, pero no se vuelca: queda fuera.
   const weighted = chosen
+    .filter((part) => mine(part)?.possessionConfidence !== 'Low')
     .map((part) => ({ value: mine(part)?.possessionPct ?? null, weight: Math.max(1, part.quality?.analyzedSeconds ?? 0) }))
     .filter((p): p is { value: number; weight: number } => p.value !== null);
   const possession = weighted.length
     ? Math.round(weighted.reduce((total, p) => total + p.value * p.weight, 0) / weighted.reduce((total, p) => total + p.weight, 0))
     : null;
+  const retained = chosen.filter((part) => mine(part)?.possessionConfidence === 'Low' && mine(part)?.possessionPct !== null);
+  const retainedNote = possession === null && retained.length > 0
+    ? `Retenida: confianza baja (balón en el ${percent(Math.min(...retained.map((part) => mine(part)?.possessionBallPct ?? 0)))} % del tramo)`
+    : undefined;
 
   const s = stats.value;
   const counter = (field: VideoTeamField, label: string, key: Counter, mineNow: number | undefined, theirsNow: number | undefined): TeamRow =>
@@ -176,6 +188,7 @@ const teamRows = computed<TeamRow[]>(() => {
       label: 'Posesión (%)',
       video: [possession, possession === null ? null : 100 - possession],
       current: [s?.possessionPct ?? null, s?.possessionPct == null ? null : 100 - s.possessionPct],
+      note: retainedNote,
     },
     counter('Shots', 'Tiros', 'shots', s?.shotsFor, s?.shotsAgainst),
     counter('ShotsOnTarget', 'Tiros a puerta', 'shotsOnTarget', s?.shotsOnTargetFor, s?.shotsOnTargetAgainst),
@@ -418,6 +431,7 @@ async function apply(overwrite = false) {
             <div class="rounded-lg border border-line bg-surface-2 px-3 py-2">
               <dt class="eyebrow">Fotogramas con balón</dt>
               <dd class="mt-0.5 font-figures text-xl font-extrabold tabular-nums" :class="part.quality.lowBall ? 'text-amber-600' : 'text-slate-900'">{{ percent(part.quality.ballFramesPct) }} %</dd>
+              <dd v-if="ballKnownPct(part) !== null" class="text-[11px] text-slate-500">con la trayectoria: {{ percent(ballKnownPct(part)!) }} %</dd>
             </div>
             <div class="rounded-lg border border-line bg-surface-2 px-3 py-2">
               <dt class="eyebrow">Campo calibrado</dt>
@@ -438,7 +452,7 @@ async function apply(overwrite = false) {
           </dl>
           <Alert v-if="part.quality.lowBall || part.quality.lowCalibration" kind="warning" class="mt-3">
             <strong>Calidad baja: tómalo como orientación.</strong>
-            <template v-if="part.quality.lowBall"> El balón solo se ve en el {{ percent(part.quality.ballFramesPct) }} % de los fotogramas, así que la posesión y los pases bailan de una pasada a otra.</template>
+            <template v-if="part.quality.lowBall"> El balón solo se ve en el {{ percent(part.quality.ballFramesPct) }} % de los fotogramas: la posesión se mide solo sobre el tiempo con balón y, si su confianza es baja, no se vuelca al acta; los pases y las recuperaciones salen de menos.</template>
             <template v-if="part.quality.lowCalibration"> El campo solo se ha podido calibrar en el {{ percent(part.quality.calibratedFramesPct) }} %: fueras, córners y tiros salen de menos.</template>
             Mejora con una cámara fija y alta y el juego lo más cerca posible.
           </Alert>
@@ -467,7 +481,7 @@ async function apply(overwrite = false) {
                     Equipo {{ teamLetter(team.index) }}
                     <Icon v-if="ourTeam[part.videoId] === team.index" icon="circle-check" class="ml-1 h-3.5 w-3.5 text-accent-400" />
                   </span>
-                  <span class="block text-xs text-slate-500">{{ team.players }} {{ team.players === 1 ? 'jugador seguido' : 'jugadores seguidos' }}<template v-if="team.possessionPct !== null"> · {{ team.possessionPct }} % de posesión</template></span>
+                  <span class="block text-xs text-slate-500">{{ team.players }} {{ team.players === 1 ? 'jugador seguido' : 'jugadores seguidos' }}<template v-if="team.possessionPct !== null"> · {{ team.possessionPct }} % de posesión<template v-if="team.possessionConfidence"> ({{ confidenceLabels[team.possessionConfidence] }})</template></template></span>
                 </span>
                 <span class="flex shrink-0 gap-1">
                   <VideoCrop v-for="sample in samplesOf(part, team.index)" :key="sample.tracklet" :url="sample.cropUrl" :alt="`Jugador del equipo ${teamLetter(team.index)}`" size="sm" />
@@ -561,7 +575,7 @@ async function apply(overwrite = false) {
                 </td>
                 <td class="px-2 py-1.5 text-center font-figures tabular-nums text-slate-500">{{ row.current[0] ?? '—' }}<span class="mx-1.5 text-slate-400">·</span>{{ row.current[1] ?? '—' }}</td>
                 <td class="px-2 py-1.5 text-xs">
-                  <span v-if="!proposes(row)" class="text-slate-400">El vídeo no lo ha visto</span>
+                  <span v-if="!proposes(row)" class="text-slate-400">{{ row.note ?? 'El vídeo no lo ha visto' }}</span>
                   <span v-else-if="sameAsSheet(row)" class="text-slate-500">Ya coincide con el acta</span>
                   <Badge v-else-if="overwrites(row)" tone="amber">Cambia lo apuntado</Badge>
                   <span v-else class="text-emerald-700">Rellena lo que falta</span>
