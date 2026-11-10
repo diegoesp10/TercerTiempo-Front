@@ -1,0 +1,30 @@
+name: tercer-tiempo-front
+
+# Build de Vue servido por Nginx. /api se reenvía al contenedor de la API (repositorio TercerTiempo-Back), que está en
+# la red compartida tercer-tiempo-net como "api". El entorno (desarrollo o publicación) lo pone la API: esta imagen es
+# la misma en los dos. Start-Docker.ps1 arranca antes la API si hace falta.
+services:
+  web:
+    image: tercer-tiempo-web:local
+    container_name: tercer-tiempo-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:${TT_WEB_PORT:-8180}:8080"
+    networks:
+      - tercertiempo
+    mem_limit: 64m
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+networks:
+  tercertiempo:
+    name: tercer-tiempo-net
+    external: true

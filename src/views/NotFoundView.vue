@@ -1,7 +1,7 @@
+<script setup lang="ts">
+import ErrorPage from '@/components/ui/ErrorPage.vue';
+</script>
+
 <template>
-  <div class="py-20 text-center">
-    <p class="text-6xl font-bold text-slate-200">404</p>
-    <p class="mt-2 text-slate-600">Esta página no existe.</p>
-    <RouterLink to="/" class="btn-primary mt-6">Volver al panel</RouterLink>
-  </div>
+  <ErrorPage code="404" title="Esto no está en el campo" message="La página o el recurso que buscas no existe o ya no está disponible." />
 </template>

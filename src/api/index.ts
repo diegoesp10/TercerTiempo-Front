@@ -1,50 +1,455 @@
-import { http } from './http';
+import { http, mediaBaseUrl } from './http';
 import type {
+  ApprovePassRequest,
+  ClubPassPricesDto,
+  ClubPassRequestDto,
+  CreateMatchPassRequest,
+  MatchPassDto,
+  MatchPassesDto,
+  MatchPassPriceDto,
+  MyPassDto,
+  MyPassesDto,
+  MyPassRequestDto,
+  PassAccessRequest,
+  PassEarningsDto,
+  PassPreviewDto,
+  AccountDto,
+  AppointmentDto,
   AuthResponse,
-  JoinTeamRequest,
+  BeginVideoUploadRequest,
+  ClubCatalogDto,
+  ClubAlertsDto,
+  MatchOfficialsDto,
+  CommentCheckDto,
+  LeaguePredictionDto,
+  LeaguePredictionEvolutionDto,
+  OfficialDuty,
+  PendingRefereeRatingDto,
+  RefereeCategoryDto,
+  RefereeCategoryListDto,
+  RefereeSort,
+  RefereeDetailDto,
+  SortOrder,
+  ClubDto,
+  ClubSquadDto,
+  CoachDto,
+  CoachProfileDto,
+  CompetitionDto,
+  CompetitionMatchdayDto,
+  CreateAppointmentRequest,
+  InjuryDto,
+  InjuryRequest,
+  InjuryTypeDto,
+  JoinSquadAsPlayerRequest,
   LeagueTableDto,
+  BillingInterval,
+  LicenseCheckoutDto,
+  LicensingCatalogDto,
+  LicensingStatusDto,
   LoginRequest,
+  ChangePasswordRequest,
+  PasswordStatusDto,
   MatchDetailDto,
   MatchDto,
-  PerformanceDto,
-  PerformanceStats,
+  MatchPreviewDto,
+  MatchSheetDto,
+  MatchSheetEntryInput,
+  ApplyVideoAnalysisRequest,
+  ApplyVideoAnalysisResultDto,
+  MatchVideoAnalysisDto,
+  TeamProfileDto,
+  MatchVideoDto,
+  OfficialSheetDto,
   PerformanceWithMatchDto,
   PlayerDashboardDto,
   PlayerDto,
   RegisterRequest,
-  SyncResultDto,
+  ResolveSuggestionRequest,
+  RosterEntryDetailDto,
+  RosterEntryDto,
+  RosterEntryRequest,
+  SheetComparisonDto,
+  SquadDetailDto,
+  RegistrationOptionsDto,
+  SeasonYearDto,
+  CookiePolicyDto,
+  ConsentDto,
+  ConsentAction,
+  ClubInvitationLookupDto,
+  SquadInviteDto,
+  SquadMatchDto,
+  SquadPlayerDto,
+  SquadPlayerProfileDto,
+  SquadPlayerRequest,
+  SquadSeasonTableDto,
+  SquadStatsDto,
+  SquadSummaryDto,
+  SquadTimelineDto,
+  SquadVisibility,
+  SuggestionDto,
+  SuggestPerformanceRequest,
+  TeamCrestImportDto,
   TeamDetailDto,
+  ClubLicenseDto,
+  SearchResultsDto,
+  PlayerCardDto,
+  SimulatedPaymentDto,
+  SimulatedPaymentOutcome,
+  SearchType,
   TeamSummaryDto,
+  VideoPart,
+  VideoTicketDto,
+  VideoUploadDto,
 } from '@/types/api';
+import type {
+  AttendanceInput,
+  CallUpRequest,
+  CallUpResponse,
+  PromoteTrialPlayerRequest,
+  TrialPlayerDto,
+  TrialPlayerRequest,
+  TrainingTrialPlayerRequest,
+  CallUpSummaryDto,
+  ExerciseDto,
+  ExerciseRequest,
+  MatchCallUpDto,
+  MyCallUpDto,
+  MyTrainingDto,
+  TrainingCatalogDto,
+  TrainingItemInput,
+  TrainingRequest,
+  TrainingSessionDto,
+  TrainingSummaryDto,
+} from '@/types/trainings';
+
+/** Listas de referencia (competiciones, catálogo de clubes): cambian con la sincronización diaria, no al navegar. */
+const REFERENCE_CACHE_MS = 5 * 60_000;
+/** Cálculos de una plantilla que comparten varias pestañas (estadísticas y comparador): cualquier cambio guardado los invalida. */
+const SQUAD_READ_CACHE_MS = 30_000;
 
 export const api = {
+  privacy: {
+    /** Política de cookies vigente con su catálogo. */
+    cookies: () => http<CookiePolicyDto>('/api/cookies', { silent: true }),
+    consent: (visitorId: string, action: ConsentAction, analytics: boolean) =>
+      http<ConsentDto>('/api/cookies/consent', { method: 'POST', body: { visitorId, action, analytics }, silent: true }),
+  },
+  seasons: {
+    /** Temporadas de la app, de la más reciente a la más antigua (la actual marcada). */
+    list: () => http<SeasonYearDto[]>('/api/seasons', { silent: true, cacheMs: 300_000 }),
+  },
   auth: {
     register: (body: RegisterRequest) => http<AuthResponse>('/api/auth/register', { method: 'POST', body }),
+    invite: (inviteCode: string) => http<SquadInviteDto>(`/api/auth/invite/${encodeURIComponent(inviteCode.trim())}`),
     login: (body: LoginRequest) => http<AuthResponse>('/api/auth/login', { method: 'POST', body }),
+    me: () => http<AccountDto>('/api/auth/me'),
+    /** Último cambio de contraseña y si ya se puede volver a cambiar (uno cada 24 h). */
+    passwordStatus: () => http<PasswordStatusDto>('/api/auth/password', { silent: true }),
+    changePassword: (body: ChangePasswordRequest) => http<AuthResponse>('/api/auth/password', { method: 'PUT', body }),
+    /** Si el alta de clubes exige invitación (beta cerrada). */
+    registrationOptions: () => http<RegistrationOptionsDto>('/api/auth/registration-options', { silent: true, cacheMs: 300_000 }),
+    /** Para qué club es una invitación de la beta (404 si no vale). */
+    clubInvitation: (code: string) =>
+      http<ClubInvitationLookupDto>(`/api/auth/club-invitation/${encodeURIComponent(code.trim())}`, { silent: true }),
   },
+
+  /** Lo que puede hacer un jugador: vincularse a su ficha y consultar sus números. */
   players: {
-    me: () => http<PlayerDto>('/api/players/me'),
-    joinTeam: (body: JoinTeamRequest) => http<PlayerDto>('/api/players/me/team', { method: 'POST', body }),
-    leaveTeam: () => http<PlayerDto>('/api/players/me/team', { method: 'DELETE' }),
+    invite: (inviteCode: string) => http<SquadInviteDto>(`/api/players/me/invite/${encodeURIComponent(inviteCode.trim())}`),
+    joinSquad: (body: JoinSquadAsPlayerRequest) => http<PlayerDto>('/api/players/me/squad', { method: 'POST', body }),
+    leaveSquad: () => http<PlayerDto>('/api/players/me/squad', { method: 'DELETE' }),
+    uploadPhoto: (file: File) => {
+      const body = new FormData();
+      body.append('file', file, file.name);
+      return http<PlayerDto>('/api/players/me/photo', { method: 'PUT', body });
+    },
+    deletePhoto: () => http<PlayerDto>('/api/players/me/photo', { method: 'DELETE' }),
+    /** Perfil completo visible para cualquier cuenta con sesión (true) o solo para tu club y tu plantilla (false). */
+    setPublicProfile: (isPublic: boolean) => http<PlayerDto>('/api/players/me/public-profile', { method: 'PUT', body: { public: isPublic } }),
+    dashboard: () => http<PlayerDashboardDto>('/api/players/me/dashboard'),
+    performances: () => http<PerformanceWithMatchDto[]>('/api/players/me/performances'),
+    /** Propone corregir o crear su línea del acta de un partido; la decide su club o su cuerpo técnico. */
+    suggest: (body: SuggestPerformanceRequest) => http<SuggestionDto>('/api/players/me/suggestions', { method: 'POST', body }),
+    suggestions: () => http<SuggestionDto[]>('/api/players/me/suggestions'),
+  },
+
+  /** Técnicos: su perfil (lo ve cualquier cuenta con sesión), su foto y los códigos de acceso que les entrega su club. */
+  coaches: {
+    redeem: (accessCode: string) => http<CoachDto>('/api/coaches/me/appointments/redeem', { method: 'POST', body: { accessCode } }),
+    profile: (coachId: string) => http<CoachProfileDto>(`/api/coaches/${coachId}`),
+    uploadPhoto: (file: File) => {
+      const body = new FormData();
+      body.append('file', file, file.name);
+      return http<CoachDto>('/api/coaches/me/photo', { method: 'PUT', body });
+    },
+    deletePhoto: () => http<CoachDto>('/api/coaches/me/photo', { method: 'DELETE' }),
+  },
+
+  /** Clubes: sus equipos y los nombramientos de sus técnicos. */
+  clubs: {
+    catalog: (search?: string) => http<ClubCatalogDto[]>(`/api/clubs/catalog${search ? `?search=${encodeURIComponent(search)}` : ''}`, { cacheMs: REFERENCE_CACHE_MS }),
+    me: () => http<ClubDto>('/api/clubs/me'),
+    addTeam: (teamId: string) => http<ClubDto>('/api/clubs/me/teams', { method: 'POST', body: { teamId } }),
+    removeTeam: (teamId: string) => http<ClubDto>(`/api/clubs/me/teams/${teamId}`, { method: 'DELETE' }),
+    /** Plantilla del equipo en la temporada del partido (o en la que se está viendo); la crea si no existe. */
+    openSquad: (teamId: string, matchId?: string) =>
+      http<ClubSquadDto>(`/api/clubs/me/teams/${teamId}/squad`, { method: 'POST', body: { matchId: matchId ?? null } }),
+    /** Medidas del terreno de juego (metros); los dos a null para quitarlas. Las usa el analizador de vídeo. */
+    setTeamPitch: (teamId: string, lengthM: number | null, widthM: number | null) =>
+      http<TeamProfileDto>(`/api/clubs/me/teams/${teamId}/pitch`, { method: 'PUT', body: { lengthM, widthM } }),
+    addRosterEntry: (teamId: string, body: RosterEntryRequest) => http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster`, { method: 'POST', body }),
+    updateRosterEntry: (teamId: string, entryId: string, body: RosterEntryRequest) =>
+      http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster/${entryId}`, { method: 'PUT', body }),
+    removeRosterEntry: (teamId: string, entryId: string) => http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster/${entryId}`, { method: 'DELETE' }),
+    rosterEntry: (teamId: string, entryId: string) => http<RosterEntryDetailDto>(`/api/clubs/me/teams/${teamId}/roster/${entryId}`),
+    uploadRosterPhoto: (teamId: string, entryId: string, file: File) => {
+      const body = new FormData();
+      body.append('file', file);
+      return http<RosterEntryDto[]>(`/api/clubs/me/teams/${teamId}/roster/${entryId}/photo`, { method: 'PUT', body });
+    },
+    uploadTeamCrest: (teamId: string, file: File) => {
+      const body = new FormData();
+      body.append('file', file);
+      return http<TeamCrestImportDto>(`/api/clubs/me/teams/${teamId}/crest`, { method: 'PUT', body });
+    },
+    createAppointment: (body: CreateAppointmentRequest) => http<AppointmentDto>('/api/clubs/me/appointments', { method: 'POST', body }),
+    updateAppointment: (appointmentId: string, validUntil: string) =>
+      http<AppointmentDto>(`/api/clubs/me/appointments/${appointmentId}`, { method: 'PUT', body: { validUntil } }),
+    revokeAppointment: (appointmentId: string) => http<AppointmentDto>(`/api/clubs/me/appointments/${appointmentId}`, { method: 'DELETE' }),
+  },
+
+  /** Gestión de plantillas por el cuerpo técnico (las lecturas también valen para jugadores vinculados y plantillas públicas). */
+  squads: {
+    mine: () => http<SquadSummaryDto[]>('/api/squads/mine'),
+    get: (squadId: string) => http<SquadDetailDto>(`/api/squads/${squadId}`),
+    addPlayer: (squadId: string, body: SquadPlayerRequest) =>
+      http<SquadPlayerDto>(`/api/squads/${squadId}/players`, { method: 'POST', body }),
+    updatePlayer: (squadId: string, squadPlayerId: string, body: SquadPlayerRequest) =>
+      http<SquadPlayerDto>(`/api/squads/${squadId}/players/${squadPlayerId}`, { method: 'PUT', body }),
+    removePlayer: (squadId: string, squadPlayerId: string) =>
+      http<SquadPlayerDto>(`/api/squads/${squadId}/players/${squadPlayerId}`, { method: 'DELETE' }),
+    importRoster: (squadId: string) => http<SquadDetailDto>(`/api/squads/${squadId}/players/import`, { method: 'POST' }),
+    setVisibility: (squadId: string, visibility: SquadVisibility) =>
+      http<SquadDetailDto>(`/api/squads/${squadId}/visibility`, { method: 'PUT', body: { visibility } }),
+    generatePlayerInviteCode: (squadId: string, squadPlayerId: string) =>
+      http<SquadDetailDto>(`/api/squads/${squadId}/players/${squadPlayerId}/invite-code`, { method: 'POST' }),
+    matches: (squadId: string) => http<SquadMatchDto[]>(`/api/squads/${squadId}/matches`),
+    sheet: (squadId: string, matchId: string) => http<MatchSheetDto>(`/api/squads/${squadId}/matches/${matchId}/sheet`),
+    recordSheet: (squadId: string, matchId: string, entries: MatchSheetEntryInput[]) =>
+      http<MatchSheetDto>(`/api/squads/${squadId}/matches/${matchId}/sheet`, { method: 'PUT', body: { entries } }),
+    /** Propuesta de acta interna que sale del vídeo del partido (estado del análisis, calidad, equipos y jugadores seguidos). */
+    videoAnalysis: (squadId: string, matchId: string, silent = false) =>
+      http<MatchVideoAnalysisDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis`, { silent }),
+    /** Analiza (o vuelve a analizar) el vídeo indicado, o todos los de la plantilla en el partido. */
+    requestVideoAnalysis: (squadId: string, matchId: string, videoId?: string) =>
+      http<MatchVideoAnalysisDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis`, { method: 'POST', body: { videoId: videoId ?? null } }),
+    /** Vuelca al acta lo aceptado; 409 (video_analysis.overwrite) si pisa datos y no va confirmado. */
+    applyVideoAnalysis: (squadId: string, matchId: string, body: ApplyVideoAnalysisRequest) =>
+      http<ApplyVideoAnalysisResultDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis/apply`, { method: 'POST', body }),
+    /** Compara con el acta guardada; las descargas pendientes las gestiona el backend. */
+    compareSheet: (squadId: string, matchId: string) =>
+      http<SheetComparisonDto>(`/api/squads/${squadId}/matches/${matchId}/sheet/comparison`),
+    stats: (squadId: string) => http<SquadStatsDto>(`/api/squads/${squadId}/stats`, { cacheMs: SQUAD_READ_CACHE_MS }),
+    seasonTable: (squadId: string) => http<SquadSeasonTableDto>(`/api/squads/${squadId}/season-table`, { cacheMs: SQUAD_READ_CACHE_MS }),
+    suggestions: (squadId: string) => http<SuggestionDto[]>(`/api/squads/${squadId}/suggestions`),
+    resolveSuggestion: (squadId: string, suggestionId: string, body: ResolveSuggestionRequest) =>
+      http<SuggestionDto[]>(`/api/squads/${squadId}/suggestions/${suggestionId}/resolve`, { method: 'POST', body }),
+    playerProfile: (squadId: string, squadPlayerId: string) =>
+      http<SquadPlayerProfileDto>(`/api/squads/${squadId}/players/${squadPlayerId}/profile`),
+    timeline: (squadId: string) => http<SquadTimelineDto>(`/api/squads/${squadId}/timeline`, { cacheMs: SQUAD_READ_CACHE_MS }),
+    injuryTypes: () => http<InjuryTypeDto[]>('/api/squads/injury-types', { cacheMs: 60 * 60_000 }),
+    injuries: (squadId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries`),
+    recordInjury: (squadId: string, body: InjuryRequest) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries`, { method: 'POST', body }),
+    updateInjury: (squadId: string, injuryId: string, body: InjuryRequest) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'PUT', body }),
+    closeInjury: (squadId: string, injuryId: string, returnedOn: string | null) =>
+      http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/close`, { method: 'POST', body: { returnedOn } }),
+    reopenInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/reopen`, { method: 'POST' }),
+    deleteInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'DELETE' }),
+  },
+
+  /**
+   * Latido de la sesión (la lista de gente en sesión de la administración): la página en la que está la cuenta. Con
+   * `end` y el token de la sesión que se cierra, desaparece de la lista al momento.
+   */
+  presence: {
+    ping: (path: string) => http<void>('/api/presence', { method: 'POST', body: { path }, silent: true, keepCache: true }),
+    end: (token: string) => http<void>('/api/presence', { method: 'DELETE', token, silent: true, keepCache: true }),
+  },
+
+  /** Buscador de toda la app (ligas, equipos, clubes, jugadores, partidos y tus plantillas); solo con sesión. */
+  search: {
+    query: (q: string, type: SearchType | null = null, limit = 6) =>
+      http<SearchResultsDto>(`/api/search?q=${encodeURIComponent(q)}&limit=${limit}${type ? `&type=${type}` : ''}`, { silent: true, cacheMs: 30_000 }),
+  },
+
+  /** Árbitros y notas de los equipos (solo clubes y cuerpos técnicos con licencia). */
+  referees: {
+    // Públicas: van sin token. Los árbitros se buscan siempre dentro de una categoría.
+    categories: () => http<RefereeCategoryDto[]>('/api/referees/categories', { anonymous: true }),
+    category: (category: string, filter: { duty?: OfficialDuty; search?: string; sort?: RefereeSort; order?: SortOrder } = {}) => {
+      const query = new URLSearchParams(Object.entries(filter).filter((entry): entry is [string, string] => !!entry[1])).toString();
+      return http<RefereeCategoryListDto>(`/api/referees/categories/${encodeURIComponent(category)}${query ? `?${query}` : ''}`, { anonymous: true });
+    },
+    get: (refereeId: string) => http<RefereeDetailDto>(`/api/referees/${refereeId}`, { anonymous: true }),
+    pending: () => http<PendingRefereeRatingDto[]>('/api/referees/pending', { silent: true }),
+    checkComment: (text: string) => http<CommentCheckDto>('/api/referees/comments/check', { method: 'POST', body: { text }, silent: true }),
+    matchOfficials: (matchId: string) => http<MatchOfficialsDto>(`/api/matches/${matchId}/officials`),
+    rate: (matchId: string, refereeId: string, body: { score: number; comment: string | null; teamId?: string | null; confirmed: true }) =>
+      http<MatchOfficialsDto>(`/api/matches/${matchId}/officials/${refereeId}/rating`, { method: 'PUT', body }),
+  },
+
+  /** Avisos de la campanita del club (solo cuentas de club). */
+  /** Campanita de cualquier cuenta: club (licencia, solicitudes), jugador (convocatorias) y cuerpo técnico (bajas y ausencias). */
+  alerts: {
+    mine: () => http<ClubAlertsDto>('/api/alerts', { silent: true }),
+    read: (alertId: string) => http<ClubAlertsDto>(`/api/alerts/${alertId}/read`, { method: 'POST', silent: true }),
+    readAll: () => http<ClubAlertsDto>('/api/alerts/read', { method: 'POST', silent: true }),
+  },
+
+  /** Preparación semanal del cuerpo técnico: biblioteca de ejercicios, entrenamientos con asistencia y convocatorias. */
+  trainings: {
+    catalog: () => http<TrainingCatalogDto>('/api/trainings/catalog', { cacheMs: REFERENCE_CACHE_MS }),
+    exercises: (squadId: string) => http<ExerciseDto[]>(`/api/squads/${squadId}/exercises`),
+    createExercise: (squadId: string, body: ExerciseRequest) => http<ExerciseDto[]>(`/api/squads/${squadId}/exercises`, { method: 'POST', body }),
+    updateExercise: (squadId: string, exerciseId: string, body: ExerciseRequest) =>
+      http<ExerciseDto[]>(`/api/squads/${squadId}/exercises/${exerciseId}`, { method: 'PUT', body }),
+    deleteExercise: (squadId: string, exerciseId: string) => http<ExerciseDto[]>(`/api/squads/${squadId}/exercises/${exerciseId}`, { method: 'DELETE' }),
+    /** Sesiones entre dos días (YYYY-MM-DD, ambos incluidos). */
+    list: (squadId: string, from: string, to: string) => http<TrainingSummaryDto[]>(`/api/squads/${squadId}/trainings?from=${from}&to=${to}`),
+    get: (squadId: string, sessionId: string) => http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}`),
+    plan: (squadId: string, body: TrainingRequest) => http<TrainingSummaryDto[]>(`/api/squads/${squadId}/trainings`, { method: 'POST', body }),
+    update: (squadId: string, sessionId: string, body: TrainingRequest) => http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}`, { method: 'PUT', body }),
+    setItems: (squadId: string, sessionId: string, items: TrainingItemInput[]) =>
+      http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}/items`, { method: 'PUT', body: { items } }),
+    setAttendance: (squadId: string, sessionId: string, entries: AttendanceInput[]) =>
+      http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}/attendance`, { method: 'PUT', body: { entries } }),
+    remove: (squadId: string, sessionId: string, series = false) =>
+      http<boolean>(`/api/squads/${squadId}/trainings/${sessionId}${series ? '?series=true' : ''}`, { method: 'DELETE' }),
+    /** Jugadores de prueba: sin ficha, se apuntan a las sesiones a las que vienen; con ficha pasan a la plantilla. */
+    addTrialToTraining: (squadId: string, sessionId: string, body: TrainingTrialPlayerRequest) =>
+      http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}/trial-players`, { method: 'POST', body }),
+    removeTrialFromTraining: (squadId: string, sessionId: string, trialPlayerId: string) =>
+      http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}/trial-players/${trialPlayerId}`, { method: 'DELETE' }),
+    trialPlayers: (squadId: string) => http<TrialPlayerDto[]>(`/api/squads/${squadId}/trial-players`),
+    createTrialPlayer: (squadId: string, body: TrialPlayerRequest) => http<TrialPlayerDto>(`/api/squads/${squadId}/trial-players`, { method: 'POST', body }),
+    updateTrialPlayer: (squadId: string, trialPlayerId: string, body: TrialPlayerRequest) =>
+      http<TrialPlayerDto>(`/api/squads/${squadId}/trial-players/${trialPlayerId}`, { method: 'PUT', body }),
+    deleteTrialPlayer: (squadId: string, trialPlayerId: string) => http<boolean>(`/api/squads/${squadId}/trial-players/${trialPlayerId}`, { method: 'DELETE' }),
+    promoteTrialPlayer: (squadId: string, trialPlayerId: string, body: PromoteTrialPlayerRequest) =>
+      http<SquadPlayerDto>(`/api/squads/${squadId}/trial-players/${trialPlayerId}/promote`, { method: 'POST', body }),
+    callUps: (squadId: string) => http<CallUpSummaryDto[]>(`/api/squads/${squadId}/callups`),
+    callUp: (squadId: string, matchId: string) => http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup`),
+    saveCallUp: (squadId: string, matchId: string, body: CallUpRequest) =>
+      http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup`, { method: 'PUT', body }),
+    /** Lado del jugador. */
+    mine: () => http<MyTrainingDto[]>('/api/players/me/trainings'),
+    reportAbsence: (sessionId: string, willMiss: boolean, reason: string | null) =>
+      http<TrainingSessionDto>(`/api/players/me/trainings/${sessionId}/absence`, { method: 'PUT', body: { willMiss, reason } }),
+    myCallUps: () => http<MyCallUpDto[]>('/api/players/me/callups'),
+    respondCallUp: (callUpId: string, response: CallUpResponse) =>
+      http<MyCallUpDto>(`/api/players/me/callups/${callUpId}/response`, { method: 'PUT', body: { response } }),
+  },
+
+  /** Licencia del club (primer equipo y filiales): estado de la cuenta, la licencia del club y pago (simulado de momento). */
+  licensing: {
+    status: () => http<LicensingStatusDto>('/api/licensing/status', { silent: true }),
+    club: () => http<ClubLicenseDto>('/api/licensing/club'),
+    /** Precios de la licencia de club y de cada técnico (público). */
+    plans: () => http<LicensingCatalogDto>('/api/licensing/plans', { silent: true }),
+    /** Contratar la licencia de club, con los técnicos que se quieran ya (0 = solo el club). */
+    beginCheckout: (interval: BillingInterval, staffSeats: number) =>
+      http<LicenseCheckoutDto>('/api/licensing/club/checkout', { method: 'POST', body: { interval, staffSeats } }),
+    checkout: (sessionId: string) => http<LicenseCheckoutDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}`),
+    /** Pasarela simulada: el resultado de la tarjeta de prueba (nunca se envían los datos de la tarjeta). */
+    simulatePayment: (sessionId: string, outcome: SimulatedPaymentOutcome) =>
+      http<SimulatedPaymentDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}/simulate`, { method: 'POST', body: { outcome } }),
+    confirm: (sessionId: string) => http<ClubLicenseDto>(`/api/licensing/checkout/${encodeURIComponent(sessionId)}/confirm`, { method: 'POST' }),
+    /** Facturación de la próxima renovación (durante la prueba, ya). */
+    changeRenewal: (interval: BillingInterval) =>
+      http<ClubLicenseDto>('/api/licensing/club/renewal', { method: 'PUT', body: { interval } }),
+    /** Licencias de técnico del club: las que se añaden valen ya (cobro proporcional); las que se quitan, al renovar. */
+    changeStaffSeats: (staffSeats: number) =>
+      http<ClubLicenseDto>('/api/licensing/club/staff-seats', { method: 'PUT', body: { staffSeats } }),
+    cancelRenewal: () => http<ClubLicenseDto>('/api/licensing/club/renewal/cancel', { method: 'POST' }),
+    resumeRenewal: () => http<ClubLicenseDto>('/api/licensing/club/renewal/resume', { method: 'POST' }),
+  },
+
+  competitions: {
+    list: () => http<CompetitionDto[]>('/api/competitions', { cacheMs: REFERENCE_CACHE_MS }),
+    /** Partidos de una jornada; sin número, la jornada en curso o la próxima. */
+    matchday: (competitionId: string, matchday?: number | null) =>
+      http<CompetitionMatchdayDto>(`/api/competitions/${competitionId}/matchdays/${matchday ?? 'current'}`),
   },
   teams: {
-    list: () => http<TeamSummaryDto[]>('/api/teams'),
+    list: (competitionId: string) => http<TeamSummaryDto[]>(`/api/teams?competitionId=${encodeURIComponent(competitionId)}`),
+    /** Ficha de un jugador (con sesión): la básica siempre; la completa si es de tu club o la ha hecho pública. */
+    playerCard: (teamId: string, entryId: string) => http<PlayerCardDto>(`/api/teams/${teamId}/roster/${entryId}`),
     get: (teamId: string) => http<TeamDetailDto>(`/api/teams/${teamId}`),
     matches: (teamId: string) => http<MatchDto[]>(`/api/teams/${teamId}/matches`),
   },
   matches: {
     get: (matchId: string) => http<MatchDetailDto>(`/api/matches/${matchId}`),
-    logPerformance: (matchId: string, body: PerformanceStats) =>
-      http<PerformanceDto>(`/api/matches/${matchId}/performance`, { method: 'PUT', body }),
+    /** Acta pública del partido, de la federación (o por qué aún no está). */
+    officialSheet: (matchId: string) =>
+      http<OfficialSheetDto>(`/api/matches/${matchId}/official-sheet`),
+    /** silent: sondeo mientras un vídeo se comprime, sin encender la barra de carga. */
+    videos: (matchId: string, silent = false) => http<MatchVideoDto[]>(`/api/matches/${matchId}/videos`, { silent }),
+    /** Previa con probabilidades y análisis del rival (solo cuerpo técnico). */
+    preview: (matchId: string) => http<MatchPreviewDto>(`/api/matches/${matchId}/preview`),
   },
-  performances: {
-    mine: () => http<PerformanceWithMatchDto[]>('/api/performances/me'),
+  /** Servicio de vídeo (rutas /media): subida, tickets, reproducción, descarga y borrado; la lista de vídeos de un partido la da la API. */
+  videos: {
+    upload: (squadId: string, matchId: string, file: File, title: string | null, part: VideoPart = 'Full') => {
+      const body = new FormData();
+      body.append('file', file, file.name);
+      body.append('part', part);
+      if (title) body.append('title', title);
+      return http<MatchVideoDto>(`/media/squads/${squadId}/matches/${matchId}/video`, { method: 'POST', body });
+    },
+    /** Subida por trozos: beginUpload → uploadVideoChunk (api/videoUpload.ts) en orden → completeUpload. */
+    beginUpload: (squadId: string, matchId: string, body: BeginVideoUploadRequest) =>
+      http<VideoUploadDto>(`/media/squads/${squadId}/matches/${matchId}/video/uploads`, { method: 'POST', body }),
+    uploadSession: (squadId: string, uploadId: string) => http<VideoUploadDto>(`/media/squads/${squadId}/video-uploads/${uploadId}`),
+    completeUpload: (squadId: string, uploadId: string) => http<MatchVideoDto>(`/media/squads/${squadId}/video-uploads/${uploadId}/complete`, { method: 'POST' }),
+    cancelUpload: (squadId: string, uploadId: string) => http<boolean>(`/media/squads/${squadId}/video-uploads/${uploadId}`, { method: 'DELETE' }),
+    ticket: (videoId: string) => http<VideoTicketDto>(`/media/videos/${videoId}/ticket`, { method: 'POST' }),
+    /** Ticket para descargar el archivo: solo el club, el cuerpo técnico o un pase con descarga. */
+    downloadTicket: (videoId: string) => http<VideoTicketDto>(`/media/videos/${videoId}/download-ticket`, { method: 'POST' }),
+    remove: (videoId: string) => http<boolean>(`/media/videos/${videoId}`, { method: 'DELETE' }),
+    /** URL que se pasa al reproductor (el ticket sustituye al JWT). */
+    streamUrl: (ticket: VideoTicketDto) => `${mediaBaseUrl}/media/videos/${ticket.videoId}/stream?ticket=${encodeURIComponent(ticket.ticket)}`,
+    downloadUrl: (ticket: VideoTicketDto) => `${mediaBaseUrl}/media/videos/${ticket.videoId}/download?ticket=${encodeURIComponent(ticket.ticket)}`,
+  },
+  /** Pases por partido: lo único que abre el acta interna y el vídeo a quien no es de la plantilla. */
+  passes: {
+    forMatch: (squadId: string, matchId: string) => http<MatchPassesDto>(`/api/squads/${squadId}/matches/${matchId}/passes`),
+    create: (squadId: string, matchId: string, body: CreateMatchPassRequest) =>
+      http<MatchPassDto>(`/api/squads/${squadId}/matches/${matchId}/passes`, { method: 'POST', body }),
+    revoke: (squadId: string, matchId: string, passId: string) =>
+      http<MatchPassesDto>(`/api/squads/${squadId}/matches/${matchId}/passes/${passId}`, { method: 'DELETE' }),
+    mine: () => http<MyPassesDto>('/api/passes/mine'),
+    preview: (code: string) => http<PassPreviewDto>(`/api/passes/${encodeURIComponent(code)}`),
+    redeem: (code: string) => http<MyPassDto>(`/api/passes/${encodeURIComponent(code)}/redeem`, { method: 'POST' }),
+    request: (body: PassAccessRequest) => http<MyPassRequestDto>('/api/passes/requests', { method: 'POST', body }),
+    cancelRequest: (requestId: string) => http<boolean>(`/api/passes/requests/${requestId}`, { method: 'DELETE' }),
+    clubRequests: () => http<ClubPassRequestDto[]>('/api/clubs/me/passes/requests'),
+    approve: (requestId: string, body: ApprovePassRequest) =>
+      http<ClubPassRequestDto>(`/api/clubs/me/passes/requests/${requestId}/approve`, { method: 'POST', body }),
+    reject: (requestId: string) => http<ClubPassRequestDto>(`/api/clubs/me/passes/requests/${requestId}/reject`, { method: 'POST' }),
+    prices: () => http<ClubPassPricesDto>('/api/clubs/me/passes/prices'),
+    setPrices: (sheetPriceCents: number, videoPriceCents: number) =>
+      http<ClubPassPricesDto>('/api/clubs/me/passes/prices', { method: 'PUT', body: { sheetPriceCents, videoPriceCents } }),
+    setMatchPrice: (squadId: string, matchId: string, sheetPriceCents: number | null, videoPriceCents: number | null) =>
+      http<MatchPassPriceDto>(`/api/clubs/me/passes/prices/squads/${squadId}/matches/${matchId}`, { method: 'PUT', body: { sheetPriceCents, videoPriceCents } }),
+    earnings: () => http<PassEarningsDto>('/api/clubs/me/passes/earnings'),
   },
   stats: {
-    dashboard: () => http<PlayerDashboardDto>('/api/stats/dashboard'),
-    leagueTable: () => http<LeagueTableDto>('/api/league/table'),
-  },
-  admin: {
-    sync: () => http<SyncResultDto>('/api/admin/sync', { method: 'POST' }),
+    // Previsor de resultados: público, va sin token.
+    prediction: (competitionId: string, matchday?: number | null) =>
+      http<LeaguePredictionDto>(`/api/league/predictions?competitionId=${competitionId}${matchday ? `&matchday=${matchday}` : ''}`, { anonymous: true }),
+    predictionEvolution: (competitionId: string) =>
+      http<LeaguePredictionEvolutionDto>(`/api/league/predictions/evolution?competitionId=${competitionId}`, { anonymous: true, silent: true }),
+    leagueTable: (competitionId?: string | null) =>
+      http<LeagueTableDto>(competitionId ? `/api/league/table?competitionId=${encodeURIComponent(competitionId)}` : '/api/league/table'),
   },
 };

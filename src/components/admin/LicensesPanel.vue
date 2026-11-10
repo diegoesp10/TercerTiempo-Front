@@ -1,0 +1,320 @@
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue';
+import { adminApi } from '@/api/admin';
+import { errorMessage } from '@/api/http';
+import PaymentEventList from '@/components/licensing/PaymentEventList.vue';
+import Alert from '@/components/ui/Alert.vue';
+import Badge from '@/components/ui/Badge.vue';
+import Spinner from '@/components/ui/Spinner.vue';
+import type { AdminLicenseDto, AdminLicenseState, LicensesOverviewDto, PaymentEventDto, SimulatedLicenseEvent } from '@/types/api';
+import { billingIntervalLabels, formatDate, formatKickoff, formatMoney } from '@/utils/format';
+import { subscriptionLabel } from '@/components/licensing/plans';
+
+/**
+ * Licencias y cobros de todos los clubes para el administrador: quién está en prueba, quién paga, quién debe y cuánto,
+ * lo cobrado y el ingreso mensual recurrente. Sin licencia vigente el equipo no tiene acceso a sus datos privados.
+ * También la cola de avisos de la pasarela y, con la simulada, los avisos que mandaría Stripe en una renovación.
+ */
+const props = defineProps<{ token: string }>();
+const emit = defineEmits<{ unauthorized: [] }>();
+
+const data = ref<LicensesOverviewDto | null>(null);
+const loading = ref(false);
+const error = ref<string | null>(null);
+const filter = ref<'all' | 'owes' | 'trial' | 'paying' | 'inactive'>('all');
+
+const stateLabels: Record<AdminLicenseState, string> = {
+  trial: 'En prueba',
+  'trial-plan': 'En prueba, contratada',
+  active: 'Al día',
+  grace: 'Cobro pendiente',
+  unpaid: 'Impagada',
+  cancelled: 'Cancelada',
+  'trial-ended': 'Prueba acabada',
+};
+const stateTone: Record<AdminLicenseState, 'green' | 'amber' | 'red' | 'blue' | 'slate'> = {
+  trial: 'blue',
+  'trial-plan': 'blue',
+  active: 'green',
+  grace: 'amber',
+  unpaid: 'red',
+  cancelled: 'slate',
+  'trial-ended': 'slate',
+};
+const paymentStatusLabels = { Pending: 'Pendiente', Paid: 'Cobrado', Cancelled: 'Cancelado', Failed: 'Rechazado' } as const;
+const paymentTone = { Pending: 'amber', Paid: 'green', Cancelled: 'slate', Failed: 'red' } as const;
+
+const events = ref<PaymentEventDto[]>([]);
+const retrying = ref<string | null>(null);
+const simulating = ref<string | null>(null);
+const notice = ref<string | null>(null);
+const isMock = computed(() => data.value?.provider === 'mock');
+
+const simulations: { event: SimulatedLicenseEvent; label: string; tone: string }[] = [
+  { event: 'RenewalPaid', label: 'Renovación cobrada', tone: 'text-emerald-600' },
+  { event: 'RenewalFailed', label: 'Cobro rechazado', tone: 'text-amber-600' },
+  { event: 'SubscriptionDeleted', label: 'Fin de suscripción', tone: 'text-red-600' },
+];
+const canSimulate = (row: AdminLicenseDto) => isMock.value && row.contracted && row.provider === 'mock';
+
+// Buscar por el nombre del club o de cualquiera de sus equipos, sin distinguir tildes ni mayúsculas.
+const search = ref('');
+const normalize = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const matchesSearch = (row: AdminLicenseDto) => {
+  const needle = normalize(search.value.trim());
+  return !needle || [row.clubName, ...row.teamNames].some((name) => normalize(name).includes(needle));
+};
+
+const filtered = computed(() => {
+  const rows = (data.value?.licenses ?? []).filter(matchesSearch);
+  switch (filter.value) {
+    case 'owes': return rows.filter((r) => r.owedCents > 0);
+    case 'trial': return rows.filter((r) => r.state === 'trial' || r.state === 'trial-plan');
+    case 'paying': return rows.filter((r) => r.state === 'active');
+    case 'inactive': return rows.filter((r) => !r.hasAccess);
+    default: return rows;
+  }
+});
+
+const money = (cents: number) => formatMoney(cents, data.value?.currency ?? 'EUR');
+
+async function load() {
+  loading.value = true;
+  try {
+    [data.value, events.value] = await Promise.all([adminApi.licenses(props.token), adminApi.paymentEvents(props.token)]);
+    error.value = null;
+  } catch (e) {
+    if ((e as { status?: number }).status === 401) emit('unauthorized');
+    else error.value = errorMessage(e);
+  } finally {
+    loading.value = false;
+  }
+}
+
+function fail(e: unknown) {
+  if ((e as { status?: number }).status === 401) emit('unauthorized');
+  else error.value = errorMessage(e);
+}
+
+// Tras dejar un aviso en la cola, se espera un momento a que lo aplique antes de recargar.
+const settle = () => new Promise((resolve) => setTimeout(resolve, 1200));
+
+async function simulate(row: AdminLicenseDto, event: SimulatedLicenseEvent) {
+  simulating.value = `${row.id}:${event}`;
+  notice.value = null;
+  try {
+    const { summary } = await adminApi.simulateLicenseEvent(props.token, row.id, event);
+    await settle();
+    await load();
+    notice.value = `${row.clubName}: ${summary}`;
+  } catch (e) {
+    fail(e);
+  } finally {
+    simulating.value = null;
+  }
+}
+
+async function retry(id: string) {
+  retrying.value = id;
+  try {
+    await adminApi.retryPaymentEvent(props.token, id);
+    await settle();
+    await load();
+  } catch (e) {
+    fail(e);
+  } finally {
+    retrying.value = null;
+  }
+}
+
+onMounted(load);
+defineExpose({ load });
+</script>
+
+<template>
+  <section class="space-y-6">
+    <Alert v-if="error" kind="error">{{ error }}</Alert>
+    <Alert v-if="notice" kind="success">{{ notice }}</Alert>
+    <Spinner v-if="loading && !data" />
+
+    <template v-if="data">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="card">
+          <p class="text-xs text-slate-500">Ingreso mensual recurrente</p>
+          <p class="mt-1 text-2xl font-bold text-slate-900">{{ money(data.summary.monthlyRecurringCents) }}</p>
+          <p class="text-xs text-slate-500">Suscripciones al día; las anuales, divididas entre 12.</p>
+        </div>
+        <div class="card">
+          <p class="text-xs text-slate-500">Cobrado en total</p>
+          <p class="mt-1 text-2xl font-bold text-slate-900">{{ money(data.summary.collectedCents) }}</p>
+          <p class="text-xs text-slate-500">Pagos confirmados por la pasarela.</p>
+        </div>
+        <div class="card">
+          <p class="text-xs text-slate-500">Pendiente de cobro</p>
+          <p class="mt-1 text-2xl font-bold" :class="data.summary.owedCents > 0 ? 'text-red-600' : 'text-slate-900'">{{ money(data.summary.owedCents) }}</p>
+          <p class="text-xs text-slate-500">{{ data.summary.grace }} en días de cortesía · {{ data.summary.unpaid }} impagadas</p>
+        </div>
+        <div class="card">
+          <p class="text-xs text-slate-500">Equipos</p>
+          <p class="mt-1 text-2xl font-bold text-slate-900">{{ data.summary.total }}</p>
+          <p class="text-xs text-slate-500">
+            {{ data.summary.paying }} al día · {{ data.summary.trial }} en prueba · {{ data.summary.inactive }} sin acceso
+            <template v-if="data.summary.pendingCheckouts"> · {{ data.summary.pendingCheckouts }} pagos sin completar</template>
+          </p>
+        </div>
+      </div>
+
+      <section class="card">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="font-semibold text-slate-900">Licencias por equipo</h2>
+            <p class="text-xs text-slate-500">Sin licencia vigente, nadie del club (club, cuerpo técnico ni jugadores) accede a los datos del equipo; el club solo puede pagar.</p>
+            <p v-if="isMock" class="mt-1 text-xs text-amber-600">Pasarela simulada: en cada licencia con suscripción puedes lanzar los avisos que mandaría Stripe.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <label class="relative w-full sm:w-56">
+              <span class="sr-only">Buscar club o equipo</span>
+              <Icon icon="magnifying-glass" class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <input v-model="search" type="search" class="input w-full py-1.5 pl-9 text-sm" placeholder="Buscar club o equipo" />
+            </label>
+            <button
+              v-for="option in ([['all', 'Todas'], ['owes', 'Deben'], ['trial', 'En prueba'], ['paying', 'Al día'], ['inactive', 'Sin acceso']] as const)"
+              :key="option[0]"
+              type="button"
+              class="rounded-full border px-3 py-1 text-xs"
+              :class="filter === option[0] ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600'"
+              @click="filter = option[0]"
+            >{{ option[1] }}</button>
+            <button type="button" class="btn-ghost text-xs" v-busy="loading" :disabled="loading" @click="load"><Icon icon="rotate-right" class="h-3 w-3" /></button>
+          </div>
+        </div>
+
+        <p v-if="!filtered.length" class="text-sm text-slate-500">
+          {{ search.trim() ? `Ninguna licencia con «${search.trim()}» en este filtro.` : 'No hay licencias en este filtro.' }}
+        </p>
+        <div v-else class="overflow-x-auto rounded-lg border border-slate-200">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="px-3 py-2 text-left">Club · equipo</th>
+                <th class="px-3 py-2 text-left">Estado</th>
+                <th class="px-3 py-2 text-left">Licencia</th>
+                <th class="px-3 py-2 text-left">Pagada hasta</th>
+                <th class="px-3 py-2 text-left">Próximo cobro</th>
+                <th class="px-3 py-2 text-right">Debe</th>
+                <th class="px-3 py-2 text-right">Cobrado</th>
+                <th v-if="isMock" class="px-3 py-2 text-left">Simular</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="row in filtered" :key="row.id">
+                <td class="px-3 py-2">
+                  <span class="font-medium text-slate-800">{{ row.clubName }}</span>
+                  <span class="block text-xs text-slate-500">{{ row.teamNames.length === 1 ? row.teamNames[0] : `${row.teamNames.length} equipos: ${row.teamNames.join(', ')}` }}</span>
+                </td>
+                <td class="px-3 py-2">
+                  <Badge :tone="stateTone[row.state]">{{ stateLabels[row.state] }}</Badge>
+                  <span v-if="!row.hasAccess" class="block text-xs text-red-600">Sin acceso</span>
+                </td>
+                <td class="px-3 py-2 text-xs whitespace-nowrap text-slate-700">
+                  <template v-if="row.contracted">{{ subscriptionLabel(row.staffSeats) }} · {{ row.interval ? billingIntervalLabels[row.interval] : '—' }}</template>
+                  <template v-else>Prueba</template>
+                  <span v-if="row.nextStaffSeats !== null || row.nextInterval" class="block text-slate-500">
+                    Pasa a {{ subscriptionLabel(row.nextStaffSeats ?? row.staffSeats) }} · {{ billingIntervalLabels[row.nextInterval ?? row.interval ?? 'Monthly'] }}
+                  </span>
+                  <span v-if="row.contracted && !row.autoRenew" class="block text-slate-500">Sin renovación</span>
+                </td>
+                <td class="px-3 py-2 text-xs whitespace-nowrap text-slate-600">
+                  {{ row.paidUntil ? formatDate(row.paidUntil) : '—' }}
+                  <span class="block text-slate-500">Prueba hasta {{ formatDate(row.trialEndsOn) }}</span>
+                </td>
+                <td class="px-3 py-2 text-xs whitespace-nowrap text-slate-600">
+                  <template v-if="row.renewsOn && row.nextChargeCents !== null">{{ formatDate(row.renewsOn) }} · {{ money(row.nextChargeCents) }}</template>
+                  <template v-else>—</template>
+                </td>
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <template v-if="row.owedCents > 0">
+                    <span class="font-semibold text-red-600">{{ money(row.owedCents) }}</span>
+                    <span v-if="row.owedSince" class="block text-xs text-slate-500">desde {{ formatDate(row.owedSince) }}</span>
+                  </template>
+                  <span v-else class="text-slate-400">—</span>
+                </td>
+                <td class="px-3 py-2 text-right text-xs whitespace-nowrap text-slate-600">
+                  {{ money(row.paidCents) }}
+                  <span v-if="row.lastPaymentAt" class="block text-slate-500">{{ formatKickoff(row.lastPaymentAt) }}</span>
+                </td>
+                <td v-if="isMock" class="px-3 py-2 text-xs">
+                  <div v-if="canSimulate(row)" class="flex flex-col items-start gap-0.5">
+                    <button
+                      v-for="option in simulations"
+                      :key="option.event"
+                      type="button"
+                      class="whitespace-nowrap font-medium hover:underline disabled:opacity-50"
+                      :class="option.tone"
+                      :disabled="!!simulating"
+                      @click="simulate(row, option.event)"
+                    >
+                      <Spinner v-if="simulating === `${row.id}:${option.event}`" class="mr-1 inline h-3 w-3" />{{ option.label }}
+                    </button>
+                  </div>
+                  <span v-else class="text-slate-400">Sin suscripción</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="mb-3 font-semibold text-slate-900">Últimos pagos</h2>
+        <p v-if="!data.payments.length" class="text-sm text-slate-500">Todavía no hay pagos.</p>
+        <div v-else class="overflow-x-auto rounded-lg border border-slate-200">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="px-3 py-2 text-left">Fecha</th>
+                <th class="px-3 py-2 text-left">Club · equipo</th>
+                <th class="px-3 py-2 text-left">Concepto</th>
+                <th class="px-3 py-2 text-left">Estado</th>
+                <th class="px-3 py-2 text-right">Importe</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="payment in data.payments" :key="payment.id">
+                <td class="px-3 py-2 text-xs whitespace-nowrap text-slate-600">{{ formatKickoff(payment.paidAt ?? payment.createdAt) }}</td>
+                <td class="px-3 py-2">
+                  <span class="text-slate-800">{{ payment.clubName }}</span>
+                </td>
+                <td class="px-3 py-2 text-xs text-slate-700">
+                  {{ payment.kind === 'Renewal' ? 'Renovación' : payment.kind === 'StaffSeats' ? 'Técnicos añadidos' : 'Alta' }} · {{ subscriptionLabel(payment.staffSeats) }} {{ billingIntervalLabels[payment.interval].toLowerCase() }}
+                  <span class="block text-slate-500">{{ payment.provider === 'mock' ? 'Pago simulado' : payment.provider }}</span>
+                </td>
+                <td class="px-3 py-2">
+                  <Badge :tone="paymentTone[payment.status]">{{ paymentStatusLabels[payment.status] }}</Badge>
+                  <span v-if="payment.failureReason" class="mt-0.5 block text-xs text-red-500">{{ payment.failureReason }}</span>
+                </td>
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  {{ money(payment.amountCents) }}
+                  <span v-if="payment.amountCents === 0 && payment.periodPriceCents > 0" class="block text-xs text-slate-500">en prueba; luego {{ money(payment.periodPriceCents) }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="font-semibold text-slate-900">Avisos de la pasarela</h2>
+          <Badge :tone="isMock ? 'amber' : 'blue'">{{ isMock ? 'Pasarela simulada' : 'Stripe' }}</Badge>
+        </div>
+        <p class="text-xs text-slate-500">
+          Cola de los webhooks (o de los eventos de la simulada, con el mismo formato): se guardan al llegar y se aplican a la licencia en orden,
+          con reintentos espaciados si algo falla. Un aviso repetido no se aplica dos veces.
+        </p>
+        <p v-if="!events.length" class="mt-3 text-sm text-slate-500">Todavía no ha llegado ningún aviso.</p>
+        <PaymentEventList v-else :events="events" admin :retrying="retrying" class="mt-2" @retry="retry" />
+      </section>
+    </template>
+  </section>
+</template>
