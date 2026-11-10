@@ -10,6 +10,7 @@ import PageHeader from '@/components/ui/PageHeader.vue';
 import Skeleton from '@/components/ui/Skeleton.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import ClubRosterEditor from '@/components/teams/ClubRosterEditor.vue';
+import TeamPitchEditor from '@/components/teams/TeamPitchEditor.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import RosterStatsSummary from '@/components/teams/RosterStatsSummary.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
@@ -18,7 +19,7 @@ import { useBackFallback } from '@/composables/useBackFallback';
 import { useAuthStore } from '@/stores/auth';
 import { useViewer } from '@/composables/useViewer';
 import { formatKickoff, levelLabels, matchDisplayStatus, positionLabels, visibilityLabels } from '@/utils/format';
-import type { MatchDto } from '@/types/api';
+import type { MatchDto, TeamProfileDto } from '@/types/api';
 import TeamName from '@/components/teams/TeamName.vue';
 
 const props = defineProps<{ teamId: string }>();
@@ -107,6 +108,14 @@ const standingFigures = computed(() => {
 });
 
 const isMyClubTeam = computed(() => auth.club?.teams.some((t) => t.teamId === props.teamId) ?? false);
+/** Medidas del terreno de juego: las apunta el club del equipo en esta ficha (las usa el analizador de vídeo). */
+const pitch = computed(() => (profile.value?.pitchLengthM && profile.value.pitchWidthM
+  ? `${profile.value.pitchLengthM.toLocaleString('es-ES')} × ${profile.value.pitchWidthM.toLocaleString('es-ES')} m`
+  : null));
+const canEditPitch = computed(() => auth.isClub && isMyClubTeam.value);
+function onPitchSaved(saved: TeamProfileDto) {
+  if (data.value) data.value = { ...data.value, profile: saved };
+}
 const linking = ref(false);
 const linkError = ref<string | null>(null);
 
@@ -155,29 +164,33 @@ async function linkToClub() {
     </div>
 
     <!-- Ficha del club según la federación: campo donde juega de local, sede y equipación -->
-    <section v-if="profile" class="card mb-6">
+    <section v-if="profile || canEditPitch" class="card mb-6">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 class="font-semibold text-slate-900">El club</h2>
           <p class="mt-1 text-sm text-slate-600">
-            {{ profile.officialName ?? data.name }}<template v-if="profile.locality"> · {{ profile.locality }}</template><template v-if="profile.province"> ({{ profile.province }})</template>
+            {{ profile?.officialName ?? data.name }}<template v-if="profile?.locality"> · {{ profile.locality }}</template><template v-if="profile?.province"> ({{ profile.province }})</template>
           </p>
         </div>
         <a v-if="data.officialUrl" :href="data.officialUrl" target="_blank" rel="noopener" class="text-xs text-accent-400 hover:underline">Ficha en la federación ↗</a>
       </div>
       <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
-        <div v-if="profile.ground">
+        <div v-if="profile?.ground || pitch || canEditPitch">
           <dt class="eyebrow">Campo (como local)</dt>
-          <dd class="mt-1 font-medium text-slate-900">
+          <dd v-if="profile?.ground" class="mt-1 font-medium text-slate-900">
             {{ profile.ground }}<span v-if="profile.groundSurface" class="font-normal text-slate-500"> · {{ profile.groundSurface }}</span>
           </dd>
           <dd v-if="groundAddress" class="text-slate-600">{{ groundAddress }}</dd>
+          <dd v-if="pitch" class="text-slate-600">Terreno de juego de {{ pitch }}</dd>
           <dd v-if="mapsUrl" class="mt-1"><a :href="mapsUrl" target="_blank" rel="noopener" class="text-accent-400 hover:underline">Cómo llegar ↗</a></dd>
+          <dd v-if="canEditPitch">
+            <TeamPitchEditor :team-id="teamId" :length-m="profile?.pitchLengthM" :width-m="profile?.pitchWidthM" @saved="onPitchSaved" />
+          </dd>
         </div>
         <div v-if="seatAddress || websiteUrl">
           <dt class="eyebrow">Sede</dt>
           <dd v-if="seatAddress" class="mt-1 text-slate-700">{{ seatAddress }}</dd>
-          <dd v-if="websiteUrl" class="mt-1"><a :href="websiteUrl" target="_blank" rel="noopener" class="text-accent-400 hover:underline">{{ profile.website }}</a></dd>
+          <dd v-if="websiteUrl" class="mt-1"><a :href="websiteUrl" target="_blank" rel="noopener" class="text-accent-400 hover:underline">{{ profile?.website }}</a></dd>
         </div>
         <div v-if="kit">
           <dt class="eyebrow">Equipación</dt>

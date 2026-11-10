@@ -135,6 +135,19 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
   }
 }
 
+/** Imagen o archivo que solo se sirve con la sesión iniciada (un <img> no puede mandar el token): devuelve el contenido. */
+export async function httpBlob(path: string): Promise<Blob> {
+  const token = useAuthStore().token ?? adminViewerToken();
+  let response: Response;
+  try {
+    response = await fetch(`${originOf(path)}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  } catch {
+    throw new ApiError(0, { title: 'Sin conexión', detail: 'No se ha podido contactar con la API. ¿Está arrancada?' });
+  }
+  if (!response.ok) throw new ApiError(response.status, { status: response.status, title: response.statusText });
+  return response.blob();
+}
+
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) return error.message;
   if (error instanceof Error) return error.message;

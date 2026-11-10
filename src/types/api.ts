@@ -796,6 +796,8 @@ export interface TeamMatchStatsInput {
   penaltyGoalsAgainst: number;
   throwInsFor: number;
   throwInsAgainst: number;
+  goalKicksFor: number;
+  goalKicksAgainst: number;
   notes: string | null;
 }
 
@@ -824,6 +826,8 @@ export interface TeamStatsAveragesDto {
   penaltyGoalsAgainst: number;
   throwInsFor: number;
   throwInsAgainst: number;
+  goalKicksFor: number;
+  goalKicksAgainst: number;
 }
 
 export interface SquadTeamStatsDto {
@@ -1057,6 +1061,9 @@ export interface TeamProfileDto {
   shirtColor: string | null;
   shortsColor: string | null;
   socksColor: string | null;
+  /** Medidas del terreno de juego en metros; las apunta el club del equipo (null si no lo ha hecho). */
+  pitchLengthM?: number | null;
+  pitchWidthM?: number | null;
 }
 
 /** Resumen de una jornada de la temporada (fechas y partidos jugados). */
@@ -1609,6 +1616,121 @@ export interface MatchVideoDto {
   height: number | null;
   /** Por qué no se pudo comprimir (solo para el club y el cuerpo técnico). */
   processingError: string | null;
+}
+
+/**
+ * Estado del análisis de un vídeo: NotRequested (el vídeo está listo pero nadie lo ha pedido), WaitingForVideo (se está
+ * comprimiendo: el análisis empieza solo al acabar), Pending (en cola), Running, Ready o Failed.
+ */
+export type VideoAnalysisState = 'NotRequested' | 'WaitingForVideo' | 'Pending' | 'Running' | 'Ready' | 'Failed';
+
+/** Datos de equipo que salen del vídeo y se aceptan uno a uno. */
+export type VideoTeamField = 'Possession' | 'Shots' | 'ShotsOnTarget' | 'Corners' | 'ThrowIns' | 'GoalKicks';
+
+export interface VideoAnalysisQualityDto {
+  frames: number;
+  /** % de fotogramas analizados con el balón a la vista. */
+  ballFramesPct: number;
+  /** % de fotogramas con el campo calibrado (sin él no salen tercios, fueras, tiros ni córners). */
+  calibratedFramesPct: number;
+  analyzedSeconds: number;
+  lowBall: boolean;
+  lowCalibration: boolean;
+  /** Medidas del campo con las que se calibró: las del club local o, si no las ha apuntado, las genéricas (120 × 70). */
+  pitchLengthM: number | null;
+  pitchWidthM: number | null;
+  genericPitch: boolean;
+}
+
+/** Uno de los dos equipos que separa el analizador por su equipación: él no sabe cuál es el del club. */
+export interface VideoAnalysisTeamDto {
+  index: number;
+  /** Color medio de la equipación (#rrggbb). */
+  color: string | null;
+  players: number;
+  possessionPct: number | null;
+  shots: number;
+  shotsOnTarget: number;
+  corners: number;
+  throwIns: number;
+  goalKicks: number;
+  goals: number;
+}
+
+export interface VideoPlayerActions {
+  shots: number;
+  shotsOnTarget: number;
+  goals: number;
+  saves: number;
+  recoveries: number;
+  ballLosses: number;
+  passesCompleted: number;
+  passesAttempted: number;
+  touches: number;
+}
+
+/** Jugador seguido por el analizador («tracklet»): se corta al perderlo de vista, así que un jugador puede tener varios. */
+export interface VideoAnalysisPlayerDto {
+  tracklet: number;
+  team: number;
+  goalkeeper: boolean;
+  /** Recorte del jugador; hay que pedirlo con la sesión iniciada. */
+  cropUrl: string | null;
+  minutesVisible: number;
+  from: string;
+  to: string;
+  distanceM: number;
+  shirtNumber: number | null;
+  proposal: VideoPlayerActions;
+  /** Ficha a la que se asignó la última vez que se volcó. */
+  squadPlayerId: string | null;
+}
+
+export interface VideoAnalysisPartDto {
+  videoId: string;
+  part: VideoPart;
+  title: string;
+  videoStatus: VideoStatus;
+  videoProgress: number;
+  /** Duración del vídeo en segundos, cuando se conoce: el análisis tarda más o menos lo mismo. */
+  durationSeconds: number | null;
+  state: VideoAnalysisState;
+  progress: number;
+  error: string | null;
+  requestedAt: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  analyzerVersion: string | null;
+  weights: string | null;
+  quality: VideoAnalysisQualityDto | null;
+  teams: VideoAnalysisTeamDto[];
+  /** Cuál de los dos equipos (0 o 1) dijo el cuerpo técnico que era el suyo la última vez que volcó. */
+  ourTeam: number | null;
+  appliedAt: string | null;
+  players: VideoAnalysisPlayerDto[];
+}
+
+export interface MatchVideoAnalysisDto {
+  /** Se pueden pedir análisis en este servidor; los atiende el analizador que esté en marcha (si no hay ninguno, esperan en cola). */
+  enabled: boolean;
+  /** Club propietario o cuerpo técnico vigente; el administrador solo lo ve. */
+  canManage: boolean;
+  videos: VideoAnalysisPartDto[];
+}
+
+export interface ApplyVideoAnalysisRequest {
+  videos: { videoId: string; ourTeam: number; players: { tracklet: number; squadPlayerId: string }[] }[];
+  teamFields: VideoTeamField[];
+  /** true para confirmar que se sobrescriben los datos del acta que el vídeo cambiaría. */
+  overwrite: boolean;
+}
+
+export interface ApplyVideoAnalysisResultDto {
+  sheet: MatchSheetDto;
+  analysis: MatchVideoAnalysisDto;
+  teamValuesWritten: number;
+  linesWritten: number;
+  playersWithoutChanges: number;
 }
 
 /** Sesión de subida por trozos (reanudable mientras no caduque). */

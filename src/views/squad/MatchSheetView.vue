@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
 import OfficialSheetPanel from '@/components/sheet/OfficialSheetPanel.vue';
 import SheetComparison from '@/components/sheet/SheetComparison.vue';
 import TeamMatchStatsCard from '@/components/sheet/TeamMatchStatsCard.vue';
+import VideoProposalPanel from '@/components/sheet/VideoProposalPanel.vue';
 import MatchPreview from '@/components/matches/MatchPreview.vue';
 import MatchVideos from '@/components/videos/MatchVideos.vue';
 import MatchPassesPanel from '@/components/passes/MatchPassesPanel.vue';
@@ -99,6 +100,12 @@ const selectTab = (id: Tab) => void router.replace({ query: { ...route.query, pa
 // Desde el vídeo (recién subido o ya en la lista): a la pestaña de pases con el formulario marcado para el vídeo.
 const passPreset = computed(() => (route.query.pase === 'video' ? 'video' : null));
 const shareVideo = () => void router.replace({ query: { ...route.query, tab: 'pases', pase: 'video' } });
+// Desde el vídeo: a la sección «Del vídeo» del acta interna, donde se pide el análisis y se vuelca la propuesta.
+async function goToVideoProposal() {
+  selectTab('interna');
+  await nextTick();
+  document.getElementById('video-proposal')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 interface Row extends MatchSheetEntryInput {
   player: SquadPlayerDto;
@@ -190,6 +197,16 @@ const rows = ref<Row[]>([]);
 watch(data, (sheet) => { if (sheet) rows.value = fromSheet(sheet); }, { immediate: true });
 
 const canEdit = computed(() => data.value?.canEdit ?? false);
+/** Lo escrito en la tabla y todavía sin guardar (volcar la propuesta del vídeo recarga el acta). */
+const unsaved = computed(() => !!data.value && canEdit.value
+  && JSON.stringify(rows.value.map(toEntry)) !== JSON.stringify(fromSheet(data.value).map(toEntry)));
+/** El vídeo ha volcado datos al acta: se enseña tal como ha quedado guardada. */
+function onVideoApplied(sheet: MatchSheetDto) {
+  data.value = sheet;
+  saved.value = false;
+  saveError.value = null;
+  lineErrors.value = [];
+}
 const teamId = computed(() => data.value?.squad.teamId ?? '');
 
 /** Acta en papel de este partido para apuntar en directo (cabecera rellena; jugadores y datos, a mano). */
@@ -384,7 +401,16 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
     </div>
 
     <div v-else-if="tab === 'video'" class="mt-6">
-      <MatchVideos :match-id="matchId" :upload-squad-id="squadId" :can-upload="canPrepare && !isAdmin" :requestable="rivalRequestable" @request="requestRival(true)" @share="shareVideo" />
+      <MatchVideos
+        :match-id="matchId"
+        :upload-squad-id="squadId"
+        :can-upload="canPrepare && !isAdmin"
+        :requestable="rivalRequestable"
+        :analyzable="canPrepare && !isAdmin && data.match.status === 'Played'"
+        @request="requestRival(true)"
+        @share="shareVideo"
+        @analyze="goToVideoProposal"
+      />
     </div>
 
     <div v-else-if="tab === 'pases'" class="mt-6">
@@ -400,6 +426,18 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
     </div>
 
     <section v-else class="mt-6">
+      <!-- Del vídeo: la propuesta del analizador, para el club, el cuerpo técnico y el administrador (que solo mira) -->
+      <VideoProposalPanel
+        v-if="canPrepare && data.match.status === 'Played'"
+        class="mb-6"
+        :squad-id="squadId"
+        :match-id="matchId"
+        :sheet="data"
+        :unsaved-sheet="unsaved"
+        @applied="onVideoApplied"
+        @go-video="selectTab('video')"
+      />
+
       <!-- Datos del equipo: lo colectivo que no trae el acta pública -->
       <TeamMatchStatsCard
         v-if="data.match.status === 'Played'"
