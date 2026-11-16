@@ -63,6 +63,24 @@ const columns = computed(() => [
     : { key: 'champion' as const, title: 'Pelean por el título', caption: 'Probabilidad de acabar campeón', icon: 'trophy', text: 'text-amber-700', bar: palette.amber, teams: top('champion') },
 ]);
 
+/**
+ * Las cuentas del favorito y las de la liga entera, cada una con su nombre: «jugados» y «por jugar» a secas mezclaban
+ * los 8 partidos de un equipo con los 89 que llevan entre todos. Los de un equipo salen de repartir el calendario
+ * (cada partido lo juegan dos).
+ */
+const progress = computed(() => {
+  const d = data.value;
+  const team = favourite.value;
+  if (!d || !team) return null;
+  const leagueTotal = d.knownMatches + d.simulatedMatches;
+  const teamTotal = Math.max(team.played, teams.value.length ? Math.round((leagueTotal * 2) / teams.value.length) : d.totalMatchdays);
+  return {
+    team: { played: team.played, total: teamTotal, left: teamTotal - team.played },
+    league: { played: d.knownMatches, total: leagueTotal, left: d.simulatedMatches },
+  };
+});
+const share = (played: number, total: number) => (grown.value && total > 0 ? `${Math.min(100, (played / total) * 100)}%` : '0%');
+
 const percent = (value: number) =>
   `${(value * 100).toLocaleString('es-ES', { maximumFractionDigits: value > 0 && value < 0.01 ? 1 : 0 })} %`;
 const width = (value: number) => (grown.value ? `${Math.max(value * 100, value > 0 ? 1.5 : 0)}%` : '0%');
@@ -118,18 +136,33 @@ const width = (value: number) => (grown.value ? `${Math.max(value * 100, value >
         <p class="mt-2 text-sm text-slate-600">
           de acabar campeón · <strong class="font-semibold text-emerald-700">{{ percent(favourite.promotion) }}</strong> de {{ promotionLabel.toLowerCase() }}
         </p>
-        <dl class="mt-6 grid grid-cols-3 gap-2 border-t border-line pt-4 text-center">
+        <dl v-if="progress" class="mt-6 space-y-4 border-t border-line pt-4">
           <div>
-            <dt class="text-[11px] uppercase tracking-wide text-slate-500">Jornada</dt>
-            <dd class="font-figures text-xl font-extrabold text-slate-900">{{ data?.matchday }}<span class="text-sm font-semibold text-slate-400">/{{ data?.totalMatchdays }}</span></dd>
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="min-w-0 truncate text-[11px] uppercase tracking-wide text-slate-500">{{ favourite.teamName }}</dt>
+              <dd class="shrink-0 font-figures text-xl font-extrabold leading-none text-slate-900">
+                {{ progress.team.played }}<span class="text-sm font-semibold text-slate-400">/{{ progress.team.total }}</span>
+              </dd>
+            </div>
+            <dd class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
+              <span class="block h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none" :style="{ width: share(progress.team.played, progress.team.total), background: palette.amber }" />
+            </dd>
+            <dd class="mt-1.5 text-xs text-slate-500">partidos de liga jugados · le quedan {{ progress.team.left }}</dd>
           </div>
           <div>
-            <dt class="text-[11px] uppercase tracking-wide text-slate-500">Jugados</dt>
-            <dd class="font-figures text-xl font-extrabold text-slate-900">{{ data?.knownMatches }}</dd>
-          </div>
-          <div>
-            <dt class="text-[11px] uppercase tracking-wide text-slate-500">Por jugar</dt>
-            <dd class="font-figures text-xl font-extrabold text-slate-900">{{ data?.simulatedMatches }}</dd>
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="min-w-0 truncate text-[11px] uppercase tracking-wide text-slate-500">Toda la liga</dt>
+              <dd class="shrink-0 font-figures text-xl font-extrabold leading-none text-slate-900">
+                {{ progress.league.played.toLocaleString('es-ES') }}<span class="text-sm font-semibold text-slate-400">/{{ progress.league.total.toLocaleString('es-ES') }}</span>
+              </dd>
+            </div>
+            <dd class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
+              <span class="block h-full rounded-full bg-slate-400 transition-[width] duration-700 ease-out motion-reduce:transition-none" :style="{ width: share(progress.league.played, progress.league.total) }" />
+            </dd>
+            <dd class="mt-1.5 text-xs text-slate-500">
+              partidos jugados entre los {{ teams.length }} equipos<template v-if="data?.matchday"> hasta la jornada {{ data.matchday }} de {{ data.totalMatchdays }}</template>
+              · quedan {{ progress.league.left.toLocaleString('es-ES') }}
+            </dd>
           </div>
         </dl>
         <span class="lg:flex-1" aria-hidden="true" />

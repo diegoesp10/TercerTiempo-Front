@@ -2,6 +2,7 @@
 // Las entradas se evalúan en orden; la primera que encaja gana.
 const rules: { test: RegExp; method?: string; label: string }[] = [
   { test: /^\/api\/auth\/login/, label: 'Entrando' },
+  { test: /^\/api\/matches\/[^/]+\/officials\/no-vote/, label: 'Guardando «No votado»' },
   // Pases por partido (antes que las reglas generales de /api/clubs/me y /api/squads).
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/passes/, method: 'POST', label: 'Generando el pase' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/passes/, method: 'DELETE', label: 'Revocando el pase' },
@@ -44,12 +45,14 @@ const rules: { test: RegExp; method?: string; label: string }[] = [
   { test: /^\/api\/matches\/[^/]+/, label: 'Cargando el partido' },
   { test: /^\/api\/squads\/mine/, label: 'Cargando tus plantillas' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/video-analysis\/apply/, label: 'Volcando al acta' },
+  { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/video-analysis\/cancel/, label: 'Cancelando el análisis' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/video-analysis/, method: 'POST', label: 'Poniendo el vídeo en la cola de análisis' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/video-analysis/, label: 'Cargando la propuesta del vídeo' },
   { test: /^\/api\/clubs\/me\/teams\/[^/]+\/pitch/, label: 'Guardando las medidas del campo' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/sheet\/comparison/, label: 'Comparando con el acta pública' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/sheet/, method: 'PUT', label: 'Guardando el acta' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/sheet/, label: 'Cargando el acta' },
+  { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/callup\/resend/, label: 'Reenviando la convocatoria' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/callup/, method: 'PUT', label: 'Guardando la convocatoria' },
   { test: /^\/api\/squads\/[^/]+\/matches\/[^/]+\/callup/, label: 'Cargando la convocatoria' },
   { test: /^\/api\/squads\/[^/]+\/matches/, label: 'Cargando partidos y actas' },
@@ -61,6 +64,7 @@ const rules: { test: RegExp; method?: string; label: string }[] = [
   { test: /^\/api\/squads\/[^/]+\/trial-players/, label: 'Guardando el jugador de prueba' },
   { test: /^\/api\/squads\/[^/]+\/exercises/, method: 'GET', label: 'Cargando los ejercicios' },
   { test: /^\/api\/squads\/[^/]+\/exercises/, label: 'Guardando el ejercicio' },
+  { test: /^\/api\/squads\/[^/]+\/agenda/, label: 'Cargando el calendario' },
   { test: /^\/api\/squads\/[^/]+\/callups/, label: 'Cargando las convocatorias' },
   { test: /^\/api\/players\/me\/callups/, method: 'PUT', label: 'Firmando la convocatoria' },
   { test: /^\/api\/players\/me\/callups/, label: 'Cargando tus convocatorias' },

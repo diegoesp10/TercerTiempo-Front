@@ -3,7 +3,8 @@
 export type AccountType = 'Player' | 'Coach' | 'Club';
 export type AppointmentStatus = 'Pending' | 'Active' | 'Expired' | 'Revoked';
 export type MatchSide = 'Home' | 'Away';
-export type OfficialSheetAvailability = 'NotPlayed' | 'Pending' | 'Available' | 'Unavailable' | 'Fetching';
+/** Provisional: alineaciones publicadas, pero el árbitro aún no ha cerrado el acta (sin goles, cambios, tarjetas ni minutos). */
+export type OfficialSheetAvailability = 'NotPlayed' | 'Pending' | 'Available' | 'Unavailable' | 'Fetching' | 'Provisional';
 export type OfficialEventType = 'Goal' | 'PenaltyGoal' | 'OwnGoal' | 'YellowCard' | 'SecondYellow' | 'RedCard' | 'Substitution';
 /**
  * Locked: plantilla pública, se puede pedir acceso al club. Owner: es de la plantilla (club, cuerpo técnico, jugadores).
@@ -201,9 +202,12 @@ export type OfficialRole = 'Referee' | 'AssistantReferee1' | 'AssistantReferee2'
 
 export interface RefereeStatsDto {
   matches: number;
+  /** Notas puestas (sin contar los «No votado»). */
   ratings: number;
   /** Nota media 0-10; null sin notas. */
   average: number | null;
+  /** Veces que un equipo decidió no votarle. */
+  noVotes: number;
   /** Cuántas notas de cada valor, de 0 a 10. */
   distribution: number[];
 }
@@ -265,7 +269,10 @@ export interface TeamRatingDto {
   teamId: string;
   teamName: string;
   teamCrestUrl: string | null;
-  score: number;
+  /** De 0 a 10; null si el equipo decidió no votar. */
+  score: number | null;
+  /** «No votado»: el equipo decidió no puntuarle; queda quién lo decidió, sin nota ni comentario. */
+  noVote: boolean;
   /** Null si no lo hay o si la administración lo retiró. */
   comment: string | null;
   /** Comentario retirado por la administración por no respetar las normas (la nota sigue). */
@@ -286,7 +293,9 @@ export interface RefereeRatingDto {
   teamName: string;
   teamCrestUrl: string | null;
   role: OfficialRole;
-  score: number;
+  /** De 0 a 10; null si el equipo decidió no votar. */
+  score: number | null;
+  noVote: boolean;
   comment: string | null;
   commentHidden: boolean;
   ratedBy: RefereeRaterDto;
@@ -316,7 +325,7 @@ export interface RefereeCommentAdminDto {
   teamName: string;
   ratedBy: RefereeRaterDto;
   role: OfficialRole;
-  score: number;
+  score: number | null;
   /** El comentario completo, también si está retirado. */
   comment: string;
   hidden: boolean;
@@ -389,6 +398,8 @@ export interface MatchOfficialDto {
   teamRatings: TeamRatingDto[];
   /** La nota de tu equipo en este partido, si ya la ha puesto: es definitiva. */
   myScore: number | null;
+  /** Tu equipo decidió no votarle en este partido (también definitivo). */
+  myNoVote: boolean;
 }
 
 export interface MatchOfficialsDto {
@@ -412,12 +423,19 @@ export interface PendingRefereeRatingDto {
   teamId: string;
   teamName: string;
   officials: number;
+  /** Cuántos ha contestado ya el equipo (con nota o «No votado»). */
   rated: number;
+  /** De esos, cuántos quedaron como «No votado». */
+  noVotes: number;
 }
 
 // --- Avisos del club (la campanita; solo cuentas de club) ---
 
-export type AlertKind = 'LicenseExpiring' | 'PassRequest' | 'CallUp' | 'NotCalledUp' | 'TrainingAbsence';
+/**
+ * MatchCallUp y MatchNotCalledUp son de partidos (convocatoria, que el jugador firma); TrainingCall (citación al jugador,
+ * o cambio o anulación de una sesión) y TrainingAbsence (el jugador avisa de que falta), de entrenamientos.
+ */
+export type AlertKind = 'LicenseExpiring' | 'PassRequest' | 'MatchCallUp' | 'MatchNotCalledUp' | 'TrainingCall' | 'TrainingAbsence';
 
 export interface AlertDto {
   id: string;
@@ -942,13 +960,23 @@ export interface RosterEntryDto {
   id: string;
   fullName: string;
   position: Position | null;
-  shirtNumber: number | null;
   /** Añadida o corregida por el club: el proveedor ya no la sobrescribe. */
   managedByClub: boolean;
   /** Foto subida por el club (ruta relativa a la API con versión); null si no hay. */
   photoUrl: string | null;
   /** Totales de la temporada según las actas oficiales; null si aún no aparece en ninguna. */
   stats: RosterEntryStatsDto | null;
+  /** Dorsales que ha llevado según las actas oficiales, del más usado al menos. La ficha no tiene un dorsal fijo. */
+  shirtNumbers: ShirtNumberUsageDto[];
+}
+
+/** Un dorsal y cuánto lo ha llevado un jugador: el de cada partido sale de su acta. */
+export interface ShirtNumberUsageDto {
+  number: number;
+  /** Partidos en los que consta con este dorsal (titular o suplente). */
+  matches: number;
+  /** Porcentaje sobre sus partidos con dorsal conocido (0-100; entre todos suman 100). */
+  percentage: number;
 }
 
 export interface RosterEntryStatsDto {
@@ -1018,7 +1046,6 @@ export interface PlayerCardDto {
 export interface RosterEntryRequest {
   fullName: string;
   position: Position | null;
-  shirtNumber: number | null;
 }
 
 /** Plantilla gestionada en Tercer Tiempo para el equipo en la temporada actual, si existe. */
@@ -1220,6 +1247,7 @@ export interface FormResultDto {
 
 export interface PreviewPlayerDto {
   name: string;
+  /** El dorsal que más ha llevado según las actas oficiales. */
   shirtNumber: number | null;
   matches: number;
   started: number;
@@ -1475,6 +1503,8 @@ export interface SquadPlayerProfileDto {
   squadAverage: PlayerAxesDto;
   squadBest: PlayerAxesDto;
   matches: PlayerMatchPointDto[];
+  /** Dorsales que ha llevado: en cada partido, el apuntado en el acta interna y, si no, el del acta oficial. */
+  shirtNumbers: ShirtNumberUsageDto[];
 }
 
 export interface SquadTimelinePointDto {
@@ -1620,9 +1650,10 @@ export interface MatchVideoDto {
 
 /**
  * Estado del análisis de un vídeo: NotRequested (el vídeo está listo pero nadie lo ha pedido), WaitingForVideo (se está
- * comprimiendo: el análisis empieza solo al acabar), Pending (en cola), Running, Ready o Failed.
+ * comprimiendo: el análisis empieza solo al acabar), Pending (en cola), Running, Ready, Failed o Cancelled (lo paró el
+ * cuerpo técnico; se puede volver a pedir).
  */
-export type VideoAnalysisState = 'NotRequested' | 'WaitingForVideo' | 'Pending' | 'Running' | 'Ready' | 'Failed';
+export type VideoAnalysisState = 'NotRequested' | 'WaitingForVideo' | 'Pending' | 'Running' | 'Ready' | 'Failed' | 'Cancelled';
 
 /** Datos de equipo que salen del vídeo y se aceptan uno a uno. */
 export type VideoTeamField = 'Possession' | 'Shots' | 'ShotsOnTarget' | 'Corners' | 'ThrowIns' | 'GoalKicks';
@@ -1640,6 +1671,10 @@ export interface VideoAnalysisQualityDto {
   pitchLengthM: number | null;
   pitchWidthM: number | null;
   genericPitch: boolean;
+  /** % de los fotogramas del tramo que se pudieron leer del archivo; null en análisis anteriores al dato. */
+  readFramesPct: number | null;
+  /** No se leyó al menos el 95 %: archivo dañado o cortado, la propuesta sale de menos. */
+  lowRead: boolean;
 }
 
 /** Uno de los dos equipos que separa el analizador por su equipación: él no sabe cuál es el del club. */
@@ -1723,6 +1758,10 @@ export interface MatchVideoAnalysisDto {
   /** Club propietario o cuerpo técnico vigente; el administrador solo lo ve. */
   canManage: boolean;
   videos: VideoAnalysisPartDto[];
+  /** Algún analizador ha dado señales en los últimos 2 minutos; si no, lo que está en cola no avanza. */
+  analyzerOnline: boolean;
+  /** Última señal de un analizador; null si nunca ha habido ninguno. */
+  analyzerSeenAt: string | null;
 }
 
 export interface ApplyVideoAnalysisRequest {

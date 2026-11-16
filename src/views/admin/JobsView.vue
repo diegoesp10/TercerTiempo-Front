@@ -144,6 +144,13 @@ function stopPolling() {
   timer = null;
 }
 
+// Recargas sueltas (justo después de lanzar un trabajo): se cancelan al salir de la página.
+const pending = new Set<ReturnType<typeof setTimeout>>();
+function later(run: () => void, ms: number) {
+  const id = setTimeout(() => { pending.delete(id); run(); }, ms);
+  pending.add(id);
+}
+
 function onVisibilityChange() {
   if (document.hidden) stopPolling();
   else void load(true);
@@ -161,7 +168,7 @@ async function launch(job: JobDto) {
       : `«${job.title}» lanzado. Aquí lo ves en directo.`;
     watchLive(job.name);
     // El trabajo arranca en segundo plano: un instante después ya figura en marcha.
-    setTimeout(() => void load(true), 1_000);
+    later(() => void load(true), 1_000);
   } catch (e) {
     error.value = errorMessage(e);
   } finally {
@@ -177,7 +184,7 @@ function watchLive(job: string) {
 function onSyncLaunched(message: string) {
   launchMessage.value = message;
   watchLive('football-data');
-  setTimeout(() => void load(true), 1_000);
+  later(() => void load(true), 1_000);
 }
 
 watch(tab, (value) => {
@@ -194,6 +201,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', onVisibilityChange);
   stopPolling();
+  for (const id of pending) clearTimeout(id);
+  pending.clear();
 });
 
 /** Uso del límite de peticiones (0-100), siempre dentro de la barra. */

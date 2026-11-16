@@ -9,6 +9,7 @@ import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
 import { confirmDialog } from '@/composables/useConfirm';
+import { useAlertsStore } from '@/stores/alerts';
 import { useAuthStore } from '@/stores/auth';
 import type { ClubPassPricesDto, ClubPassRequestDto, MatchDto, MatchPassPriceDto, MatchPassRequestStatus, PassEarningsDto } from '@/types/api';
 import { formatKickoff, formatMoney, passContents, passPrice, passRequestStatusLabels } from '@/utils/format';
@@ -75,6 +76,7 @@ async function approve(r: ClubPassRequestDto) {
     await api.passes.approve(r.id, { includesSheet: form.sheet, includesVideo: form.video, allowsDownload: form.download, priceCents: formCents.value });
     approving.value = null;
     await loadRequests();
+    void useAlertsStore().load();
   } catch (e) {
     error.value = errorMessage(e);
   } finally {
@@ -89,6 +91,7 @@ async function reject(r: ClubPassRequestDto) {
   try {
     await api.passes.reject(r.id);
     await loadRequests();
+    void useAlertsStore().load();
   } catch (e) {
     error.value = errorMessage(e);
   } finally {
@@ -161,8 +164,13 @@ async function saveRow(m: MatchPassPriceDto) {
   busy.value = rowKey(m);
   error.value = null;
   try {
-    await api.passes.setMatchPrice(m.squadId, m.matchId, optionalCents(d.sheet), optionalCents(d.video));
-    fillPrices(await api.passes.prices());
+    // Solo se sustituye la fila guardada: lo que se esté escribiendo en otras filas no se pierde.
+    const updated = await api.passes.setMatchPrice(m.squadId, m.matchId, optionalCents(d.sheet), optionalCents(d.video));
+    if (prices.value) prices.value = { ...prices.value, matches: prices.value.matches.map((x) => (rowKey(x) === rowKey(m) ? updated : x)) };
+    rowDrafts[rowKey(updated)] = {
+      sheet: updated.sheetPriceCents === null ? '' : centsToEuros(updated.sheetPriceCents),
+      video: updated.videoPriceCents === null ? '' : centsToEuros(updated.videoPriceCents),
+    };
     saved.value = rowKey(m);
   } catch (e) {
     error.value = errorMessage(e);

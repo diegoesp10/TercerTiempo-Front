@@ -59,7 +59,7 @@ const subtitle = 'Elige nivel, liga y grupo para ver equipos, calendarios y plan
   <Alert v-else-if="competitions.error.value" kind="error">{{ competitions.error.value }}</Alert>
   <Alert v-else-if="!competitions.data.value || competitions.data.value.length === 0" kind="warning">
     <template v-if="!season.isCurrent">No hay ligas guardadas de la temporada {{ season.selected?.label }}.</template>
-    <template v-else>Todavía no hay ligas sincronizadas. Si acabas de arrancar la API, espera a que termine la primera sincronización.</template>
+    <template v-else>Todavía no hay ligas cargadas. Estamos descargando las ligas; vuelve a mirar en unos minutos.</template>
   </Alert>
 
   <template v-else>

@@ -10,6 +10,7 @@ const props = withDefaults(defineProps<{ url: string | null; alt: string; size?:
 
 const src = ref<string | null>(null);
 let current: string | null = null;
+let unmounted = false;
 
 function release() {
   if (current) URL.revokeObjectURL(current);
@@ -25,14 +26,17 @@ watch(
     try {
       const blob = await httpBlob(url);
       // Si mientras tanto ha cambiado el recorte pedido, este ya no vale.
-      if (props.url !== url) return;
+      if (props.url !== url || unmounted) return;
       current = URL.createObjectURL(blob);
       src.value = current;
     } catch { /* sin recorte se queda el hueco */ }
   },
   { immediate: true },
 );
-onBeforeUnmount(release);
+onBeforeUnmount(() => {
+  unmounted = true;
+  release();
+});
 </script>
 
 <template>

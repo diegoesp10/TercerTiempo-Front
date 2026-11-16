@@ -11,6 +11,7 @@ import { useAsync } from '@/composables/useAsync';
 import { useBackFallback } from '@/composables/useBackFallback';
 import type { RefereeMatchDto } from '@/types/api';
 import { formatDate, formatScore, officialDutyLabels, officialRoleLabels } from '@/utils/format';
+import { httpUrl } from '@/utils/links';
 
 /**
  * Ficha pública de un árbitro: la nota media que le ponen los equipos y cómo se reparte, sus cifras en cada categoría
@@ -58,8 +59,8 @@ useBackFallback(() => {
             <h1 class="text-2xl font-bold text-slate-900">{{ data.name }}</h1>
             <p class="mt-1 text-sm text-slate-500">
               {{ data.stats.matches === 1 ? '1 partido' : `${data.stats.matches} partidos` }} en Tercer Tiempo ·
-              {{ data.stats.ratings === 1 ? '1 nota' : `${data.stats.ratings} notas` }} de los equipos
-              <template v-if="data.profileUrl"> · <a :href="data.profileUrl" target="_blank" rel="noopener" class="text-accent-400 hover:underline">ficha en futbolasturiano.es</a></template>
+              {{ data.stats.ratings === 1 ? '1 nota' : `${data.stats.ratings} notas` }} de los equipos<template v-if="data.stats.noVotes"> · {{ data.stats.noVotes === 1 ? '1 «No votado»' : `${data.stats.noVotes} «No votado»` }}</template>
+              <template v-if="httpUrl(data.profileUrl)"> · <a :href="httpUrl(data.profileUrl) ?? undefined" target="_blank" rel="noopener" class="text-accent-400 hover:underline">ficha en futbolasturiano.es</a></template>
             </p>
           </div>
           <div class="text-right">

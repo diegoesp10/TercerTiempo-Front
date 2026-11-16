@@ -27,6 +27,8 @@ const now = ref(Date.now());
 let poll: ReturnType<typeof setTimeout> | null = null;
 let typing: ReturnType<typeof setTimeout> | null = null;
 let tick: ReturnType<typeof setInterval> | null = null;
+// Tras salir del panel no se programa nada más, aunque quede una respuesta en camino.
+let disposed = false;
 
 async function load() {
   if (poll) clearTimeout(poll);
@@ -40,7 +42,7 @@ async function load() {
     }
     error.value = errorMessage(e);
   }
-  if (!document.hidden) poll = setTimeout(() => void load(), REFRESH_MS);
+  if (!disposed && !document.hidden) poll = setTimeout(() => void load(), REFRESH_MS);
 }
 
 watch(query, () => {
@@ -62,6 +64,7 @@ onMounted(() => {
   document.addEventListener('visibilitychange', onVisibility);
 });
 onBeforeUnmount(() => {
+  disposed = true;
   if (poll) clearTimeout(poll);
   if (typing) clearTimeout(typing);
   if (tick) clearInterval(tick);

@@ -3,10 +3,13 @@ import { ref, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { onClickOutside, onKeyStroke } from '@vueuse/core';
 import { useAlertsStore } from '@/stores/alerts';
-import type { AlertDto } from '@/types/api';
+import type { AlertDto, AlertKind } from '@/types/api';
 import { formatDate, formatKickoff } from '@/utils/format';
 
-/** Campanita de la cabecera: avisos de la app (licencia y solicitudes del club, convocatorias del jugador, bajas y ausencias del cuerpo técnico). */
+/**
+ * Campanita de la cabecera: avisos de la app (licencia y solicitudes del club; convocatorias de partido y citaciones a
+ * entrenar del jugador; ausencias a entrenamientos para el cuerpo técnico). Cada aviso dice de qué es: partido o entrenamiento no se mezclan.
+ */
 const store = useAlertsStore();
 const router = useRouter();
 
@@ -27,10 +30,20 @@ function daysLeft(alert: AlertDto) {
   return Math.round((Date.parse(`${alert.dueOn}T00:00:00Z`) - today) / 86_400_000);
 }
 
+const kindInfo: Record<AlertKind, { icon: string; label: string }> = {
+  LicenseExpiring: { icon: 'credit-card', label: 'Licencia' },
+  PassRequest: { icon: 'ticket', label: 'Solicitud de acceso' },
+  MatchCallUp: { icon: 'futbol', label: 'Convocatoria · partido' },
+  MatchNotCalledUp: { icon: 'futbol', label: 'Convocatoria · partido' },
+  TrainingCall: { icon: 'calendar-check', label: 'Entrenamiento · citación' },
+  TrainingAbsence: { icon: 'calendar-check', label: 'Entrenamiento · ausencia' },
+};
+
 const remaining = (days: number) => (days <= 0 ? 'Acaba hoy' : days === 1 ? 'Acaba mañana' : `Quedan ${days} días`);
 
 async function openAlert(alert: AlertDto) {
-  if (!alert.read) await store.markRead(alert.id);
+  // Marcarlo como leído no frena la navegación: si falla, el aviso sigue sin leer y se reintenta la próxima vez.
+  if (!alert.read) void store.markRead(alert.id).catch(() => {});
   open.value = false;
   if (alert.link) await router.push(alert.link);
 }
@@ -80,6 +93,9 @@ async function openAlert(alert: AlertDto) {
                   class="shrink-0 text-[11px] font-semibold"
                   :class="daysLeft(alert)! <= 5 ? 'text-red-500' : 'text-amber-500'"
                 >{{ remaining(daysLeft(alert)!) }}</span>
+              </span>
+              <span class="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-accent-400">
+                <Icon :icon="kindInfo[alert.kind]?.icon ?? 'bell'" class="h-2.5 w-2.5" />{{ kindInfo[alert.kind]?.label ?? 'Aviso' }}
               </span>
               <span class="mt-0.5 block text-xs leading-relaxed text-slate-600">{{ alert.message }}</span>
               <span class="mt-1 block text-[11px] text-slate-400">

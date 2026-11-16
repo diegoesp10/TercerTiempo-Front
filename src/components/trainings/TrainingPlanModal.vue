@@ -126,8 +126,11 @@ async function submit() {
             <input id="pt-until" v-model="form.until" type="date" :min="form.date" required class="input" />
           </div>
           <p class="basis-full text-xs text-slate-500">Se crea una sesión por cada día elegido hasta esa fecha (como mucho {{ catalog?.maxSeriesSessions ?? 60 }}); después cada una se edita por separado.</p>
+          <p class="basis-full text-xs text-slate-500">A cada jugador con cuenta le llega una sola citación por toda la serie.</p>
         </div>
       </div>
+
+      <p class="text-xs text-slate-500"><Icon icon="bell" class="mr-1 h-3 w-3 text-accent-400" />Se cita a toda la plantilla: los jugadores con cuenta reciben la citación en su campanita y solo avisan si faltan.</p>
 
       <div>
         <h3 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Ejercicios</h3>

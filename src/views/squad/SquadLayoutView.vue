@@ -47,11 +47,12 @@ const summary = computed(() => detail.value?.summary ?? null);
 const isMyPlayerSquad = computed(() => auth.playerSquad?.squadId === props.squadId);
 
 const { isAdmin } = useViewer();
-// Entrenamientos y convocatorias: lo interno de la plantilla (club, cuerpo técnico y sus jugadores; el administrador mira).
+// Agenda (entrenamientos y partidos con su convocatoria): lo interno de la plantilla (club, cuerpo técnico y sus
+// jugadores; el administrador mira).
 const tabs = computed(() => [
   { name: 'squad', label: 'Plantilla' },
   { name: 'squad-matches', label: 'Partidos y actas' },
-  ...(detail.value?.canManage || isMyPlayerSquad.value || isAdmin.value ? [{ name: 'squad-trainings', label: 'Entrenamientos' }] : []),
+  ...(detail.value?.canManage || isMyPlayerSquad.value || isAdmin.value ? [{ name: 'squad-trainings', label: 'Agenda' }] : []),
   { name: 'squad-stats', label: 'Estadísticas' },
   { name: 'squad-compare', label: 'Comparador' },
 ]);

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import TeamName from '@/components/teams/TeamName.vue';
@@ -8,6 +8,7 @@ import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
+import { markCallUpsSeen } from '@/composables/useCallUpSeen';
 import { useAlertsStore } from '@/stores/alerts';
 import { useAuthStore } from '@/stores/auth';
 import type { CallUpResponse, MyCallUpDto, MyTrainingDto } from '@/types/api';
@@ -26,6 +27,8 @@ const callUps = useAsync(() => (squad.value ? api.trainings.myCallUps() : Promis
 const trainings = useAsync(() => (squad.value ? api.trainings.mine() : Promise.resolve([] as MyTrainingDto[])), { redirectOnError: false });
 
 const open = computed(() => (callUps.data.value ?? []).filter((c) => !c.closed));
+// Abiertas aquí: el cuerpo técnico ve el doble check.
+watch(open, (list) => markCallUpsSeen(list), { immediate: true });
 const past = computed(() => (callUps.data.value ?? []).filter((c) => c.closed));
 
 const busy = ref<string | null>(null);
@@ -81,7 +84,7 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
       <section class="mb-8">
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Convocatorias</h2>
         <Spinner v-if="callUps.loading.value && !callUps.data.value" />
-        <p v-else-if="open.length === 0" class="text-sm text-slate-500">No tienes convocatorias pendientes: cuando el cuerpo técnico publique la del próximo partido, te avisará la campanita.</p>
+        <p v-else-if="open.length === 0" class="text-sm text-slate-500">No tienes convocatorias pendientes: cuando el cuerpo técnico envíe la del próximo partido, te avisará la campanita.</p>
         <ul v-else class="space-y-3">
           <li v-for="c in open" :key="c.callUpId" class="card" :class="c.mine.called ? 'border-brand-500/50' : ''">
             <div class="flex flex-wrap items-start justify-between gap-3">

@@ -18,7 +18,7 @@ import PlayerName from '@/components/players/PlayerName.vue';
 /** `squadId`: plantilla desde la que se abre; con ella se muestran también los datos del equipo de su cuerpo técnico. */
 const props = defineProps<{ matchId: string; myTeamId?: string; squadId?: string }>();
 
-const { data, loading, error } = useAsync(() => api.matches.preview(props.matchId));
+const { data, loading, error } = useAsync(() => api.matches.preview(props.matchId), { redirectOnError: false });
 
 const pct = (value: number) => `${Math.round(value * 100)}%`;
 

@@ -2,6 +2,7 @@ import type { RouteLocationNormalized, Router } from 'vue-router';
 import { apiBaseUrl } from '@/api/http';
 import { ANALYTICS_SESSION_KEY, ANALYTICS_VISITOR_KEY, useConsentStore } from '@/stores/consent';
 import { useAuthStore } from '@/stores/auth';
+import { safePath } from '@/utils/safePath';
 import type { AnalyticsEntity, AnalyticsEventType, TrackEventDto } from '@/types/api';
 
 /**
@@ -29,7 +30,7 @@ export function track(type: AnalyticsEventType, label: string | null = null, ent
   if (!enabled()) return;
   queue.push({
     type,
-    path: route?.path ?? window.location.pathname,
+    path: route ? safePath(route) : window.location.pathname.replace(/^\/(invitacion|pase)\/[^/]+/, '/$1/…'),
     routeName: (route?.name as string | undefined) ?? null,
     label,
     entityType: entity?.type ?? null,

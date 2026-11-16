@@ -55,7 +55,8 @@ const router = createRouter({
         { path: 'partidos', name: 'squad-matches', component: () => import('@/views/squad/SquadMatchesView.vue') },
         { path: 'estadisticas', name: 'squad-stats', component: () => import('@/views/squad/SquadStatsView.vue') },
         { path: 'comparador', name: 'squad-compare', component: () => import('@/views/squad/SquadCompareView.vue') },
-        { path: 'entrenamientos', name: 'squad-trainings', component: () => import('@/views/squad/SquadTrainingsView.vue') },
+        // La agenda: entrenamientos y partidos. «entrenamientos» sigue valiendo para los avisos ya enviados.
+        { path: 'agenda', alias: 'entrenamientos', name: 'squad-trainings', component: () => import('@/views/squad/SquadTrainingsView.vue') },
         { path: 'convocatorias/:matchId', name: 'squad-callup', component: () => import('@/views/squad/SquadCallUpView.vue'), props: true },
         {
           path: 'jugadores/:squadPlayerId',
@@ -108,6 +109,12 @@ function lowerCaseIds(params: RouteParamsGeneric): RouteParamsGeneric | null {
 router.beforeEach((to) => {
   const auth = useAuthStore();
   useLoadingStore().navigating = true;
+
+  // Los parámetros *Id van tal cual a las rutas de la API: uno que no sea un GUID (con %2F, ?, ..) podría cambiar la
+  // petición, así que esa dirección no existe.
+  if (Object.entries(to.params).some(([key, value]) => key.endsWith('Id') && typeof value === 'string' && value && !GUID.test(value))) {
+    return { name: 'not-found', params: { pathMatch: to.path.split('/').filter(Boolean) }, replace: true };
+  }
 
   const params = lowerCaseIds(to.params);
   if (params && to.name) return { name: to.name, params, query: to.query, hash: to.hash, replace: true };

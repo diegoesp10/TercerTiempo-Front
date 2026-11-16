@@ -215,7 +215,7 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
               </div>
               <p class="mt-4 text-xs leading-relaxed text-slate-500">
                 Sin tildes ni mayúsculas, por el principio de cada palabra y aunque haya alguna errata. Escribe dos equipos para encontrar su partido y un
-                apellido o un dorsal con su equipo para encontrar a un jugador.
+                apellido con su equipo para encontrar a un jugador.
               </p>
             </div>
 

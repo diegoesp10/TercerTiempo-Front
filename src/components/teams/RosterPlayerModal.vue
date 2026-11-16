@@ -2,6 +2,7 @@
 import { computed, reactive, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import { ApiError, errorMessage } from '@/api/http';
+import ShirtNumberUsage from '@/components/players/ShirtNumberUsage.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import CardMarks from '@/components/sheet/CardMarks.vue';
 import GoalMarks from '@/components/sheet/GoalMarks.vue';
@@ -37,7 +38,7 @@ async function load() {
   }
 }
 
-const form = reactive<{ fullName: string; position: Position | ''; shirtNumber: number | null }>({ fullName: '', position: '', shirtNumber: null });
+const form = reactive<{ fullName: string; position: Position | '' }>({ fullName: '', position: '' });
 const busy = ref(false);
 const error = ref<string | null>(null);
 const fieldErrors = ref<Record<string, string[]>>({});
@@ -53,7 +54,6 @@ watch(
     if (!entry) return;
     form.fullName = entry.fullName;
     form.position = entry.position ?? '';
-    form.shirtNumber = entry.shirtNumber;
     void load();
   },
   { immediate: true },
@@ -63,7 +63,7 @@ const current = computed(() => detail.value?.entry ?? props.entry);
 const dirty = computed(() => {
   const entry = props.entry;
   if (!entry) return false;
-  return form.fullName.trim() !== entry.fullName || (form.position || null) !== entry.position || (form.shirtNumber || null) !== entry.shirtNumber;
+  return form.fullName.trim() !== entry.fullName || (form.position || null) !== entry.position;
 });
 
 async function act(fn: () => Promise<RosterEntryDto[]>, message: string) {
@@ -88,7 +88,7 @@ function save() {
   if (!props.entry) return;
   const entryId = props.entry.id;
   void act(
-    () => api.clubs.updateRosterEntry(props.teamId, entryId, { fullName: form.fullName.trim(), position: form.position || null, shirtNumber: form.shirtNumber || null }),
+    () => api.clubs.updateRosterEntry(props.teamId, entryId, { fullName: form.fullName.trim(), position: form.position || null }),
     'Ficha guardada.',
   );
 }
@@ -133,9 +133,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
         <input ref="photoInput" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" @change="uploadPhoto" />
         <div>
           <p class="eyebrow">Ficha del jugador</p>
-          <h2 class="text-xl font-bold text-slate-900">
-            <span v-if="current.shirtNumber" class="mr-2 text-slate-400">{{ current.shirtNumber }}</span>{{ current.fullName }}
-          </h2>
+          <h2 class="text-xl font-bold text-slate-900">{{ current.fullName }}</h2>
           <p class="mt-1 text-sm text-slate-500">
             {{ current.position ? positionLabels[current.position] : 'Sin posición' }}
             <Badge v-if="current.managedByClub" tone="blue" class="ml-2">Club</Badge>
@@ -151,21 +149,17 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
     <Alert v-else-if="saved" kind="success" class="mb-3">{{ saved }}</Alert>
 
     <!-- Datos de la ficha -->
-    <form class="grid grid-cols-[5rem_minmax(0,1fr)] gap-3 rounded-lg border border-line bg-surface-2 p-3 sm:grid-cols-[5rem_minmax(0,1fr)_11rem_auto] sm:items-start" @submit.prevent="save">
-      <div>
-        <label class="label" for="player-number">Dorsal</label>
-        <input id="player-number" v-model.number="form.shirtNumber" type="number" min="1" max="99" class="input" />
-      </div>
+    <form class="grid grid-cols-1 gap-3 rounded-lg border border-line bg-surface-2 p-3 sm:grid-cols-[minmax(0,1fr)_11rem_auto] sm:items-start" @submit.prevent="save">
       <div>
         <label class="label" for="player-name">Nombre y apellidos</label>
         <input id="player-name" v-model="form.fullName" type="text" required maxlength="150" class="input" />
         <p v-if="fieldErrors.fullName" class="field-error">{{ fieldErrors.fullName[0] }}</p>
       </div>
-      <div class="col-span-2 sm:col-span-1">
+      <div>
         <label class="label" for="player-position">Posición</label>
         <SearchSelect id="player-position" placeholder="—" clearable :model-value="form.position || null" :options="positionOptions" @update:model-value="form.position = ($event as Position | null) ?? ''" />
       </div>
-      <div class="col-span-2 sm:col-span-1">
+      <div>
         <span class="label invisible hidden sm:block" aria-hidden="true">Guardar</span>
         <button type="submit" class="btn-primary w-full sm:w-auto" v-busy="busy" :disabled="busy || !dirty || !form.fullName.trim()"><Icon icon="check" class="mr-1.5 h-3.5 w-3.5" />Guardar</button>
       </div>
@@ -190,6 +184,14 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
         <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Rojas</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.redCards }}</dd></div>
       </dl>
 
+      <!-- Dorsales: la ficha no lleva uno fijo, el de cada partido sale de su acta -->
+      <div class="mt-5 flex items-baseline justify-between">
+        <h3 class="font-semibold text-slate-900">Dorsales</h3>
+        <span class="text-xs text-slate-500">según las actas públicas</span>
+      </div>
+      <p v-if="detail.entry.shirtNumbers.length === 0" class="mt-2 text-sm text-slate-500">Todavía no aparece con dorsal en ningún acta pública.</p>
+      <ShirtNumberUsage v-else :usage="detail.entry.shirtNumbers" class="mt-2 max-w-md" />
+
       <!-- Partido a partido -->
       <div class="mt-5 flex gap-1 overflow-x-auto whitespace-nowrap border-b border-line">
         <button type="button" class="-mb-px border-b-2 px-3 py-2 text-sm font-medium" :class="tab === 'official' ? 'border-accent-400 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'" @click="tab = 'official'">
@@ -208,6 +210,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
               <th class="py-1 pr-3 text-left">J</th>
               <th class="py-1 pr-3 text-left">Partido</th>
               <th class="col-sm py-1 pr-3 text-center">Resultado</th>
+              <th class="py-1 pr-3 text-center" title="Dorsal que llevó en ese partido">Dorsal</th>
               <th class="py-1 pr-3 text-center">Min</th>
               <th class="py-1 pr-3 text-center">G</th>
               <th class="py-1 text-center">TA/TR</th>
@@ -224,6 +227,7 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
                 {{ matchInfo(row.match).score ?? '—' }}
                 <Badge v-if="matchInfo(row.match).outcome" :tone="matchInfo(row.match).tone" class="ml-1">{{ matchInfo(row.match).label }}</Badge>
               </td>
+              <td class="py-1.5 pr-3 text-center tabular-nums">{{ row.line.shirtNumber ?? '—' }}</td>
               <td class="py-1.5 pr-3 text-center tabular-nums whitespace-nowrap">{{ minutes(row.line) }}</td>
               <td class="py-1.5 pr-3 text-center whitespace-nowrap"><GoalMarks :goals="row.line.goals" :penalty-goals="row.line.penaltyGoals" :own-goals="row.line.ownGoals" /></td>
               <td class="py-1.5 text-center whitespace-nowrap"><CardMarks :yellow-cards="row.line.yellowCards" :red-card="row.line.redCard" /></td>

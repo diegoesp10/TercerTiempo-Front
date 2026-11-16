@@ -52,7 +52,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
             <td data-label="Base jurídica">Ejecución del contrato con el club y su cuerpo técnico; respecto de los jugadores, interés legítimo del club en analizar el rendimiento deportivo de su propia plantilla (art. 6.1.f), ponderado con la privacidad por defecto que se describe en el apartado 6.</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Datos deportivos de fuentes públicas</strong>: calendarios, resultados, clasificaciones, plantillas publicadas (nombre, dorsal, posición) y actas oficiales (alineaciones, minutos, goles, tarjetas, árbitros y cuerpo técnico).</td>
+            <td data-label="Datos"><strong>Datos deportivos de fuentes públicas</strong>: calendarios, resultados, clasificaciones, plantillas publicadas (nombre y posición) y actas oficiales (alineaciones con el dorsal de cada partido, minutos, goles, tarjetas, árbitros y cuerpo técnico).</td>
             <td data-label="Origen">
               <span v-for="(source, index) in dataSources" :key="source.name">
                 <a :href="source.url" target="_blank" rel="noopener">{{ source.name }}</a> ({{ source.what }})<span v-if="index < dataSources.length - 1">; </span>

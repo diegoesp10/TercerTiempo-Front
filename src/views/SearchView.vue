@@ -24,24 +24,35 @@ const all = ref<SearchResultsDto | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
+// Solo cuenta la última búsqueda: si se cambia el texto o el tipo antes de que llegue la anterior, esa se descarta.
+let latest = 0;
 async function load() {
+  const ticket = ++latest;
   text.value = query.value;
   if (query.value.trim().length < 2) {
     results.value = null;
     all.value = null;
+    loading.value = false;
     return;
   }
   loading.value = true;
   error.value = null;
   try {
-    // Los totales por tipo salen de la búsqueda sin filtro; la lista, del tipo elegido con hasta 50 resultados.
-    all.value = await api.search.query(query.value, null, type.value ? 1 : 12);
-    results.value = type.value ? await api.search.query(query.value, type.value, 50) : all.value;
-    store.remember(query.value);
+    // Los totales por tipo salen de la búsqueda sin filtro; la lista, del tipo elegido con hasta 50 resultados. Las
+    // dos van a la vez.
+    const q = query.value;
+    const [totals, filtered] = await Promise.all([
+      api.search.query(q, null, type.value ? 1 : 12),
+      type.value ? api.search.query(q, type.value, 50) : Promise.resolve(null),
+    ]);
+    if (ticket !== latest) return;
+    all.value = totals;
+    results.value = filtered ?? totals;
+    store.remember(q);
   } catch (e) {
-    error.value = errorMessage(e);
+    if (ticket === latest) error.value = errorMessage(e);
   } finally {
-    loading.value = false;
+    if (ticket === latest) loading.value = false;
   }
 }
 watch(() => [query.value, type.value], load, { immediate: true });

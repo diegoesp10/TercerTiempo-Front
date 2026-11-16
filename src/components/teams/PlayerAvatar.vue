@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { apiBaseUrl } from '@/api/http';
+import { computed, ref, toRef, watch } from 'vue';
+import { useAuthImage } from '@/composables/useAuthImage';
 
-// Foto del jugador servida por la API; sin foto (o si falla) se muestran sus iniciales.
+// Foto del jugador servida por la API (con la sesión: son de menores); sin foto, sin permiso o si falla, sus iniciales.
 const props = withDefaults(defineProps<{ src: string | null | undefined; name: string; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' }>(), { size: 'md' });
 
 const failed = ref(false);
 watch(() => props.src, () => { failed.value = false; });
 
-const url = computed(() => {
-  if (!props.src || failed.value) return null;
-  return props.src.startsWith('/') ? `${apiBaseUrl}${props.src}` : props.src;
-});
+const loaded = useAuthImage(toRef(props, 'src'));
+const url = computed(() => (failed.value ? null : loaded.value));
 
 const initials = computed(() => {
   const words = props.name.split(/\s+/).filter(Boolean);

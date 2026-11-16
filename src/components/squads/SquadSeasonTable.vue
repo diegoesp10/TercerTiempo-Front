@@ -19,7 +19,7 @@ import { formatDate, formatNumber, positionLabels, positionShortLabels } from '@
  */
 const props = defineProps<{ squadId: string; highlightId?: string | null }>();
 
-const { data, loading, error, run } = useAsync(() => api.squads.seasonTable(props.squadId));
+const { data, loading, error, run } = useAsync(() => api.squads.seasonTable(props.squadId), { redirectOnError: false });
 watch(() => props.squadId, () => void run());
 
 type SortKey = 'shirt' | 'name' | 'matches' | 'starts' | 'minutes' | 'goals' | 'assists' | 'yellow' | 'red' | 'fouls' | 'rating';

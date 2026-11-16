@@ -50,6 +50,8 @@ onMounted(async () => {
 const invitedClub = ref<string | null>(null);
 const inviteInvalid = ref(false);
 let inviteLookup = 0;
+// Los códigos se comprueban cuando se deja de teclear, no con cada tecla.
+const typingPause = () => new Promise((resolve) => setTimeout(resolve, 300));
 watch(clubInvite, async (value) => {
   const code = value.trim();
   const lookup = ++inviteLookup;
@@ -57,6 +59,8 @@ watch(clubInvite, async (value) => {
   if (invitedClub.value && form.displayName === invitedClub.value) form.displayName = '';
   invitedClub.value = null;
   if (code.length < 10) return;
+  await typingPause();
+  if (lookup !== inviteLookup) return;
   try {
     const result = await api.auth.clubInvitation(code);
     if (lookup !== inviteLookup) return;
@@ -100,6 +104,8 @@ watch(
     invite.value = null;
     inviteError.value = null;
     if (type !== 'Player' || code.length < 12) return;
+    await typingPause();
+    if (inviteCode.value !== code || form.accountType !== 'Player') return;
     checkingInvite.value = true;
     try {
       const result = await api.auth.invite(code);

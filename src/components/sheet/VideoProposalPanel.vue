@@ -62,12 +62,22 @@ function adopt(next: MatchVideoAnalysisDto, reset = false) {
 
 const waitingStates: VideoAnalysisState[] = ['WaitingForVideo', 'Pending', 'Running'];
 const busyWithAnalysis = computed(() => analysis.value?.videos.some((v) => waitingStates.includes(v.state)) ?? false);
+/** Hay algo esperando a un analizador y no hay ninguno encendido (ningún latido en los últimos 2 minutos): no avanzaría. */
+const noAnalyzer = computed(() => !!analysis.value?.enabled && busyWithAnalysis.value && !analysis.value.analyzerOnline);
 
+// Mientras se analiza se pregunta cada 10 s; con la pestaña oculta se para y, al volver, se pregunta enseguida. Tras
+// salir del acta no se programa nada más, aunque quede una respuesta en camino.
 let timer: ReturnType<typeof setTimeout> | null = null;
+let disposed = false;
 function schedule() {
   if (timer) clearTimeout(timer);
-  timer = busyWithAnalysis.value ? setTimeout(() => void load(true), 5000) : null;
+  timer = !disposed && !document.hidden && busyWithAnalysis.value ? setTimeout(() => void load(true), 10_000) : null;
 }
+function onVisibility() {
+  if (!document.hidden && !disposed && busyWithAnalysis.value) void load(true);
+  else schedule();
+}
+document.addEventListener('visibilitychange', onVisibility);
 
 async function load(silent = false) {
   try {
@@ -83,7 +93,11 @@ async function load(silent = false) {
   }
 }
 void load();
-onBeforeUnmount(() => { if (timer) clearTimeout(timer); });
+onBeforeUnmount(() => {
+  disposed = true;
+  if (timer) clearTimeout(timer);
+  document.removeEventListener('visibilitychange', onVisibility);
+});
 
 const canManage = computed(() => (analysis.value?.canManage ?? false) && props.sheet.canEdit);
 const parts = computed(() => analysis.value?.videos ?? []);
@@ -97,6 +111,7 @@ const stateLabels: Record<VideoAnalysisState, string> = {
   Running: 'Analizando',
   Ready: 'Listo',
   Failed: 'Fallido',
+  Cancelled: 'Cancelado',
 };
 const stateTones: Record<VideoAnalysisState, 'green' | 'amber' | 'red' | 'blue' | 'slate'> = {
   NotRequested: 'slate',
@@ -105,6 +120,7 @@ const stateTones: Record<VideoAnalysisState, 'green' | 'amber' | 'red' | 'blue' 
   Running: 'blue',
   Ready: 'green',
   Failed: 'red',
+  Cancelled: 'slate',
 };
 
 const percent = (value: number) => value.toLocaleString('es-ES', { maximumFractionDigits: 1 });
@@ -139,6 +155,30 @@ async function request(part: VideoAnalysisPartDto) {
     requestError.value = errorMessage(e);
   } finally {
     requesting.value = null;
+  }
+}
+
+const cancelling = ref<string | null>(null);
+async function cancel(part: VideoAnalysisPartDto) {
+  if (!(await confirmDialog({
+    title: 'Cancelar el análisis',
+    message: part.state === 'Running'
+      ? 'Se para el analizador (en unos segundos) y se pierde lo analizado hasta ahora. El vídeo y el acta no se tocan; puedes volver a pedirlo luego.'
+      : 'El vídeo sale de la cola de análisis. Puedes volver a pedirlo cuando quieras.',
+    confirmLabel: 'Cancelar el análisis',
+    cancelLabel: 'Seguir',
+    danger: true,
+  }))) return;
+
+  cancelling.value = part.videoId;
+  requestError.value = null;
+  try {
+    adopt(await api.squads.cancelVideoAnalysis(props.squadId, props.matchId, part.videoId));
+    schedule();
+  } catch (e) {
+    requestError.value = errorMessage(e);
+  } finally {
+    cancelling.value = null;
   }
 }
 
@@ -369,6 +409,11 @@ async function apply(overwrite = false) {
       </div>
 
       <Alert v-if="requestError" kind="error" class="mt-4">{{ requestError }}</Alert>
+      <Alert v-if="noAnalyzer" kind="warning" class="mt-4">
+        <strong>No hay ningún analizador encendido</strong>: lo que está en cola no avanzará hasta que arranque uno. Arranca
+        <code>Start-Analyzer.ps1</code> en el equipo con la tarjeta gráfica (Start-Docker.ps1 lo hace solo si encuentra la GPU y uv).
+        <template v-if="analysis.analyzerSeenAt"> Última señal: {{ formatKickoff(analysis.analyzerSeenAt) }}.</template>
+      </Alert>
 
       <div v-for="part in parts" :key="part.videoId" class="mt-4 border-t border-slate-100 pt-4 first:border-t-0 first:pt-0">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -381,7 +426,17 @@ async function apply(overwrite = false) {
             <span v-if="part.state === 'Ready' && part.finishedAt" class="text-xs font-normal text-slate-500">analizado el {{ formatKickoff(part.finishedAt) }}</span>
           </p>
           <button
-            v-if="canManage && analysis.enabled && ['NotRequested', 'Ready', 'Failed'].includes(part.state)"
+            v-if="canManage && ['Pending', 'Running'].includes(part.state)"
+            v-busy="cancelling === part.videoId"
+            type="button"
+            class="btn-ghost px-3 py-1 text-xs"
+            :disabled="cancelling !== null || requesting !== null"
+            @click="cancel(part)"
+          >
+            <Icon icon="xmark" class="h-3 w-3" />Cancelar
+          </button>
+          <button
+            v-if="canManage && analysis.enabled && ['NotRequested', 'Ready', 'Failed', 'Cancelled'].includes(part.state)"
             v-busy="requesting === part.videoId"
             type="button"
             :class="part.state === 'Ready' ? 'btn-secondary' : 'btn-primary'"
@@ -390,8 +445,8 @@ async function apply(overwrite = false) {
             :title="`Tarda ${duration(part)}`"
             @click="request(part)"
           >
-            <Icon :icon="part.state === 'NotRequested' ? 'magnifying-glass' : 'rotate-right'" class="h-3 w-3" />
-            {{ part.state === 'NotRequested' ? 'Analizar el vídeo' : part.state === 'Failed' ? 'Volver a intentarlo' : 'Volver a analizar' }}
+            <Icon :icon="part.state === 'NotRequested' || part.state === 'Cancelled' ? 'magnifying-glass' : 'rotate-right'" class="h-3 w-3" />
+            {{ part.state === 'NotRequested' || part.state === 'Cancelled' ? 'Analizar el vídeo' : part.state === 'Failed' ? 'Volver a intentarlo' : 'Volver a analizar' }}
           </button>
         </div>
 
@@ -406,7 +461,10 @@ async function apply(overwrite = false) {
         </p>
         <p v-else-if="part.state === 'Pending'" class="mt-2 text-sm text-slate-600">
           <Icon icon="clock" class="mr-1 h-3.5 w-3.5 text-amber-500" />En cola: empieza en cuanto el analizador quede libre (los vídeos van de uno en uno) y tarda {{ duration(part) }}.
-          Si no hay ningún analizador en marcha, se queda esperando.
+          <span v-if="part.error" class="mt-1 block text-xs text-slate-500">Se vuelve a intentar: {{ part.error }}</span>
+        </p>
+        <p v-else-if="part.state === 'Cancelled'" class="mt-2 text-sm text-slate-600">
+          Análisis cancelado<template v-if="part.finishedAt"> el {{ formatKickoff(part.finishedAt) }}</template>. El vídeo y el acta siguen como estaban; puedes volver a pedirlo cuando quieras.
         </p>
         <div v-else-if="part.state === 'Running'" class="mt-3">
           <div
@@ -450,8 +508,9 @@ async function apply(overwrite = false) {
               <dd v-if="part.quality.genericPitch" class="text-[11px] text-slate-500">medidas genéricas</dd>
             </div>
           </dl>
-          <Alert v-if="part.quality.lowBall || part.quality.lowCalibration" kind="warning" class="mt-3">
+          <Alert v-if="part.quality.lowBall || part.quality.lowCalibration || part.quality.lowRead" kind="warning" class="mt-3">
             <strong>Calidad baja: tómalo como orientación.</strong>
+            <template v-if="part.quality.lowRead && part.quality.readFramesPct !== null"> Solo se pudo leer el {{ percent(part.quality.readFramesPct) }} % de los fotogramas del vídeo (el archivo parece dañado o cortado): todo sale de menos; prueba a volver a subirlo.</template>
             <template v-if="part.quality.lowBall"> El balón solo se ve en el {{ percent(part.quality.ballFramesPct) }} % de los fotogramas: la posesión se mide solo sobre el tiempo con balón y, si su confianza es baja, no se vuelca al acta; los pases y las recuperaciones salen de menos.</template>
             <template v-if="part.quality.lowCalibration"> El campo solo se ha podido calibrar en el {{ percent(part.quality.calibratedFramesPct) }} %: fueras, córners y tiros salen de menos.</template>
             Mejora con una cámara fija y alta y el juego lo más cerca posible.

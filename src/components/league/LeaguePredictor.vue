@@ -144,8 +144,10 @@ const evolutionOption = computed(() =>
       </div>
 
       <div v-if="data?.matchday && zones" class="mt-4 flex flex-wrap items-center gap-2 text-xs">
-        <span class="rounded-full bg-surface-2 px-3 py-1 text-slate-600 ring-1 ring-line">{{ data.knownMatches }} partidos jugados hasta la jornada {{ data.matchday }}</span>
-        <span class="rounded-full bg-surface-2 px-3 py-1 text-slate-600 ring-1 ring-line">{{ data.simulatedMatches }} por jugar, simulados</span>
+        <span class="rounded-full bg-surface-2 px-3 py-1 text-slate-600 ring-1 ring-line">
+          Toda la liga: {{ data.knownMatches }} de {{ data.knownMatches + data.simulatedMatches }} partidos jugados hasta la jornada {{ data.matchday }}
+        </span>
+        <span class="rounded-full bg-surface-2 px-3 py-1 text-slate-600 ring-1 ring-line">{{ data.simulatedMatches }} por jugar entre todos los equipos, simulados</span>
         <template v-if="ranges.length">
           <span v-for="range in ranges" :key="`${range.label}-${range.from}`" class="flex items-center gap-1.5 rounded-full bg-surface-2 py-1 pl-1.5 pr-3 text-slate-700 ring-1 ring-line">
             <span class="h-3 w-3 rounded-full ring-1 ring-black/10" :style="{ background: range.color }" />{{ range.label }}: {{ rangeText(range) }}

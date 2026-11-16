@@ -21,6 +21,8 @@ const loading = ref(true);
 onMounted(async () => {
   try {
     categories.value = await api.referees.categories();
+    // Sin categorías no se pedirá ningún árbitro: el bloque se queda vacío en lugar de cargando para siempre.
+    if (!categories.value.length) loading.value = false;
   } catch {
     loading.value = false;
   }

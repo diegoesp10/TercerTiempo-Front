@@ -119,11 +119,15 @@ import type {
   TrainingItemInput,
   TrainingRequest,
   TrainingSessionDto,
+  SquadAgendaItemDto,
   TrainingSummaryDto,
 } from '@/types/trainings';
 
 /** Listas de referencia (competiciones, catálogo de clubes): cambian con la sincronización diaria, no al navegar. */
 const REFERENCE_CACHE_MS = 5 * 60_000;
+// Pestañas que se abren y cierran (acta interna): volver a una en el mismo minuto no repite la petición. Cualquier
+// escritura vacía la caché, así que lo propio que se cambie se ve enseguida.
+const TAB_CACHE_MS = 60_000;
 /** Cálculos de una plantilla que comparten varias pestañas (estadísticas y comparador): cualquier cambio guardado los invalida. */
 const SQUAD_READ_CACHE_MS = 30_000;
 
@@ -132,7 +136,7 @@ export const api = {
     /** Política de cookies vigente con su catálogo. */
     cookies: () => http<CookiePolicyDto>('/api/cookies', { silent: true }),
     consent: (visitorId: string, action: ConsentAction, analytics: boolean) =>
-      http<ConsentDto>('/api/cookies/consent', { method: 'POST', body: { visitorId, action, analytics }, silent: true }),
+      http<ConsentDto>('/api/cookies/consent', { method: 'POST', body: { visitorId, action, analytics }, silent: true, keepCache: true }),
   },
   seasons: {
     /** Temporadas de la app, de la más reciente a la más antigua (la actual marcada). */
@@ -243,6 +247,9 @@ export const api = {
     /** Analiza (o vuelve a analizar) el vídeo indicado, o todos los de la plantilla en el partido. */
     requestVideoAnalysis: (squadId: string, matchId: string, videoId?: string) =>
       http<MatchVideoAnalysisDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis`, { method: 'POST', body: { videoId: videoId ?? null } }),
+    /** Cancela lo que está en cola o analizándose del vídeo indicado (o de todos); 409 (video_analysis.not_active) si no hay nada. */
+    cancelVideoAnalysis: (squadId: string, matchId: string, videoId?: string) =>
+      http<MatchVideoAnalysisDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis/cancel`, { method: 'POST', body: { videoId: videoId ?? null } }),
     /** Vuelca al acta lo aceptado; 409 (video_analysis.overwrite) si pisa datos y no va confirmado. */
     applyVideoAnalysis: (squadId: string, matchId: string, body: ApplyVideoAnalysisRequest) =>
       http<ApplyVideoAnalysisResultDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis/apply`, { method: 'POST', body }),
@@ -285,25 +292,28 @@ export const api = {
   /** Árbitros y notas de los equipos (solo clubes y cuerpos técnicos con licencia). */
   referees: {
     // Públicas: van sin token. Los árbitros se buscan siempre dentro de una categoría.
-    categories: () => http<RefereeCategoryDto[]>('/api/referees/categories', { anonymous: true }),
+    categories: () => http<RefereeCategoryDto[]>('/api/referees/categories', { anonymous: true, cacheMs: REFERENCE_CACHE_MS }),
     category: (category: string, filter: { duty?: OfficialDuty; search?: string; sort?: RefereeSort; order?: SortOrder } = {}) => {
       const query = new URLSearchParams(Object.entries(filter).filter((entry): entry is [string, string] => !!entry[1])).toString();
       return http<RefereeCategoryListDto>(`/api/referees/categories/${encodeURIComponent(category)}${query ? `?${query}` : ''}`, { anonymous: true });
     },
     get: (refereeId: string) => http<RefereeDetailDto>(`/api/referees/${refereeId}`, { anonymous: true }),
     pending: () => http<PendingRefereeRatingDto[]>('/api/referees/pending', { silent: true }),
-    checkComment: (text: string) => http<CommentCheckDto>('/api/referees/comments/check', { method: 'POST', body: { text }, silent: true }),
-    matchOfficials: (matchId: string) => http<MatchOfficialsDto>(`/api/matches/${matchId}/officials`),
-    rate: (matchId: string, refereeId: string, body: { score: number; comment: string | null; teamId?: string | null; confirmed: true }) =>
+    checkComment: (text: string) => http<CommentCheckDto>('/api/referees/comments/check', { method: 'POST', body: { text }, silent: true, keepCache: true }),
+    matchOfficials: (matchId: string) => http<MatchOfficialsDto>(`/api/matches/${matchId}/officials`, { cacheMs: TAB_CACHE_MS }),
+    rate: (matchId: string, refereeId: string, body: { score: number | null; comment: string | null; teamId?: string | null; confirmed: true; noVote?: boolean }) =>
       http<MatchOfficialsDto>(`/api/matches/${matchId}/officials/${refereeId}/rating`, { method: 'PUT', body }),
+    /** «No votado» para todo el equipo arbitral del partido al que el equipo aún no ha contestado. */
+    noVote: (matchId: string, teamId: string | null) =>
+      http<MatchOfficialsDto>(`/api/matches/${matchId}/officials/no-vote`, { method: 'POST', body: { teamId, confirmed: true } }),
   },
 
   /** Avisos de la campanita del club (solo cuentas de club). */
   /** Campanita de cualquier cuenta: club (licencia, solicitudes), jugador (convocatorias) y cuerpo técnico (bajas y ausencias). */
   alerts: {
     mine: () => http<ClubAlertsDto>('/api/alerts', { silent: true }),
-    read: (alertId: string) => http<ClubAlertsDto>(`/api/alerts/${alertId}/read`, { method: 'POST', silent: true }),
-    readAll: () => http<ClubAlertsDto>('/api/alerts/read', { method: 'POST', silent: true }),
+    read: (alertId: string) => http<ClubAlertsDto>(`/api/alerts/${alertId}/read`, { method: 'POST', silent: true, keepCache: true }),
+    readAll: () => http<ClubAlertsDto>('/api/alerts/read', { method: 'POST', silent: true, keepCache: true }),
   },
 
   /** Preparación semanal del cuerpo técnico: biblioteca de ejercicios, entrenamientos con asistencia y convocatorias. */
@@ -316,6 +326,8 @@ export const api = {
     deleteExercise: (squadId: string, exerciseId: string) => http<ExerciseDto[]>(`/api/squads/${squadId}/exercises/${exerciseId}`, { method: 'DELETE' }),
     /** Sesiones entre dos días (YYYY-MM-DD, ambos incluidos). */
     list: (squadId: string, from: string, to: string) => http<TrainingSummaryDto[]>(`/api/squads/${squadId}/trainings?from=${from}&to=${to}`),
+    /** Entrenamientos y partidos entre dos días (YYYY-MM-DD, ambos incluidos), cada uno con su tipo, para el calendario. */
+    agenda: (squadId: string, from: string, to: string) => http<SquadAgendaItemDto[]>(`/api/squads/${squadId}/agenda?from=${from}&to=${to}`),
     get: (squadId: string, sessionId: string) => http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}`),
     plan: (squadId: string, body: TrainingRequest) => http<TrainingSummaryDto[]>(`/api/squads/${squadId}/trainings`, { method: 'POST', body }),
     update: (squadId: string, sessionId: string, body: TrainingRequest) => http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}`, { method: 'PUT', body }),
@@ -341,6 +353,8 @@ export const api = {
     callUp: (squadId: string, matchId: string) => http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup`),
     saveCallUp: (squadId: string, matchId: string, body: CallUpRequest) =>
       http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup`, { method: 'PUT', body }),
+    resendCallUp: (squadId: string, matchId: string) =>
+      http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup/resend`, { method: 'POST' }),
     /** Lado del jugador. */
     mine: () => http<MyTrainingDto[]>('/api/players/me/trainings'),
     reportAbsence: (sessionId: string, willMiss: boolean, reason: string | null) =>
@@ -348,6 +362,8 @@ export const api = {
     myCallUps: () => http<MyCallUpDto[]>('/api/players/me/callups'),
     respondCallUp: (callUpId: string, response: CallUpResponse) =>
       http<MyCallUpDto>(`/api/players/me/callups/${callUpId}/response`, { method: 'PUT', body: { response } }),
+    /** Doble check: la abre el jugador. Sin barra de carga, va en segundo plano. */
+    markCallUpSeen: (callUpId: string) => http<MyCallUpDto>(`/api/players/me/callups/${callUpId}/seen`, { method: 'PUT', silent: true, keepCache: true }),
   },
 
   /** Licencia del club (primer equipo y filiales): estado de la cuenta, la licencia del club y pago (simulado de momento). */
@@ -395,7 +411,7 @@ export const api = {
     /** silent: sondeo mientras un vídeo se comprime, sin encender la barra de carga. */
     videos: (matchId: string, silent = false) => http<MatchVideoDto[]>(`/api/matches/${matchId}/videos`, { silent }),
     /** Previa con probabilidades y análisis del rival (solo cuerpo técnico). */
-    preview: (matchId: string) => http<MatchPreviewDto>(`/api/matches/${matchId}/preview`),
+    preview: (matchId: string) => http<MatchPreviewDto>(`/api/matches/${matchId}/preview`, { cacheMs: TAB_CACHE_MS }),
   },
   /** Servicio de vídeo (rutas /media): subida, tickets, reproducción, descarga y borrado; la lista de vídeos de un partido la da la API. */
   videos: {

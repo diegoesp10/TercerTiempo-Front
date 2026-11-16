@@ -11,6 +11,7 @@ import Skeleton from '@/components/ui/Skeleton.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import ClubRosterEditor from '@/components/teams/ClubRosterEditor.vue';
 import TeamPitchEditor from '@/components/teams/TeamPitchEditor.vue';
+import TeamShirtNumbers from '@/components/teams/TeamShirtNumbers.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import RosterStatsSummary from '@/components/teams/RosterStatsSummary.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
@@ -21,6 +22,7 @@ import { useViewer } from '@/composables/useViewer';
 import { formatKickoff, levelLabels, matchDisplayStatus, positionLabels, visibilityLabels } from '@/utils/format';
 import type { MatchDto, TeamProfileDto } from '@/types/api';
 import TeamName from '@/components/teams/TeamName.vue';
+import { httpUrl } from '@/utils/links';
 
 const props = defineProps<{ teamId: string }>();
 
@@ -172,7 +174,7 @@ async function linkToClub() {
             {{ profile?.officialName ?? data.name }}<template v-if="profile?.locality"> · {{ profile.locality }}</template><template v-if="profile?.province"> ({{ profile.province }})</template>
           </p>
         </div>
-        <a v-if="data.officialUrl" :href="data.officialUrl" target="_blank" rel="noopener" class="text-xs text-accent-400 hover:underline">Ficha en la federación ↗</a>
+        <a v-if="httpUrl(data.officialUrl)" :href="httpUrl(data.officialUrl) ?? undefined" target="_blank" rel="noopener" class="text-xs text-accent-400 hover:underline">Ficha en la federación ↗</a>
       </div>
       <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
         <div v-if="profile?.ground || pitch || canEditPitch">
@@ -289,50 +291,53 @@ async function linkToClub() {
         </template>
       </section>
 
-      <section class="card self-start lg:col-span-2">
-        <div class="mb-3 flex items-center justify-between">
-          <h2 class="font-semibold text-slate-900">Plantilla según futbolasturiano.es</h2>
-          <span v-if="data.rosterPublished" class="text-xs text-slate-500">{{ data.roster.length }} jugadores</span>
-        </div>
+      <div class="space-y-6 self-start lg:col-span-2">
+        <section class="card">
+          <div class="mb-3 flex items-center justify-between">
+            <h2 class="font-semibold text-slate-900">Plantilla según futbolasturiano.es</h2>
+            <span v-if="data.rosterPublished" class="text-xs text-slate-500">{{ data.roster.length }} jugadores</span>
+          </div>
 
-        <ClubRosterEditor v-if="auth.isClub && isMyClubTeam" :team-id="data.id" :roster="data.roster" @updated="onRosterUpdated" />
+          <ClubRosterEditor v-if="auth.isClub && isMyClubTeam" :team-id="data.id" :roster="data.roster" @updated="onRosterUpdated" />
 
-        <p v-else-if="!data.rosterPublished" class="text-sm text-slate-600">
-          El proveedor no publica la plantilla de este equipo. El cuerpo técnico puede añadir las fichas a mano.
-        </p>
+          <p v-else-if="!data.rosterPublished" class="text-sm text-slate-600">
+            El proveedor no publica la plantilla de este equipo. El cuerpo técnico puede añadir las fichas a mano.
+          </p>
 
-        <div v-else class="overflow-x-auto">
-          <table class="min-w-full text-sm">
-            <thead class="text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th class="py-2 pr-3 text-left">#</th>
-                <th class="py-2 pr-3 text-left">Jugador</th>
-                <th class="py-2 text-left" title="Goles, tarjetas y minutos según las actas oficiales">Temporada</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="entry in data.roster" :key="entry.id">
-                <td class="py-2 pr-3 tabular-nums text-slate-500">{{ entry.shirtNumber ?? '—' }}</td>
-                <td class="py-2 pr-3 whitespace-nowrap">
-                  <span class="inline-flex items-center gap-2">
-                    <PlayerAvatar :src="entry.photoUrl" :name="entry.fullName" size="sm" />
-                    <span>
-                      <RouterLink
-                        v-if="signedIn"
-                        :to="{ name: 'player-card', params: { teamId: data.id, entryId: entry.id } }"
-                        class="font-medium text-slate-800 hover:text-brand-500 hover:underline"
-                      >{{ entry.fullName }}</RouterLink>
-                      <span v-else class="font-medium text-slate-800">{{ entry.fullName }}</span>
-                      <span class="block text-xs text-slate-500">{{ entry.position ? positionLabels[entry.position] : 'Sin posición' }}</span>
+          <div v-else class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th class="py-2 pr-3 text-left">Jugador</th>
+                  <th class="py-2 text-left" title="Goles, tarjetas y minutos según las actas oficiales">Temporada</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr v-for="entry in data.roster" :key="entry.id">
+                  <td class="py-2 pr-3 whitespace-nowrap">
+                    <span class="inline-flex items-center gap-2">
+                      <PlayerAvatar :src="entry.photoUrl" :name="entry.fullName" size="sm" />
+                      <span>
+                        <RouterLink
+                          v-if="signedIn"
+                          :to="{ name: 'player-card', params: { teamId: data.id, entryId: entry.id } }"
+                          class="font-medium text-slate-800 hover:text-brand-500 hover:underline"
+                        >{{ entry.fullName }}</RouterLink>
+                        <span v-else class="font-medium text-slate-800">{{ entry.fullName }}</span>
+                        <span class="block text-xs text-slate-500">{{ entry.position ? positionLabels[entry.position] : 'Sin posición' }}</span>
+                      </span>
                     </span>
-                  </span>
-                </td>
-                <td class="py-2 whitespace-nowrap"><RosterStatsSummary :stats="entry.stats" /></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+                  </td>
+                  <td class="py-2 whitespace-nowrap"><RosterStatsSummary :stats="entry.stats" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Los dorsales no van en la plantilla (no son fijos): salen de las actas de cada partido -->
+        <TeamShirtNumbers :team-id="data.id" :roster="data.roster" :linked="signedIn" />
+      </div>
     </div>
   </template>
 </template>

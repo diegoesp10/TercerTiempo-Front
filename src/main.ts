@@ -6,6 +6,7 @@ import { Icon } from './icons';
 import router from './router';
 import { installSessionSync } from './stores/sessionSync';
 import { installAnalytics } from './utils/analytics';
+import '@fontsource-variable/archivo/wdth.css';
 import './style.css';
 
 const app = createApp(App).use(createPinia()).use(router).component('Icon', Icon).directive('busy', busy);

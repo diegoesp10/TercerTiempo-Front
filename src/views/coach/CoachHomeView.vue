@@ -54,6 +54,7 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
         v-for="squad in squads"
         :key="squad.id"
         :squad-id="squad.id"
+        :team-id="squad.teamId"
         :team-name="squad.teamName"
         :team-short-name="squad.teamShortName"
         :crest-url="squad.teamCrestUrl"

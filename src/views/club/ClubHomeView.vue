@@ -177,6 +177,7 @@ const sortedAppointments = computed(() => {
         <SquadAccessCard
           v-if="team.squadId"
           :squad-id="team.squadId"
+          :team-id="team.teamId"
           :team-name="team.teamName"
           :team-short-name="team.teamShortName"
           :crest-url="team.teamCrestUrl"

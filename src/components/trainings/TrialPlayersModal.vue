@@ -76,8 +76,8 @@ function promote(trial: TrialPlayerDto) {
   void act(async () => {
     await api.trainings.promoteTrialPlayer(props.squadId, trial.id, { position: promoteForm.value.position, shirtNumber: promoteForm.value.shirtNumber || null });
     promoteId.value = null;
+    // «promoted» ya recarga la lista de jugadores a prueba: con «changed» se pediría dos veces.
     emit('promoted');
-    emit('changed');
   });
 }
 

@@ -10,15 +10,17 @@ import Spinner from '@/components/ui/Spinner.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import { useAsync } from '@/composables/useAsync';
 import { useSquad } from '@/composables/useSquad';
+import { markCallUpsSeen } from '@/composables/useCallUpSeen';
 import { useAlertsStore } from '@/stores/alerts';
-import type { CallUpRequest, CallUpResponse, MatchCallUpDto } from '@/types/api';
+import type { CallUpEntryDto, CallUpRequest, CallUpResponse, MatchCallUpDto } from '@/types/api';
 import { opponentOf } from '@/utils/crests';
 import { callUpResponseLabels, callUpResponseTone, formatKickoff, positionLabels, toDateKey } from '@/utils/format';
 
 /**
- * La convocatoria de un partido: el cuerpo técnico elige quién va, pone la cita y la publica (se avisa a toda la
- * plantilla, al que va y al que no); cada jugador la firma desde aquí o desde «Mis convocatorias». No hay «no puedo»
- * para los partidos: lo que cambie se habla con el cuerpo técnico, que es quien emite la convocatoria.
+ * La convocatoria de un partido: el cuerpo técnico elige quién va, pone la cita y la envía (se avisa a toda la
+ * plantilla, al que va y al que no); cada jugador la firma desde aquí o desde «Mis convocatorias». Como en un chat, el
+ * cuerpo técnico ve un check cuando le ha llegado y el doble check verde cuando el jugador la ha abierto; la firma va
+ * aparte. No hay «no puedo» para los partidos: lo que cambie se habla con el cuerpo técnico.
  */
 const props = defineProps<{ matchId: string }>();
 
@@ -36,7 +38,7 @@ const positions = computed<Record<string, string>>(() => Object.fromEntries(play
 // Borrador local de lo que el cuerpo técnico está preparando.
 const called = ref(new Set<string>());
 const meet = ref({ date: '', time: '', place: '', notes: '' });
-const busy = ref<'draft' | 'publish' | 'respond' | null>(null);
+const busy = ref<'draft' | 'publish' | 'respond' | 'resend' | null>(null);
 const actionError = ref<string | null>(null);
 
 function take(dto: MatchCallUpDto) {
@@ -49,7 +51,12 @@ function take(dto: MatchCallUpDto) {
     notes: dto.notes ?? '',
   };
 }
-watch(data, (dto) => { if (dto) take(dto); }, { immediate: true });
+watch(data, (dto) => {
+  if (!dto) return;
+  take(dto);
+  // Quien la abre es el jugador: doble check para el cuerpo técnico.
+  if (dto.id && dto.status === 'Published' && dto.mine) markCallUpsSeen([{ callUpId: dto.id, closed: dto.closed, mine: dto.mine }]);
+}, { immediate: true });
 
 const canEdit = computed(() => (data.value?.canEdit ?? false) && !(data.value?.closed ?? false));
 const dirty = computed(() => {
@@ -77,7 +84,7 @@ function selectAll(on: boolean) {
 async function save(publish: boolean) {
   if (!data.value) return;
   if (publish && !data.value.id) {
-    const ok = await confirmDialog({ title: 'Publicar la convocatoria', message: `Se avisa a toda la plantilla: ${called.value.size} convocados y el resto como no convocados. Después podrás cambiarla y solo se avisará a quien le cambie.`, confirmLabel: 'Publicar y avisar' });
+    const ok = await confirmDialog({ title: 'Enviar la convocatoria', message: `Le llega a toda la plantilla con cuenta: ${called.value.size} convocados y el resto como no convocados. Verás un check cuando le llegue a cada uno y el doble check verde cuando la abra. Después podrás cambiarla y solo se avisará a quien le cambie.`, confirmLabel: 'Enviar' });
     if (!ok) return;
   }
   busy.value = publish ? 'publish' : 'draft';
@@ -91,6 +98,35 @@ async function save(publish: boolean) {
       publish,
     };
     data.value = await api.trainings.saveCallUp(squadId.value, props.matchId, body);
+  } catch (e) {
+    actionError.value = errorMessage(e);
+  } finally {
+    busy.value = null;
+  }
+}
+
+// Enviada (un check) y vista (doble check verde), como en un chat. La firma va aparte.
+type Delivery = 'seen' | 'sent' | 'none';
+function delivery(e: CallUpEntryDto): Delivery {
+  if (e.seenAt) return 'seen';
+  if (e.sentAt) return 'sent';
+  return 'none';
+}
+function deliveryTitle(e: CallUpEntryDto) {
+  if (e.seenAt) return `Vista el ${formatKickoff(e.seenAt)}`;
+  if (e.sentAt) return `Enviada el ${formatKickoff(e.sentAt)}; todavía no la ha abierto`;
+  return e.linked ? 'Pendiente de enviar' : 'Sin cuenta en la app: no le llega';
+}
+const unseen = computed(() => (data.value?.entries ?? []).filter((e) => e.linked && e.sentAt && !e.seenAt).length);
+
+async function resend() {
+  if (!data.value) return;
+  const ok = await confirmDialog({ title: 'Reenviar la convocatoria', message: `Le vuelve a llegar el aviso a ${unseen.value === 1 ? 'el jugador que todavía no la ha abierto' : `los ${unseen.value} jugadores que todavía no la han abierto`}.`, confirmLabel: 'Reenviar' });
+  if (!ok) return;
+  busy.value = 'resend';
+  actionError.value = null;
+  try {
+    data.value = await api.trainings.resendCallUp(squadId.value, props.matchId);
   } catch (e) {
     actionError.value = errorMessage(e);
   } finally {
@@ -121,7 +157,7 @@ async function respond(response: CallUpResponse) {
   <template v-else-if="data">
     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div class="min-w-0">
-        <RouterLink :to="{ name: 'squad-trainings', params: { squadId } }" class="text-xs font-medium text-accent-400 hover:underline"><Icon icon="chevron-left" class="mr-1 inline h-3 w-3" />Entrenamientos y convocatorias</RouterLink>
+        <RouterLink :to="{ name: 'squad-trainings', params: { squadId } }" class="text-xs font-medium text-accent-400 hover:underline"><Icon icon="chevron-left" class="mr-1 inline h-3 w-3" />Agenda</RouterLink>
         <h2 class="mt-1 flex flex-wrap items-center gap-2 text-xl font-semibold text-slate-900">
           Convocatoria · J{{ data.match.matchday }}
           <TeamName prefix="vs" :name="opponentOf(data.match, teamId).name" :crest-url="opponentOf(data.match, teamId).crestUrl" :short-name="opponentOf(data.match, teamId).shortName" :team-id="opponentOf(data.match, teamId).id" size="sm" />
@@ -130,7 +166,7 @@ async function respond(response: CallUpResponse) {
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <Badge v-if="data.closed" tone="slate">Partido empezado</Badge>
-        <Badge v-else-if="data.status === 'Published'" tone="green">Publicada</Badge>
+        <Badge v-else-if="data.status === 'Published'" tone="green">Enviada</Badge>
         <Badge v-else-if="data.id" tone="amber">Borrador</Badge>
         <Badge v-else tone="slate">Sin preparar</Badge>
         <RouterLink :to="{ name: 'sheet', params: { squadId, matchId }, query: { tab: 'previa' } }" class="btn-secondary px-3 py-1.5 text-xs"><Icon icon="chart-line" class="mr-1.5 h-3 w-3" />Previa del partido</RouterLink>
@@ -174,7 +210,7 @@ async function respond(response: CallUpResponse) {
             <button type="button" class="btn-ghost px-2 py-1 text-xs" @click="selectAll(false)">Ninguno</button>
           </div>
         </div>
-        <p v-if="!data.id && !canEdit" class="text-sm text-slate-500">El cuerpo técnico todavía no ha publicado la convocatoria de este partido.</p>
+        <p v-if="!data.id && !canEdit" class="text-sm text-slate-500">El cuerpo técnico todavía no ha enviado la convocatoria de este partido.</p>
         <ul v-else class="divide-y divide-line rounded-lg border border-line">
           <li v-for="e in sorted" :key="e.squadPlayerId" class="flex flex-wrap items-center gap-2 px-3 py-2 text-sm" :class="called.has(e.squadPlayerId) ? 'bg-brand-500/5' : ''">
             <label v-if="canEdit" class="flex shrink-0 cursor-pointer items-center">
@@ -189,8 +225,12 @@ async function respond(response: CallUpResponse) {
               <Badge v-if="e.called" :tone="callUpResponseTone[e.response]">{{ callUpResponseLabels[e.response] }}</Badge>
               <Badge v-else-if="e.response === 'Acknowledged'" tone="slate">Enterado</Badge>
               <Badge v-else-if="e.linked" tone="slate">No va</Badge>
+              <span v-if="data.canEdit && e.linked" class="inline-flex w-14 shrink-0 items-center justify-end gap-1 text-xs" :title="deliveryTitle(e)">
+                <template v-if="delivery(e) === 'seen'"><Icon icon="check-double" class="h-3.5 w-3.5 text-emerald-500" aria-label="Vista" /><span class="text-emerald-500">Vista</span></template>
+                <template v-else-if="delivery(e) === 'sent'"><Icon icon="check" class="h-3.5 w-3.5 text-slate-400" aria-label="Enviada" /><span class="text-slate-400">Enviada</span></template>
+              </span>
             </template>
-            <span v-if="!e.linked" class="text-xs text-slate-400" title="Sin cuenta en la app: no recibe el aviso">sin cuenta</span>
+            <span v-if="!e.linked" class="text-xs text-slate-400" title="Sin cuenta en la app: no le llega el aviso">sin cuenta</span>
           </li>
         </ul>
       </section>
@@ -222,6 +262,16 @@ async function respond(response: CallUpResponse) {
           </template>
         </section>
 
+        <section v-if="data.status === 'Published' && data.canEdit" class="card text-sm">
+          <h3 class="mb-2 font-semibold text-slate-900">Entrega</h3>
+          <ul class="space-y-1">
+            <li class="flex justify-between"><span class="text-slate-600"><Icon icon="check" class="mr-1.5 h-3 w-3 text-slate-400" />Enviada</span><strong class="tabular-nums text-slate-700">{{ data.counts.sent }}</strong></li>
+            <li class="flex justify-between"><span class="text-slate-600"><Icon icon="check-double" class="mr-1.5 h-3 w-3 text-emerald-500" />Vista</span><strong class="tabular-nums text-emerald-600">{{ data.counts.seen }}</strong></li>
+          </ul>
+          <button v-if="canEdit && unseen > 0" type="button" class="btn-secondary mt-3 w-full px-3 py-1.5 text-xs" v-busy="busy === 'resend'" :disabled="busy !== null" @click="resend"><Icon icon="paper-plane" class="mr-1.5 h-3 w-3" />Reenviar a quien no la ha visto ({{ unseen }})</button>
+          <p class="mt-2 text-xs text-slate-500">Un check: le ha llegado el aviso. Doble check verde: la ha abierto. La firma va aparte.</p>
+        </section>
+
         <section v-if="data.status === 'Published'" class="card text-sm">
           <h3 class="mb-2 font-semibold text-slate-900">Firmas</h3>
           <ul class="space-y-1">
@@ -229,17 +279,17 @@ async function respond(response: CallUpResponse) {
             <li class="flex justify-between"><span class="text-slate-600">Sin firmar</span><strong class="tabular-nums text-amber-600">{{ data.counts.pending }}</strong></li>
             <li class="flex justify-between"><span class="text-slate-600">No convocados enterados</span><strong class="tabular-nums text-slate-700">{{ data.counts.acknowledged }}</strong></li>
           </ul>
-          <p v-if="data.publishedAt" class="mt-2 text-xs text-slate-500">Publicada el {{ formatKickoff(data.publishedAt) }}.</p>
+          <p v-if="data.publishedAt" class="mt-2 text-xs text-slate-500">Enviada el {{ formatKickoff(data.publishedAt) }}.</p>
         </section>
 
         <div v-if="canEdit" class="flex flex-col gap-2">
           <button v-if="data.status !== 'Published'" type="button" class="btn-secondary" v-busy="busy === 'draft'" :disabled="busy !== null || !dirty" @click="save(false)">Guardar borrador</button>
           <button type="button" class="btn-primary" v-busy="busy === 'publish'" :disabled="busy !== null || called.size === 0 || (data.status === 'Published' && !dirty)" @click="save(true)">
-            <Icon icon="bell" class="mr-1.5 h-3.5 w-3.5" />{{ data.status === 'Published' ? 'Guardar y avisar a quien cambie' : 'Publicar y avisar a la plantilla' }}
+            <Icon icon="paper-plane" class="mr-1.5 h-3.5 w-3.5" />{{ data.status === 'Published' ? 'Guardar y avisar a quien cambie' : 'Enviar convocatoria' }}
           </button>
           <p class="text-xs text-slate-500">
             <template v-if="data.status === 'Published'">Al guardar, solo reciben aviso los jugadores que entran o salen de la convocatoria; su firma anterior se borra.</template>
-            <template v-else>El borrador solo lo ve el cuerpo técnico. Al publicar, cada jugador con cuenta recibe el aviso de si va o no y la firma desde la app.</template>
+            <template v-else>El borrador solo lo ve el cuerpo técnico. Al enviarla, a cada jugador con cuenta le llega el aviso de si va o no; verás quién la ha abierto (doble check verde) y quién la ha firmado.</template>
           </p>
         </div>
       </aside>

@@ -5,16 +5,20 @@ import type { ClubAlertsDto } from '@/types/api';
 import { useAuthStore } from './auth';
 
 const REFRESH_MS = 5 * 60_000;
+// Al volver a la pestaña solo se pregunta si la última respuesta tiene más de esto.
+const STALE_ON_RETURN_MS = 30_000;
 
 /**
  * Avisos de la campanita de cualquier cuenta (club, cuerpo técnico o jugador). Se cargan al entrar, cada cinco minutos
- * y al volver a la pestaña; las acciones que los crean o resuelven (licencia, convocatorias, ausencias) llaman a load().
+ * y al volver a la pestaña; las acciones que los crean o resuelven (licencia, convocatorias de partido, ausencias a
+ * entrenamientos) llaman a load().
  */
 export const useAlertsStore = defineStore('alerts', () => {
   const auth = useAuthStore();
   const data = shallowRef<ClubAlertsDto | null>(null);
   const loading = ref(false);
   let timer: ReturnType<typeof setInterval> | null = null;
+  let loadedAt = 0;
 
   const alerts = computed(() => data.value?.alerts ?? []);
   const unread = computed(() => data.value?.unread ?? 0);
@@ -24,6 +28,7 @@ export const useAlertsStore = defineStore('alerts', () => {
     loading.value = true;
     try {
       data.value = await api.alerts.mine();
+      loadedAt = Date.now();
     } catch { /* sin avisos no se enseña nada: la campanita se queda como estaba */ }
     finally {
       loading.value = false;
@@ -38,7 +43,7 @@ export const useAlertsStore = defineStore('alerts', () => {
     data.value = await api.alerts.readAll();
   }
 
-  const onVisible = () => { if (document.visibilityState === 'visible') void load(); };
+  const onVisible = () => { if (document.visibilityState === 'visible' && Date.now() - loadedAt > STALE_ON_RETURN_MS) void load(); };
 
   watch(() => auth.isAuthenticated, (signedIn) => {
     if (timer) clearInterval(timer);
@@ -49,7 +54,7 @@ export const useAlertsStore = defineStore('alerts', () => {
       return;
     }
     void load();
-    timer = setInterval(() => void load(), REFRESH_MS);
+    timer = setInterval(() => { if (document.visibilityState === 'visible') void load(); }, REFRESH_MS);
     document.addEventListener('visibilitychange', onVisible);
   }, { immediate: true });
 

@@ -14,6 +14,7 @@ import type { OfficialLineDto, OfficialSheetDto, OfficialTeamSheetDto } from '@/
 import { formatKickoff, officialEventLabels, sheetSourceLabel } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 import PlayerName from '@/components/players/PlayerName.vue';
+import { httpUrl } from '@/utils/links';
 
 const props = defineProps<{
   matchId: string;
@@ -74,6 +75,9 @@ watch(() => props.matchId, () => { fetchingPolls = 0; own.value = null; if (prop
 
 const teams = computed(() => (sheet.value ? [sheet.value.home, sheet.value.away].filter((t): t is OfficialTeamSheetDto => t !== null) : []));
 
+/** Acta sin cerrar: solo valen las alineaciones; los minutos, goles y tarjetas todavía no están en la federación. */
+const provisional = computed(() => sheet.value?.status === 'Provisional');
+
 /** "90'", "48' (sale 48')" para un titular sustituido o expulsado, "32' (entra 58')" para un suplente. */
 const minutes = (line: OfficialLineDto) => {
   if (!line.played) return '—';
@@ -91,14 +95,14 @@ const minutes = (line: OfficialLineDto) => {
       <div>
         <h2 class="font-semibold text-slate-900">Acta pública</h2>
         <p class="text-xs text-slate-500">
-          <template v-if="sheet?.status === 'Available'">
-            Acta guardada en Tercer Tiempo · fuente: {{ sheetSourceLabel(sheet.provider) }}<template v-if="sheet.referee"> · árbitro: {{ sheet.referee }}</template><template v-if="sheet.fetchedAt"> · descargada el {{ formatKickoff(sheet.fetchedAt) }}</template>
+          <template v-if="sheet?.status === 'Available' || sheet?.status === 'Provisional'">
+            {{ provisional ? 'Acta provisional guardada' : 'Acta guardada' }} en Tercer Tiempo · fuente: {{ sheetSourceLabel(sheet.provider) }}<template v-if="sheet.referee"> · árbitro: {{ sheet.referee }}</template><template v-if="sheet.fetchedAt"> · descargada el {{ formatKickoff(sheet.fetchedAt) }}</template>
           </template>
           <template v-else>Alineaciones, minutos, goles y tarjetas publicados tras el partido por la federación.</template>
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        <a v-if="sheet?.sourceUrl" :href="sheet.sourceUrl" target="_blank" rel="noopener" class="text-sm text-accent-400 hover:underline">Ver en {{ sheetSourceLabel(sheet.provider) }}</a>
+        <a v-if="sheet && httpUrl(sheet.sourceUrl)" :href="httpUrl(sheet.sourceUrl) ?? undefined" target="_blank" rel="noopener" class="text-sm text-accent-400 hover:underline">Ver en {{ sheetSourceLabel(sheet.provider) }}</a>
       </div>
     </div>
 
@@ -121,6 +125,9 @@ const minutes = (line: OfficialLineDto) => {
       <Alert v-else-if="sheet.status === 'Unavailable'" kind="warning">{{ sheet.message ?? 'No se ha encontrado este partido en ninguna web de actas.' }}</Alert>
 
       <template v-else>
+        <div v-if="provisional" class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <strong>Acta sin cerrar.</strong> {{ sheet.message ?? 'La federación ya ha publicado las alineaciones, pero el árbitro aún no ha cerrado el acta: faltan los goles, los cambios y las tarjetas.' }}
+        </div>
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div v-for="team in teams" :key="team.side" class="rounded-xl border p-4" :class="highlightTeamId && team.teamId === highlightTeamId ? 'border-accent-400/40 bg-brand-500/10' : 'border-slate-200'">
             <div class="mb-2 flex items-center justify-between gap-2">
@@ -133,21 +140,25 @@ const minutes = (line: OfficialLineDto) => {
                 <tr>
                   <th class="py-1 pr-2 text-left">#</th>
                   <th class="py-1 pr-2 text-left">Jugador</th>
-                  <th class="py-1 pr-2 text-center" title="Minutos jugados (entrada → salida)">Min</th>
-                  <th class="py-1 pr-2 text-center">G</th>
-                  <th class="py-1 text-center">TA/TR</th>
+                  <template v-if="!provisional">
+                    <th class="py-1 pr-2 text-center" title="Minutos jugados (entrada → salida)">Min</th>
+                    <th class="py-1 pr-2 text-center">G</th>
+                    <th class="py-1 text-center">TA/TR</th>
+                  </template>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="line in [...team.starters, ...team.bench]" :key="line.id" :class="line.played ? '' : 'text-slate-400'">
+                <tr v-for="line in [...team.starters, ...team.bench]" :key="line.id" :class="line.played || provisional ? '' : 'text-slate-400'">
                   <td class="py-1 pr-2 tabular-nums text-slate-500">{{ line.shirtNumber ?? '—' }}</td>
                   <td class="py-1 pr-2">
-                    <PlayerName :name="line.fullName" class="font-medium" :class="line.played ? 'text-slate-800' : ''" />
+                    <PlayerName :name="line.fullName" class="font-medium" :class="line.played || provisional ? 'text-slate-800' : ''" />
                     <Badge v-if="line.started" class="ml-1">titular</Badge>
                   </td>
-                  <td class="py-1 pr-2 text-center tabular-nums whitespace-nowrap">{{ minutes(line) }}</td>
-                  <td class="py-1 pr-2 text-center whitespace-nowrap"><GoalMarks :goals="line.goals" :penalty-goals="line.penaltyGoals" :own-goals="line.ownGoals" /></td>
-                  <td class="py-1 text-center whitespace-nowrap"><CardMarks :yellow-cards="line.yellowCards" :red-card="line.redCard" /></td>
+                  <template v-if="!provisional">
+                    <td class="py-1 pr-2 text-center tabular-nums whitespace-nowrap">{{ minutes(line) }}</td>
+                    <td class="py-1 pr-2 text-center whitespace-nowrap"><GoalMarks :goals="line.goals" :penalty-goals="line.penaltyGoals" :own-goals="line.ownGoals" /></td>
+                    <td class="py-1 text-center whitespace-nowrap"><CardMarks :yellow-cards="line.yellowCards" :red-card="line.redCard" /></td>
+                  </template>
                 </tr>
               </tbody>
             </table>

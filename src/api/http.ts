@@ -54,12 +54,17 @@ export const mediaBaseUrl = mediaUrl;
 
 // GET en vuelo y respuestas cacheadas, por sesión y ruta: dos componentes que piden lo mismo a la vez comparten una
 // sola petición, y las listas de referencia (competiciones, tipos de lesión...) no se repiten al cambiar de página.
-const inFlight = new Map<string, Promise<unknown>>();
+// Las GET que ya iban en vuelo al guardar algo pueden traer datos de antes: no se reutilizan para las lecturas de
+// después (cada escritura abre una generación nueva) ni se guardan en la caché.
+const inFlight = new Map<string, { generation: number; promise: Promise<unknown> }>();
 const cache = new Map<string, { expires: number; data: unknown }>();
+let generation = 0;
 
 /** Olvida las respuestas cacheadas (tras guardar algo, o al cambiar de sesión). */
 export function clearHttpCache() {
   cache.clear();
+  inFlight.clear();
+  generation++;
 }
 
 // Sin cuenta abierta, la sesión del administrador sirve para leer toda la web (visor de solo lectura): la API solo le
@@ -77,15 +82,18 @@ export function http<T>(path: string, options: RequestOptions = {}): Promise<T> 
   if (cached && cached.expires > Date.now()) return Promise.resolve(cached.data as T);
 
   const pending = inFlight.get(key);
-  if (pending) return pending as Promise<T>;
+  if (pending && pending.generation === generation) return pending.promise as Promise<T>;
 
+  const started = generation;
   const promise = request<T>(path, options)
     .then((data) => {
-      if (options.cacheMs) cache.set(key, { expires: Date.now() + options.cacheMs, data });
+      if (options.cacheMs && started === generation) cache.set(key, { expires: Date.now() + options.cacheMs, data });
       return data;
     })
-    .finally(() => inFlight.delete(key));
-  inFlight.set(key, promise);
+    .finally(() => {
+      if (inFlight.get(key)?.promise === promise) inFlight.delete(key);
+    });
+  inFlight.set(key, { generation, promise });
   return promise;
 }
 
@@ -115,7 +123,7 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
       });
       text = await response.text();
     } catch {
-      throw new ApiError(0, { title: 'Sin conexión', detail: path.startsWith('/media') ? 'No se ha podido contactar con el servicio de vídeo. ¿Está arrancado?' : 'No se ha podido contactar con la API. ¿Está arrancada?' });
+      throw new ApiError(0, { title: 'Sin conexión', detail: path.startsWith('/media') ? 'No hemos podido conectar con el servicio de vídeo. Comprueba tu conexión a internet y vuelve a intentarlo en un momento.' : 'No hemos podido conectar con Tercer Tiempo. Comprueba tu conexión a internet y vuelve a intentarlo en un momento.' });
     }
     let data: unknown = null;
     try { data = text ? JSON.parse(text) : null; } catch {
@@ -142,7 +150,7 @@ export async function httpBlob(path: string): Promise<Blob> {
   try {
     response = await fetch(`${originOf(path)}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
   } catch {
-    throw new ApiError(0, { title: 'Sin conexión', detail: 'No se ha podido contactar con la API. ¿Está arrancada?' });
+    throw new ApiError(0, { title: 'Sin conexión', detail: 'No hemos podido conectar con Tercer Tiempo. Comprueba tu conexión a internet y vuelve a intentarlo en un momento.' });
   }
   if (!response.ok) throw new ApiError(response.status, { status: response.status, title: response.statusText });
   return response.blob();

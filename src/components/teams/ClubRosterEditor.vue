@@ -46,19 +46,17 @@ async function remove(entry: RosterEntryDto) {
 }
 
 const adding = ref(false);
-const newEntry = reactive<{ fullName: string; position: Position | ''; shirtNumber: number | null }>({ fullName: '', position: '', shirtNumber: null });
+const newEntry = reactive<{ fullName: string; position: Position | '' }>({ fullName: '', position: '' });
 
 const toRequest = (form: typeof newEntry): RosterEntryRequest => ({
   fullName: form.fullName.trim(),
   position: form.position || null,
-  shirtNumber: form.shirtNumber || null,
 });
 
 async function add() {
   if (await act(() => api.clubs.addRosterEntry(props.teamId, toRequest(newEntry)))) {
     newEntry.fullName = '';
     newEntry.position = '';
-    newEntry.shirtNumber = null;
     adding.value = false;
   }
 }
@@ -72,7 +70,6 @@ async function add() {
       <table class="min-w-full text-sm">
         <thead class="text-xs uppercase tracking-wide text-slate-500">
           <tr>
-            <th class="py-2 pr-3 text-left">#</th>
             <th class="py-2 pr-3 text-left">Jugador</th>
             <th class="py-2 pr-3 text-left" title="Goles, tarjetas y minutos según las actas oficiales">Temporada</th>
             <th class="py-2 text-right"></th>
@@ -80,7 +77,6 @@ async function add() {
         </thead>
         <tbody class="divide-y divide-slate-100">
           <tr v-for="entry in roster" :key="entry.id" class="cursor-pointer hover:bg-surface-2/60" @click="openId = entry.id">
-            <td class="py-2 pr-3 tabular-nums text-slate-500">{{ entry.shirtNumber ?? '—' }}</td>
             <td class="py-2 pr-3 whitespace-nowrap">
               <span class="inline-flex items-center gap-2">
                 <PlayerAvatar :src="entry.photoUrl" :name="entry.fullName" size="sm" />
@@ -101,21 +97,17 @@ async function add() {
       </table>
     </div>
 
-    <form v-if="adding" class="mt-4 grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-3 rounded-lg border border-line bg-surface-2 p-3 sm:flex sm:flex-wrap" @submit.prevent="add">
-      <div class="sm:w-20">
-        <label class="label" for="roster-new-number">Dorsal</label>
-        <input id="roster-new-number" v-model.number="newEntry.shirtNumber" type="number" min="1" max="99" class="input" />
-      </div>
+    <form v-if="adding" class="mt-4 grid grid-cols-1 items-start gap-3 rounded-lg border border-line bg-surface-2 p-3 sm:flex sm:flex-wrap" @submit.prevent="add">
       <div class="min-w-0 sm:min-w-48 sm:flex-1">
         <label class="label" for="roster-new-name">Nombre y apellidos</label>
         <input id="roster-new-name" v-model="newEntry.fullName" type="text" required maxlength="150" class="input" />
         <p v-if="fieldErrors.fullName" class="field-error">{{ fieldErrors.fullName[0] }}</p>
       </div>
-      <div class="col-span-2 sm:w-44">
+      <div class="sm:w-44">
         <label class="label" for="roster-new-position">Posición</label>
         <SearchSelect id="roster-new-position" placeholder="—" clearable :model-value="newEntry.position || null" :options="positionOptions" @update:model-value="newEntry.position = ($event as Position | null) ?? ''" />
       </div>
-      <div class="col-span-2 flex gap-2 sm:col-span-1">
+      <div class="flex gap-2">
         <div>
           <span class="label invisible hidden sm:block" aria-hidden="true">Añadir</span>
           <button type="submit" class="btn-primary" v-busy="busy" :disabled="busy || !newEntry.fullName.trim()">Añadir</button>

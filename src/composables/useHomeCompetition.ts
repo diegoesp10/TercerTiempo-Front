@@ -1,6 +1,7 @@
 import { computed, ref, shallowRef } from 'vue';
 import { api } from '@/api';
 import { useMyClub } from '@/composables/useMyClub';
+import { useSeasonStore } from '@/stores/season';
 import type { CompetitionDto } from '@/types/api';
 import { groupByLevel, levelLabels } from '@/utils/format';
 
@@ -11,6 +12,8 @@ const competitions = shallowRef<CompetitionDto[]>([]);
 const selectedId = ref<string | null>(null);
 const ready = ref(false);
 let request: Promise<void> | null = null;
+// Las ligas son de una temporada (X-Season): al cambiarla se vuelven a pedir.
+let requestSeason: string | null | undefined;
 
 /**
  * La liga que enseña la portada. Al abrir, la de tu club (si el ajuste está activo); si no, la última que se vio en
@@ -18,11 +21,16 @@ let request: Promise<void> | null = null;
  */
 export function useHomeCompetition() {
   const { preferredCompetition, withMyClubFirst } = useMyClub();
+  const season = useSeasonStore();
 
-  if (!request) {
+  if (!request || requestSeason !== season.selectedId) {
+    const forSeason = season.selectedId;
+    requestSeason = forSeason;
+    ready.value = false;
     request = api.competitions
       .list()
       .then((list) => {
+        if (requestSeason !== forSeason) return;
         competitions.value = list;
         let saved: string | null = null;
         try {
@@ -34,10 +42,10 @@ export function useHomeCompetition() {
           ?? null;
       })
       .catch(() => {
-        request = null;
+        if (requestSeason === forSeason) request = null;
       })
       .finally(() => {
-        ready.value = true;
+        if (requestSeason === forSeason) ready.value = true;
       });
   }
 

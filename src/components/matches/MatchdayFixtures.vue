@@ -24,15 +24,19 @@ const error = ref<string | null>(null);
 /** null = la jornada en curso según la API. */
 const requested = ref<number | null>(null);
 
+// Solo cuenta la última petición: pasando jornadas deprisa o cambiando de liga, una respuesta vieja no pisa la actual.
+let latest = 0;
 async function load() {
+  const ticket = ++latest;
   loading.value = true;
   error.value = null;
   try {
-    data.value = await api.competitions.matchday(props.competitionId, requested.value);
+    const result = await api.competitions.matchday(props.competitionId, requested.value);
+    if (ticket === latest) data.value = result;
   } catch (e) {
-    error.value = errorMessage(e);
+    if (ticket === latest) error.value = errorMessage(e);
   } finally {
-    loading.value = false;
+    if (ticket === latest) loading.value = false;
   }
 }
 

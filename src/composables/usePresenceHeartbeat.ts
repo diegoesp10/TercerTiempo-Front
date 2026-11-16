@@ -2,6 +2,7 @@ import { onBeforeUnmount, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '@/api';
 import { useAuthStore } from '@/stores/auth';
+import { safePath } from '@/utils/safePath';
 
 const EVERY_MS = 60_000;
 const AFTER_NAVIGATION_MS = 1_500;
@@ -20,7 +21,7 @@ export function usePresenceHeartbeat() {
 
   function ping() {
     if (!auth.token || document.hidden) return;
-    void api.presence.ping(route.fullPath).catch(() => undefined);
+    void api.presence.ping(safePath(route)).catch(() => undefined);
   }
 
   function stop() {

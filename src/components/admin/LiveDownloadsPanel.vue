@@ -60,9 +60,11 @@ async function load() {
   schedule();
 }
 
+// Tras salir del panel no se programa nada más, aunque quede una respuesta en camino.
+let disposed = false;
 function schedule() {
   if (poll) clearTimeout(poll);
-  if (document.hidden) return;
+  if (disposed || document.hidden) return;
   const fast = football.value?.running || (sheetsActive.value && !paused.value) || jobs.value.some((j) => j.job.running);
   poll = setTimeout(() => void load(), fast ? 2_000 : 10_000);
 }
@@ -78,6 +80,7 @@ onMounted(() => {
   document.addEventListener('visibilitychange', onVisibility);
 });
 onBeforeUnmount(() => {
+  disposed = true;
   if (poll) clearTimeout(poll);
   if (tick) clearInterval(tick);
   if (glow) clearTimeout(glow);

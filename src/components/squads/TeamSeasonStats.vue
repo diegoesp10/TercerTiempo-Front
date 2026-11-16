@@ -16,7 +16,7 @@ import { opponentOf } from '@/utils/crests';
  */
 const props = defineProps<{ squadId: string; teamId: string; compact?: boolean }>();
 
-const { data, loading, error } = useAsync(() => teamStatsApi.season(props.squadId));
+const { data, loading, error } = useAsync(() => teamStatsApi.season(props.squadId), { redirectOnError: false });
 
 const averageRows: { label: string; mine: keyof TeamStatsAveragesDto; theirs: keyof TeamStatsAveragesDto; total?: boolean }[] = [
   { label: 'Córners', mine: 'cornersFor', theirs: 'cornersAgainst' },

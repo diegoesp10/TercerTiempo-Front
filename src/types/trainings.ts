@@ -6,6 +6,11 @@ export type TrainingKind = 'Season' | 'Preseason' | 'Recovery' | 'MatchPreparati
 export type ExerciseType = 'Warmup' | 'Technical' | 'Tactical' | 'Physical' | 'Goalkeeping' | 'SetPieces' | 'Game' | 'Cooldown' | 'Other';
 /** Cuenta con venir, ha avisado de que falta, vino o faltó sin avisar. */
 export type AttendanceStatus = 'Expected' | 'WillMiss' | 'Attended' | 'Missed';
+/**
+ * Lo que hay en la agenda de la plantilla: la citación a un entrenamiento (va toda la plantilla; el jugador solo avisa si
+ * falta) o un partido, con su convocatoria (va quien convoca el cuerpo técnico; el jugador la firma).
+ */
+export type SquadEventKind = 'Training' | 'Match';
 export type CallUpStatus = 'Draft' | 'Published';
 /** El convocado firma la convocatoria; el que no va se da por enterado. No hay «no puedo» para los partidos. */
 export type CallUpResponse = 'Pending' | 'Confirmed' | 'Acknowledged';
@@ -204,6 +209,10 @@ export interface CallUpEntryDto {
   called: boolean;
   response: CallUpResponse;
   respondedAt: string | null;
+  /** Cuándo le llegó el aviso (un check); null si no se ha enviado o no tiene cuenta. */
+  sentAt: string | null;
+  /** Cuándo la abrió por primera vez (doble check verde); firmarla también cuenta como vista. */
+  seenAt: string | null;
 }
 
 export interface CallUpCountsDto {
@@ -211,6 +220,10 @@ export interface CallUpCountsDto {
   confirmed: number;
   pending: number;
   acknowledged: number;
+  /** Jugadores con cuenta a los que les ha llegado. */
+  sent: number;
+  /** Jugadores que la han abierto. */
+  seen: number;
 }
 
 export interface MatchCallUpDto {
@@ -247,6 +260,20 @@ export interface CallUpRequest {
   notes: string | null;
   /** true publica y avisa a la plantilla; false deja el borrador. */
   publish: boolean;
+}
+
+/** Un día del calendario de la plantilla: un entrenamiento o un partido. */
+export interface SquadAgendaItemDto {
+  kind: SquadEventKind;
+  startsAt: string;
+  /** Ya realizado: el entrenamiento ha terminado o el partido ya se ha jugado. */
+  done: boolean;
+  /** Solo en Training. */
+  training: TrainingSummaryDto | null;
+  /** Solo en Match. */
+  match: MatchDto | null;
+  /** Solo en Match: estado de la convocatoria; null si no hay (o es un borrador que quien mira no ve). */
+  callUp: CallUpSummaryDto | null;
 }
 
 export interface MyCallUpDto {

@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { api } from '@/api';
 import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
 import PublicProfileToggle from '@/components/players/PublicProfileToggle.vue';
+import ShirtNumberUsage from '@/components/players/ShirtNumberUsage.vue';
 import CardMarks from '@/components/sheet/CardMarks.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -21,10 +22,15 @@ import { formatDate, formatNumber, outcomeLabels, outcomeTone, positionLabels, t
 const props = defineProps<{ teamId: string; entryId: string }>();
 const { data, loading, error, run } = useAsync(() => api.teams.playerCard(props.teamId, props.entryId));
 
+/** No hay dorsal fijo: el de cabecera es el que más ha llevado según las actas. */
+const usualShirt = computed(() => data.value?.entry.shirtNumbers[0] ?? null);
+
 const meta = computed(() => {
   const card = data.value;
   if (!card) return '';
-  return [card.entry.position ? positionLabels[card.entry.position] : 'Sin posición', card.entry.shirtNumber !== null ? `dorsal ${card.entry.shirtNumber}` : null, card.team.competitionName]
+  const shirt = usualShirt.value;
+  const shirtLabel = shirt ? (card.entry.shirtNumbers.length > 1 ? `dorsal más usado: ${shirt.number} (${shirt.percentage} %)` : `dorsal ${shirt.number}`) : null;
+  return [card.entry.position ? positionLabels[card.entry.position] : 'Sin posición', shirtLabel, card.team.competitionName]
     .filter(Boolean)
     .join(' · ');
 });
@@ -33,6 +39,8 @@ interface Row {
   match: MatchDto;
   home: boolean;
   source: 'internal' | 'official';
+  /** Dorsal de ese partido: el apuntado en el acta interna y, si no, el del acta oficial. */
+  shirt: number | null;
   started: boolean;
   minutes: number;
   goals: number;
@@ -48,10 +56,11 @@ const rows = computed<Row[]>(() => {
   const card = data.value;
   if (!card) return [];
   const byMatch = new Map<string, Row>();
+  const officialShirt = new Map(card.official.map((o) => [o.match.id, o.line.shirtNumber]));
   for (const o of card.official) {
     if (!o.line.played) continue;
     byMatch.set(o.match.id, {
-      match: o.match, home: o.home, source: 'official', started: o.line.started, minutes: o.line.minutesPlayed,
+      match: o.match, home: o.home, source: 'official', shirt: o.line.shirtNumber, started: o.line.started, minutes: o.line.minutesPlayed,
       goals: o.line.goals + o.line.penaltyGoals, assists: null, yellow: o.line.yellowCards, red: o.line.redCard, fouls: null, rating: null,
     });
   }
@@ -59,7 +68,8 @@ const rows = computed<Row[]>(() => {
     const p = i.performance;
     if (p.minutesPlayed <= 0) continue;
     byMatch.set(i.match.id, {
-      match: i.match, home: i.home, source: 'internal', started: p.started, minutes: p.minutesPlayed,
+      match: i.match, home: i.home, source: 'internal', shirt: p.matchShirtNumber ?? officialShirt.get(i.match.id) ?? null,
+      started: p.started, minutes: p.minutesPlayed,
       goals: p.goals, assists: p.assists, yellow: p.yellowCards, red: p.redCard, fouls: p.fouls ?? 0, rating: p.rating,
     });
   }
@@ -107,7 +117,7 @@ const band = computed(() => {
       :team-id="data.team.id"
       :name="data.entry.fullName"
       :meta="meta"
-      :number="data.entry.shirtNumber"
+      :number="usualShirt?.number"
       :photo-url="data.entry.photoUrl"
       :stats="band"
     >
@@ -133,6 +143,14 @@ const band = computed(() => {
       <template v-else>Las actas de Tercer Tiempo de este jugador son internas de su club. Aquí se ven sus datos básicos y las actas oficiales de la federación.</template>
     </Alert>
 
+    <!-- Dorsales: no hay uno fijo, el de cada jornada sale de su acta -->
+    <section class="card">
+      <h2 class="font-semibold text-slate-900">Dorsales</h2>
+      <p class="text-xs text-slate-500">Los que ha llevado esta temporada según las actas públicas de la federación, haya jugado o se quedase en el banquillo.</p>
+      <p v-if="data.entry.shirtNumbers.length === 0" class="mt-3 text-sm text-slate-500">Todavía no aparece con dorsal en ningún acta de esta temporada.</p>
+      <ShirtNumberUsage v-else :usage="data.entry.shirtNumbers" class="mt-3 max-w-md" />
+    </section>
+
     <!-- Partido a partido -->
     <section class="card">
       <h2 class="font-semibold text-slate-900">Partido a partido</h2>
@@ -147,6 +165,7 @@ const band = computed(() => {
             <tr>
               <th class="py-2 pr-3 text-left">Partido</th>
               <th class="px-2 py-2 text-center">Resultado</th>
+              <th class="px-2 py-2 text-center" title="Dorsal que llevó en ese partido">Dorsal</th>
               <th class="px-2 py-2 text-center">Min</th>
               <th class="px-2 py-2 text-center">G</th>
               <th v-if="data.extended" class="px-2 py-2 text-center" title="Asistencias de gol">A</th>
@@ -168,6 +187,7 @@ const band = computed(() => {
                 {{ row.match.homeGoals ?? '—' }}-{{ row.match.awayGoals ?? '—' }}
                 <Badge v-if="outcome(row)" :tone="outcomeTone(outcome(row))" class="ml-1">{{ outcomeLabels[outcome(row)!] }}</Badge>
               </td>
+              <td class="px-2 py-2 text-center tabular-nums text-slate-600">{{ row.shirt ?? '—' }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ row.minutes }}'</td>
               <td class="px-2 py-2 text-center font-semibold tabular-nums">{{ row.goals }}</td>
               <td v-if="data.extended" class="px-2 py-2 text-center tabular-nums">{{ row.assists ?? '—' }}</td>

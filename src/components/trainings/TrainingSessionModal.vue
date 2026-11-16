@@ -224,7 +224,9 @@ async function remove(series: boolean) {
   if (!session.value) return;
   const ok = await confirmDialog({
     title: series ? 'Borrar esta sesión y las siguientes de la serie' : 'Borrar la sesión',
-    message: series ? 'Se borran esta sesión y todas las posteriores creadas con ella (las anteriores se quedan).' : 'Se borra la sesión con sus ejercicios y su asistencia.',
+    message: series
+      ? 'Se borran esta sesión y todas las posteriores creadas con ella (las anteriores se quedan). A los jugadores con cuenta se les avisa de que se anulan.'
+      : 'Se borra la sesión con sus ejercicios y su asistencia. Si aún no ha empezado, a los jugadores con cuenta se les avisa de que se anula.',
     confirmLabel: 'Borrar',
     danger: true,
   });
@@ -240,7 +242,7 @@ async function remove(series: boolean) {
         <div class="flex flex-wrap items-center gap-2">
           <h2 class="text-lg font-bold text-slate-900">{{ session.title }}</h2>
           <Badge tone="blue">{{ session.kindLabel }}</Badge>
-          <Badge v-if="session.started" tone="slate">Ya celebrado</Badge>
+          <Badge v-if="session.started" tone="slate">Ya realizado</Badge>
           <Badge v-if="session.seriesId" tone="slate" title="Creado con repetición semanal">Serie semanal</Badge>
         </div>
         <p class="text-sm text-slate-500">

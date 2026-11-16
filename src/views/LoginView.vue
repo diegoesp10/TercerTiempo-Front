@@ -37,7 +37,10 @@ async function submit() {
 <template>
   <AuthPanel title="El rendimiento de tu equipo, partido a partido" subtitle="Para clubes, cuerpos técnicos y jugadores.">
     <h1 class="text-3xl font-bold text-slate-900">Entrar</h1>
-    <p class="mt-1 text-sm text-slate-500">Cuerpo técnico: gestiona tu plantilla y sus actas. Jugadores: consulta tus estadísticas. Clubes: nombra a tus técnicos.</p>
+    <p class="mt-1 text-sm text-slate-500">
+      Clubes: tus equipos, su cuerpo técnico, la licencia y los pases de partido. Cuerpo técnico: actas, vídeo, estadísticas,
+      entrenamientos y convocatorias. Jugadores: tus cifras, tus avisos y tu perfil.
+    </p>
 
     <form class="mt-6 space-y-4" :novalidate="backendTest" @submit.prevent="submit">
       <Alert v-if="backendTest" kind="warning">Prueba del backend: la validación del navegador está desactivada.</Alert>

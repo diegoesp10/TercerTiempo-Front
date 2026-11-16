@@ -16,6 +16,7 @@ import { formatScore, officialRoleLabels } from '@/utils/format';
  * Equipo arbitral de un partido con las notas de los dos equipos: cuánto, por qué y quién las puso. Lo ve cualquiera,
  * con cuenta o sin ella. El club o el cuerpo técnico de uno de los dos equipos (con licencia) puntúa a cada uno una sola
  * vez, de 0 a 10 y con un comentario opcional, y lo confirma dos veces antes de guardarlo: la nota es definitiva.
+ * También puede no votar («No votado»), a uno o a todos los que falten: queda quién lo decidió y no cuenta en las medias.
  */
 const props = defineProps<{ matchId: string }>();
 const auth = useAuthStore();
@@ -51,7 +52,35 @@ watch(() => props.matchId, () => {
 
 const teams = computed(() => (data.value ? [data.value.homeTeam, data.value.awayTeam] : []));
 const ratingOf = (official: MatchOfficialDto, teamId: string) => official.teamRatings.find((r) => r.teamId === teamId);
-const canRate = (official: MatchOfficialDto) => !!data.value?.canRate && official.myScore === null;
+const canRate = (official: MatchOfficialDto) => !!data.value?.canRate && official.myScore === null && !official.myNoVote;
+const open = computed(() => (data.value?.officials ?? []).filter(canRate));
+
+// «No votado» a uno o a todos los que quedan: definitivo, así que se confirma.
+async function noVote(official: MatchOfficialDto | null) {
+  if (!data.value) return;
+  const team = data.value.raterTeamName ?? 'tu equipo';
+  const who = official ? official.name : open.value.length === 1 ? open.value[0]!.name : `los ${open.value.length} que faltan del equipo arbitral`;
+  const ok = await confirmDialog({
+    title: `¿No votar a ${who}?`,
+    message: `Quedará como «No votado» de ${team}, a nombre de ${voter.value}: sin nota ni comentario y sin contar en su media. Es definitivo: después no se podrá puntuar.`,
+    confirmLabel: 'Sí, no votar',
+    cancelLabel: 'Volver',
+  });
+  if (!ok) return;
+  saving.value = official?.refereeId ?? 'all';
+  saved.value = null;
+  error.value = null;
+  try {
+    fill(official
+      ? await api.referees.rate(props.matchId, official.refereeId, { score: null, comment: null, teamId: data.value.raterTeamId, confirmed: true, noVote: true })
+      : await api.referees.noVote(props.matchId, data.value.raterTeamId));
+  } catch (e) {
+    error.value = errorMessage(e);
+    await load();
+  } finally {
+    saving.value = null;
+  }
+}
 const voter = computed(() => auth.account?.club?.name ?? auth.account?.coach?.displayName ?? 'tu cuenta');
 
 async function save(official: MatchOfficialDto) {
@@ -125,9 +154,18 @@ async function save(official: MatchOfficialDto) {
         <p class="mt-1 max-w-2xl text-xs text-slate-500">
           Cada equipo puntúa de 0 a 10 al árbitro, a los asistentes y al cuarto árbitro, una sola vez y con un comentario si quiere explicar la nota.
           Las notas son públicas y definitivas, con quién las puso.
+          También se puede no votar: queda «No votado», con quién lo decidió, y no cuenta en las medias.
           <template v-if="data?.canRate && data.raterTeamName"> Puntúas en nombre de <strong class="text-slate-700">{{ data.raterTeamName }}</strong>.</template>
         </p>
       </div>
+      <button
+        v-if="open.length > 1"
+        type="button"
+        class="btn-secondary px-3 py-1.5 text-xs"
+        v-busy="saving === 'all'"
+        :disabled="saving !== null"
+        @click="noVote(null)"
+      ><Icon icon="ban" class="mr-1.5 h-3 w-3" />No votar a nadie ({{ open.length }})</button>
       <RouterLink :to="{ name: 'referees', query: data?.categoryKey ? { categoria: data.categoryKey } : {} }" class="btn-ghost px-3 py-1.5 text-xs">
         <Icon icon="flag" class="h-3.5 w-3.5" />{{ data?.category ? `Árbitros de ${data.category}` : 'Todos los árbitros' }}
       </RouterLink>
@@ -163,7 +201,7 @@ async function save(official: MatchOfficialDto) {
             <template v-for="team in teams" :key="team.id">
               <TeamRatingItem v-if="ratingOf(official, team.id)" :rating="ratingOf(official, team.id)!" />
               <p v-else class="rounded-xl border border-dashed border-line p-3 text-xs text-slate-500">
-                <strong class="text-slate-600">{{ team.name }}</strong> todavía no le ha puesto nota.
+                <strong class="text-slate-600">{{ team.name }}</strong> todavía no ha contestado: ni nota ni «No votado».
               </p>
             </template>
           </div>
@@ -196,6 +234,12 @@ async function save(official: MatchOfficialDto) {
                 :disabled="saving !== null || drafts[official.refereeId]!.score === null"
                 @click="save(official)"
               >Guardar nota</button>
+              <button
+                type="button"
+                class="btn-ghost px-3 py-1.5 text-xs"
+                :disabled="saving !== null"
+                @click="noVote(official)"
+              >No votar</button>
               <span class="text-xs text-slate-500">Se pide confirmarla dos veces: después no se puede cambiar.</span>
             </div>
           </div>

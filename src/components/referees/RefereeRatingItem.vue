@@ -15,13 +15,15 @@ defineProps<{ rating: RefereeRatingDto }>();
         <TeamCrest :src="rating.teamCrestUrl" :name="rating.teamName" size="sm" />
         <span class="truncate text-sm font-semibold text-slate-900">{{ rating.teamName }}</span>
       </div>
-      <span class="flex items-center gap-2">
+      <span v-if="rating.noVote" class="rounded-full border border-dashed border-slate-400 px-2 py-0.5 text-xs font-semibold text-slate-500" title="El equipo decidió no puntuarle">No votado</span>
+      <span v-else class="flex items-center gap-2">
         <StarRating :score="rating.score" size="sm" />
         <span class="font-figures text-sm font-bold text-slate-900">{{ rating.score }}</span>
       </span>
     </div>
     <p v-if="rating.comment" class="mt-2 text-sm leading-relaxed text-slate-700">“{{ rating.comment }}”</p>
     <p v-else-if="rating.commentHidden" class="mt-2 text-xs italic text-slate-500">Comentario retirado por la administración por no respetar las normas.</p>
+    <p v-else-if="rating.noVote" class="mt-2 text-xs italic text-slate-500">Prefirió no puntuarle: no cuenta en su media.</p>
     <p class="mt-2 text-xs text-slate-500">
       <RouterLink :to="{ name: 'match', params: { matchId: rating.matchId } }" class="hover:text-accent-400">{{ rating.homeTeamName }} – {{ rating.awayTeamName }}</RouterLink>
       <template v-if="rating.category"> · {{ rating.category }}</template>

@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { onMounted, ref, shallowRef } from 'vue';
 import { api } from '@/api';
-import { ApiError } from '@/api/http';
+import { ApiError, errorMessage } from '@/api/http';
 import StarRating from '@/components/referees/StarRating.vue';
+import TeamCrest from '@/components/teams/TeamCrest.vue';
+import { confirmDialog } from '@/composables/useConfirm';
 import { useAuthStore } from '@/stores/auth';
 import type { PendingRefereeRatingDto, RefereeCategoryDto, RefereeSummaryDto } from '@/types/api';
 import { formatDate, formatScore } from '@/utils/format';
 
 /**
- * Árbitros en el panel del club o del técnico: los partidos recientes con el equipo arbitral sin puntuar y los árbitros
- * principales mejor valorados de la categoría de sus equipos (si tiene varias, la primera que ya tenga notas).
+ * Árbitros en el panel del club o del técnico, en dos bloques bien separados:
+ *  - Lo que te toca: los partidos que ya has jugado (último mes) en los que tu equipo aún no ha contestado por todo su
+ *    equipo arbitral. Se puntúa en la página del partido o se deja como «No votado» desde aquí; las dos cosas son
+ *    definitivas y quedan a nombre de quien lo hace.
+ *  - Para consultar: los árbitros principales mejor valorados de la categoría de tus equipos.
  */
 const auth = useAuthStore();
 const pending = shallowRef<PendingRefereeRatingDto[]>([]);
@@ -17,6 +22,9 @@ const category = shallowRef<RefereeCategoryDto | null>(null);
 const best = shallowRef<RefereeSummaryDto[]>([]);
 const loaded = ref(false);
 const unlicensed = ref(false);
+const busy = ref<string | null>(null);
+const actionError = ref<string | null>(null);
+const voter = () => auth.account?.club?.name ?? auth.account?.coach?.displayName ?? 'tu cuenta';
 
 onMounted(async () => {
   const [p, c] = await Promise.allSettled([api.referees.pending(), api.referees.categories()]);
@@ -35,6 +43,32 @@ onMounted(async () => {
   }
   loaded.value = true;
 });
+
+const keyOf = (item: PendingRefereeRatingDto) => `${item.match.id}-${item.teamId}`;
+const left = (item: PendingRefereeRatingDto) => item.officials - item.rated;
+const rival = (item: PendingRefereeRatingDto) => (item.match.homeTeam.id === item.teamId ? item.match.awayTeam : item.match.homeTeam);
+const result = (item: PendingRefereeRatingDto) =>
+  item.match.homeGoals !== null && item.match.awayGoals !== null ? `${item.match.homeGoals}-${item.match.awayGoals}` : null;
+
+async function noVote(item: PendingRefereeRatingDto) {
+  const ok = await confirmDialog({
+    title: `¿No votar al equipo arbitral de la jornada ${item.match.matchday}?`,
+    message: `${left(item) === 1 ? 'El que falta quedará' : `Los ${left(item)} que faltan quedarán`} como «No votado» de ${item.teamName}, a nombre de ${voter()}: sin nota ni comentario y sin contar en sus medias. Es definitivo.`,
+    confirmLabel: 'Sí, no votar',
+    cancelLabel: 'Volver',
+  });
+  if (!ok) return;
+  busy.value = keyOf(item);
+  actionError.value = null;
+  try {
+    await api.referees.noVote(item.match.id, item.teamId);
+    pending.value = pending.value.filter((p) => keyOf(p) !== keyOf(item));
+  } catch (e) {
+    actionError.value = errorMessage(e);
+  } finally {
+    busy.value = null;
+  }
+}
 </script>
 
 <template>
@@ -48,41 +82,61 @@ onMounted(async () => {
       Con la licencia vigente puedes puntuar al equipo arbitral de tus partidos.
     </p>
 
-    <template v-else>
-      <div v-if="pending.length" class="mt-3">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Pendientes de puntuar</p>
-        <ul class="mt-2 divide-y divide-line">
-          <li v-for="item in pending" :key="`${item.match.id}-${item.teamId}`">
-            <RouterLink
-              :to="{ name: 'match', params: { matchId: item.match.id }, query: { tab: 'arbitros' } }"
-              class="flex items-center justify-between gap-3 py-2 text-sm hover:text-accent-400"
-            >
-              <span class="min-w-0">
-                <span class="block truncate font-medium text-slate-900">{{ item.match.homeTeam.name }} – {{ item.match.awayTeam.name }}</span>
-                <span class="text-xs text-slate-500">Jornada {{ item.match.matchday }} · {{ formatDate(item.match.kickoffAt) }}</span>
-              </span>
-              <span class="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-500">
-                {{ item.rated }}/{{ item.officials }} puntuados
-              </span>
-            </RouterLink>
-          </li>
-        </ul>
+    <!-- Lo que te toca: partidos ya jugados sin contestar -->
+    <div v-else class="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 class="text-sm font-semibold text-slate-900">
+          <Icon icon="triangle-exclamation" class="mr-1.5 h-3.5 w-3.5 text-amber-500" />Partidos jugados por puntuar
+          <span v-if="pending.length" class="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-500">{{ pending.length }}</span>
+        </h3>
       </div>
-      <p v-else class="mt-3 text-sm text-slate-500">No tienes equipos arbitrales pendientes de puntuar en el último mes.</p>
-    </template>
+      <p class="mt-1 text-xs text-slate-500">
+        Partidos del último mes que ya jugaste y en los que tu equipo aún no ha contestado por su equipo arbitral. Puntúa a cada uno
+        (con comentario si quieres) o déjalo como «No votado». Las dos cosas son definitivas y quedan a tu nombre.
+      </p>
+      <p v-if="actionError" class="field-error mt-2">{{ actionError }}</p>
 
-    <div v-if="best.length && category" class="mt-4">
-      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Mejores árbitros de {{ category.name }}</p>
-      <ul class="mt-2 space-y-2">
-        <li v-for="referee in best" :key="referee.id" class="flex items-center justify-between gap-3 text-sm">
-          <RouterLink :to="{ name: 'referee', params: { refereeId: referee.id }, query: { categoria: referee.categoryKey } }" class="min-w-0 truncate font-medium text-slate-900 hover:text-accent-400">{{ referee.name }}</RouterLink>
+      <ul v-if="pending.length" class="mt-2 space-y-2">
+        <li v-for="item in pending" :key="keyOf(item)" class="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2">
+          <TeamCrest :src="rival(item).crestUrl" :name="rival(item).name" size="sm" />
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-medium text-slate-900">{{ item.match.homeTeam.name }} – {{ item.match.awayTeam.name }}</span>
+            <span class="block text-xs text-slate-500">
+              Jugado · J{{ item.match.matchday }} · {{ formatDate(item.match.kickoffAt) }}<template v-if="result(item)"> · {{ result(item) }}</template>
+              · {{ item.rated }}/{{ item.officials }} contestados<template v-if="item.noVotes"> ({{ item.noVotes }} «No votado»)</template>
+            </span>
+          </span>
+          <span class="flex shrink-0 gap-2">
+            <RouterLink :to="{ name: 'match', params: { matchId: item.match.id }, query: { tab: 'arbitros' } }" class="btn-primary px-3 py-1 text-xs">
+              <Icon icon="star" class="mr-1 h-3 w-3" />Puntuar
+            </RouterLink>
+            <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="busy === keyOf(item)" :disabled="busy !== null" @click="noVote(item)">No votar</button>
+          </span>
+        </li>
+      </ul>
+      <p v-else class="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
+        <Icon icon="circle-check" class="h-3.5 w-3.5 text-emerald-500" />Nada pendiente: has contestado por todos tus partidos del último mes.
+      </p>
+    </div>
+
+    <!-- Para consultar: los mejores de la categoría -->
+    <div v-if="best.length && category" class="mt-4 border-t border-line pt-4">
+      <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <Icon icon="trophy" class="mr-1.5 h-3 w-3 text-amber-400" />Mejores árbitros de {{ category.name }}
+      </h3>
+      <ol class="mt-2 space-y-2">
+        <li v-for="(referee, index) in best" :key="referee.id" class="flex items-center justify-between gap-3 text-sm">
+          <span class="flex min-w-0 items-center gap-2">
+            <span class="w-4 shrink-0 text-center font-figures text-xs text-slate-500">{{ index + 1 }}</span>
+            <RouterLink :to="{ name: 'referee', params: { refereeId: referee.id }, query: { categoria: referee.categoryKey } }" class="min-w-0 truncate font-medium text-slate-900 hover:text-accent-400">{{ referee.name }}</RouterLink>
+          </span>
           <span class="flex shrink-0 items-center gap-2 text-xs text-slate-500">
             <StarRating :score="referee.average" size="sm" />
             <strong class="font-figures text-slate-900">{{ formatScore(referee.average) }}</strong>
             ({{ referee.ratings }})
           </span>
         </li>
-      </ul>
+      </ol>
     </div>
   </section>
 </template>

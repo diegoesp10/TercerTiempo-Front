@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
@@ -16,6 +16,7 @@ import AppChart from '@/components/charts/AppChart.vue';
 import ChartCard from '@/components/charts/ChartCard.vue';
 import { profileRadarOption, ratingBreakdownOption, ratingTrendOption } from '@/charts/options';
 import { useAsync } from '@/composables/useAsync';
+import { markCallUpsSeen } from '@/composables/useCallUpSeen';
 import { useAuthStore } from '@/stores/auth';
 import { useSettingsStore } from '@/stores/settings';
 import { confirmDialog } from '@/composables/useConfirm';
@@ -56,6 +57,7 @@ const { data, loading, error, run } = useAsync(async () => {
 // Gráficos: la ficha del jugador en su plantilla (serie partido a partido, perfil por 90' y referencias).
 const profile = useAsync(() =>
   auth.playerSquad ? api.squads.playerProfile(auth.playerSquad.squadId, auth.playerSquad.squadPlayerId) : Promise.resolve(null),
+  { redirectOnError: false },
 );
 const trendChart = computed(() =>
   profile.data.value ? ratingTrendOption(profile.data.value.matches, profile.data.value.squadAverage.averageRating, settings.resolvedTheme) : null,
@@ -92,13 +94,15 @@ const impact = computed(() => data.value?.teamImpact ?? null);
 const league = computed(() => data.value?.league ?? null);
 const hasPercentiles = computed(() => league.value !== null && league.value.playersCompared >= 2);
 
-const suggestions = useAsync(() => (auth.playerSquad ? api.players.suggestions() : Promise.resolve([])));
+const suggestions = useAsync(() => (auth.playerSquad ? api.players.suggestions() : Promise.resolve([])), { redirectOnError: false });
 
 // Lo que el jugador tiene que contestar: convocatorias publicadas sin firmar y los próximos entrenamientos.
 const callUps = useAsync(() => (auth.playerSquad ? api.trainings.myCallUps() : Promise.resolve([] as MyCallUpDto[])), { redirectOnError: false });
 const trainings = useAsync(() => (auth.playerSquad ? api.trainings.mine() : Promise.resolve([] as MyTrainingDto[])), { redirectOnError: false });
 const pendingCallUps = computed(() => (callUps.data.value ?? []).filter((c) => !c.closed && c.mine.response === 'Pending'));
 const nextCallUp = computed(() => (callUps.data.value ?? []).find((c) => !c.closed) ?? null);
+// La próxima se lee entera en la tarjeta: cuenta como vista.
+watch(nextCallUp, (c) => { if (c) markCallUpsSeen([c]); }, { immediate: true });
 const nextTrainings = computed(() => (trainings.data.value ?? []).slice(0, 3));
 
 const photoOpen = ref(false);
@@ -176,10 +180,10 @@ async function leave() {
     <section class="mb-8 grid gap-4 lg:grid-cols-2">
       <div class="card" :class="pendingCallUps.length > 0 ? 'border-brand-500/50' : ''">
         <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h2 class="flex items-center gap-2 font-semibold text-slate-900"><Icon icon="clipboard-list" class="h-4 w-4 text-accent-400" />Convocatorias</h2>
+          <h2 class="flex items-center gap-2 font-semibold text-slate-900"><Icon icon="futbol" class="h-4 w-4 text-accent-400" />Convocatorias de partido</h2>
           <RouterLink to="/mis-convocatorias" class="text-sm text-accent-400 hover:underline">Ver todas</RouterLink>
         </div>
-        <p v-if="!nextCallUp" class="text-sm text-slate-500">Ninguna convocatoria publicada para los próximos partidos.</p>
+        <p v-if="!nextCallUp" class="text-sm text-slate-500">Ninguna convocatoria enviada para los próximos partidos.</p>
         <template v-else>
           <p class="text-sm text-slate-700">
             <strong>{{ nextCallUp.mine.called ? 'Vas convocado' : 'No vas convocado' }}</strong> · J{{ nextCallUp.match.matchday }}

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { apiBaseUrl } from '@/api/http';
+import { computed, ref, toRef, watch } from 'vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
+import { useAuthImage } from '@/composables/useAuthImage';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import { crestFor } from '@/utils/crests';
 
@@ -29,10 +29,8 @@ const props = defineProps<{
 
 const failed = ref(false);
 watch(() => props.photoUrl, () => { failed.value = false; });
-const photo = computed(() => {
-  if (!props.photoUrl || failed.value) return null;
-  return props.photoUrl.startsWith('/') ? `${apiBaseUrl}${props.photoUrl}` : props.photoUrl;
-});
+const loaded = useAuthImage(toRef(props, 'photoUrl'));
+const photo = computed(() => (failed.value ? null : loaded.value));
 
 const nameParts = computed(() => {
   const words = props.name.trim().split(/\s+/);

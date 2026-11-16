@@ -19,7 +19,7 @@ const { squadId } = useSquad();
 const settings = useSettingsStore();
 
 const { data, loading, error } = useAsync(() => api.squads.stats(squadId.value));
-const timeline = useAsync(() => api.squads.timeline(squadId.value));
+const timeline = useAsync(() => api.squads.timeline(squadId.value), { redirectOnError: false });
 
 const donutMetric = ref<'goals' | 'goalContributions'>('goals');
 

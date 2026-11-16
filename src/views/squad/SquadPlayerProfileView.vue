@@ -14,6 +14,7 @@ import Badge from '@/components/ui/Badge.vue';
 import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
 import PlayerMatchLog from '@/components/players/PlayerMatchLog.vue';
 import PlayerPhotoWizard from '@/components/players/PlayerPhotoWizard.vue';
+import ShirtNumberUsage from '@/components/players/ShirtNumberUsage.vue';
 import { useBackFallback } from '@/composables/useBackFallback';
 import { useAuthStore } from '@/stores/auth';
 import type { PlayerDto } from '@/types/api';
@@ -113,6 +114,13 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
         <RouterLink :to="{ name: 'squad-compare', params: { squadId }, query: { ids: squadPlayerId } }" class="btn-secondary">Comparar con…</RouterLink>
       </template>
     </PlayerHeroCard>
+
+    <!-- Dorsales que ha llevado de verdad, partido a partido; el de la ficha es solo el habitual que le pone el cuerpo técnico -->
+    <section v-if="data.shirtNumbers.length" class="card mb-6">
+      <h2 class="font-semibold text-slate-900">Dorsales</h2>
+      <p class="text-xs text-slate-500">Los que ha llevado esta temporada: en cada partido, el apuntado en el acta interna y, si no, el del acta de la federación.</p>
+      <ShirtNumberUsage :usage="data.shirtNumbers" class="mt-3 max-w-md" />
+    </section>
 
     <PlayerMatchLog class="mb-6" :matches="data.matches" :squad-id="squadId" />
     <PlayerPhotoWizard v-if="isMe" :open="photoOpen" :has-photo="!!auth.player?.photoUrl" @close="photoOpen = false" @saved="onPhotoSaved" />

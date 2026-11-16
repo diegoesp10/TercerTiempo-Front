@@ -56,7 +56,7 @@ export function ratingColor(rating: number | null | undefined): string {
   return '#8b5cf6';
 }
 
-const font = 'Archivo, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const font = '"Archivo Variable", Archivo, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const display = font;
 
 interface ChartPalette {

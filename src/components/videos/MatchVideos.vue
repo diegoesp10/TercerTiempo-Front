@@ -35,18 +35,23 @@ const videos = shallowRef<MatchVideoDto[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
+let latest = 0;
+
 // silent: sondeo mientras un vídeo se comprime; no enciende la barra de carga ni pisa lo que ya se ve si falla.
 async function load(silent = false) {
   if (!silent) {
     loading.value = true;
     error.value = null;
   }
+  // Solo cuenta la última petición: un sondeo que llega tarde no pisa la recarga de después de borrar o subir.
+  const ticket = ++latest;
   try {
-    videos.value = await api.matches.videos(props.matchId, silent);
+    const list = await api.matches.videos(props.matchId, silent);
+    if (ticket === latest) videos.value = list;
   } catch (e) {
-    if (!silent) error.value = errorMessage(e);
+    if (!silent && ticket === latest) error.value = errorMessage(e);
   } finally {
-    if (!silent) loading.value = false;
+    if (!silent && ticket === latest) loading.value = false;
   }
 }
 
@@ -58,14 +63,22 @@ defineExpose({ load });
 const POLL_MS = 10_000;
 const compressing = computed(() => videos.value.some((v) => v.status === 'Uploaded' || v.status === 'Processing'));
 let poll: ReturnType<typeof setInterval> | null = null;
+// Con la pestaña oculta no se pregunta; al volver, una vez enseguida.
 watch(compressing, (active) => {
-  if (active && !poll) poll = setInterval(() => void load(true), POLL_MS);
+  if (active && !poll) poll = setInterval(() => { if (!document.hidden) void load(true); }, POLL_MS);
   else if (!active && poll) {
     clearInterval(poll);
     poll = null;
   }
 }, { immediate: true });
-onBeforeUnmount(() => { if (poll) clearInterval(poll); });
+function onVisibility() {
+  if (!document.hidden && poll) void load(true);
+}
+document.addEventListener('visibilitychange', onVisibility);
+onBeforeUnmount(() => {
+  if (poll) clearInterval(poll);
+  document.removeEventListener('visibilitychange', onVisibility);
+});
 
 // --- Subida (por trozos, en VideoUploader) ---
 const canUploadHere = computed(() => props.canUpload && !!props.uploadSquadId);
