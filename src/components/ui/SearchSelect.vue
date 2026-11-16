@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
+import { popoverZIndex } from '@/composables/useModalStack';
 import { trackSearch } from '@/utils/analytics';
 
 /** Opción del desplegable: valor, texto, texto secundario y grupo (cabecera) opcionales. */
@@ -223,8 +224,8 @@ const sizeClasses = computed(() => (props.size === 'sm' ? 'px-2.5 py-1 text-sm' 
       <div
         v-if="open"
         ref="panel"
-        class="fixed z-[55] flex flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-card"
-        :style="panelStyle"
+        class="fixed flex flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-card"
+        :style="[panelStyle, { zIndex: popoverZIndex }]"
         role="listbox"
         @keydown="onKeydown"
       >

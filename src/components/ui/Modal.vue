@@ -1,33 +1,44 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { closeLayer, isTopLayer, layerZIndex, openLayer } from '@/composables/useModalStack';
 
 const props = withDefaults(defineProps<{ open: boolean; title: string; size?: 'md' | 'lg' | 'xl' }>(), { size: 'lg' });
 const emit = defineEmits<{ close: [] }>();
 
 const widths = { md: 'max-w-lg', lg: 'max-w-3xl', xl: 'max-w-5xl' };
 
+// Un modal abierto desde otro (la confirmación de borrar, por ejemplo) queda siempre encima del que lo abrió.
+const layer = ref<number | null>(null);
+const zIndex = computed(() => layerZIndex(layer.value));
+
 function onKey(event: KeyboardEvent) {
-  if (event.key === 'Escape' && props.open) emit('close');
+  if (event.key === 'Escape' && props.open && isTopLayer(layer.value)) emit('close');
 }
 
-// Con el modal abierto la página de detrás no hace scroll.
 watch(
   () => props.open,
-  (open) => { document.body.style.overflow = open ? 'hidden' : ''; },
+  (open) => {
+    if (open && layer.value === null) layer.value = openLayer();
+    else if (!open && layer.value !== null) {
+      closeLayer(layer.value);
+      layer.value = null;
+    }
+  },
   { immediate: true },
 );
 
 onMounted(() => window.addEventListener('keydown', onKey));
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey);
-  document.body.style.overflow = '';
+  closeLayer(layer.value);
+  layer.value = null;
 });
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="open" class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-sm sm:items-center sm:p-4" @click.self="emit('close')">
+      <div v-if="open" class="fixed inset-0 flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-sm sm:items-center sm:p-4" :style="{ zIndex }" @click.self="emit('close')">
         <div
           class="flex max-h-[95vh] w-full flex-col rounded-t-2xl border border-line bg-surface shadow-card sm:max-h-[90vh] sm:rounded-2xl"
           :class="widths[size]"

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import SearchResultItem from '@/components/search/SearchResultItem.vue';
+import { closeLayer, openLayer } from '@/composables/useModalStack';
 import { useSearchStore } from '@/stores/search';
 import type { SearchItemDto, SearchResultsDto, SearchType } from '@/types/api';
 
@@ -89,11 +90,22 @@ watch(
 // Al cambiar de página (por un resultado o por el historial) el buscador se cierra.
 watch(() => route.fullPath, () => store.hide());
 
+// El buscador también es una capa: mientras está abierto, Escape no cierra el modal de debajo y la página no hace scroll.
+let layer: number | null = null;
 watch(
   () => store.open,
-  (open) => { document.body.style.overflow = open ? 'hidden' : ''; },
+  (open) => {
+    if (open && layer === null) layer = openLayer();
+    else if (!open) {
+      closeLayer(layer);
+      layer = null;
+    }
+  },
 );
-onBeforeUnmount(() => { document.body.style.overflow = ''; });
+onBeforeUnmount(() => {
+  closeLayer(layer);
+  layer = null;
+});
 
 function go(item: SearchItemDto) {
   store.remember(query.value);
