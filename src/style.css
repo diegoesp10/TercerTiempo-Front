@@ -304,6 +304,30 @@
     .col-lg { display: table-cell; }
   }
 
+  /* Tablas anchas (.table-sticky): por debajo de lg, cuando hay que desplazarlas de lado, la primera columna (el jugador o
+     el partido) se queda fija y con un ancho máximo, para no perder de quién es cada fila. Fondo opaco para que las
+     cifras pasen por debajo; las filas resaltadas ponen su tinte en --row-tint. Las filas de grupo (colspan) y la
+     segunda fila de cabecera no se tocan. */
+  @media (max-width: 1023.98px) {
+    .table-sticky thead tr:first-child > th:first-child,
+    .table-sticky tbody tr > td:first-child:not([colspan]) {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      max-width: 11rem;
+      white-space: normal;
+      background-color: var(--color-surface);
+      background-image: linear-gradient(var(--row-tint, transparent), var(--row-tint, transparent));
+      box-shadow: inset -1px 0 0 var(--color-line);
+    }
+    .table-sticky thead.bg-slate-50 tr:first-child > th:first-child {
+      background-color: var(--color-slate-50);
+    }
+    .table-sticky tr.bg-brand-500\/10 {
+      --row-tint: color-mix(in oklab, var(--color-brand-500) 10%, transparent);
+    }
+  }
+
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: var(--t-canvas); }
   ::-webkit-scrollbar-thumb { background: var(--t-slate-300); border-radius: 999px; border: 2px solid var(--t-canvas); }

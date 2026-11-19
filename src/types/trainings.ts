@@ -25,6 +25,7 @@ export interface TrainingKindDto {
 export interface ExerciseTypeDto {
   type: ExerciseType;
   label: string;
+  description: string;
 }
 
 export interface TrainingCatalogDto {
@@ -66,6 +67,8 @@ export interface TrainingItemDto {
   typeLabel: string;
   durationMinutes: number;
   notes: string | null;
+  /** Quién lo hace; vacío = toda la plantilla. */
+  positions: Position[];
 }
 
 export interface TrainingItemInput {
@@ -74,6 +77,8 @@ export interface TrainingItemInput {
   type: ExerciseType;
   durationMinutes: number;
   notes: string | null;
+  /** Quién lo hace; vacío = toda la plantilla. */
+  positions: Position[];
 }
 
 export interface TrainingAttendanceDto {
@@ -87,9 +92,29 @@ export interface TrainingAttendanceDto {
   linked: boolean;
   /** Viene a prueba, sin ficha en la plantilla. */
   trial: boolean;
+  /** Acabada la sesión, lo que fue: Attended (vino) o Missed (faltó). */
   status: AttendanceStatus;
   reason: string | null;
   updatedAt: string;
+  /** Faltó habiendo avisado antes (solo en sesiones acabadas). */
+  warned: boolean;
+  /** Lesionado el día de la sesión: no entrena ni se le pasa lista. */
+  injured: boolean;
+  /** Por qué (tipo, motivo y fechas); null si no lo está o si quien mira no puede verlo (un compañero). */
+  injury: InjuryBriefDto | null;
+}
+
+/** Lo justo de una lesión para explicar por qué un jugador no entrena o no va convocado. */
+export interface InjuryBriefDto {
+  id: string;
+  type: string;
+  typeLabel: string;
+  reason: string | null;
+  startedOn: string;
+  /** Vuelta prevista; null si no se sabe. */
+  expectedReturnOn: string | null;
+  /** Día del alta; null si sigue lesionado. */
+  returnedOn: string | null;
 }
 
 /** Alguien que viene a entrenar a prueba, sin ficha: se le pasa lista y, si le hacen ficha, pasa a la plantilla. */
@@ -129,6 +154,8 @@ export interface AttendanceCountsDto {
   willMiss: number;
   attended: number;
   missed: number;
+  /** Lesionados ese día: no cuentan en los demás. */
+  injured: number;
 }
 
 export interface TrainingSummaryDto {
@@ -146,6 +173,8 @@ export interface TrainingSummaryDto {
   itemsCount: number;
   plannedMinutes: number;
   started: boolean;
+  /** Ya ha acabado: no se cambia; solo se pasa lista. */
+  finished: boolean;
   counts: AttendanceCountsDto;
   /** La línea de quien mira, si es un jugador de la plantilla. */
   mine: TrainingAttendanceDto | null;
@@ -166,6 +195,8 @@ export interface TrainingSessionDto {
   /** Minutos que suman los ejercicios preparados. */
   plannedMinutes: number;
   started: boolean;
+  /** Ya ha acabado: no se cambia; solo se pasa lista de quién vino y quién faltó. */
+  finished: boolean;
   items: TrainingItemDto[];
   attendance: TrainingAttendanceDto[];
   counts: AttendanceCountsDto;
@@ -213,6 +244,26 @@ export interface CallUpEntryDto {
   sentAt: string | null;
   /** Cuándo la abrió por primera vez (doble check verde); firmarla también cuenta como vista. */
   seenAt: string | null;
+  /** Lesionado el día del partido: no puede ir convocado. */
+  injured: boolean;
+  /** Por qué; null si no lo está o si quien mira no puede verlo. */
+  injury: InjuryBriefDto | null;
+  /** Sancionado para este partido (5.ª amarilla o expulsión en uno anterior): no puede ir convocado. */
+  suspended: boolean;
+  suspension: SuspensionBriefDto | null;
+  /** Amarillas del ciclo que lleva al empezar el partido (de 0 a 4): con 4 está apercibido. */
+  cycleYellows: number;
+}
+
+/** Por qué está sancionado: el ciclo de cinco amarillas, una doble amarilla o una roja directa. */
+export type SuspensionCause = 'YellowCards' | 'SecondYellow' | 'RedCard';
+
+export interface SuspensionBriefDto {
+  cause: SuspensionCause;
+  /** Para leer: «5.ª amarilla en la jornada 7», «Roja directa en la jornada 8»… */
+  reason: string;
+  fromMatchId: string;
+  fromMatchday: number;
 }
 
 export interface CallUpCountsDto {
@@ -226,6 +277,28 @@ export interface CallUpCountsDto {
   seen: number;
 }
 
+/** Un campo de fútbol de la liga (dato público): dirección y punto exacto de OpenStreetMap si se ha encontrado. */
+export interface GroundDto {
+  id: string;
+  name: string;
+  address: string | null;
+  locality: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  /** Hay punto exacto en el mapa; sin él, mapsUrl abre la búsqueda del campo por su nombre. */
+  located: boolean;
+  mapsUrl: string;
+  /** Equipos de la liga que juegan ahí como locales. */
+  homeTeams: string[];
+}
+
+export interface SquadGroundsDto {
+  /** El campo habitual del equipo como local; null si sus partidos no traen campo. */
+  homeGroundId: string | null;
+  /** Primero el de casa y luego por nombre. */
+  grounds: GroundDto[];
+}
+
 export interface MatchCallUpDto {
   /** null si el cuerpo técnico aún no ha empezado la convocatoria de este partido. */
   id: string | null;
@@ -233,6 +306,9 @@ export interface MatchCallUpDto {
   match: MatchDto;
   status: CallUpStatus;
   meetAt: string | null;
+  /** Campo de la liga donde se cita; null si no se ha elegido o se ha escrito otro sitio. */
+  meetGround: GroundDto | null;
+  /** Sitio escrito a mano cuando no es un campo de la liga (obras, campo alternativo…). */
   meetPlace: string | null;
   notes: string | null;
   publishedAt: string | null;
@@ -242,6 +318,8 @@ export interface MatchCallUpDto {
   counts: CallUpCountsDto;
   canEdit: boolean;
   mine: CallUpEntryDto | null;
+  /** El campo del partido (el que trae o el habitual del local): el que se propone para la cita. */
+  matchGround: GroundDto | null;
 }
 
 export interface CallUpSummaryDto {
@@ -256,6 +334,8 @@ export interface CallUpSummaryDto {
 export interface CallUpRequest {
   calledSquadPlayerIds: string[];
   meetAt: string | null;
+  /** Un campo de la liga (de /grounds); si va, meetPlace se ignora. */
+  meetGroundId: string | null;
   meetPlace: string | null;
   notes: string | null;
   /** true publica y avisa a la plantilla; false deja el borrador. */
@@ -274,6 +354,18 @@ export interface SquadAgendaItemDto {
   match: MatchDto | null;
   /** Solo en Match: estado de la convocatoria; null si no hay (o es un borrador que quien mira no ve). */
   callUp: CallUpSummaryDto | null;
+  /** Solo en Match y mientras no se ha jugado: quién no puede jugar (sancionados y lesionados), haya convocatoria o no. */
+  unavailable?: UnavailablePlayerDto[] | null;
+}
+
+export type UnavailabilityKind = 'Suspended' | 'Injured';
+
+export interface UnavailablePlayerDto {
+  squadPlayerId: string;
+  playerName: string;
+  kind: UnavailabilityKind;
+  /** Sancionado: el porqué («5.ª amarilla en la jornada 7»…). Lesionado: «Lesionado» y, para quien puede verla, la lesión. */
+  reason: string;
 }
 
 export interface MyCallUpDto {
@@ -282,9 +374,85 @@ export interface MyCallUpDto {
   teamName: string;
   match: MatchDto;
   meetAt: string | null;
+  meetGround: GroundDto | null;
   meetPlace: string | null;
   notes: string | null;
   publishedAt: string;
   closed: boolean;
   mine: CallUpEntryDto;
+}
+
+/** Entrenamientos de un jugador en un periodo: los que le tocaban, a cuántos vino y los minutos entrenados. */
+export interface PlayerTrainingTallyDto {
+  squadPlayerId: string;
+  playerName: string;
+  shirtNumber: number | null;
+  /** Sigue en la plantilla. */
+  active: boolean;
+  sessions: number;
+  attended: number;
+  missed: number;
+  /** De los que faltó, en cuántos avisó antes. */
+  warned: number;
+  attendedMinutes: number;
+  /** 0-100; null si no le tocaba ninguno. */
+  attendanceRate: number | null;
+  /** Entrenamientos que se perdió por estar lesionado: no cuentan en sessions ni como faltas. */
+  injured: number;
+  /** Lesiones que tocan el periodo (la más reciente primero). */
+  injuries: InjuryBriefDto[] | null;
+  /** Lo que fue de cada entrenamiento de `days`, en el mismo orden; null si no le tocaba. */
+  outcomes: (TrainingDayOutcome | null)[] | null;
+  /** Motivos de sus faltas: id de la sesión → motivo. */
+  reasons: Record<string, string> | null;
+}
+
+/** Vino, faltó, faltó avisando o estaba lesionado (no cuenta como falta). */
+export type TrainingDayOutcome = 'Attended' | 'Missed' | 'Warned' | 'Injured';
+
+export interface TrainingAttendanceDayDto {
+  sessionId: string;
+  startsAt: string;
+  durationMinutes: number;
+  kind: TrainingKind;
+  kindLabel: string;
+  title: string;
+}
+
+export interface SquadTrainingAttendanceDto {
+  squadId: string;
+  from: string | null;
+  to: string | null;
+  /** Entrenamientos acabados de la plantilla en el periodo y los minutos que suman. */
+  sessions: number;
+  minutes: number;
+  players: PlayerTrainingTallyDto[];
+  /** Los entrenamientos acabados del periodo, del más antiguo al más reciente. */
+  days: TrainingAttendanceDayDto[] | null;
+}
+
+export interface TrainingSeasonOptionDto {
+  squadId: string;
+  seasonId: string;
+  label: string;
+  teamName: string;
+  startsOn: string;
+  endsOn: string;
+}
+
+export interface MyTrainingAttendanceDto {
+  seasons: TrainingSeasonOptionDto[];
+  /** Temporada (plantilla) contada; null = todas. */
+  squadId: string | null;
+  from: string | null;
+  to: string | null;
+  sessions: number;
+  attended: number;
+  missed: number;
+  warned: number;
+  attendedMinutes: number;
+  attendanceRate: number | null;
+  /** Entrenamientos que se perdió por estar lesionado. */
+  injured: number;
+  injuries: InjuryBriefDto[] | null;
 }

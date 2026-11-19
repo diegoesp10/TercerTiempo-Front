@@ -11,6 +11,7 @@ import Badge from '@/components/ui/Badge.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import SearchPalette from '@/components/search/SearchPalette.vue';
 import SearchTrigger from '@/components/search/SearchTrigger.vue';
+import { confirmDialog } from '@/composables/useConfirm';
 import { useAdminSessionStore } from '@/stores/adminSession';
 import { useAuthStore } from '@/stores/auth';
 import { useSeasonStore } from '@/stores/season';
@@ -19,6 +20,7 @@ import { accountTypeLabels } from '@/utils/format';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import { useConsentStore } from '@/stores/consent';
 import AlertBell from '@/components/alerts/AlertBell.vue';
+import ThemeIcon from '@/components/layout/ThemeIcon.vue';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
@@ -82,25 +84,40 @@ const teamCrest = computed(() => {
 const accountTone = computed(() => (auth.isCoach ? 'blue' : auth.isClub ? 'amber' : 'green'));
 const themeLabel = computed(() => (settings.isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'));
 
-function logout() {
-  auth.logout();
+// «Salir» avisa antes de cerrar la sesión: un clic sin querer no echa a nadie.
+async function logout() {
   menuOpen.value = false;
+  const ok = await confirmDialog({
+    title: 'Cerrar sesión',
+    message: 'Estás cerrando la sesión en este dispositivo. Para volver a entrar necesitarás tu email y tu contraseña.',
+    confirmLabel: 'Cerrar sesión',
+  });
+  if (!ok) return;
+  auth.logout();
   void router.push({ name: 'login' });
 }
 
 // La sesión de administrador va aparte de la de las cuentas (nunca a la vez): se enseña como tal y se cierra aquí.
 // Con ella se navega por toda la web en solo lectura, buscador incluido (encuentra también las plantillas internas).
 const canSearch = computed(() => auth.isAuthenticated || admin.isActive);
-function logoutAdmin() {
-  admin.end();
+async function logoutAdmin() {
   menuOpen.value = false;
+  const ok = await confirmDialog({
+    title: 'Cerrar la sesión de administrador',
+    message: 'Estás cerrando la sesión de administrador. Para volver a entrar tendrás que identificarte de nuevo.',
+    confirmLabel: 'Cerrar sesión',
+  });
+  if (!ok) return;
+  admin.end();
   void router.push({ name: 'jobs' });
 }
 </script>
 
 <template>
   <div class="flex min-h-screen flex-col">
-    <header class="sticky top-0 z-20 border-b border-line bg-surface/95">
+    <!-- z-45: la cabecera y sus desplegables (avisos, temporada, cuenta) quedan por encima de todo lo de la página y del aviso de
+         cookies (z-40); solo los modales (z-50) la tapan. -->
+    <header class="sticky top-0 z-45 border-b border-line bg-surface/95">
       <div class="mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
         <RouterLink to="/" class="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3" aria-label="Tercer Tiempo: inicio">
           <BrandMark :size="34" />
@@ -126,14 +143,9 @@ function logoutAdmin() {
           <SearchTrigger v-if="canSearch" compact class="xl:hidden" />
           <SeasonSwitcher class="hidden lg:block" />
           <AlertBell v-if="auth.isAuthenticated && !admin.isActive" />
-          <button type="button" class="btn-ghost px-2" :title="themeLabel" :aria-label="themeLabel" @click="settings.toggleTheme()">
-            <svg v-if="settings.isDark" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-            </svg>
-            <svg v-else class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
-            </svg>
+          <!-- Con el menú de hamburguesa (por debajo de lg) fuera solo quedan la lupa, los avisos y el menú: el tema va dentro. -->
+          <button type="button" class="btn-ghost hidden px-2 lg:inline-flex" :title="themeLabel" :aria-label="themeLabel" @click="settings.toggleTheme()">
+            <ThemeIcon :dark="settings.isDark" class="h-5 w-5" />
           </button>
 
           <div class="hidden min-w-0 items-center gap-2 lg:flex">
@@ -146,10 +158,14 @@ function logoutAdmin() {
               <button type="button" class="btn-ghost shrink-0" @click="logoutAdmin">Salir</button>
             </template>
             <template v-else-if="auth.isAuthenticated && auth.account">
-              <RouterLink to="/ajustes" class="flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" :title="`Ajustes · ${accountTypeLabels[auth.account.type]}`">
+              <RouterLink
+                :to="auth.profileRoute ?? '/ajustes'"
+                class="flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2"
+                :title="auth.profileRoute ? `Mi perfil · ${auth.displayName} (${accountTypeLabels[auth.account.type]})` : `Ajustes · ${accountTypeLabels[auth.account.type]}`"
+              >
                 <TeamCrest v-if="auth.isClub" :src="auth.clubCrestUrl" :name="auth.displayName" size="sm" />
-                <PlayerAvatar v-else-if="auth.isPlayer" :src="auth.player?.photoUrl" :name="auth.displayName" size="xs" />
-                <span class="min-w-[3rem] max-w-40 truncate font-medium" :class="auth.isClub || auth.isPlayer ? 'hidden xl:inline' : ''">{{ auth.displayName }}</span>
+                <PlayerAvatar v-else-if="auth.isPlayer || auth.isCoach" :src="auth.isPlayer ? auth.player?.photoUrl : auth.coach?.photoUrl" :name="auth.displayName" size="xs" />
+                <span class="min-w-[3rem] max-w-40 truncate font-medium" :class="auth.isClub || auth.isPlayer || auth.isCoach ? 'hidden xl:inline' : ''">{{ auth.profileRoute ? 'Mi perfil' : auth.displayName }}</span>
                 <span class="hidden shrink-0 2xl:inline-flex"><Badge :tone="accountTone">{{ accountTypeLabels[auth.account.type] }}</Badge></span>
                 <span v-if="teamLabel" class="hidden shrink-0 items-center gap-1 text-slate-400 2xl:flex">
                   · <TeamCrest v-if="teamCrest !== undefined" :src="teamCrest" :name="teamLabel" size="xs" /> {{ teamLabel }}
@@ -182,7 +198,12 @@ function logoutAdmin() {
         >
           {{ link.label }}
         </RouterLink>
+        <RouterLink v-if="auth.profileRoute" :to="auth.profileRoute" class="block rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-2" @click="menuOpen = false">Mi perfil</RouterLink>
         <RouterLink to="/ajustes" class="block rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-2" @click="menuOpen = false">Ajustes</RouterLink>
+        <!-- El menú sigue abierto al cambiar de tema: se ve el cambio y se puede deshacer. -->
+        <button type="button" class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-surface-2" @click="settings.toggleTheme()">
+          <ThemeIcon :dark="settings.isDark" class="h-4 w-4 shrink-0 text-slate-500" />{{ themeLabel }}
+        </button>
         <div v-if="season.seasons.length" class="mt-2 border-t border-line px-3 pt-2">
           <p class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
             <Icon icon="calendar-check" class="h-3 w-3" /> Temporada

@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
+import type { RouteLocationRaw } from 'vue-router';
 import { api } from '@/api';
 import type { AccountDto, AuthResponse, ChangePasswordRequest, CoachDto, LoginRequest, PlayerDto, RegisterRequest, SquadSummaryDto } from '@/types/api';
 import { useAdminSessionStore } from './adminSession';
@@ -40,6 +41,13 @@ export const useAuthStore = defineStore('auth', () => {
   const playerSquad = computed(() => player.value?.squad ?? null);
   /** Plantillas en cuyo cuerpo técnico está el técnico. */
   const coachSquads = computed<SquadSummaryDto[]>(() => coach.value?.squads ?? []);
+
+  /** «Mi perfil»: el perfil del técnico o la ficha del jugador; null para el club o el jugador aún sin ficha. */
+  const profileRoute = computed<RouteLocationRaw | null>(() => {
+    if (coach.value) return { name: 'coach', params: { coachId: coach.value.id } };
+    const squad = playerSquad.value;
+    return squad?.rosterEntryId ? { name: 'player-card', params: { teamId: squad.teamId, entryId: squad.rosterEntryId } } : null;
+  });
 
   /** Equipos propios: los de las plantillas del técnico, el del jugador y los del club. */
   const myTeamIds = computed(() => {
@@ -143,6 +151,7 @@ export const useAuthStore = defineStore('auth', () => {
     displayName,
     playerSquad,
     coachSquads,
+    profileRoute,
     myTeamIds,
     myCompetitionIds,
     isMyTeam,

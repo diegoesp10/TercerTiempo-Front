@@ -117,13 +117,9 @@ async function remove(trial: TrialPlayerDto) {
           <p class="basis-full text-xs text-slate-600">Pasa a la plantilla con ficha a nombre de <strong>{{ t.fullName }}</strong>; sus asistencias de prueba se quedan a su nombre.</p>
           <div class="min-w-0 flex-1 basis-40">
             <label class="label text-xs" :for="`tp-pos-${t.id}`">Posición</label>
-            <SearchSelect :id="`tp-pos-${t.id}`" v-model="promoteForm.position" :options="positionOptions" size="sm" clearable placeholder="Sin posición" />
+            <SearchSelect :id="`tp-pos-${t.id}`" v-model="promoteForm.position" :options="positionOptions" size="sm" placeholder="Elige su posición" />
           </div>
-          <div class="w-20">
-            <label class="label text-xs" :for="`tp-num-${t.id}`">Dorsal</label>
-            <input :id="`tp-num-${t.id}`" v-model.number="promoteForm.shirtNumber" type="number" min="1" max="99" class="input px-2 py-1.5" placeholder="—" />
-          </div>
-          <button type="submit" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy" :disabled="busy">Hacerle ficha</button>
+          <button type="submit" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy" :disabled="busy || !promoteForm.position">Hacerle ficha</button>
           <button type="button" class="btn-ghost px-2 py-1.5 text-xs" @click="promoteId = null">Cancelar</button>
         </form>
       </li>

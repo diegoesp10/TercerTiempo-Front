@@ -1,27 +1,29 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { adminApi } from '@/api/admin';
-import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Modal from '@/components/ui/Modal.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import { confirmDialog } from '@/composables/useConfirm';
-import type { CookieCategory, CookieDto, CookiePolicyDto, CookieStorage, UpsertCookieRequest } from '@/types/api';
+import { useSort } from '@/composables/useSort';
+import type { AdminCookieDto, AdminCookiePolicyDto, CookieCategory, CookieStorage, UpsertCookieRequest } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
 
 /**
  * Catálogo de cookies de la base de datos (lo que explica la política y el panel de ajustes) y versión de la política:
- * publicar una nueva vuelve a pedir el consentimiento a todos.
+ * publicar una nueva vuelve a pedir el consentimiento a todos. Solo aquí se ven los nombres técnicos; la política pública
+ * explica cada dato sin nombrarlo.
  */
 const props = defineProps<{ token: string }>();
 const emit = defineEmits<{ unauthorized: [] }>();
 
-const policy = ref<CookiePolicyDto | null>(null);
+const policy = ref<AdminCookiePolicyDto | null>(null);
 const error = ref<string | null>(null);
 const notice = ref<string | null>(null);
 const busy = ref(false);
-const editing = ref<CookieDto | null>(null);
+const editing = ref<AdminCookieDto | null>(null);
 const formOpen = ref(false);
 const form = reactive<UpsertCookieRequest>({ name: '', category: 'Necessary', storage: 'LocalStorage', provider: 'Tercer Tiempo', purpose: '', duration: '', sortOrder: 10 });
 const newVersion = ref('');
@@ -29,6 +31,23 @@ const newVersion = ref('');
 const categoryLabels: Record<CookieCategory, string> = { Necessary: 'Necesaria', Preferences: 'Preferencias', Analytics: 'Analítica' };
 const categoryTone: Record<CookieCategory, 'green' | 'blue' | 'amber'> = { Necessary: 'green', Preferences: 'blue', Analytics: 'amber' };
 const storageLabels: Record<CookieStorage, string> = { Cookie: 'Cookie', LocalStorage: 'Local', SessionStorage: 'Sesión' };
+const categoryOrder: Record<CookieCategory, number> = { Necessary: 0, Preferences: 1, Analytics: 2 };
+
+// Empieza como el catálogo de la API: por categoría y, dentro de cada una, por su orden.
+const cookies = computed(() => policy.value?.cookies ?? []);
+type SortKey = 'name' | 'category' | 'storage' | 'purpose' | 'duration';
+const { sorted, sortBy, state } = useSort<AdminCookieDto, SortKey>(
+  cookies,
+  {
+    name: (c) => c.name,
+    category: (c) => categoryOrder[c.category],
+    storage: (c) => storageLabels[c.storage],
+    purpose: (c) => c.purpose,
+    duration: (c) => c.duration,
+  },
+  'category',
+  { desc: false, ascendingFirst: ['name', 'category', 'storage', 'purpose', 'duration'] },
+);
 
 async function guard<T>(action: () => Promise<T>): Promise<T | undefined> {
   busy.value = true;
@@ -45,14 +64,14 @@ async function guard<T>(action: () => Promise<T>): Promise<T | undefined> {
 }
 
 async function load() {
-  const result = await guard(() => api.privacy.cookies());
+  const result = await guard(() => adminApi.cookies(props.token));
   if (result) {
     policy.value = result;
     newVersion.value = new Date().toISOString().slice(0, 10);
   }
 }
 
-function openForm(cookie: CookieDto | null) {
+function openForm(cookie: AdminCookieDto | null) {
   editing.value = cookie;
   Object.assign(form, cookie
     ? { name: cookie.name, category: cookie.category, storage: cookie.storage, provider: cookie.provider, purpose: cookie.purpose, duration: cookie.duration, sortOrder: cookie.sortOrder }
@@ -72,7 +91,7 @@ async function save() {
   }
 }
 
-async function remove(cookie: CookieDto) {
+async function remove(cookie: AdminCookieDto) {
   if (!(await confirmDialog({ title: `Quitar ${cookie.name}`, message: 'Deja de aparecer en la política de cookies y en el panel de ajustes.', confirmLabel: 'Quitar', danger: true }))) return;
   const result = await guard(() => adminApi.deleteCookie(props.token, cookie.id));
   if (result) policy.value = result;
@@ -123,10 +142,17 @@ onMounted(load);
       <div class="overflow-x-auto rounded-lg border border-slate-200">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-            <tr><th class="px-3 py-2 text-left">Nombre</th><th class="px-3 py-2 text-left">Categoría</th><th class="px-3 py-2 text-left">Dónde</th><th class="px-3 py-2 text-left">Finalidad</th><th class="px-3 py-2 text-left">Duración</th><th class="px-3 py-2" /></tr>
+            <tr>
+              <SortHeader class="px-3 py-2 text-left" label="Nombre" v-bind="state('name')" @sort="sortBy('name')" />
+              <SortHeader class="px-3 py-2 text-left" label="Categoría" v-bind="state('category')" @sort="sortBy('category')" />
+              <SortHeader class="px-3 py-2 text-left" label="Dónde" v-bind="state('storage')" @sort="sortBy('storage')" />
+              <SortHeader class="px-3 py-2 text-left" label="Finalidad" v-bind="state('purpose')" @sort="sortBy('purpose')" />
+              <SortHeader class="px-3 py-2 text-left" label="Duración" v-bind="state('duration')" @sort="sortBy('duration')" />
+              <th class="px-3 py-2" />
+            </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr v-for="cookie in policy.cookies" :key="cookie.id">
+            <tr v-for="cookie in sorted" :key="cookie.id">
               <td class="px-3 py-2 font-mono text-xs text-slate-800">{{ cookie.name }}</td>
               <td class="px-3 py-2"><Badge :tone="categoryTone[cookie.category]">{{ categoryLabels[cookie.category] }}</Badge></td>
               <td class="px-3 py-2 text-xs text-slate-600">{{ storageLabels[cookie.storage] }}</td>

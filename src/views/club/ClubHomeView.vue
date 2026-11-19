@@ -8,12 +8,14 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import SquadAccessCard from '@/components/squads/SquadAccessCard.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
+import { useSort } from '@/composables/useSort';
 import { useAuthStore } from '@/stores/auth';
-import type { AppointmentDto, ClubDto, ClubFilialDto, StaffRole } from '@/types/api';
+import type { AppointmentDto, AppointmentStatus, ClubDto, ClubFilialDto, StaffRole } from '@/types/api';
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, formatKickoff, licenseStatusLabels, licenseStatusTone, staffRoleLabels, staffRoleOptions } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
 import TeamName from '@/components/teams/TeamName.vue';
@@ -147,22 +149,32 @@ async function copyCode(appointment: AppointmentDto) {
   }
 }
 
-const sortedAppointments = computed(() => {
-  const order: Record<string, number> = { Pending: 0, Active: 1, Expired: 2, Revoked: 3 };
-  return [...(club.value?.appointments ?? [])].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9) || b.createdAt.localeCompare(a.createdAt));
-});
+const appointmentOrder: Record<AppointmentStatus, number> = { Pending: 0, Active: 1, Expired: 2, Revoked: 3 };
+// De partida, lo más reciente primero: así manda la fecha dentro de cada estado (el orden inicial) y en los empates.
+const appointments = computed(() => [...(club.value?.appointments ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+type AppointmentSortKey = 'coach' | 'team' | 'status' | 'validity';
+const { sorted: sortedAppointments, sortBy, state } = useSort<AppointmentDto, AppointmentSortKey>(
+  appointments,
+  {
+    coach: (a) => a.coachName,
+    team: (a) => a.teamName,
+    status: (a) => appointmentOrder[a.status],
+    validity: (a) => Date.parse(a.validUntil),
+  },
+  'status',
+  { desc: false, ascendingFirst: ['coach', 'team', 'status'] },
+);
 </script>
 
 <template>
   <PageHeader :title="club?.name ?? auth.displayName" subtitle="Equipos del club y nombramientos de sus técnicos por temporada.">
     <template #actions>
+      <DashboardSearch />
       <RouterLink to="/ajustes" title="Cambiar el escudo en Ajustes" class="inline-flex size-14 shrink-0 items-center justify-center rounded-full leading-none ring-offset-2 ring-offset-canvas transition-shadow hover:ring-2 hover:ring-brand-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
         <TeamCrest :src="auth.clubCrestUrl" :name="club?.name ?? auth.displayName" size="lg" />
       </RouterLink>
     </template>
   </PageHeader>
-
-  <DashboardSearch class="mb-6" />
 
   <Spinner v-if="loading && !club" />
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
@@ -333,10 +345,10 @@ const sortedAppointments = computed(() => {
           <table class="min-w-full text-sm">
             <thead class="text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th class="py-2 pr-3 text-left">Técnico</th>
-                <th class="col-sm py-2 pr-3 text-left">Equipo</th>
-                <th class="py-2 pr-3 text-left">Estado</th>
-                <th class="col-md py-2 pr-3 text-left">Validez</th>
+                <SortHeader class="py-2 pr-3 text-left" label="Técnico" v-bind="state('coach')" @sort="sortBy('coach')" />
+                <SortHeader class="col-sm py-2 pr-3 text-left" label="Equipo" v-bind="state('team')" @sort="sortBy('team')" />
+                <SortHeader class="py-2 pr-3 text-left" label="Estado" v-bind="state('status')" @sort="sortBy('status')" />
+                <SortHeader class="col-md py-2 pr-3 text-left" label="Validez" title="Válido hasta" v-bind="state('validity')" @sort="sortBy('validity')" />
                 <th class="py-2 text-right"></th>
               </tr>
             </thead>

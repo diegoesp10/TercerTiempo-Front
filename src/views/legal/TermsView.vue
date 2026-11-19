@@ -18,12 +18,13 @@ import { dataSources, legalEntity } from '@/legal/entity';
 
     <section>
       <h2>2. Qué ofrece el servicio</h2>
+      <p>Tercer Tiempo está pensado para equipos de categoría absoluta: amateur, regional y nacional.</p>
       <ul>
-        <li>Consulta pública de calendarios, resultados, clasificaciones y actas oficiales de las ligas semiprofesionales nacionales (RFEF) y de la regional asturiana, a partir de fuentes públicas (apartado 7).</li>
-        <li>Para clubes: vinculación de sus equipos y nombramiento de su cuerpo técnico por temporada mediante códigos de acceso.</li>
-        <li>Para el cuerpo técnico: gestión de la plantilla, registro del acta interna de cada partido, comparación con el acta oficial, estadísticas, gráficos y subida del vídeo del partido.</li>
-        <li>Para jugadores: vinculación a su ficha y consulta de sus estadísticas.</li>
-        <li>Acceso de pago a vídeos de partidos para técnicos de otras plantillas (apartado 6).</li>
+        <li><strong>Sin cuenta</strong>: calendarios, resultados, clasificaciones y actas oficiales de las ligas, de 1.ª RFEF a 3.ª AsturFútbol, a partir de fuentes públicas (apartado 9); el previsor de cada liga; la plantilla publicada y el cuerpo técnico de cada equipo, y los árbitros de cada categoría con las notas que les ponen los equipos.</li>
+        <li><strong>Con cualquier cuenta</strong>: el buscador, la ficha de cada jugador con sus actas oficiales y el perfil de cada técnico con sus equipos y su balance.</li>
+        <li><strong>Para clubes</strong>: sus equipos y su cuerpo técnico temporada a temporada, la licencia del club, los pases de partido (apartado 7) y todo lo del cuerpo técnico, en todos sus equipos.</li>
+        <li><strong>Para el cuerpo técnico</strong>: la plantilla con fichas, fotos y jugadores a prueba; el acta interna de cada partido con una nota calculada; el vídeo del partido y su análisis automático; estadísticas y comparador; las lesiones con sus documentos médicos; entrenamientos con ejercicios y asistencia; convocatorias con su cita; las sanciones de liga de cada jugador; las previas de los partidos y la nota al árbitro de cada partido.</li>
+        <li><strong>Para jugadores</strong>: sus cifras, sus entrenamientos y su asistencia (con aviso cuando va a faltar), sus convocatorias para firmarlas, sus avisos y su perfil.</li>
       </ul>
     </section>
 
@@ -31,7 +32,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <h2>3. Cuentas</h2>
       <ul>
         <li>Hay tres tipos de cuenta: <strong>club</strong>, <strong>cuerpo técnico</strong> y <strong>jugador</strong>. El tipo no se puede cambiar después del alta.</li>
-        <li>Debes tener al menos 14 años para crear una cuenta de jugador y, entre 14 y 17 años, contar con la autorización de tus padres o tutores. Las cuentas de club y de cuerpo técnico requieren mayoría de edad.</li>
+        <li>Para crear una cuenta, de cualquier tipo, tienes que ser <strong>mayor de edad</strong>. De momento Tercer Tiempo no admite cuentas de menores ni equipos de categorías inferiores.</li>
         <li>Quien registra una cuenta de club declara estar facultado para actuar en nombre de esa entidad y para nombrar a su cuerpo técnico.</li>
         <li>Los datos facilitados deben ser veraces y mantenerse actualizados. Eres responsable de la confidencialidad de tu contraseña y de todo lo que se haga con tu cuenta.</li>
         <li>Los <strong>códigos de acceso</strong> (club → técnico) y los <strong>códigos de invitación</strong> (técnico → jugador) son personales: entregarlos a quien no corresponde es responsabilidad de quien los facilita. Cada código de acceso se canjea una sola vez y caduca con el nombramiento.</li>
@@ -41,26 +42,45 @@ import { dataSources, legalEntity } from '@/legal/entity';
     <section>
       <h2>4. Clubes, cuerpo técnico y plantillas</h2>
       <ul>
-        <li>Solo el cuerpo técnico con un nombramiento vigente del club puede gestionar la plantilla de un equipo y registrar sus actas. Los nombramientos no superan la temporada; el club puede acortarlos, prorrogarlos o revocarlos en cualquier momento.</li>
-        <li>El club y su cuerpo técnico son responsables de la licitud y la exactitud de los datos que introducen sobre sus jugadores, de informarles de que usan Tercer Tiempo y, en el caso de menores, de contar con la autorización de sus padres o tutores.</li>
-        <li>Las observaciones del acta deben referirse únicamente al juego. No se admiten comentarios ofensivos, discriminatorios ni ajenos al rendimiento deportivo.</li>
+        <li>El club gestiona sus equipos y puede hacer todo lo del cuerpo técnico. El cuerpo técnico con un nombramiento vigente del club gestiona la plantilla de su equipo: fichas, actas, vídeos, lesiones, entrenamientos y convocatorias. Los nombramientos no superan la temporada; el club puede acortarlos, prorrogarlos o revocarlos en cualquier momento.</li>
+        <li>El club y su cuerpo técnico son responsables de la licitud y la exactitud de los datos que introducen sobre sus jugadores y sobre los jugadores a prueba, y de informarles de que usan Tercer Tiempo.</li>
+        <li>Si en una plantilla figura excepcionalmente un menor de edad, el club debe contar con la autorización de sus padres o tutores para tratar sus datos en Tercer Tiempo. El menor no puede tener cuenta.</li>
+        <li>Las observaciones del acta, los motivos de las faltas y las notas de los jugadores a prueba deben referirse únicamente al juego. No se admiten comentarios ofensivos, discriminatorios ni ajenos al rendimiento deportivo, ni datos de salud fuera de la lesión.</li>
         <li>Las plantillas son privadas. Abrirlas a solicitudes y dar pases de sus partidos es una decisión del club y de su cuerpo técnico, que asumen sus consecuencias frente a sus jugadores.</li>
-        <li>Cuando un nombramiento caduca o se revoca, el técnico pierde el acceso; las actas que registró se conservan como datos de la plantilla.</li>
+        <li>Cuando un nombramiento caduca o se revoca, el técnico pierde el acceso; lo que registró se conserva como datos de la plantilla.</li>
+        <li>La gestión de la plantilla requiere la <strong>licencia del club</strong>: empieza con una prueba gratuita, se contrata de forma mensual o anual con los técnicos que se quieran añadir y se puede cancelar sin permanencia, manteniendo el acceso hasta el final de lo pagado. El precio y las condiciones se muestran antes de contratar.</li>
       </ul>
     </section>
 
     <section>
-      <h2>5. Contenidos que suben los usuarios y vídeos</h2>
+      <h2>5. Entrenamientos, convocatorias, lesiones y sanciones</h2>
       <ul>
-        <li>Conservas los derechos sobre los contenidos que subes (vídeos, observaciones, fichas). Concedes a Tercer Tiempo una licencia no exclusiva, mundial y gratuita para alojarlos, reproducirlos, transmitirlos y mostrarlos en la plataforma con el único fin de prestar el servicio, durante el tiempo que permanezcan en ella.</li>
-        <li>Quien sube un vídeo garantiza que tiene derecho a hacerlo: que lo ha grabado él o su club, que no vulnera derechos de terceros y que cuenta con el <strong>consentimiento para la grabación y su difusión</strong> de las personas que aparecen o, si son menores, de sus padres o tutores.</li>
+        <li>El cuerpo técnico planifica los entrenamientos y anota la asistencia; el jugador puede avisar de que va a faltar y por qué. Los jugadores a prueba se apuntan con su nombre y unas notas, y pasan a la plantilla cuando se les hace ficha.</li>
+        <li>Las convocatorias las envía el cuerpo técnico: a cada jugador con cuenta le llega un aviso de si va o no, y el cuerpo técnico ve cuándo le ha llegado, cuándo la ha abierto y si la ha firmado.</li>
+        <li>Las lesiones las anotan el club y el cuerpo técnico; mientras dura la baja, el jugador no entrena ni puede ir convocado. Sus documentos médicos (radiografías, informes) solo pueden subirse con el <strong>consentimiento expreso del jugador</strong> y solo los abren el club, su cuerpo técnico y el propio jugador; sus compañeros solo ven que está lesionado.</li>
+        <li>
+          <strong>Sanciones de liga</strong>: Tercer Tiempo calcula con las tarjetas de las actas quién no puede jugar cada partido de liga
+          (la 5.ª amarilla, la 10.ª, la 15.ª… y cada expulsión cuestan el siguiente partido) y no deja convocarle ni ponerle en el acta
+          como que jugó. Es una ayuda: usa el acta oficial cuando está cerrada y, mientras tanto, la interna, y de una roja directa
+          cuenta el mínimo de un partido. Prevalecen siempre las resoluciones del comité de competición, que el club debe comprobar
+          antes de alinear a un jugador: Tercer Tiempo no responde de una alineación indebida.
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>6. Contenidos que suben los usuarios y vídeos</h2>
+      <ul>
+        <li>Conservas los derechos sobre los contenidos que subes (vídeos, fotos, documentos, observaciones, fichas). Concedes a Tercer Tiempo una licencia no exclusiva, mundial y gratuita para alojarlos, reproducirlos, transmitirlos y mostrarlos en la plataforma con el único fin de prestar el servicio, durante el tiempo que permanezcan en ella.</li>
+        <li>Quien sube un vídeo o una foto garantiza que tiene derecho a hacerlo: que lo ha grabado él o su club, que no vulnera derechos de terceros y que cuenta con el <strong>consentimiento para la grabación y su difusión</strong> de las personas que aparecen.</li>
+        <li>El vídeo se puede <strong>analizar automáticamente</strong>: el analizador sigue a los jugadores y el balón, distingue los equipos por el color de la camiseta y reconoce a cada jugador por su dorsal cruzado con el acta oficial, sin reconocimiento facial, y propone acciones para el acta. Es una propuesta: el cuerpo técnico la revisa antes de volcarla y nada cuenta hasta que guarda el acta.</li>
         <li>Está prohibido subir contenidos ilícitos, ofensivos, que vulneren la intimidad o el honor de alguien, o que incluyan música u otras obras sin licencia.</li>
         <li>Tercer Tiempo puede retirar cualquier contenido que incumpla estas condiciones o a requerimiento de un afectado o de una autoridad, y puede eliminar los vídeos de plantillas inactivas avisando con antelación.</li>
       </ul>
     </section>
 
     <section>
-      <h2>6. Pases de un partido (acta interna y vídeo)</h2>
+      <h2>7. Pases de un partido (acta interna y vídeo)</h2>
       <ul>
         <li>El acta interna y el vídeo de un partido solo los ven el club, su cuerpo técnico y sus jugadores vinculados. Cualquier otra persona necesita un <strong>pase de ese partido</strong> que le dé el club, a iniciativa propia o aprobando su solicitud.</li>
         <li>Cada pase es un código de <strong>un solo uso</strong>: al canjearlo queda ligado a la cuenta que lo canjea, de forma <strong>personal e intransferible</strong>, para verlo dentro de la plataforma. Solo incluye la descarga del vídeo si el club la autoriza expresamente; en ningún caso permite la difusión ni el uso comercial.</li>
@@ -71,7 +91,16 @@ import { dataSources, legalEntity } from '@/legal/entity';
     </section>
 
     <section>
-      <h2>7. Datos deportivos de fuentes públicas</h2>
+      <h2>8. Notas a los árbitros</h2>
+      <ul>
+        <li>El club y su cuerpo técnico pueden poner a cada árbitro de los partidos de su equipo una nota de 0 a 10, con un comentario si quieren, o dejar constancia de que no votan. La nota es definitiva después de confirmarla dos veces.</li>
+        <li>Las notas y los comentarios son públicos en la ficha del árbitro, con el nombre del club o del técnico que los puso.</li>
+        <li>Los comentarios deben referirse solo a la actuación arbitral y ser respetuosos. Se filtran las palabras prohibidas y la administración puede retirar los que no respeten estas normas; la nota se mantiene.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>9. Datos deportivos de fuentes públicas</h2>
       <p>Los calendarios, resultados, clasificaciones, plantillas publicadas y actas oficiales proceden de:</p>
       <ul>
         <li v-for="source in dataSources" :key="source.name">
@@ -92,7 +121,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
     </section>
 
     <section>
-      <h2>8. La nota calculada y las estadísticas</h2>
+      <h2>10. La nota calculada y las estadísticas</h2>
       <p>
         La nota de cada jugador en un partido se calcula automáticamente con los datos del acta interna, la posición y el
         resultado, según una fórmula fija y pública en la pantalla del acta. Es una referencia orientativa para el propio club
@@ -101,17 +130,18 @@ import { dataSources, legalEntity } from '@/legal/entity';
     </section>
 
     <section>
-      <h2>9. Uso aceptable</h2>
+      <h2>11. Uso aceptable</h2>
       <ul>
-        <li>No accedas a plantillas, actas o vídeos a los que no tengas derecho, ni intentes eludir la privacidad de una plantilla o los tickets de reproducción.</li>
+        <li>No accedas a plantillas, actas, vídeos o documentos a los que no tengas derecho, ni intentes eludir la privacidad de una plantilla o los tickets de reproducción.</li>
         <li>No utilices la plataforma ni su API de forma automatizada o masiva (extracción de datos, rastreo, reventa) sin autorización escrita.</li>
+        <li>No uses las notas a los árbitros, los comentarios, las observaciones ni los motivos de falta para insultar, acosar o difamar a nadie.</li>
         <li>No subas contenidos ilícitos ni suplantes a otra persona, club o entidad.</li>
         <li>No interfieras con el funcionamiento del servicio ni intentes acceder a sus sistemas.</li>
       </ul>
     </section>
 
     <section>
-      <h2>10. Propiedad intelectual de la plataforma</h2>
+      <h2>12. Propiedad intelectual de la plataforma</h2>
       <p>
         El software, el diseño, los textos propios, las marcas y los gráficos de Tercer Tiempo pertenecen a
         {{ legalEntity.name }} o a sus licenciantes. Se te concede una licencia personal, limitada, no exclusiva y revocable
@@ -121,18 +151,19 @@ import { dataSources, legalEntity } from '@/legal/entity';
     </section>
 
     <section>
-      <h2>11. Disponibilidad y responsabilidad</h2>
+      <h2>13. Disponibilidad y responsabilidad</h2>
       <p>
         Tercer Tiempo se presta «tal cual». Haremos lo razonable para mantenerlo disponible y seguro, pero puede haber
         interrupciones por mantenimiento, fallos de terceros (alojamiento, fuentes de datos, pasarela de pago) o causas
         ajenas. No respondemos de los daños indirectos ni de las decisiones que se tomen a partir de las estadísticas, de las
-        notas o de los datos de terceros; en todo caso, nuestra responsabilidad frente a un usuario se limita a las cantidades
-        que haya pagado al servicio en los doce meses anteriores, salvo en lo que la ley no permita limitar.
+        notas, de las sanciones calculadas, del análisis del vídeo o de los datos de terceros; en todo caso, nuestra
+        responsabilidad frente a un usuario se limita a las cantidades que haya pagado al servicio en los doce meses
+        anteriores, salvo en lo que la ley no permita limitar.
       </p>
     </section>
 
     <section>
-      <h2>12. Baja, suspensión y cambios</h2>
+      <h2>14. Baja, suspensión y cambios</h2>
       <ul>
         <li>Puedes darte de baja en cualquier momento escribiendo a <a :href="`mailto:${legalEntity.email}`">{{ legalEntity.email }}</a>; los datos se tratan según la política de privacidad.</li>
         <li>Podemos suspender o cancelar una cuenta que incumpla estas condiciones, con aviso previo salvo urgencia o requerimiento legal.</li>
@@ -141,7 +172,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
     </section>
 
     <section>
-      <h2>13. Ley aplicable y reclamaciones</h2>
+      <h2>15. Ley aplicable y reclamaciones</h2>
       <p>
         Estas condiciones se rigen por la legislación española. Para cualquier controversia, los consumidores pueden acudir a
         los juzgados de su domicilio; también puedes utilizar la plataforma europea de resolución de litigios en línea en

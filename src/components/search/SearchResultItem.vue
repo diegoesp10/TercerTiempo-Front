@@ -16,6 +16,7 @@ const typeIcon: Record<SearchItemDto['type'], string> = {
   team: 'shield-halved',
   club: 'house',
   player: 'user',
+  coach: 'clipboard-user',
   match: 'futbol',
   squad: 'users',
   referee: 'flag',

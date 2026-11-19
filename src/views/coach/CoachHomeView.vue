@@ -9,7 +9,6 @@ import { useAsync } from '@/composables/useAsync';
 import { useAuthStore } from '@/stores/auth';
 import { appointmentStatusLabels, appointmentStatusTone, formatDate, staffRoleLabels, visibilityLabels } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
-import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import DashboardSearch from '@/components/search/DashboardSearch.vue';
 import RefereesDashboardCard from '@/components/referees/RefereesDashboardCard.vue';
 
@@ -26,14 +25,10 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
 <template>
   <PageHeader :title="`Hola, ${auth.displayName}`" subtitle="Plantillas en las que formas parte del cuerpo técnico esta temporada.">
     <template #actions>
-      <RouterLink v-if="auth.coach" :to="{ name: 'coach', params: { coachId: auth.coach.id } }" class="btn-secondary" title="Tu perfil de técnico, con tu foto">
-        <PlayerAvatar :src="auth.coach.photoUrl" :name="auth.displayName" size="xs" />Mi perfil
-      </RouterLink>
+      <DashboardSearch />
       <RouterLink to="/codigo-acceso" :class="squads.length > 0 ? 'btn-secondary' : 'btn-primary'">Canjear un código de acceso</RouterLink>
     </template>
   </PageHeader>
-
-  <DashboardSearch class="mb-6" />
 
   <Spinner v-if="loading && squads.length === 0" />
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
@@ -74,7 +69,7 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
       <h2 class="font-semibold text-slate-900">Mis nombramientos</h2>
       <ul class="mt-3 divide-y divide-slate-100 text-sm">
         <li v-for="appointment in appointments" :key="appointment.id" class="flex flex-wrap items-center justify-between gap-2 py-2">
-          <div>
+          <div class="min-w-0">
             <p class="font-medium text-slate-800"><TeamName :name="appointment.teamName" :team-id="appointment.teamId" /> <span class="text-slate-400">· {{ appointment.clubName }}</span></p>
             <p class="text-xs text-slate-500">
               {{ appointment.competitionName }} · {{ appointment.seasonLabel }} · {{ staffRoleLabels[appointment.role] }} ·

@@ -1,41 +1,24 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { useSearchStore } from '@/stores/search';
 
-/** Buscador grande del panel de inicio: al escribir se abre el buscador completo con lo escrito. */
+/** Lupa del panel de inicio: abre el buscador de toda la app (también con Ctrl+F o «/»). */
 const store = useSearchStore();
-const text = ref('');
-
-function open() {
-  store.show(text.value);
-  text.value = '';
-}
-
-const examples = ['nalón roces', '3ª rfef', 'vallobín', 'garcía'];
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+const shortcut = isMac ? '⌘ F' : 'Ctrl F';
 </script>
 
 <template>
-  <section class="card relative overflow-hidden">
-    <div class="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-brand-500/10 blur-2xl" aria-hidden="true" />
-    <p class="eyebrow">Buscador</p>
-    <h2 class="mt-1 text-lg font-bold text-slate-900">Encuentra cualquier liga, equipo, club, jugador, partido o árbitro</h2>
-    <form class="mt-3 flex items-center gap-3 rounded-xl border border-line bg-surface-2 px-4 py-3 focus-within:border-brand-400" role="search" @submit.prevent="open">
-      <Icon icon="magnifying-glass" class="h-4 w-4 shrink-0 text-slate-400" />
-      <input
-        v-model="text"
-        type="search"
-        class="min-w-0 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400"
-        placeholder="Escribe un nombre: «roces», «garcía», «nalón roces»…"
-        aria-label="Buscar en Tercer Tiempo"
-        autocomplete="off"
-        @input="open"
-        @focus="text && open()"
-      />
-      <kbd class="hidden shrink-0 rounded border border-line px-1.5 font-sans text-[10px] text-slate-500 sm:inline">/</kbd>
-    </form>
-    <div class="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
-      <span>Prueba:</span>
-      <button v-for="example in examples" :key="example" type="button" class="rounded-full border border-line px-2.5 py-0.5 hover:border-brand-400/60 hover:text-slate-800" @click="store.show(example)">{{ example }}</button>
-    </div>
-  </section>
+  <button
+    type="button"
+    class="group inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-3.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-px hover:border-brand-400/60 hover:text-slate-900 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+    :title="`Buscar ligas, equipos, clubes, jugadores, técnicos, partidos o árbitros (${shortcut})`"
+    aria-label="Buscar en Tercer Tiempo"
+    @click="store.show()"
+  >
+    <span class="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-sm transition-transform group-hover:scale-110">
+      <Icon icon="magnifying-glass" class="h-3.5 w-3.5" />
+    </span>
+    Buscar
+    <kbd class="hidden rounded border border-line px-1.5 font-sans text-[10px] font-medium text-slate-500 sm:inline">{{ shortcut }}</kbd>
+  </button>
 </template>

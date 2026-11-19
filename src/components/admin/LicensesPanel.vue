@@ -5,8 +5,10 @@ import { errorMessage } from '@/api/http';
 import PaymentEventList from '@/components/licensing/PaymentEventList.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
-import type { AdminLicenseDto, AdminLicenseState, LicensesOverviewDto, PaymentEventDto, SimulatedLicenseEvent } from '@/types/api';
+import { useSort } from '@/composables/useSort';
+import type { AdminLicenseDto, AdminLicensePaymentDto, AdminLicenseState, LicensesOverviewDto, PaymentEventDto, SimulatedLicenseEvent } from '@/types/api';
 import { billingIntervalLabels, formatDate, formatKickoff, formatMoney } from '@/utils/format';
 import { subscriptionLabel } from '@/components/licensing/plans';
 
@@ -77,6 +79,43 @@ const filtered = computed(() => {
 });
 
 const money = (cents: number) => formatMoney(cents, data.value?.currency ?? 'EUR');
+
+const time = (iso: string | null) => (iso ? Date.parse(iso) : null);
+
+// Como las ordena la API: primero lo que pide atención (impagadas, cobros pendientes...) y, a igualdad, por club.
+const stateOrder: Record<AdminLicenseState, number> = { unpaid: 0, grace: 1, 'trial-plan': 2, trial: 3, active: 4, 'trial-ended': 5, cancelled: 6 };
+type LicenseSortKey = 'club' | 'state' | 'plan' | 'paidUntil' | 'nextCharge' | 'owed' | 'paid';
+const { sorted: sortedLicenses, sortBy: sortLicenses, state: licenseSortState } = useSort<AdminLicenseDto, LicenseSortKey>(
+  filtered,
+  {
+    club: (r) => r.clubName,
+    state: (r) => stateOrder[r.state],
+    // La prueba, por debajo de cualquier suscripción.
+    plan: (r) => (r.contracted ? r.staffSeats : -1),
+    paidUntil: (r) => time(r.paidUntil),
+    nextCharge: (r) => (r.renewsOn && r.nextChargeCents !== null ? time(r.renewsOn) : null),
+    owed: (r) => r.owedCents,
+    paid: (r) => r.paidCents,
+  },
+  'state',
+  { desc: false, ascendingFirst: ['club', 'state'] },
+);
+
+const paymentKindLabel = (kind: AdminLicensePaymentDto['kind']) => (kind === 'Renewal' ? 'Renovación' : kind === 'StaffSeats' ? 'Técnicos añadidos' : 'Alta');
+const payments = computed(() => data.value?.payments ?? []);
+type PaymentSortKey = 'date' | 'club' | 'concept' | 'status' | 'amount';
+const { sorted: sortedPayments, sortBy: sortPayments, state: paymentSortState } = useSort<AdminLicensePaymentDto, PaymentSortKey>(
+  payments,
+  {
+    date: (p) => time(p.paidAt ?? p.createdAt),
+    club: (p) => p.clubName,
+    concept: (p) => `${paymentKindLabel(p.kind)} · ${subscriptionLabel(p.staffSeats)} ${billingIntervalLabels[p.interval].toLowerCase()}`,
+    status: (p) => paymentStatusLabels[p.status],
+    amount: (p) => p.amountCents,
+  },
+  'date',
+  { ascendingFirst: ['club', 'concept', 'status'] },
+);
 
 async function load() {
   loading.value = true;
@@ -196,18 +235,18 @@ defineExpose({ load });
           <table class="min-w-full text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th class="px-3 py-2 text-left">Club · equipo</th>
-                <th class="px-3 py-2 text-left">Estado</th>
-                <th class="px-3 py-2 text-left">Licencia</th>
-                <th class="px-3 py-2 text-left">Pagada hasta</th>
-                <th class="px-3 py-2 text-left">Próximo cobro</th>
-                <th class="px-3 py-2 text-right">Debe</th>
-                <th class="px-3 py-2 text-right">Cobrado</th>
+                <SortHeader class="px-3 py-2 text-left" label="Club · equipo" title="Club" v-bind="licenseSortState('club')" @sort="sortLicenses('club')" />
+                <SortHeader class="px-3 py-2 text-left" label="Estado" v-bind="licenseSortState('state')" @sort="sortLicenses('state')" />
+                <SortHeader class="px-3 py-2 text-left" label="Licencia" title="Licencias de técnico contratadas" v-bind="licenseSortState('plan')" @sort="sortLicenses('plan')" />
+                <SortHeader class="px-3 py-2 text-left" label="Pagada hasta" v-bind="licenseSortState('paidUntil')" @sort="sortLicenses('paidUntil')" />
+                <SortHeader class="px-3 py-2 text-left" label="Próximo cobro" v-bind="licenseSortState('nextCharge')" @sort="sortLicenses('nextCharge')" />
+                <SortHeader class="px-3 py-2 text-right" label="Debe" v-bind="licenseSortState('owed')" @sort="sortLicenses('owed')" />
+                <SortHeader class="px-3 py-2 text-right" label="Cobrado" v-bind="licenseSortState('paid')" @sort="sortLicenses('paid')" />
                 <th v-if="isMock" class="px-3 py-2 text-left">Simular</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="row in filtered" :key="row.id">
+              <tr v-for="row in sortedLicenses" :key="row.id">
                 <td class="px-3 py-2">
                   <span class="font-medium text-slate-800">{{ row.clubName }}</span>
                   <span class="block text-xs text-slate-500">{{ row.teamNames.length === 1 ? row.teamNames[0] : `${row.teamNames.length} equipos: ${row.teamNames.join(', ')}` }}</span>
@@ -272,21 +311,21 @@ defineExpose({ load });
           <table class="min-w-full text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th class="px-3 py-2 text-left">Fecha</th>
-                <th class="px-3 py-2 text-left">Club · equipo</th>
-                <th class="px-3 py-2 text-left">Concepto</th>
-                <th class="px-3 py-2 text-left">Estado</th>
-                <th class="px-3 py-2 text-right">Importe</th>
+                <SortHeader class="px-3 py-2 text-left" label="Fecha" v-bind="paymentSortState('date')" @sort="sortPayments('date')" />
+                <SortHeader class="px-3 py-2 text-left" label="Club · equipo" title="Club" v-bind="paymentSortState('club')" @sort="sortPayments('club')" />
+                <SortHeader class="px-3 py-2 text-left" label="Concepto" v-bind="paymentSortState('concept')" @sort="sortPayments('concept')" />
+                <SortHeader class="px-3 py-2 text-left" label="Estado" v-bind="paymentSortState('status')" @sort="sortPayments('status')" />
+                <SortHeader class="px-3 py-2 text-right" label="Importe" v-bind="paymentSortState('amount')" @sort="sortPayments('amount')" />
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="payment in data.payments" :key="payment.id">
+              <tr v-for="payment in sortedPayments" :key="payment.id">
                 <td class="px-3 py-2 text-xs whitespace-nowrap text-slate-600">{{ formatKickoff(payment.paidAt ?? payment.createdAt) }}</td>
                 <td class="px-3 py-2">
                   <span class="text-slate-800">{{ payment.clubName }}</span>
                 </td>
                 <td class="px-3 py-2 text-xs text-slate-700">
-                  {{ payment.kind === 'Renewal' ? 'Renovación' : payment.kind === 'StaffSeats' ? 'Técnicos añadidos' : 'Alta' }} · {{ subscriptionLabel(payment.staffSeats) }} {{ billingIntervalLabels[payment.interval].toLowerCase() }}
+                  {{ paymentKindLabel(payment.kind) }} · {{ subscriptionLabel(payment.staffSeats) }} {{ billingIntervalLabels[payment.interval].toLowerCase() }}
                   <span class="block text-slate-500">{{ payment.provider === 'mock' ? 'Pago simulado' : payment.provider }}</span>
                 </td>
                 <td class="px-3 py-2">

@@ -20,6 +20,9 @@ importers:
       '@fortawesome/vue-fontawesome':
         specifier: ^3.3.3
         version: 3.3.3(@fortawesome/fontawesome-svg-core@7.3.1)(vue@3.5.44(typescript@5.9.3))
+      '@fullcalendar/vue3':
+        specifier: 7.1.4
+        version: 7.1.4(temporal-polyfill@1.0.8)(vue@3.5.44(typescript@5.9.3))
       '@mediapipe/tasks-vision':
         specifier: 0.10.21
         version: 0.10.21
@@ -44,6 +47,9 @@ importers:
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
+      temporal-polyfill:
+        specifier: 1.0.8
+        version: 1.0.8
       three:
         specifier: ^0.186.1
         version: 0.186.1
@@ -151,6 +157,23 @@ packages:
     peerDependencies:
       '@fortawesome/fontawesome-svg-core': ~1 || ~6 || ~7
       vue: '>= 3.0.0 < 4'
+
+  '@full-ui/headless-calendar@7.1.4':
+    resolution: {integrity: sha512-b0o9zsbJKpeM+e5eh27paqfDseQgMQkOy4jjp+nCLABmUQWn2kJ+vV3QdSNXL/9R7S+SwN6Ky21p1hDYvDdgUg==}
+    peerDependencies:
+      temporal-polyfill: ^1.0.7
+
+  '@fullcalendar/core@7.1.4':
+    resolution: {integrity: sha512-Pkjagkqa4U9n2PemmdjrejmgrbiN6UyeP0pd0qKSjnvPDZzMJGPJvQ00sgm67KL0FAyQSnKMy0odSz9yv6s2XA==}
+    peerDependencies:
+      '@full-ui/headless-calendar': 7.1.4
+      temporal-polyfill: ^1.0.7
+
+  '@fullcalendar/vue3@7.1.4':
+    resolution: {integrity: sha512-lO5TpBkBEfnYo1ATf4NN9AI8BD/9CFGEwc02LGf1YTAMRycXmx5Yz0Y2mGwy6aFi2JmO8J0fmNQWnD/0M2iMJQ==}
+    peerDependencies:
+      temporal-polyfill: ^1.0.7
+      vue: ^3.0.11
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -911,6 +934,14 @@ packages:
     resolution: {integrity: sha512-YUbWYCgErwnMAVkjUnYa+KlMBzGpHwiIt/DE7f0G33AuX2LH9UcTk6KgWxd3zRU+pN3u/C+Xl3EnMLM4Hea7Sg==}
     engines: {node: ^10 || ^12 || >=14}
 
+  preact@10.29.8:
+    resolution: {integrity: sha512-ej2aVZ+vZ8WO7tvlQWRM9N63A0KzF9q4mWJfDUHgYaIofWY9hu74QdnQrjoPMmZi2/nZ5gN0bJCQF49xQqx09Q==}
+    peerDependencies:
+      preact-render-to-string: '>=5'
+    peerDependenciesMeta:
+      preact-render-to-string:
+        optional: true
+
   qrcode@1.5.4:
     resolution: {integrity: sha512-1ca71Zgiu6ORjHqFBDpnSMTR2ReToX4l1Au1VFLyVeBTFavzQnv5JxMFr3ukHVKpSrSA2MCk0lNJSykjUfz7Zg==}
     engines: {node: '>=10.13.0'}
@@ -980,6 +1011,15 @@ packages:
   tapable@2.3.3:
     resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
     engines: {node: '>=6'}
+
+  temporal-polyfill@1.0.8:
+    resolution: {integrity: sha512-RCCGa0GddT099XG49ijdD0tDf86L8vfuZun1+JyJiO4Y2NP9PACQsG0OnvNPXwVLisdvhr/zqL2nhKQmXXx08A==}
+
+  temporal-spec@1.0.1:
+    resolution: {integrity: sha512-wxVoanmDeavXie1vu2JaQ3WIc3JZnWAOYFBsJyATaVsXsycKYUflGsyBmrRSnoCpZJpwPyr38VpgSUlQ8CbFxg==}
+
+  temporal-utils@1.0.4:
+    resolution: {integrity: sha512-4mAcgbWlaxe+gn23gk8g0iHxCVGVOhKzSCfF5HM3lfvH8BdT+/pBmH/R/E4CrIse+koUgs8ThkPzCLnui6Fi8w==}
 
   text-segmentation@1.0.3:
     resolution: {integrity: sha512-iOiPUo/BGnZ6+54OsWxZidGCsdU8YbE4PSpdPinp7DeMtUJNJBoJ/ouUSTJjHkh1KntHaltHl/gDs2FC4i5+Nw==}
@@ -1207,6 +1247,25 @@ snapshots:
     dependencies:
       '@fortawesome/fontawesome-svg-core': 7.3.1
       vue: 3.5.44(typescript@5.9.3)
+
+  '@full-ui/headless-calendar@7.1.4(temporal-polyfill@1.0.8)':
+    dependencies:
+      temporal-polyfill: 1.0.8
+
+  '@fullcalendar/core@7.1.4(@full-ui/headless-calendar@7.1.4(temporal-polyfill@1.0.8))(temporal-polyfill@1.0.8)':
+    dependencies:
+      '@full-ui/headless-calendar': 7.1.4(temporal-polyfill@1.0.8)
+      temporal-polyfill: 1.0.8
+
+  '@fullcalendar/vue3@7.1.4(temporal-polyfill@1.0.8)(vue@3.5.44(typescript@5.9.3))':
+    dependencies:
+      '@full-ui/headless-calendar': 7.1.4(temporal-polyfill@1.0.8)
+      '@fullcalendar/core': 7.1.4(@full-ui/headless-calendar@7.1.4(temporal-polyfill@1.0.8))(temporal-polyfill@1.0.8)
+      preact: 10.29.8
+      temporal-polyfill: 1.0.8
+      vue: 3.5.44(typescript@5.9.3)
+    transitivePeerDependencies:
+      - preact-render-to-string
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -1865,6 +1924,8 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.2
 
+  preact@10.29.8: {}
+
   qrcode@1.5.4:
     dependencies:
       dijkstrajs: 1.0.3
@@ -1938,6 +1999,15 @@ snapshots:
   tailwindcss@4.3.3: {}
 
   tapable@2.3.3: {}
+
+  temporal-polyfill@1.0.8:
+    dependencies:
+      temporal-spec: 1.0.1
+      temporal-utils: 1.0.4
+
+  temporal-spec@1.0.1: {}
+
+  temporal-utils@1.0.4: {}
 
   text-segmentation@1.0.3:
     dependencies:

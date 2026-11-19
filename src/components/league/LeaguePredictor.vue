@@ -10,6 +10,8 @@ import TeamCrest from '@/components/teams/TeamCrest.vue';
 import Alert from '@/components/ui/Alert.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Skeleton from '@/components/ui/Skeleton.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
+import { useSort } from '@/composables/useSort';
 import {
   metricColors,
   metricLabels,
@@ -116,6 +118,22 @@ const evolutionOption = computed(() =>
   evolution.value && evolution.value.teams.length && evolution.value.matchdays.length > 1
     ? predictionEvolutionOption(evolution.value, metric.value, highlighted.value, settings.resolvedTheme)
     : null);
+
+type TeamSortKey = 'team' | 'position' | 'points' | 'expectedPoints' | 'expectedPosition' | PredictionMetric;
+const teamGetters: Record<TeamSortKey, (team: TeamPredictionDto) => number | string> = {
+  team: (t) => t.teamName,
+  position: (t) => t.position,
+  points: (t) => t.points,
+  expectedPoints: (t) => t.expectedPoints,
+  expectedPosition: (t) => t.expectedPosition,
+  champion: (t) => t.champion,
+  promotion: (t) => t.promotion,
+  relegation: (t) => t.relegation,
+};
+const { sorted: sortedTeams, sortBy, state } = useSort<TeamPredictionDto, TeamSortKey>(teams, teamGetters, 'expectedPosition', {
+  desc: false,
+  ascendingFirst: ['team', 'position', 'expectedPosition'],
+});
 </script>
 
 <template>
@@ -265,18 +283,26 @@ const evolutionOption = computed(() =>
         <h3 class="px-4 pt-4 font-semibold text-slate-900">En números</h3>
         <div class="mt-3 overflow-x-auto">
           <table class="min-w-full text-sm">
-            <thead class="border-y border-line bg-surface-2 text-xs uppercase tracking-wide text-slate-500">
+            <thead class="border-y border-line bg-surface-2 text-xs text-slate-500">
               <tr>
-                <th class="sticky left-0 z-10 bg-surface-2 px-3 py-2 text-left">Equipo</th>
-                <th class="px-3 py-2 text-center" title="Puesto en la jornada elegida">Ahora</th>
-                <th class="px-3 py-2 text-center">Pts</th>
-                <th class="px-3 py-2 text-center" title="Puntos al final de la liga, de media">Pts final</th>
-                <th class="px-3 py-2 text-center" title="Puesto final medio">Puesto final</th>
-                <th v-for="option in metrics" :key="option" class="px-3 py-2 text-center" :style="{ color: metricColors[option] }">{{ labels[option] }}</th>
+                <SortHeader class="sticky left-0 z-10 bg-surface-2 px-3 py-2 text-left" label="Equipo" v-bind="state('team')" @sort="sortBy('team')" />
+                <SortHeader class="px-3 py-2 text-center" label="Ahora" title="Puesto en la jornada elegida" v-bind="state('position')" @sort="sortBy('position')" />
+                <SortHeader class="px-3 py-2 text-center" label="Pts" title="Puntos" v-bind="state('points')" @sort="sortBy('points')" />
+                <SortHeader class="px-3 py-2 text-center" label="Pts final" title="Puntos al final de la liga, de media" v-bind="state('expectedPoints')" @sort="sortBy('expectedPoints')" />
+                <SortHeader class="px-3 py-2 text-center" label="Puesto final" title="Puesto final medio" v-bind="state('expectedPosition')" @sort="sortBy('expectedPosition')" />
+                <SortHeader
+                  v-for="option in metrics"
+                  :key="option"
+                  class="px-3 py-2 text-center"
+                  :style="{ color: metricColors[option] }"
+                  :label="labels[option]"
+                  v-bind="state(option)"
+                  @sort="sortBy(option)"
+                />
               </tr>
             </thead>
             <tbody class="divide-y divide-line">
-              <tr v-for="team in teams" :key="team.teamId" :class="{ 'my-club-row': isMine(team) }">
+              <tr v-for="team in sortedTeams" :key="team.teamId" :class="{ 'my-club-row': isMine(team) }">
                 <!-- Columna fija al desplazar la tabla en el móvil: necesita un fondo opaco (el de su fila, mezclado). -->
                 <td
                   class="sticky left-0 z-10 px-3 py-2"

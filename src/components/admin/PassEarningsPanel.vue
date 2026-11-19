@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { adminApi } from '@/api/admin';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
-import type { PlatformPassEarningsDto } from '@/types/api';
+import { useSort } from '@/composables/useSort';
+import type { ClubEarningsRowDto, PlatformPassEarningsDto } from '@/types/api';
 import { formatMoney } from '@/utils/format';
 
 const props = defineProps<{ token: string }>();
@@ -14,6 +16,21 @@ const emit = defineEmits<{ unauthorized: [] }>();
 const data = ref<PlatformPassEarningsDto | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+const clubs = computed(() => data.value?.clubs ?? []);
+type SortKey = 'club' | 'sales' | 'gross' | 'clubShare' | 'platform';
+const { sorted, sortBy, state } = useSort<ClubEarningsRowDto, SortKey>(
+  clubs,
+  {
+    club: (r) => r.clubName,
+    sales: (r) => r.salesCount,
+    gross: (r) => r.grossCents,
+    clubShare: (r) => r.clubShareCents,
+    platform: (r) => r.platformShareCents,
+  },
+  'platform',
+  { ascendingFirst: ['club'] },
+);
 
 async function load() {
   loading.value = true;
@@ -58,15 +75,15 @@ defineExpose({ load });
         <table class="min-w-full text-sm">
           <thead class="text-xs uppercase tracking-wide text-slate-500">
             <tr>
-              <th class="py-2 pr-3 text-left">Club</th>
-              <th class="px-2 py-2 text-right">Ventas</th>
-              <th class="px-2 py-2 text-right">Total</th>
-              <th class="px-2 py-2 text-right">Club</th>
-              <th class="py-2 pl-2 text-right">Plataforma</th>
+              <SortHeader class="py-2 pr-3 text-left" label="Club" v-bind="state('club')" @sort="sortBy('club')" />
+              <SortHeader class="px-2 py-2 text-right" label="Ventas" v-bind="state('sales')" @sort="sortBy('sales')" />
+              <SortHeader class="px-2 py-2 text-right" label="Total" v-bind="state('gross')" @sort="sortBy('gross')" />
+              <SortHeader class="px-2 py-2 text-right" label="Club" title="Parte del club" v-bind="state('clubShare')" @sort="sortBy('clubShare')" />
+              <SortHeader class="py-2 pl-2 text-right" label="Plataforma" title="Parte de la plataforma" v-bind="state('platform')" @sort="sortBy('platform')" />
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr v-for="row in data.clubs" :key="row.clubId">
+            <tr v-for="row in sorted" :key="row.clubId">
               <td class="py-2 pr-3 text-slate-900">{{ row.clubName }}</td>
               <td class="px-2 py-2 text-right tabular-nums">{{ row.salesCount }}</td>
               <td class="px-2 py-2 text-right tabular-nums">{{ formatMoney(row.grossCents, data.currency) }}</td>

@@ -27,7 +27,7 @@ const target = computed<RouteLocationRaw>(() => props.to ?? { name: 'match', par
     :to="target"
     class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-slate-200 bg-surface px-3 py-3 shadow-sm transition hover:border-brand-400/60 hover:shadow sm:flex-nowrap sm:gap-4 sm:px-4"
   >
-    <div class="w-14 shrink-0 text-center">
+    <div class="w-16 shrink-0 text-center">
       <p class="text-xs uppercase text-slate-400">Jornada</p>
       <p class="text-lg font-semibold text-slate-800">{{ match.matchday }}</p>
     </div>

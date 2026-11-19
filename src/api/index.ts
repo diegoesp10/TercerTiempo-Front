@@ -1,4 +1,4 @@
-import { http, mediaBaseUrl } from './http';
+import { http, httpBlob, mediaBaseUrl } from './http';
 import type {
   ApprovePassRequest,
   ClubPassPricesDto,
@@ -37,6 +37,8 @@ import type {
   CompetitionDto,
   CompetitionMatchdayDto,
   CreateAppointmentRequest,
+  InjuryDocumentDto,
+  InjuryDocumentKind,
   InjuryDto,
   InjuryRequest,
   InjuryTypeDto,
@@ -114,6 +116,7 @@ import type {
   ExerciseRequest,
   MatchCallUpDto,
   MyCallUpDto,
+  SquadGroundsDto,
   MyTrainingDto,
   TrainingCatalogDto,
   TrainingItemInput,
@@ -121,7 +124,15 @@ import type {
   TrainingSessionDto,
   SquadAgendaItemDto,
   TrainingSummaryDto,
+  MyTrainingAttendanceDto,
+  SquadTrainingAttendanceDto,
 } from '@/types/trainings';
+
+/** «?a=1&b=2» con los valores que haya (vacío si no hay ninguno). */
+function qs(params: Record<string, string | null | undefined>): string {
+  const query = new URLSearchParams(Object.entries(params).filter((entry): entry is [string, string] => !!entry[1])).toString();
+  return query ? `?${query}` : '';
+}
 
 /** Listas de referencia (competiciones, catálogo de clubes): cambian con la sincronización diaria, no al navegar. */
 const REFERENCE_CACHE_MS = 5 * 60_000;
@@ -250,6 +261,12 @@ export const api = {
     /** Cancela lo que está en cola o analizándose del vídeo indicado (o de todos); 409 (video_analysis.not_active) si no hay nada. */
     cancelVideoAnalysis: (squadId: string, matchId: string, videoId?: string) =>
       http<MatchVideoAnalysisDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis/cancel`, { method: 'POST', body: { videoId: videoId ?? null } }),
+    /** Pausa lo que está en cola o analizándose (espera donde va sin perder nada); 422 (video_analysis.not_pausable) si no hay nada. */
+    pauseVideoAnalysis: (squadId: string, matchId: string, videoId?: string) =>
+      http<MatchVideoAnalysisDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis/pause`, { method: 'POST', body: { videoId: videoId ?? null } }),
+    /** Reanuda lo que está en pausa; 422 (video_analysis.not_paused) si no hay nada. */
+    resumeVideoAnalysis: (squadId: string, matchId: string, videoId?: string) =>
+      http<MatchVideoAnalysisDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis/resume`, { method: 'POST', body: { videoId: videoId ?? null } }),
     /** Vuelca al acta lo aceptado; 409 (video_analysis.overwrite) si pisa datos y no va confirmado. */
     applyVideoAnalysis: (squadId: string, matchId: string, body: ApplyVideoAnalysisRequest) =>
       http<ApplyVideoAnalysisResultDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis/apply`, { method: 'POST', body }),
@@ -272,6 +289,18 @@ export const api = {
       http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/close`, { method: 'POST', body: { returnedOn } }),
     reopenInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/reopen`, { method: 'POST' }),
     deleteInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'DELETE' }),
+    /** Prueba o informe de una lesión (PDF o imagen, hasta 15 MB): solo el club y el cuerpo técnico. */
+    uploadInjuryDocument: (squadId: string, injuryId: string, file: File, kind: InjuryDocumentKind, note: string | null) => {
+      const body = new FormData();
+      body.append('file', file, file.name);
+      body.append('kind', kind);
+      if (note) body.append('note', note);
+      return http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/documents`, { method: 'POST', body });
+    },
+    deleteInjuryDocument: (squadId: string, injuryId: string, documentId: string) =>
+      http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/documents/${documentId}`, { method: 'DELETE' }),
+    /** El fichero de una prueba o un informe (con la sesión): el club, el cuerpo técnico y el propio jugador. */
+    injuryDocumentFile: (document: InjuryDocumentDto) => httpBlob(document.url),
   },
 
   /**
@@ -314,6 +343,8 @@ export const api = {
     mine: () => http<ClubAlertsDto>('/api/alerts', { silent: true }),
     read: (alertId: string) => http<ClubAlertsDto>(`/api/alerts/${alertId}/read`, { method: 'POST', silent: true, keepCache: true }),
     readAll: () => http<ClubAlertsDto>('/api/alerts/read', { method: 'POST', silent: true, keepCache: true }),
+    seen: (alertIds: string[]) =>
+      http<ClubAlertsDto>('/api/alerts/seen', { method: 'POST', body: { alertIds }, silent: true, keepCache: true }),
   },
 
   /** Preparación semanal del cuerpo técnico: biblioteca de ejercicios, entrenamientos con asistencia y convocatorias. */
@@ -335,8 +366,8 @@ export const api = {
       http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}/items`, { method: 'PUT', body: { items } }),
     setAttendance: (squadId: string, sessionId: string, entries: AttendanceInput[]) =>
       http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}/attendance`, { method: 'PUT', body: { entries } }),
-    remove: (squadId: string, sessionId: string, series = false) =>
-      http<boolean>(`/api/squads/${squadId}/trainings/${sessionId}${series ? '?series=true' : ''}`, { method: 'DELETE' }),
+    /** De una en una y solo si no ha acabado (lo ya entrenado no se borra). */
+    remove: (squadId: string, sessionId: string) => http<boolean>(`/api/squads/${squadId}/trainings/${sessionId}`, { method: 'DELETE' }),
     /** Jugadores de prueba: sin ficha, se apuntan a las sesiones a las que vienen; con ficha pasan a la plantilla. */
     addTrialToTraining: (squadId: string, sessionId: string, body: TrainingTrialPlayerRequest) =>
       http<TrainingSessionDto>(`/api/squads/${squadId}/trainings/${sessionId}/trial-players`, { method: 'POST', body }),
@@ -353,10 +384,17 @@ export const api = {
     callUp: (squadId: string, matchId: string) => http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup`),
     saveCallUp: (squadId: string, matchId: string, body: CallUpRequest) =>
       http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup`, { method: 'PUT', body }),
+    grounds: (squadId: string) => http<SquadGroundsDto>(`/api/squads/${squadId}/grounds`),
     resendCallUp: (squadId: string, matchId: string) =>
       http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup/resend`, { method: 'POST' }),
     /** Lado del jugador. */
     mine: () => http<MyTrainingDto[]>('/api/players/me/trainings'),
+    /** Entrenamientos hechos por cada jugador de la plantilla (o por uno), entre dos fechas o en toda la temporada. */
+    squadAttendance: (squadId: string, filter: { from?: string | null; to?: string | null; squadPlayerId?: string | null } = {}) =>
+      http<SquadTrainingAttendanceDto>(`/api/squads/${squadId}/trainings/attendance${qs({ from: filter.from, to: filter.to, squadPlayerId: filter.squadPlayerId })}`),
+    /** Los del jugador que mira, de una temporada (squadId) o de todas. */
+    myAttendance: (filter: { squadId?: string | null; from?: string | null; to?: string | null } = {}) =>
+      http<MyTrainingAttendanceDto>(`/api/players/me/trainings/attendance${qs({ squadId: filter.squadId, from: filter.from, to: filter.to })}`),
     reportAbsence: (sessionId: string, willMiss: boolean, reason: string | null) =>
       http<TrainingSessionDto>(`/api/players/me/trainings/${sessionId}/absence`, { method: 'PUT', body: { willMiss, reason } }),
     myCallUps: () => http<MyCallUpDto[]>('/api/players/me/callups'),

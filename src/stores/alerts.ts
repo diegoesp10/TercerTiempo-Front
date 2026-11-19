@@ -22,6 +22,9 @@ export const useAlertsStore = defineStore('alerts', () => {
 
   const alerts = computed(() => data.value?.alerts ?? []);
   const unread = computed(() => data.value?.unread ?? 0);
+  // Como en las redes sociales: arriba solo lo nuevo; lo visto o resuelto queda en «Anteriores».
+  const fresh = computed(() => alerts.value.filter((a) => !a.seen && !a.resolved));
+  const earlier = computed(() => alerts.value.filter((a) => a.seen || a.resolved));
 
   async function load() {
     if (!auth.isAuthenticated) return;
@@ -43,6 +46,21 @@ export const useAlertsStore = defineStore('alerts', () => {
     data.value = await api.alerts.readAll();
   }
 
+  /** Los nuevos que se acaban de enseñar al abrir la campanita: el número se va al momento, sin esperar al servidor. */
+  async function markSeen(alertIds: string[]) {
+    if (alertIds.length === 0 || !data.value) return;
+    const ids = new Set(alertIds);
+    data.value = {
+      unread: Math.max(0, data.value.unread - alertIds.length),
+      alerts: data.value.alerts.map((a) => (ids.has(a.id) ? { ...a, seen: true } : a)),
+    };
+    try {
+      data.value = await api.alerts.seen(alertIds);
+    } catch {
+      // Si no llega, siguen sin ver en el servidor y vuelven a contar en la próxima carga.
+    }
+  }
+
   const onVisible = () => { if (document.visibilityState === 'visible' && Date.now() - loadedAt > STALE_ON_RETURN_MS) void load(); };
 
   watch(() => auth.isAuthenticated, (signedIn) => {
@@ -58,5 +76,5 @@ export const useAlertsStore = defineStore('alerts', () => {
     document.addEventListener('visibilitychange', onVisible);
   }, { immediate: true });
 
-  return { alerts, unread, loading, load, markRead, markAllRead };
+  return { alerts, fresh, earlier, unread, loading, load, markRead, markAllRead, markSeen };
 });

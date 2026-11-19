@@ -12,12 +12,14 @@ import Badge from '@/components/ui/Badge.vue';
 import CardMarks from '@/components/sheet/CardMarks.vue';
 import GoalMarks from '@/components/sheet/GoalMarks.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
+import { useSort, type SortValue } from '@/composables/useSort';
 import { useAuthStore } from '@/stores/auth';
 import { useViewer } from '@/composables/useViewer';
 import { awaitingResultHint, formatKickoff, matchDisplayLabels, matchDisplayStatus, passPrice, positionShortLabels, visibilityLabels } from '@/utils/format';
-import type { MatchSquadSheetDto } from '@/types/api';
+import type { MatchSquadSheetDto, PerformanceDto } from '@/types/api';
 import TeamName from '@/components/teams/TeamName.vue';
 import PlayerName from '@/components/players/PlayerName.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
@@ -68,6 +70,31 @@ watch(data, async (detail) => {
     opening.value = false;
   }
 }, { immediate: true });
+
+// Las actas internas de los dos equipos comparten el orden: se ordenan todas las líneas juntas y cada tabla se queda
+// con las suyas. `lineup` no tiene columna: es el orden del acta (titulares, minutos, dorsal) y el de partida.
+interface EntryRow { entry: PerformanceDto; squadId: string; order: number }
+const entryRows = computed<EntryRow[]>(() =>
+  (data.value?.sheets ?? []).flatMap((s) => s.entries.map((entry) => ({ entry, squadId: s.squadId }))).map((row, order) => ({ ...row, order })));
+type EntrySortKey = 'lineup' | 'player' | 'minutes' | 'goals' | 'assists' | 'shots' | 'tackles' | 'interceptions' | 'saves' | 'cards' | 'rating';
+const entryGetters: Record<EntrySortKey, (r: EntryRow) => SortValue> = {
+  lineup: (r) => r.order,
+  player: (r) => r.entry.playerName,
+  minutes: (r) => r.entry.minutesPlayed,
+  goals: (r) => r.entry.goals,
+  assists: (r) => r.entry.assists,
+  shots: (r) => r.entry.shotsOnTarget * 1000 + r.entry.shots,
+  tackles: (r) => r.entry.tackles,
+  interceptions: (r) => r.entry.interceptions,
+  saves: (r) => r.entry.saves,
+  cards: (r) => (r.entry.redCard ? 10 : 0) + r.entry.yellowCards,
+  rating: (r) => r.entry.rating,
+};
+const { sorted: sortedEntries, sortBy, state } = useSort<EntryRow, EntrySortKey>(entryRows, entryGetters, 'lineup', {
+  desc: false,
+  ascendingFirst: ['lineup', 'player'],
+});
+const entriesOf = (sheet: MatchSquadSheetDto) => sortedEntries.value.filter((r) => r.squadId === sheet.squadId).map((r) => r.entry);
 </script>
 
 <template>
@@ -129,7 +156,7 @@ watch(data, async (detail) => {
 
     <section v-for="sheet in data.sheets" :key="sheet.squadId" class="card mt-6">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 class="font-semibold text-slate-900">
+        <h2 class="min-w-0 font-semibold text-slate-900">
           Acta interna de <TeamName :name="sheet.teamName" :team-id="sheet.teamId" size="sm" />
           <Badge v-if="!sheet.insider && sheet.access?.sheetPass" tone="green" class="ml-2"><Icon icon="ticket" class="mr-1 h-3 w-3" />Con tu pase</Badge>
           <Badge v-else :tone="sheet.visibility === 'Public' ? 'green' : 'slate'" class="ml-2">{{ visibilityLabels[sheet.visibility] }}</Badge>
@@ -196,25 +223,24 @@ watch(data, async (detail) => {
       <p v-else-if="sheet.entries.length === 0" class="text-sm text-slate-500">El cuerpo técnico todavía no ha registrado el acta de este partido.</p>
 
       <div v-else class="overflow-x-auto">
-        <table class="min-w-full text-sm">
-          <thead class="text-xs uppercase tracking-wide text-slate-500">
+        <table class="table-sticky min-w-full text-sm">
+          <thead class="text-xs text-slate-500">
             <tr>
-              <th class="py-2 pr-3 text-left">Jugador</th>
-              <th class="px-2 py-2 text-center">Min</th>
-              <th class="px-2 py-2 text-center">G</th>
-              <th class="col-sm px-2 py-2 text-center">A</th>
-              <th class="col-sm px-2 py-2 text-center">Tiros</th>
-              <th class="col-md px-2 py-2 text-center">Ent</th>
-              <th class="col-md px-2 py-2 text-center">Int</th>
-              <th class="col-md px-2 py-2 text-center">Par</th>
-              <th class="px-2 py-2 text-center">TA/TR</th>
-              <th class="px-2 py-2 text-center">Nota</th>
+              <SortHeader class="py-2 pr-3 text-left" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
+              <SortHeader class="px-2 py-2 text-center" label="Min" title="Minutos" v-bind="state('minutes')" @sort="sortBy('minutes')" />
+              <SortHeader class="px-2 py-2 text-center" label="G" title="Goles" v-bind="state('goals')" @sort="sortBy('goals')" />
+              <SortHeader class="col-sm px-2 py-2 text-center" label="A" title="Asistencias" v-bind="state('assists')" @sort="sortBy('assists')" />
+              <SortHeader class="col-sm px-2 py-2 text-center" label="Tiros" title="Tiros a puerta / tiros" v-bind="state('shots')" @sort="sortBy('shots')" />
+              <SortHeader class="col-md px-2 py-2 text-center" label="Ent" title="Entradas" v-bind="state('tackles')" @sort="sortBy('tackles')" />
+              <SortHeader class="col-md px-2 py-2 text-center" label="Int" title="Intercepciones" v-bind="state('interceptions')" @sort="sortBy('interceptions')" />
+              <SortHeader class="col-md px-2 py-2 text-center" label="Par" title="Paradas" v-bind="state('saves')" @sort="sortBy('saves')" />
+              <SortHeader class="px-2 py-2 text-center" label="TA/TR" title="Tarjetas (la roja pesa más)" v-bind="state('cards')" @sort="sortBy('cards')" />
+              <SortHeader class="px-2 py-2 text-center" label="Nota" v-bind="state('rating')" @sort="sortBy('rating')" />
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr v-for="p in sheet.entries" :key="p.id" :class="p.squadPlayerId === auth.playerSquad?.squadPlayerId ? 'bg-brand-500/10' : ''">
-              <td class="py-2 pr-3 whitespace-nowrap">
-                <span v-if="p.shirtNumber" class="mr-1 text-slate-400">{{ p.shirtNumber }}</span>
+            <tr v-for="p in entriesOf(sheet)" :key="p.id" :class="p.squadPlayerId === auth.playerSquad?.squadPlayerId ? 'bg-brand-500/10' : ''">
+              <td class="py-2 pr-3 lg:whitespace-nowrap">
                 <PlayerName :name="p.playerName" :photo-url="p.playerPhotoUrl" class="font-medium text-slate-800" />
                 <span class="ml-1 text-xs text-slate-400">
                   <template v-if="p.position">{{ positionShortLabels[p.position] }}</template>

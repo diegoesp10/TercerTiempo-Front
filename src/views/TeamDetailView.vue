@@ -8,6 +8,8 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Skeleton from '@/components/ui/Skeleton.vue';
+import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import ClubRosterEditor from '@/components/teams/ClubRosterEditor.vue';
 import TeamPitchEditor from '@/components/teams/TeamPitchEditor.vue';
@@ -15,12 +17,15 @@ import TeamShirtNumbers from '@/components/teams/TeamShirtNumbers.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import RosterStatsSummary from '@/components/teams/RosterStatsSummary.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
+import TeamStaffCard from '@/components/teams/TeamStaffCard.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useBackFallback } from '@/composables/useBackFallback';
+import { useSort, type SortValue } from '@/composables/useSort';
+import { groupByPosition, useGroupByPosition } from '@/composables/usePositionGrouping';
 import { useAuthStore } from '@/stores/auth';
 import { useViewer } from '@/composables/useViewer';
 import { formatKickoff, levelLabels, matchDisplayStatus, positionLabels, visibilityLabels } from '@/utils/format';
-import type { MatchDto, TeamProfileDto } from '@/types/api';
+import type { MatchDto, RosterEntryDto, TeamProfileDto } from '@/types/api';
 import TeamName from '@/components/teams/TeamName.vue';
 import { httpUrl } from '@/utils/links';
 
@@ -94,6 +99,23 @@ const kit = computed(() =>
 function onRosterUpdated(roster: typeof data.value extends infer T ? (T extends { roster: infer R } ? R : never) : never) {
   if (data.value) data.value = { ...data.value, roster, rosterPublished: roster.length > 0 };
 }
+
+// `lineup` no tiene columna: es el orden de la plantilla (por posición y nombre) y el de partida. La temporada se
+// ordena por minutos.
+interface RosterRow { entry: RosterEntryDto; order: number }
+const rosterRows = computed<RosterRow[]>(() => (data.value?.roster ?? []).map((entry, order) => ({ entry, order })));
+type RosterSortKey = 'lineup' | 'player' | 'season';
+const rosterGetters: Record<RosterSortKey, (r: RosterRow) => SortValue> = {
+  lineup: (r) => r.order,
+  player: (r) => r.entry.fullName,
+  season: (r) => r.entry.stats?.minutesPlayed ?? null,
+};
+const { sorted: sortedRoster, sortBy, state } = useSort<RosterRow, RosterSortKey>(rosterRows, rosterGetters, 'lineup', {
+  desc: false,
+  ascendingFirst: ['lineup', 'player'],
+});
+const groupedRoster = useGroupByPosition('team-roster');
+const rosterGroups = computed(() => groupByPosition(sortedRoster.value, (row) => row.entry.position, groupedRoster.value));
 
 /** Cifras de la clasificación: la posición, destacada, y el resto en la misma fila. */
 const standingFigures = computed(() => {
@@ -293,31 +315,53 @@ async function linkToClub() {
 
       <div class="space-y-6 self-start lg:col-span-2">
         <section class="card">
-          <div class="mb-3 flex items-center justify-between">
-            <h2 class="font-semibold text-slate-900">Plantilla según futbolasturiano.es</h2>
-            <span v-if="data.rosterPublished" class="text-xs text-slate-500">{{ data.roster.length }} jugadores</span>
+          <div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <h2 class="flex flex-wrap items-baseline gap-x-2 font-semibold text-slate-900">
+              Plantilla
+              <a
+                v-if="httpUrl(data.sourceUrl)"
+                :href="httpUrl(data.sourceUrl) ?? undefined"
+                target="_blank"
+                rel="noopener"
+                class="text-xs font-normal text-accent-400 hover:underline"
+                title="El equipo en futbolasturiano.es, que facilita la plantilla, el calendario y los resultados"
+              >futbolasturiano.es ↗</a>
+            </h2>
+            <div class="flex items-center gap-3">
+              <GroupByPositionToggle v-if="data.roster.length > 0" v-model="groupedRoster" />
+              <span v-if="data.rosterPublished" class="text-xs text-slate-500">{{ data.roster.length }} jugadores</span>
+            </div>
           </div>
 
-          <ClubRosterEditor v-if="auth.isClub && isMyClubTeam" :team-id="data.id" :roster="data.roster" @updated="onRosterUpdated" />
+          <ClubRosterEditor v-if="auth.isClub && isMyClubTeam" :team-id="data.id" :roster="data.roster" :grouped="groupedRoster" @updated="onRosterUpdated" />
 
           <p v-else-if="!data.rosterPublished" class="text-sm text-slate-600">
-            El proveedor no publica la plantilla de este equipo. El cuerpo técnico puede añadir las fichas a mano.
+            futbolasturiano.es no publica la plantilla de este equipo. El cuerpo técnico puede añadir las fichas a mano.
           </p>
 
           <div v-else class="overflow-x-auto">
             <table class="min-w-full text-sm">
-              <thead class="text-xs uppercase tracking-wide text-slate-500">
+              <thead class="text-xs text-slate-500">
                 <tr>
-                  <th class="py-2 pr-3 text-left">Jugador</th>
-                  <th class="py-2 text-left" title="Goles, tarjetas y minutos según las actas oficiales">Temporada</th>
+                  <SortHeader class="py-2 pr-3 text-left" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
+                  <SortHeader
+                    class="py-2 text-left"
+                    label="Temporada"
+                    title="Goles, tarjetas y minutos según las actas oficiales (se ordena por minutos)"
+                    v-bind="state('season')"
+                    @sort="sortBy('season')"
+                  />
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100">
-                <tr v-for="entry in data.roster" :key="entry.id">
-                  <td class="py-2 pr-3 whitespace-nowrap">
-                    <span class="inline-flex items-center gap-2">
-                      <PlayerAvatar :src="entry.photoUrl" :name="entry.fullName" size="sm" />
-                      <span>
+              <tbody v-for="group in rosterGroups" :key="group.key" class="divide-y divide-slate-100">
+                <tr v-if="group.label">
+                  <td colspan="2" class="bg-surface-2 px-2 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{{ group.label }} · {{ group.rows.length }}</td>
+                </tr>
+                <tr v-for="{ entry } in group.rows" :key="entry.id">
+                  <td class="py-2 pr-3">
+                    <span class="flex items-center gap-2">
+                      <PlayerAvatar :src="entry.photoUrl" :name="entry.fullName" size="sm" class="shrink-0" />
+                      <span class="min-w-0">
                         <RouterLink
                           v-if="signedIn"
                           :to="{ name: 'player-card', params: { teamId: data.id, entryId: entry.id } }"
@@ -334,6 +378,8 @@ async function linkToClub() {
             </table>
           </div>
         </section>
+
+        <TeamStaffCard :staff="data.staff" :linked="signedIn" />
 
         <!-- Los dorsales no van en la plantilla (no son fijos): salen de las actas de cada partido -->
         <TeamShirtNumbers :team-id="data.id" :roster="data.roster" :linked="signedIn" />

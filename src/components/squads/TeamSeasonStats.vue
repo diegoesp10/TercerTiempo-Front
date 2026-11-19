@@ -2,9 +2,11 @@
 import { computed } from 'vue';
 import { teamStatsApi } from '@/api/teamStats';
 import Alert from '@/components/ui/Alert.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
-import type { MatchDto, TeamStatsAveragesDto } from '@/types/api';
+import { useSort } from '@/composables/useSort';
+import type { MatchDto, SquadTeamStatsDto, TeamStatsAveragesDto } from '@/types/api';
 import { formatNumber, formatPct } from '@/utils/format';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import TeamName from '@/components/teams/TeamName.vue';
@@ -50,6 +52,27 @@ const ownTeam = computed(() => {
 });
 /** Redondeada antes de restar, para que la de tu equipo y la del rival sumen siempre 100. */
 const possession = computed(() => (averages.value?.possessionPct == null ? null : Math.round(averages.value.possessionPct)));
+
+type Row = SquadTeamStatsDto['matches'][number];
+type SortKey = 'match' | 'result' | 'possession' | 'corners' | 'shots' | 'offsides' | 'fouls' | 'setPieces';
+const rows = computed<Row[]>(() => data.value?.matches ?? []);
+// En las columnas «a favor - en contra» se ordena por lo de tu equipo.
+const getters: Record<SortKey, (row: Row) => number | null> = {
+  match: (r) => new Date(r.match.kickoffAt).getTime(),
+  result: (r) => {
+    const { homeGoals, awayGoals } = r.match;
+    if (homeGoals === null || awayGoals === null) return null;
+    const diff = r.match.homeTeam.id === props.teamId ? homeGoals - awayGoals : awayGoals - homeGoals;
+    return (diff > 0 ? 3 : diff === 0 ? 1 : 0) * 100 + diff;
+  },
+  possession: (r) => r.stats.possessionPct,
+  corners: (r) => r.stats.cornersFor,
+  shots: (r) => r.stats.shotsFor,
+  offsides: (r) => r.stats.offsidesFor,
+  fouls: (r) => r.stats.foulsCommitted,
+  setPieces: (r) => r.stats.setPieceGoalsFor,
+};
+const { sorted, sortBy, state } = useSort<Row, SortKey>(rows, getters, 'match', { desc: false });
 </script>
 
 <template>
@@ -115,22 +138,22 @@ const possession = computed(() => (averages.value?.possessionPct == null ? null 
       </div>
 
       <div v-if="!compact && data" class="mt-5 overflow-x-auto rounded-lg border border-slate-200">
-        <table class="min-w-full text-sm">
-          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <table class="table-sticky min-w-full text-sm">
+          <thead class="bg-slate-50 text-xs text-slate-500">
             <tr>
-              <th class="px-3 py-2 text-left">Partido</th>
-              <th class="px-2 py-2 text-center" title="Resultado (tu equipo primero)">Res.</th>
-              <th class="px-2 py-2 text-center" title="Posesión de tu equipo">Pos.</th>
-              <th class="px-2 py-2 text-center" title="Córners a favor - en contra">Córners</th>
-              <th class="px-2 py-2 text-center" title="Tiros (a puerta) a favor - en contra">Tiros</th>
-              <th class="col-md px-2 py-2 text-center" title="Fueras de juego tuyos - del rival">FdJ</th>
-              <th class="col-md px-2 py-2 text-center" title="Faltas cometidas - recibidas">Faltas</th>
-              <th class="col-sm px-2 py-2 text-center" title="Goles a balón parado a favor - en contra">B. parado</th>
+              <SortHeader class="px-3 py-2 text-left" label="Partido" title="Fecha del partido" v-bind="state('match')" @sort="sortBy('match')" />
+              <SortHeader class="px-2 py-2 text-center" label="Res." title="Resultado (tu equipo primero)" v-bind="state('result')" @sort="sortBy('result')" />
+              <SortHeader class="px-2 py-2 text-center" label="Pos." title="Posesión de tu equipo" v-bind="state('possession')" @sort="sortBy('possession')" />
+              <SortHeader class="px-2 py-2 text-center" label="Córners" title="Córners a favor - en contra" v-bind="state('corners')" @sort="sortBy('corners')" />
+              <SortHeader class="px-2 py-2 text-center" label="Tiros" title="Tiros (a puerta) a favor - en contra" v-bind="state('shots')" @sort="sortBy('shots')" />
+              <SortHeader class="col-md px-2 py-2 text-center" label="FdJ" title="Fueras de juego tuyos - del rival" v-bind="state('offsides')" @sort="sortBy('offsides')" />
+              <SortHeader class="col-md px-2 py-2 text-center" label="Faltas" title="Faltas cometidas - recibidas" v-bind="state('fouls')" @sort="sortBy('fouls')" />
+              <SortHeader class="col-sm px-2 py-2 text-center" label="B. parado" title="Goles a balón parado a favor - en contra" v-bind="state('setPieces')" @sort="sortBy('setPieces')" />
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr v-for="row in data.matches" :key="row.match.id">
-              <td class="px-3 py-2 whitespace-nowrap">
+            <tr v-for="row in sorted" :key="row.match.id">
+              <td class="px-3 py-2 lg:whitespace-nowrap">
                 <span class="text-xs text-slate-400">J{{ row.match.matchday }} · {{ venue(row.match) }}</span>
                 <TeamName
                   class="ml-1 font-medium text-slate-800"

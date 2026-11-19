@@ -9,9 +9,11 @@ import { seriesColors, seriesTextColors, textOnColor } from '@/charts/theme';
 import AppChart from '@/components/charts/AppChart.vue';
 import ChartCard from '@/components/charts/ChartCard.vue';
 import Alert from '@/components/ui/Alert.vue';
+import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
+import { groupByPosition, useGroupByPosition } from '@/composables/usePositionGrouping';
 import { useSquad } from '@/composables/useSquad';
 import { useSettingsStore } from '@/stores/settings';
 import type { SquadPlayerProfileDto, SquadPlayerStatsDto } from '@/types/api';
@@ -31,6 +33,9 @@ const { data, loading, error } = useAsync(() => api.squads.stats(squadId.value))
 const candidates = computed(() =>
   (data.value?.players ?? []).filter((r) => r.stats.minutes > 0).sort((a, b) => b.stats.minutes - a.stats.minutes),
 );
+
+const grouped = useGroupByPosition('squad-compare');
+const candidateGroups = computed(() => groupByPosition(candidates.value, (r) => r.player.position, grouped.value));
 
 const selected = ref<string[]>([]);
 const includeAverage = ref(true);
@@ -107,6 +112,7 @@ interface MetricRow {
 
 const metrics: MetricRow[] = [
   { label: 'Partidos', value: (r) => r.stats.matchesLogged, format: (v) => String(v ?? '—') },
+  { label: 'Titularidades', value: (r) => r.stats.starts, format: (v) => String(v ?? '—') },
   { label: 'Minutos', value: (r) => r.stats.minutes, format: (v) => String(v ?? '—') },
   { label: 'Goles', value: (r) => r.stats.goals, format: (v) => String(v ?? '—') },
   { label: 'Asistencias de gol', value: (r) => r.stats.assists, format: (v) => String(v ?? '—') },
@@ -137,28 +143,34 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
             <h2 class="font-semibold text-slate-900">Elige hasta {{ MAX_SELECTED }} jugadores</h2>
             <p class="text-xs text-slate-500">Todos los datos salen de las actas; las notas, calculadas con esos datos.</p>
           </div>
-          <label class="flex items-center gap-2 text-sm text-slate-600">
-            <input v-model="includeAverage" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-accent-400" />
-            Media de la plantilla
-          </label>
+          <div class="flex flex-wrap items-center gap-3">
+            <GroupByPositionToggle v-model="grouped" />
+            <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+              <input v-model="includeAverage" type="checkbox" class="h-4 w-4 cursor-pointer rounded border-slate-300 text-accent-400" />
+              Media de la plantilla
+            </label>
+          </div>
         </div>
-        <div class="mt-3 flex flex-wrap gap-2">
-          <button
-            v-for="row in candidates"
-            :key="row.player.id"
-            type="button"
-            class="flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition"
-            :class="selected.includes(row.player.id)
-              ? 'border-transparent shadow-sm'
-              : 'border-slate-200 bg-surface text-slate-700 hover:border-slate-300 disabled:opacity-50'"
-            :style="selected.includes(row.player.id) ? { backgroundColor: colorOf(row.player.id), color: textOnColor(colorOf(row.player.id)) } : undefined"
-            :disabled="!selected.includes(row.player.id) && selected.length >= MAX_SELECTED"
-            @click="toggle(row.player.id)"
-          >
-            <span v-if="row.player.shirtNumber">{{ row.player.shirtNumber }}</span>
-            <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" />
-            <span v-if="row.player.position" class="text-xs">{{ positionShortLabels[row.player.position] }}</span>
-          </button>
+        <div v-for="group in candidateGroups" :key="group.key" class="mt-3">
+          <p v-if="group.label" class="mb-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{{ group.label }} · {{ group.rows.length }}</p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="row in group.rows"
+              :key="row.player.id"
+              type="button"
+              class="flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-sm transition disabled:cursor-not-allowed"
+              :class="selected.includes(row.player.id)
+                ? 'border-transparent shadow-sm'
+                : 'border-slate-200 bg-surface text-slate-700 hover:border-slate-300 disabled:opacity-50'"
+              :style="selected.includes(row.player.id) ? { backgroundColor: colorOf(row.player.id), color: textOnColor(colorOf(row.player.id)) } : undefined"
+              :disabled="!selected.includes(row.player.id) && selected.length >= MAX_SELECTED"
+              :title="!selected.includes(row.player.id) && selected.length >= MAX_SELECTED ? `Ya hay ${MAX_SELECTED} elegidos: quita uno para añadir a otro` : undefined"
+              @click="toggle(row.player.id)"
+            >
+              <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" />
+              <span v-if="row.player.position && !grouped" class="text-xs">{{ positionShortLabels[row.player.position] }}</span>
+            </button>
+          </div>
         </div>
       </section>
 

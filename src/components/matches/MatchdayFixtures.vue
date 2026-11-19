@@ -8,7 +8,6 @@ import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import type { CompetitionMatchdayDto, MatchDto } from '@/types/api';
 import { awaitingResultHint, formatDayHeading, formatDayRange, formatTime, localDayKey, matchDisplayLabels, matchDisplayStatus } from '@/utils/format';
-import TeamName from '@/components/teams/TeamName.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 
 const props = defineProps<{
@@ -183,33 +182,54 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
       <div v-for="day in days" :key="day.heading">
         <h3 class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ day.heading }}</h3>
         <ul class="divide-y divide-slate-100 rounded-lg border border-slate-200">
-          <li v-for="match in day.matches" :key="match.id">
+          <!-- La fila mira su propio ancho (@container): en el móvil o en la columna junto a la clasificación, un equipo por
+               línea con su marcador a la derecha, como en las apps de resultados; con sitio, frente a frente. -->
+          <li v-for="match in day.matches" :key="match.id" class="@container">
             <RouterLink
               :to="{ name: 'match', params: { matchId: match.id } }"
-              class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
+              class="block px-3 py-2 text-sm hover:bg-slate-50"
               :class="isHighlighted(match) ? 'my-club-row font-semibold' : ''"
             >
-              <span class="flex min-w-0 items-center justify-end gap-1.5 text-right" :class="isMine(match.homeTeam.id) ? 'text-accent-400' : 'text-slate-800'" :title="match.homeTeam.name">
-                <span class="truncate">{{ match.homeTeam.name }}</span>
-                <TeamCrest :src="match.homeTeam.crestUrl" :name="match.homeTeam.name" :short-name="match.homeTeam.shortName" size="xs" />
-              </span>
-              <span class="min-w-16 text-center">
-                <span v-if="hasScore(match)" class="rounded bg-brand-500 px-2 py-0.5 font-semibold tabular-nums text-white">
-                  {{ match.homeGoals }} - {{ match.awayGoals }}
+              <span class="grid grid-cols-[minmax(3.25rem,max-content)_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 @md:hidden">
+                <span class="row-span-2 text-center text-xs">
+                  <span v-if="hasScore(match)" class="text-slate-500">Final</span>
+                  <span v-else-if="matchDisplayStatus(match) === 'Scheduled'" class="text-sm tabular-nums text-slate-600">{{ formatTime(match.kickoffAt) }}</span>
+                  <Badge v-else-if="matchDisplayStatus(match) === 'AwaitingResult'" tone="slate" :title="awaitingResultHint">{{ matchDisplayLabels.AwaitingResult }}</Badge>
+                  <Badge v-else tone="amber">{{ matchDisplayLabels[matchDisplayStatus(match)] }}</Badge>
                 </span>
-                <span v-else-if="matchDisplayStatus(match) === 'Scheduled'" class="tabular-nums text-slate-600">{{ formatTime(match.kickoffAt) }}</span>
-                <Badge v-else-if="matchDisplayStatus(match) === 'AwaitingResult'" tone="slate" :title="awaitingResultHint">{{ matchDisplayLabels.AwaitingResult }}</Badge>
-                <Badge v-else tone="amber">{{ matchDisplayLabels[matchDisplayStatus(match)] }}</Badge>
+                <span class="flex min-w-0 items-center gap-2" :class="isMine(match.homeTeam.id) ? 'text-accent-400' : 'text-slate-800'" :title="match.homeTeam.name">
+                  <TeamCrest :src="match.homeTeam.crestUrl" :name="match.homeTeam.name" :short-name="match.homeTeam.shortName" size="xs" />
+                  <span class="truncate">{{ match.homeTeam.name }}</span>
+                </span>
+                <span class="min-w-5 text-right font-semibold tabular-nums text-slate-900">{{ hasScore(match) ? match.homeGoals : '' }}</span>
+                <span class="flex min-w-0 items-center gap-2" :class="isMine(match.awayTeam.id) ? 'text-accent-400' : 'text-slate-800'" :title="match.awayTeam.name">
+                  <TeamCrest :src="match.awayTeam.crestUrl" :name="match.awayTeam.name" :short-name="match.awayTeam.shortName" size="xs" />
+                  <span class="truncate">{{ match.awayTeam.name }}</span>
+                </span>
+                <span class="min-w-5 text-right font-semibold tabular-nums text-slate-900">{{ hasScore(match) ? match.awayGoals : '' }}</span>
               </span>
-              <TeamName
-                :name="match.awayTeam.name"
-                :crest-url="match.awayTeam.crestUrl"
-                :short-name="match.awayTeam.shortName"
-                :class="isMine(match.awayTeam.id) ? 'text-accent-400' : 'text-slate-800'"
-                :title="match.awayTeam.name"
-              />
+
+              <span class="hidden grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 @md:grid">
+                <span class="flex min-w-0 items-center justify-end gap-1.5 text-right" :class="isMine(match.homeTeam.id) ? 'text-accent-400' : 'text-slate-800'" :title="match.homeTeam.name">
+                  <span class="truncate">{{ match.homeTeam.name }}</span>
+                  <TeamCrest :src="match.homeTeam.crestUrl" :name="match.homeTeam.name" :short-name="match.homeTeam.shortName" size="xs" />
+                </span>
+                <span class="min-w-16 text-center">
+                  <span v-if="hasScore(match)" class="rounded bg-brand-500 px-2 py-0.5 font-semibold tabular-nums text-white">
+                    {{ match.homeGoals }} - {{ match.awayGoals }}
+                  </span>
+                  <span v-else-if="matchDisplayStatus(match) === 'Scheduled'" class="tabular-nums text-slate-600">{{ formatTime(match.kickoffAt) }}</span>
+                  <Badge v-else-if="matchDisplayStatus(match) === 'AwaitingResult'" tone="slate" :title="awaitingResultHint">{{ matchDisplayLabels.AwaitingResult }}</Badge>
+                  <Badge v-else tone="amber">{{ matchDisplayLabels[matchDisplayStatus(match)] }}</Badge>
+                </span>
+                <span class="flex min-w-0 items-center gap-1.5" :class="isMine(match.awayTeam.id) ? 'text-accent-400' : 'text-slate-800'" :title="match.awayTeam.name">
+                  <TeamCrest :src="match.awayTeam.crestUrl" :name="match.awayTeam.name" :short-name="match.awayTeam.shortName" size="xs" />
+                  <span class="truncate">{{ match.awayTeam.name }}</span>
+                </span>
+              </span>
+
+              <span v-if="match.venue" class="mt-1 block truncate pl-[4rem] text-xs font-normal text-slate-400 @md:mt-0.5 @md:pl-0 @md:text-center">{{ match.venue }}</span>
             </RouterLink>
-            <p v-if="match.venue" class="-mt-1 truncate px-3 pb-2 text-center text-xs text-slate-400">{{ match.venue }}</p>
           </li>
         </ul>
       </div>

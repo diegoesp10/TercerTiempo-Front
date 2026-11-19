@@ -1,5 +1,7 @@
 // Tipos espejo de los DTOs de la API (TercerTiempo.Application). Los enums viajan como string.
 
+import type { SuspensionBriefDto } from './trainings';
+
 export type AccountType = 'Player' | 'Coach' | 'Club';
 export type AppointmentStatus = 'Pending' | 'Active' | 'Expired' | 'Revoked';
 export type MatchSide = 'Home' | 'Away';
@@ -151,6 +153,37 @@ export interface CoachProfileDto {
   isMe: boolean;
   /** Equipos que dirige o ha dirigido, los vigentes primero. */
   teams: CoachTeamDto[];
+  /** Balance de todos sus equipos mientras estuvo con ellos (cada partido una vez). */
+  summary?: CoachSummaryDto | null;
+}
+
+export interface CoachSummaryDto {
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  points: number;
+  /** Porcentajes sobre los partidos jugados; null sin partidos. */
+  winPct: number | null;
+  drawPct: number | null;
+  lossPct: number | null;
+  pointsPerMatch: number | null;
+  /** Media de la posición en la clasificación de sus equipos (una por equipo y temporada); null si ninguno la tiene. */
+  averagePosition: number | null;
+  /** Equipos y temporadas que entran en la posición media. */
+  rankedTeams: number;
+}
+
+export interface CoachTeamRecordDto {
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  points: number;
 }
 
 export interface CoachTeamDto {
@@ -168,6 +201,20 @@ export interface CoachTeamDto {
   current: boolean;
   /** Plantilla de ese equipo en esa temporada (privada: solo la abren quienes tienen acceso). */
   squadId: string | null;
+  /** Día en que dejó el equipo antes de acabar su nombramiento (el club se lo retiró); null si lo cumplió o sigue. */
+  leftOn?: string | null;
+  /** Partidos del equipo mientras estuvo con él (del inicio del nombramiento hasta que lo dejó, acabó o hoy). */
+  record?: CoachTeamRecordDto | null;
+  /** Posición en la clasificación de esa competición y temporada (la actual o la última conocida); null sin clasificación. */
+  position?: number | null;
+  /** Equipos de esa clasificación. */
+  teamsInTable?: number | null;
+  /** Actas públicas guardadas de los partidos del equipo en ese tiempo que traen cuerpo técnico. */
+  officialSheets?: number;
+  /** En cuántas de esas actas figura él (por su nombre). */
+  officialAppearances?: number;
+  /** Cómo lo apunta la federación en el acta («Entrenador», «2º Entrenador», «Delegado»...); null si no figura. */
+  officialRole?: string | null;
 }
 
 // --- Clubes ---
@@ -447,13 +494,15 @@ export interface AlertDto {
   /** Día al que se refiere: el último con acceso, en los de caducidad. */
   dueOn: string | null;
   createdAt: string;
+  /** Ya se vio en la campanita: deja de contar y pasa a «Anteriores». */
+  seen: boolean;
   read: boolean;
   /** Ya no aplica (por ejemplo, el club reactivó la renovación). */
   resolved: boolean;
 }
 
 export interface ClubAlertsDto {
-  /** Avisos vigentes sin leer: el número de la campanita. */
+  /** Avisos nuevos (sin ver y vigentes): el número de la campanita. */
   unread: number;
   alerts: AlertDto[];
 }
@@ -734,6 +783,23 @@ export interface InjuryDto {
   active: boolean;
   /** Días de baja hasta hoy (o hasta el alta). */
   daysOut: number;
+  /** Pruebas e informes (radiografías, informes del hospital...), los últimos primero. */
+  documents: InjuryDocumentDto[];
+}
+
+export type InjuryDocumentKind = 'Imaging' | 'MedicalReport' | 'Other';
+
+export interface InjuryDocumentDto {
+  id: string;
+  kind: InjuryDocumentKind;
+  kindLabel: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  note: string | null;
+  uploadedAt: string;
+  /** Ruta de la API que lo sirve: se pide con la sesión (httpBlob), un enlace normal no manda el token. */
+  url: string;
 }
 
 export interface InjuryRequest {
@@ -780,6 +846,11 @@ export interface SquadMatchDto {
 export interface MatchSheetEntryDto {
   player: SquadPlayerDto;
   performance: PerformanceDto | null;
+  /** Va en la convocatoria del partido (solo para el club y el cuerpo técnico). */
+  calledUp?: boolean;
+  /** Estaba sancionado para este partido: no puede salir como que jugó (la línea que ya tuviera se conserva). */
+  suspended?: boolean;
+  suspension?: SuspensionBriefDto | null;
 }
 
 export interface MatchSheetDto {
@@ -789,6 +860,8 @@ export interface MatchSheetDto {
   entries: MatchSheetEntryDto[];
   /** Datos del equipo en el partido; null si el cuerpo técnico no los ha apuntado. */
   teamStats?: TeamMatchStatsDto | null;
+  /** El partido tiene convocatoria con algún convocado: el acta se prepara con esos jugadores. */
+  hasCallUp?: boolean;
 }
 
 /** Datos colectivos del partido que no trae el acta pública; «for» es el equipo de la plantilla y «against» el rival. */
@@ -1015,6 +1088,11 @@ export interface RosterInternalStatsDto {
   yellowCards: number;
   redCards: number;
   averageRating: number | null;
+  fouls?: number;
+  recoveries?: number;
+  clearances?: number;
+  passesCompleted?: number;
+  passesAttempted?: number;
 }
 
 /** Ficha de un jugador de la plantilla con sus actas oficiales y las de Tercer Tiempo (vista del club). */
@@ -1025,6 +1103,8 @@ export interface RosterEntryDetailDto {
   internalStats: RosterInternalStatsDto | null;
   /** El cuerpo técnico lleva la plantilla en Tercer Tiempo y este jugador está en ella. */
   hasSquad: boolean;
+  /** Partidos que ha jugado ya el equipo en la temporada. */
+  teamMatchesPlayed?: number;
 }
 
 /** Ficha de un jugador para cualquier cuenta con sesión; el perfil completo solo si es de su club o lo ha hecho público. */
@@ -1041,6 +1121,8 @@ export interface PlayerCardDto {
   /** Perfil interno en la plantilla, para su club y su plantilla. */
   internalProfileLink: string | null;
   isMe: boolean;
+  /** Partidos que ha jugado ya el equipo en la temporada, para comparar con los suyos. */
+  teamMatchesPlayed?: number;
 }
 
 export interface RosterEntryRequest {
@@ -1072,6 +1154,34 @@ export interface TeamDetailDto {
   profile: TeamProfileDto | null;
   /** Página del equipo en la federación. */
   officialUrl: string | null;
+  /** Cuerpo técnico de la temporada según las actas oficiales (público). */
+  staff?: TeamStaffDto | null;
+  /** Página del equipo en futbolasturiano.es, que facilita calendario, resultados y plantilla. */
+  sourceUrl?: string | null;
+}
+
+export interface TeamStaffDto {
+  /** Actas de la temporada que traen el cuerpo técnico del equipo. */
+  sheets: number;
+  /** Los actuales primero, del entrenador al encargado de material. */
+  members: TeamStaffMemberDto[];
+}
+
+export interface TeamStaffMemberDto {
+  name: string;
+  /** Función con la que más figura en las actas, como la escribe la federación; null si solo está nombrado en la app. */
+  officialRoleLabel: string | null;
+  officialRole: OfficialStaffRole | null;
+  /** Función en el cuerpo técnico de la app si el club lo ha nombrado. */
+  role: StaffRole | null;
+  appearances: number;
+  lastSeen: string | null;
+  /** false si ya no figura en las últimas actas y no tiene un nombramiento vigente. */
+  current: boolean;
+  /** Su perfil en la app (solo a cuentas con sesión). */
+  coachId: string | null;
+  /** Si ya tiene perfil en la app; si no, sale con el nombre del acta oficial. */
+  hasProfile: boolean;
 }
 
 export interface TeamProfileDto {
@@ -1172,6 +1282,8 @@ export interface PerformanceStats {
   /** Pases completados (no más que los intentados). */
   passesCompleted?: number;
   passesAttempted?: number;
+  /** Despejes. */
+  clearances?: number;
 }
 
 export interface PerformanceDto extends PerformanceStats {
@@ -1190,6 +1302,10 @@ export interface PerformanceDto extends PerformanceStats {
   teamId: string;
   updatedAt: string;
   playerPhotoUrl?: string | null;
+  /** Las acciones las puso el vídeo y aún no cuentan en la nota: el cuerpo técnico las hace suyas al guardar el acta. */
+  actionsFromVideo?: boolean;
+  /** Goles que encajó el equipo con él en el campo, según el acta oficial cerrada; null si no se sabe. */
+  goalsConcededOnPitch?: number | null;
 }
 
 // --- Previa del partido (cuerpo técnico) ---
@@ -1201,6 +1317,44 @@ export interface MatchPreviewDto {
   away: TeamPreviewDto;
   prediction: PredictionDto;
   dataNotes: string[];
+  /** Hasta cuándo cuentan los datos: el inicio del partido (la previa de la jornada 1 no sabe nada de la 10). */
+  asOf?: string | null;
+  /** Partidos de la liga jugados antes de este. */
+  leagueMatchesBefore?: number;
+  /** true: clasificación calculada con los resultados de antes del partido; false: la oficial de hoy. */
+  tableFromResults?: boolean;
+  /** Enfrentamientos anteriores entre los dos equipos, de esta temporada y de las pasadas guardadas. */
+  headToHead?: HeadToHeadDto | null;
+}
+
+export interface HeadToHeadDto {
+  played: number;
+  /** Victorias del local de este partido, jugara donde jugara aquellos. */
+  homeWins: number;
+  draws: number;
+  awayWins: number;
+  homeGoals: number;
+  awayGoals: number;
+  /** Temporadas distintas con algún enfrentamiento. */
+  seasons: number;
+  /** Del más reciente al más antiguo. */
+  matches: HeadToHeadMatchDto[];
+}
+
+export interface HeadToHeadMatchDto {
+  matchId: string;
+  seasonLabel: string;
+  competitionName: string;
+  matchday: number;
+  kickoffAt: string;
+  homeTeam: TeamRefDto;
+  awayTeam: TeamRefDto;
+  homeGoals: number;
+  awayGoals: number;
+  /** Para el local de este partido. */
+  outcome: 'W' | 'D' | 'L';
+  /** De la misma temporada y liga. */
+  sameSeason: boolean;
 }
 
 export interface TeamPreviewDto {
@@ -1404,6 +1558,7 @@ export interface IndividualStatsDto {
   /** Pases completados sobre intentados; null sin pases apuntados. */
   passAccuracyPct: number | null;
   recoveriesPer90: number | null;
+  clearances?: number;
 }
 
 export interface TeamImpactDto {
@@ -1554,6 +1709,22 @@ export interface OfficialTeamSheetDto {
   goals: number | null;
   starters: OfficialLineDto[];
   bench: OfficialLineDto[];
+  /** Cuerpo técnico que firma el acta (entrenador, segundo, delegados...). */
+  staff?: OfficialStaffDto[] | null;
+}
+
+export type OfficialStaffRole =
+  | 'HeadCoach' | 'AssistantCoach' | 'GoalkeeperCoach' | 'FitnessCoach' | 'TeamDelegate' | 'FieldDelegate'
+  | 'Physio' | 'Medical' | 'KitManager' | 'Other';
+
+export interface OfficialStaffDto {
+  role: OfficialStaffRole;
+  /** Tal y como lo escribe el acta («Entrenador», «2º Entrenador», «Delegado de campo»...). */
+  roleLabel: string;
+  /** «APELLIDOS, NOMBRE», como en el acta. */
+  fullName: string;
+  /** Su perfil en Tercer Tiempo, si tiene un nombramiento del club con ese nombre. */
+  coachId?: string | null;
 }
 
 export interface OfficialEventDto {
@@ -1651,12 +1822,49 @@ export interface MatchVideoDto {
 /**
  * Estado del análisis de un vídeo: NotRequested (el vídeo está listo pero nadie lo ha pedido), WaitingForVideo (se está
  * comprimiendo: el análisis empieza solo al acabar), Pending (en cola), Running, Ready, Failed o Cancelled (lo paró el
- * cuerpo técnico; se puede volver a pedir).
+ * cuerpo técnico; se puede volver a pedir) o Paused (en pausa: si se estaba analizando espera donde iba sin perder
+ * nada; si estaba en cola no se empieza).
  */
-export type VideoAnalysisState = 'NotRequested' | 'WaitingForVideo' | 'Pending' | 'Running' | 'Ready' | 'Failed' | 'Cancelled';
+export type VideoAnalysisState = 'NotRequested' | 'WaitingForVideo' | 'Pending' | 'Running' | 'Ready' | 'Failed' | 'Cancelled' | 'Paused';
+
+/** Etapas del análisis, en orden: cargar los modelos, separar los equipos, seguir a jugadores y balón, sacar las jugadas, repasar la propuesta y escribir lo que sale. */
+export type VideoAnalysisStage = 'models' | 'teams' | 'tracking' | 'plays' | 'review' | 'outputs';
+
+/** Lo que está haciendo ahora el analizador; cada dato puede faltar según la etapa. */
+export interface VideoAnalysisLive {
+  stage: VideoAnalysisStage | string;
+  /** El analizador ya se ha detenido de verdad (no solo se ha pedido la pausa). */
+  paused: boolean;
+  /** Segundo del vídeo por el que va, y el tramo que analiza. */
+  videoSecond?: number | null;
+  fromSecond?: number | null;
+  toSecond?: number | null;
+  frames?: number | null;
+  framesTotal?: number | null;
+  playersOnScreen?: number | null;
+  playersTracked?: number | null;
+  ballSeenPct?: number | null;
+  calibratedPct?: number | null;
+  /** Fotogramas por segundo que procesa y cuántas veces el tiempo real va. */
+  fps?: number | null;
+  speed?: number | null;
+  remainingSeconds?: number | null;
+  teamSamples?: number | null;
+  teamSamplesTarget?: number | null;
+  /** Colores medios de las dos equipaciones (#rrggbb) en cuanto se separan. */
+  colors?: string[] | null;
+  touches?: number | null;
+  events?: number | null;
+  pausedSeconds?: number | null;
+}
+
+export interface VideoAnalysisLogEntry {
+  at: string;
+  text: string;
+}
 
 /** Datos de equipo que salen del vídeo y se aceptan uno a uno. */
-export type VideoTeamField = 'Possession' | 'Shots' | 'ShotsOnTarget' | 'Corners' | 'ThrowIns' | 'GoalKicks';
+export type VideoTeamField = 'Possession' | 'Shots' | 'ShotsOnTarget' | 'Corners' | 'ThrowIns' | 'GoalKicks' | 'Fouls' | 'Offsides';
 
 export interface VideoAnalysisQualityDto {
   frames: number;
@@ -1683,6 +1891,8 @@ export type VideoPossessionConfidence = 'Low' | 'Medium' | 'High';
 
 export interface VideoAnalysisTeamDto {
   index: number;
+  /** Lado del acta oficial que tiene este equipo según los dorsales; null si no se sabe. */
+  side: 'Home' | 'Away' | null;
   /** Color medio de la equipación (#rrggbb). */
   color: string | null;
   players: number;
@@ -1696,7 +1906,12 @@ export interface VideoAnalysisTeamDto {
   corners: number;
   throwIns: number;
   goalKicks: number;
+  /** Con el acta oficial cerrada, como mucho los suyos. */
   goals: number;
+  /** Faltas que comete: el juego se para con el balón en el campo y un jugador de este equipo estaba a menos de 5 m del que lo tenía. */
+  fouls: number;
+  /** Fueras de juego que le pitan. */
+  offsides: number;
 }
 
 export interface VideoPlayerActions {
@@ -1709,6 +1924,11 @@ export interface VideoPlayerActions {
   passesCompleted: number;
   passesAttempted: number;
   touches: number;
+  /** Faltas que comete (sí tienen casilla en el acta). */
+  fouls: number;
+  /** Faltas que recibe y fueras de juego: solo se enseñan. */
+  foulsReceived: number;
+  offsides: number;
 }
 
 /** Jugador seguido por el analizador («tracklet»): se corta al perderlo de vista, así que un jugador puede tener varios. */
@@ -1726,6 +1946,14 @@ export interface VideoAnalysisPlayerDto {
   proposal: VideoPlayerActions;
   /** Ficha a la que se asignó la última vez que se volcó. */
   squadPlayerId: string | null;
+  /** Nombre del jugador con ese dorsal en el acta oficial. */
+  sheetName: string | null;
+  /** Parte de las lecturas que dicen ese dorsal (0-1). */
+  shirtConfidence: number | null;
+  /** Ficha que por el dorsal y el acta oficial es este jugador; null si no se sabe o es del rival. */
+  suggestedSquadPlayerId: string | null;
+  /** Minutos que jugó según el acta oficial cerrada (por descarte: sin cambio, el partido entero); null sin acta cerrada o sin identificar. */
+  sheetMinutes: number | null;
 }
 
 export interface VideoAnalysisPartDto {
@@ -1750,6 +1978,22 @@ export interface VideoAnalysisPartDto {
   ourTeam: number | null;
   appliedAt: string | null;
   players: VideoAnalysisPlayerDto[];
+  /** Lo que está haciendo ahora el analizador (Running o Paused); null si aún no ha contado nada. */
+  live: VideoAnalysisLive | null;
+  liveAt: string | null;
+  /** Lo que ha ido sabiendo en esta pasada (últimas 40 líneas, de la más antigua a la más reciente). */
+  log: VideoAnalysisLogEntry[] | null;
+  pausedAt: string | null;
+  /** Segundos en pausa en esta pasada (no cuentan en lo que tarda). */
+  pausedSeconds: number;
+  /** En pausa a medias (el analizador espera donde iba); false si se pausó en cola o el analizador se reinició: al reanudar empieza desde el principio. */
+  pausedMidway: boolean;
+  /** Cada jugador es una persona identificada por el dorsal leído en el vídeo y cruzado con el acta oficial; false: cada línea es un tramo seguido. */
+  identified: boolean;
+  /** El equipo (0 o 1) que por los dorsales es el de la plantilla; null si no se sabe. */
+  suggestedOurTeam: number | null;
+  /** Segundos con jugadores a la vista sin identificar, por equipo. */
+  unidentifiedSeconds: Record<string, number> | null;
 }
 
 export interface MatchVideoAnalysisDto {
@@ -1762,6 +2006,8 @@ export interface MatchVideoAnalysisDto {
   analyzerOnline: boolean;
   /** Última señal de un analizador; null si nunca ha habido ninguno. */
   analyzerSeenAt: string | null;
+  /** El acta oficial está cerrada: al volcar, los minutos (por descarte), la titularidad, los goles y las tarjetas salen de ella. */
+  officialSheetClosed: boolean;
 }
 
 export interface ApplyVideoAnalysisRequest {
@@ -1769,6 +2015,8 @@ export interface ApplyVideoAnalysisRequest {
   teamFields: VideoTeamField[];
   /** true para confirmar que se sobrescriben los datos del acta que el vídeo cambiaría. */
   overwrite: boolean;
+  /** Con el acta oficial cerrada, completar minutos, titulares, goles y tarjetas con ella (también de los que no salen en el vídeo). */
+  fillFromOfficialSheet: boolean;
 }
 
 export interface ApplyVideoAnalysisResultDto {
@@ -1777,6 +2025,8 @@ export interface ApplyVideoAnalysisResultDto {
   teamValuesWritten: number;
   linesWritten: number;
   playersWithoutChanges: number;
+  /** Líneas creadas o cambiadas solo con el acta oficial: jugaron, pero el vídeo no los identificó o no se asignaron. */
+  linesFromOfficialSheet: number;
 }
 
 /** Sesión de subida por trozos (reanudable mientras no caduque). */
@@ -2091,6 +2341,8 @@ export interface RunFootballSyncRequest {
   includeRosters: boolean;
   /** Encolar las actas de la federación de los partidos ya jugados del alcance (se bajan a su ritmo: 20/h, 60/día). */
   includeSheets: boolean;
+  /** Solo con la temporada completa: una temporada pasada («2025/2026») para los precedentes de la previa; null = la actual. */
+  season?: string | null;
 }
 
 // --- Administración: descargas en directo ---
@@ -2468,9 +2720,9 @@ export interface SeasonYearDto {
 export type CookieCategory = 'Necessary' | 'Preferences' | 'Analytics';
 export type CookieStorage = 'Cookie' | 'LocalStorage' | 'SessionStorage';
 
+/** Lo que ve cualquiera: para qué sirve cada dato, sin su nombre técnico. */
 export interface CookieDto {
   id: string;
-  name: string;
   category: CookieCategory;
   storage: CookieStorage;
   provider: string;
@@ -2485,6 +2737,17 @@ export interface CookiePolicyDto {
   version: string;
   updatedAt: string;
   cookies: CookieDto[];
+}
+
+/** El catálogo del administrador: lo mismo más el nombre técnico de cada dato. */
+export interface AdminCookieDto extends CookieDto {
+  name: string;
+}
+
+export interface AdminCookiePolicyDto {
+  version: string;
+  updatedAt: string;
+  cookies: AdminCookieDto[];
 }
 
 export type ConsentAction = 'AcceptAll' | 'RejectAll' | 'Custom';
@@ -2534,11 +2797,11 @@ export interface AnalyticsReportDto {
   clubs: AnalyticsClubCountDto[];
 }
 
-export type UpsertCookieRequest = Pick<CookieDto, 'name' | 'category' | 'storage' | 'provider' | 'purpose' | 'duration' | 'sortOrder'>;
+export type UpsertCookieRequest = Pick<AdminCookieDto, 'name' | 'category' | 'storage' | 'provider' | 'purpose' | 'duration' | 'sortOrder'>;
 
 // --- Buscador ---
 
-export type SearchType = 'competition' | 'team' | 'club' | 'player' | 'match' | 'squad' | 'referee';
+export type SearchType = 'competition' | 'team' | 'club' | 'player' | 'coach' | 'match' | 'squad' | 'referee';
 
 export interface SearchItemDto {
   type: SearchType;

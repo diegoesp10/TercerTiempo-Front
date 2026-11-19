@@ -104,7 +104,7 @@ async function resolve(s: SuggestionDto, approve: boolean) {
     <ul v-else class="mt-4 space-y-4">
       <li v-for="s in showResolved ? suggestions : pending" :key="s.id" class="rounded-xl border border-line bg-surface-2 p-4">
         <div class="flex flex-wrap items-start justify-between gap-2">
-          <div>
+          <div class="min-w-0">
             <p class="font-semibold text-slate-900">
               <PlayerName :name="s.player.fullName" :photo-url="s.player.photoUrl" size="sm" />
               <span class="font-normal text-slate-500">ha sugerido {{ s.current ? 'una corrección' : 'una entrada nueva' }}</span>

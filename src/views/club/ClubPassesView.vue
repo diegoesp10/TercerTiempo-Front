@@ -6,12 +6,14 @@ import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
 import { confirmDialog } from '@/composables/useConfirm';
+import { useSort } from '@/composables/useSort';
 import { useAlertsStore } from '@/stores/alerts';
 import { useAuthStore } from '@/stores/auth';
-import type { ClubPassPricesDto, ClubPassRequestDto, MatchDto, MatchPassPriceDto, MatchPassRequestStatus, PassEarningsDto } from '@/types/api';
+import type { ClubPassPricesDto, ClubPassRequestDto, MatchDto, MatchPassPriceDto, MatchPassRequestStatus, PassEarningsDto, PassSaleDto } from '@/types/api';
 import { formatKickoff, formatMoney, passContents, passPrice, passRequestStatusLabels } from '@/utils/format';
 import { centsToEuros, eurosToCents } from '@/components/passes/passes';
 
@@ -122,10 +124,12 @@ function fillPrices(data: ClubPassPricesDto) {
   }
 }
 
-const matchRows = computed(() =>
-  [...(prices.value?.matches ?? [])]
-    .filter((m) => !onlyWithContent.value || m.hasSheet || m.hasVideo)
-    .sort((a, b) => b.match.kickoffAt.localeCompare(a.match.kickoffAt)),
+const matchRows = computed(() => (prices.value?.matches ?? []).filter((m) => !onlyWithContent.value || m.hasSheet || m.hasVideo));
+// Los precios se escriben en la tabla: solo se ordena por el partido, y la fila conserva su clave al moverse.
+const { sorted: sortedMatchRows, sortBy: sortMatchRows, state: matchRowSortState } = useSort<MatchPassPriceDto, 'match'>(
+  matchRows,
+  { match: (m) => Date.parse(m.match.kickoffAt) },
+  'match',
 );
 
 // Vacío = el precio general del club.
@@ -181,6 +185,21 @@ async function saveRow(m: MatchPassPriceDto) {
 
 // --- Ventas ---
 const earnings = shallowRef<PassEarningsDto | null>(null);
+const sales = computed(() => earnings.value?.recent ?? []);
+type SaleSortKey = 'date' | 'match' | 'buyer' | 'amount' | 'club' | 'platform';
+const { sorted: sortedSales, sortBy: sortSales, state: saleSortState } = useSort<PassSaleDto, SaleSortKey>(
+  sales,
+  {
+    date: (s) => Date.parse(s.paidAt),
+    match: (s) => (s.match ? Date.parse(s.match.kickoffAt) : null),
+    buyer: (s) => s.buyer,
+    amount: (s) => s.amountCents,
+    club: (s) => s.clubShareCents,
+    platform: (s) => s.platformShareCents,
+  },
+  'date',
+  { ascendingFirst: ['buyer'] },
+);
 
 async function load() {
   if (!auth.isClub) return;
@@ -328,14 +347,14 @@ watch(tab, () => { saved.value = null; void load(); }, { immediate: true });
             <table class="min-w-full text-sm">
               <thead class="text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th class="py-2 pr-3 text-left">Partido</th>
+                  <SortHeader class="py-2 pr-3 text-left" label="Partido" title="Fecha del partido" v-bind="matchRowSortState('match')" @sort="sortMatchRows('match')" />
                   <th class="px-2 py-2 text-left">Acta interna (€)</th>
                   <th class="px-2 py-2 text-left">Vídeo (€)</th>
                   <th class="py-2 pl-2" />
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="m in matchRows" :key="rowKey(m)">
+                <tr v-for="m in sortedMatchRows" :key="rowKey(m)">
                   <td class="py-2 pr-3">
                     <p class="text-slate-900">{{ fixture(m.match) }}</p>
                     <p class="text-xs text-slate-500">
@@ -377,16 +396,16 @@ watch(tab, () => { saved.value = null; void load(); }, { immediate: true });
             <table class="min-w-full text-sm">
               <thead class="text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th class="py-2 pr-3 text-left">Fecha</th>
-                  <th class="px-2 py-2 text-left">Partido</th>
-                  <th class="px-2 py-2 text-left">Comprador</th>
-                  <th class="px-2 py-2 text-right">Importe</th>
-                  <th class="px-2 py-2 text-right">Club</th>
-                  <th class="py-2 pl-2 text-right">Plataforma</th>
+                  <SortHeader class="py-2 pr-3 text-left" label="Fecha" title="Fecha de la venta" v-bind="saleSortState('date')" @sort="sortSales('date')" />
+                  <SortHeader class="px-2 py-2 text-left" label="Partido" title="Fecha del partido" v-bind="saleSortState('match')" @sort="sortSales('match')" />
+                  <SortHeader class="px-2 py-2 text-left" label="Comprador" v-bind="saleSortState('buyer')" @sort="sortSales('buyer')" />
+                  <SortHeader class="px-2 py-2 text-right" label="Importe" v-bind="saleSortState('amount')" @sort="sortSales('amount')" />
+                  <SortHeader class="px-2 py-2 text-right" label="Club" title="Parte del club" v-bind="saleSortState('club')" @sort="sortSales('club')" />
+                  <SortHeader class="py-2 pl-2 text-right" label="Plataforma" title="Parte de la plataforma" v-bind="saleSortState('platform')" @sort="sortSales('platform')" />
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="sale in earnings.recent" :key="sale.id">
+                <tr v-for="sale in sortedSales" :key="sale.id">
                   <td class="py-2 pr-3 whitespace-nowrap text-slate-600">{{ formatKickoff(sale.paidAt) }}</td>
                   <td class="px-2 py-2">
                     <p class="text-slate-900">{{ sale.match ? fixture(sale.match) : 'Partido' }}</p>

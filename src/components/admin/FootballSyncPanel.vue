@@ -27,6 +27,10 @@ const leagues = ref<string[]>([]);
 const rosters = ref(false);
 // Las actas de los partidos ya jugados se encolan al terminar y se bajan de la federación a su ritmo.
 const sheets = ref(true);
+// Temporada pasada de la web (solo con la temporada completa): partidos y clasificaciones para los precedentes de la previa.
+const season = ref('');
+const pastSeason = computed(() => scope.value === 'FullSeason' && season.value.trim().length > 0);
+const seasonValid = computed(() => !pastSeason.value || /^\s*\d{4}\s*[/-]\s*(\d{2}|\d{4})\s*$/.test(season.value));
 
 const schedule = reactive({ scheduledScope: 'CurrentRound' as SyncScopeKind, daysBack: 3, daysAhead: 4, rostersInRound: false, fullSyncEveryDays: 7 });
 
@@ -82,18 +86,21 @@ function toggleLeague(id: string) {
 async function launch() {
   launching.value = true;
   const what = scope.value === 'CurrentRound' ? `la jornada en curso (${roundLabel.value})`
-    : scope.value === 'DateRange' ? `del ${formatDate(from.value)} al ${formatDate(to.value)}` : 'la temporada completa';
+    : scope.value === 'DateRange' ? `del ${formatDate(from.value)} al ${formatDate(to.value)}`
+    : pastSeason.value ? `la temporada ${season.value.trim()} (partidos y clasificaciones)` : 'la temporada completa';
   const done = await guard(() => adminApi.runFootballSync(props.token, {
     scope: scope.value,
     from: scope.value === 'DateRange' ? from.value : null,
     to: scope.value === 'DateRange' ? to.value : null,
     competitionIds: leagues.value,
-    includeRosters: rosters.value,
-    includeSheets: sheets.value,
+    includeRosters: pastSeason.value ? false : rosters.value,
+    includeSheets: pastSeason.value ? false : sheets.value,
+    season: pastSeason.value ? season.value.trim() : null,
   }));
   if (done) {
     const which = allLeagues.value ? 'todas las ligas' : leagues.value.length === 1 ? '1 liga' : `${leagues.value.length} ligas`;
-    emit('launched', `Datos de las ligas lanzados: ${what}, ${which}${sheets.value ? ', con sus actas' : ''}. Lo puedes seguir en «Descargas en directo».`);
+    const withSheets = sheets.value && !pastSeason.value;
+    emit('launched', `Datos de las ligas lanzados: ${what}, ${which}${withSheets ? ', con sus actas' : ''}. Lo puedes seguir en «Descargas en directo».`);
   }
   launching.value = false;
 }
@@ -151,6 +158,16 @@ onMounted(load);
       </label>
     </div>
 
+    <label v-if="scope === 'FullSeason'" class="block sm:w-72">
+      <span class="label">Temporada</span>
+      <input v-model="season" type="text" inputmode="numeric" placeholder="La actual" class="input" :aria-invalid="!seasonValid" />
+      <span class="mt-1 block text-xs" :class="seasonValid ? 'text-slate-500' : 'text-red-600'">
+        {{ seasonValid
+          ? 'Vacío, la actual. Una pasada («2025/2026») guarda solo sus partidos y clasificaciones para los precedentes de la previa: ni plantillas ni actas, y no cambia la temporada en curso.'
+          : 'Escríbela como «2025/2026».' }}
+      </span>
+    </label>
+
     <div>
       <span class="label">Ligas</span>
       <div class="flex flex-wrap gap-1.5">
@@ -172,12 +189,12 @@ onMounted(load);
       </div>
     </div>
 
-    <label class="flex items-center gap-2 text-sm text-slate-700">
+    <label v-if="!pastSeason" class="flex items-center gap-2 text-sm text-slate-700">
       <input v-model="rosters" type="checkbox" class="h-4 w-4 accent-brand-500" />
       Plantillas (descarga el catálogo entero de jugadores: unas 20 llamadas más)
     </label>
 
-    <label class="flex items-start gap-2 text-sm text-slate-700">
+    <label v-if="!pastSeason" class="flex items-start gap-2 text-sm text-slate-700">
       <input v-model="sheets" type="checkbox" class="mt-0.5 h-4 w-4 accent-brand-500" />
       <span>
         Actas de los partidos jugados (asturfutbol.es)
@@ -200,7 +217,7 @@ onMounted(load);
       type="button"
       class="btn-primary"
       v-busy="launching"
-      :disabled="!enabled || running || launching || (scope === 'DateRange' && (!from || !to || to < from))"
+      :disabled="!enabled || running || launching || !seasonValid || (scope === 'DateRange' && (!from || !to || to < from))"
       @click="launch"
     >
       <Icon icon="play" class="h-3.5 w-3.5" /> {{ running ? 'En marcha…' : 'Lanzar' }}

@@ -40,7 +40,7 @@ const router = createRouter({
     { path: '/tecnicos/:coachId', name: 'coach', component: () => import('@/views/coach/CoachProfileView.vue'), props: true, meta: { requiresAuth: true } },
     { path: '/licencias', alias: '/precios', name: 'licenses', component: () => import('@/views/club/LicensePlansView.vue'), meta: { root: true } },
     { path: '/pago/:sessionId', name: 'license-checkout', component: () => import('@/views/club/LicenseCheckoutView.vue'), props: true, meta: { requiresAuth: true, profileOnly: true } },
-    { path: '/ajustes', name: 'settings', component: () => import('@/views/SettingsView.vue'), meta: { root: true } },
+    { path: '/ajustes', name: 'settings', component: () => import('@/views/SettingsView.vue') },
     // Página oculta del administrador (sin enlace en el menú; pide su propio usuario y contraseña).
     { path: '/jobs', alias: '/cargatrabajo', name: 'jobs', component: () => import('@/views/admin/JobsView.vue'), meta: { root: true } },
     { path: '/equipos', name: 'teams', component: () => import('@/views/TeamsView.vue'), meta: { root: true } },

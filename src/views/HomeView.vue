@@ -90,7 +90,7 @@ const explore = [
           </RouterLink>
           <RouterLink to="/precios" class="btn-ghost px-6 py-3 text-base">Precios</RouterLink>
         </div>
-        <dl class="mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+        <dl class="mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
           <div v-for="item in highlights" :key="item.label" class="rounded-lg border border-line bg-surface px-4 py-3">
             <dt class="font-figures text-2xl font-extrabold text-slate-900 sm:text-3xl">{{ item.value }}</dt>
             <dd class="mt-0.5 text-xs text-slate-500">{{ item.label }}</dd>

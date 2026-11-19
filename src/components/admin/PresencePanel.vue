@@ -4,7 +4,9 @@ import { adminApi } from '@/api/admin';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import { useSort } from '@/composables/useSort';
 import type { AccountType, PresenceOverviewDto, PresenceSessionDto } from '@/types/api';
 import { accountTypeLabels, formatTime } from '@/utils/format';
 
@@ -97,6 +99,23 @@ function ago(iso: string) {
 }
 
 const isOnline = (session: PresenceSessionDto) => session.status === 'online';
+
+type SortKey = 'status' | 'name' | 'type' | 'teams' | 'path' | 'device' | 'started' | 'lastSeen';
+const { sorted, sortBy, state } = useSort<PresenceSessionDto, SortKey>(
+  sessions,
+  {
+    status: (s) => (isOnline(s) ? 'En línea' : 'Inactivo'),
+    name: (s) => s.name,
+    type: (s) => accountTypeLabels[s.accountType],
+    teams: (s) => s.teams,
+    path: (s) => s.path,
+    device: (s) => s.device,
+    started: (s) => Date.parse(s.startedAt),
+    lastSeen: (s) => Date.parse(s.lastSeenAt),
+  },
+  'lastSeen',
+  { ascendingFirst: ['status', 'name', 'type', 'teams', 'path', 'device'] },
+);
 </script>
 
 <template>
@@ -179,18 +198,18 @@ const isOnline = (session: PresenceSessionDto) => session.status === 'online';
           <table class="min-w-full text-sm">
             <thead class="sticky top-0 z-10 bg-surface-2 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th class="px-3 py-2 text-left">Estado</th>
-                <th class="px-3 py-2 text-left">Cuenta</th>
-                <th class="px-3 py-2 text-left">Tipo</th>
-                <th class="px-3 py-2 text-left">Equipos</th>
-                <th class="px-3 py-2 text-left">Página</th>
-                <th class="px-3 py-2 text-left">Dispositivo</th>
-                <th class="px-3 py-2 text-right">Desde</th>
-                <th class="px-3 py-2 text-right">Última señal</th>
+                <SortHeader class="px-3 py-2 text-left" label="Estado" v-bind="state('status')" @sort="sortBy('status')" />
+                <SortHeader class="px-3 py-2 text-left" label="Cuenta" v-bind="state('name')" @sort="sortBy('name')" />
+                <SortHeader class="px-3 py-2 text-left" label="Tipo" v-bind="state('type')" @sort="sortBy('type')" />
+                <SortHeader class="px-3 py-2 text-left" label="Equipos" v-bind="state('teams')" @sort="sortBy('teams')" />
+                <SortHeader class="px-3 py-2 text-left" label="Página" v-bind="state('path')" @sort="sortBy('path')" />
+                <SortHeader class="px-3 py-2 text-left" label="Dispositivo" v-bind="state('device')" @sort="sortBy('device')" />
+                <SortHeader class="px-3 py-2 text-right" label="Desde" title="Inicio de sesión" v-bind="state('started')" @sort="sortBy('started')" />
+                <SortHeader class="px-3 py-2 text-right" label="Última señal" v-bind="state('lastSeen')" @sort="sortBy('lastSeen')" />
               </tr>
             </thead>
             <tbody class="divide-y divide-line">
-              <tr v-for="session in sessions" :key="session.sessionId">
+              <tr v-for="session in sorted" :key="session.sessionId">
                 <td class="px-3 py-2 whitespace-nowrap">
                   <span class="inline-flex items-center gap-2 text-xs font-medium" :class="isOnline(session) ? 'text-emerald-600' : 'text-slate-500'">
                     <span class="h-2 w-2 rounded-full" :class="isOnline(session) ? 'bg-emerald-500' : 'bg-slate-400'" />

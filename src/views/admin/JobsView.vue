@@ -12,8 +12,10 @@ import LicensingSettingsPanel from '@/components/admin/LicensingSettingsPanel.vu
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
-import type { AdminAuthResponse, AdminMfaChallenge, JobDto, JobsOverviewDto, ScrapeRequestDto, ScrapeSourceDto } from '@/types/api';
+import { useSort } from '@/composables/useSort';
+import type { AdminAuthResponse, AdminMfaChallenge, JobDto, JobRunDto, JobsOverviewDto, ScrapeRequestDto, ScrapeSourceDto } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
 import { pauseLabels, pauseText, runDuration as duration, runStatusLabels as statusLabels, runStatusTone as statusTone, scheduleText as interval, until } from '@/components/admin/jobs';
 import AnalyticsPanel from '@/components/admin/AnalyticsPanel.vue';
@@ -220,6 +222,58 @@ const statusClass = (code: number | null) =>
 
 const sourceTitle = (source: ScrapeSourceDto) =>
   ({ asturfutbol: 'asturfutbol.es (actas)', futbolasturiano: 'futbolasturiano.es (datos)', escudos: 'Escudos' } as Record<string, string>)[source.provider] ?? source.provider;
+
+const time = (iso: string | null) => (iso ? Date.parse(iso) : null);
+
+const sources = computed(() => data.value?.sources ?? []);
+type SourceSortKey = 'web' | 'hour' | 'day' | 'state' | 'last24h' | 'last';
+const { sorted: sortedSources, sortBy: sortSources, state: sourceSortState } = useSort<ScrapeSourceDto, SourceSortKey>(
+  sources,
+  {
+    web: (s) => sourceTitle(s),
+    hour: (s) => (s.maxPerHour ? s.hourRequests : null),
+    day: (s) => (s.maxPerDay ? s.dayRequests : null),
+    // En pausa, esperando turno y disponible: primero lo que frena las descargas.
+    state: (s) => (s.pausedUntil ? 0 : s.nextRequestAt ? 1 : 2),
+    last24h: (s) => s.last24h,
+    last: (s) => time(s.lastRequestAt),
+  },
+  'web',
+  { desc: false, ascendingFirst: ['web', 'state'] },
+);
+
+const runs = computed(() => data.value?.runs ?? []);
+type RunSortKey = 'started' | 'job' | 'status' | 'duration' | 'requests' | 'summary';
+const { sorted: sortedRuns, sortBy: sortRuns, state: runSortState } = useSort<JobRunDto, RunSortKey>(
+  runs,
+  {
+    started: (r) => Date.parse(r.startedAt),
+    job: (r) => jobTitles.value.get(r.job) ?? r.job,
+    status: (r) => statusLabels[r.status],
+    duration: (r) => (r.finishedAt ? Date.parse(r.finishedAt) : Date.now()) - Date.parse(r.startedAt),
+    requests: (r) => r.requests,
+    summary: (r) => [r.scope, r.summary].filter(Boolean).join(' · ') || null,
+  },
+  'started',
+  { ascendingFirst: ['job', 'status', 'summary'] },
+);
+
+const requests = computed(() => data.value?.requests ?? []);
+type RequestSortKey = 'at' | 'web' | 'code' | 'ms' | 'origin' | 'url';
+const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } = useSort<ScrapeRequestDto, RequestSortKey>(
+  requests,
+  {
+    at: (r) => Date.parse(r.at),
+    web: (r) => r.provider,
+    // Sin respuesta cuenta como el peor código.
+    code: (r) => r.statusCode ?? 1000,
+    ms: (r) => r.durationMs,
+    origin: (r) => origin(r),
+    url: (r) => `${r.method} ${r.url}`,
+  },
+  'at',
+  { ascendingFirst: ['web', 'origin', 'url'] },
+);
 </script>
 
 <template>
@@ -386,16 +440,16 @@ const sourceTitle = (source: ScrapeSourceDto) =>
           <table class="min-w-full text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th class="px-3 py-2 text-left">Web</th>
-                <th class="px-3 py-2 text-left">Esta hora</th>
-                <th class="px-3 py-2 text-left">Hoy (UTC)</th>
-                <th class="px-3 py-2 text-left">Estado</th>
-                <th class="px-3 py-2 text-right">24 h</th>
-                <th class="px-3 py-2 text-right">Última llamada</th>
+                <SortHeader class="px-3 py-2 text-left" label="Web" v-bind="sourceSortState('web')" @sort="sortSources('web')" />
+                <SortHeader class="px-3 py-2 text-left" label="Esta hora" title="Peticiones de esta hora" v-bind="sourceSortState('hour')" @sort="sortSources('hour')" />
+                <SortHeader class="px-3 py-2 text-left" label="Hoy (UTC)" title="Peticiones de hoy (UTC)" v-bind="sourceSortState('day')" @sort="sortSources('day')" />
+                <SortHeader class="px-3 py-2 text-left" label="Estado" v-bind="sourceSortState('state')" @sort="sortSources('state')" />
+                <SortHeader class="px-3 py-2 text-right" label="24 h" title="Llamadas en las últimas 24 h" v-bind="sourceSortState('last24h')" @sort="sortSources('last24h')" />
+                <SortHeader class="px-3 py-2 text-right" label="Última llamada" v-bind="sourceSortState('last')" @sort="sortSources('last')" />
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="source in data.sources" :key="source.provider">
+              <tr v-for="source in sortedSources" :key="source.provider">
                 <td class="px-3 py-2 font-medium whitespace-nowrap text-slate-800">{{ sourceTitle(source) }}</td>
                 <td class="px-3 py-2">
                   <template v-if="source.maxPerHour">
@@ -435,16 +489,16 @@ const sourceTitle = (source: ScrapeSourceDto) =>
           <table class="min-w-full text-sm">
             <thead class="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th class="px-3 py-2 text-left">Inicio</th>
-                <th class="px-3 py-2 text-left">Trabajo</th>
-                <th class="px-3 py-2 text-left">Estado</th>
-                <th class="px-3 py-2 text-right">Duración</th>
-                <th class="px-3 py-2 text-right">Llamadas</th>
-                <th class="px-3 py-2 text-left">Resumen</th>
+                <SortHeader class="px-3 py-2 text-left" label="Inicio" v-bind="runSortState('started')" @sort="sortRuns('started')" />
+                <SortHeader class="px-3 py-2 text-left" label="Trabajo" v-bind="runSortState('job')" @sort="sortRuns('job')" />
+                <SortHeader class="px-3 py-2 text-left" label="Estado" v-bind="runSortState('status')" @sort="sortRuns('status')" />
+                <SortHeader class="px-3 py-2 text-right" label="Duración" v-bind="runSortState('duration')" @sort="sortRuns('duration')" />
+                <SortHeader class="px-3 py-2 text-right" label="Llamadas" v-bind="runSortState('requests')" @sort="sortRuns('requests')" />
+                <SortHeader class="px-3 py-2 text-left" label="Resumen" v-bind="runSortState('summary')" @sort="sortRuns('summary')" />
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="run in data.runs" :key="run.id">
+              <tr v-for="run in sortedRuns" :key="run.id">
                 <td class="px-3 py-2 whitespace-nowrap text-slate-700">{{ formatKickoff(run.startedAt) }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ jobTitles.get(run.job) ?? run.job }}<span class="text-xs text-slate-500"> · {{ run.manual ? 'a mano' : 'automática' }}{{ run.environment ? ` · ${run.environment}` : '' }}</span></td>
                 <td class="px-3 py-2"><Badge :tone="statusTone[run.status]">{{ statusLabels[run.status] }}</Badge></td>
@@ -483,16 +537,16 @@ const sourceTitle = (source: ScrapeSourceDto) =>
           <table class="min-w-full text-sm">
             <thead class="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th class="px-3 py-2 text-left">Hora</th>
-                <th class="px-3 py-2 text-left">Web</th>
-                <th class="px-3 py-2 text-right">Código</th>
-                <th class="px-3 py-2 text-right">ms</th>
-                <th class="px-3 py-2 text-left">Origen</th>
-                <th class="px-3 py-2 text-left">URL</th>
+                <SortHeader class="px-3 py-2 text-left" label="Hora" v-bind="requestSortState('at')" @sort="sortRequests('at')" />
+                <SortHeader class="px-3 py-2 text-left" label="Web" v-bind="requestSortState('web')" @sort="sortRequests('web')" />
+                <SortHeader class="px-3 py-2 text-right" label="Código" title="Código de respuesta" v-bind="requestSortState('code')" @sort="sortRequests('code')" />
+                <SortHeader class="px-3 py-2 text-right" label="ms" title="Duración (ms)" v-bind="requestSortState('ms')" @sort="sortRequests('ms')" />
+                <SortHeader class="px-3 py-2 text-left" label="Origen" v-bind="requestSortState('origin')" @sort="sortRequests('origin')" />
+                <SortHeader class="px-3 py-2 text-left" label="URL" v-bind="requestSortState('url')" @sort="sortRequests('url')" />
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="request in data.requests" :key="request.id">
+              <tr v-for="request in sortedRequests" :key="request.id">
                 <td class="px-3 py-1.5 whitespace-nowrap text-xs text-slate-600">{{ formatKickoff(request.at) }}</td>
                 <td class="px-3 py-1.5 whitespace-nowrap text-xs">{{ request.provider }}</td>
                 <td class="px-3 py-1.5 text-right font-semibold tabular-nums" :class="statusClass(request.statusCode)" :title="request.error ?? undefined">{{ request.statusCode ?? 'Error' }}</td>

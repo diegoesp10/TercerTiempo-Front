@@ -25,8 +25,8 @@ const SHADE = [242, 242, 242] as const;
 const INK = [20, 20, 20] as const;
 const MUTED = [110, 110, 110] as const;
 
-// Jugó, Dorsal, Jugador, Tit, Min, los 13 contadores del acta, TA, TR y Notas. Las columnas que se apuntan con palotes
-// durante el partido (pases, pérdidas, recuperaciones) son más anchas.
+// Jugó, Dorsal, Jugador, Tit, Min, los 14 contadores del acta, TA, TR y Notas. Las columnas que se apuntan con palotes
+// durante el partido (pases, pérdidas, recuperaciones, despejes) son más anchas.
 const PLAYER_COLUMNS: { label: string; width: number; box?: boolean; left?: boolean }[] = [
   { label: 'Jugó', width: 8, box: true },
   { label: 'Dorsal', width: 10 },
@@ -41,18 +41,19 @@ const PLAYER_COLUMNS: { label: string; width: number; box?: boolean; left?: bool
   { label: 'PasI', width: 17 },
   { label: 'Pér', width: 16 },
   { label: 'Rec', width: 16 },
+  { label: 'Desp', width: 13 },
   { label: 'Ent', width: 10 },
   { label: 'Int', width: 10 },
   { label: 'Par', width: 10 },
   { label: 'F', width: 10 },
   { label: 'TA', width: 8 },
   { label: 'TR', width: 8 },
-  { label: 'Notas', width: 41, left: true },
+  { label: 'Notas', width: 28, left: true },
 ];
 
 const LEGEND =
   'Jugó: marca quien ha jugado · Tit: titular · Min: minutos · G: goles · A: asistencias de gol · T: tiros · TP: tiros a puerta · ' +
-  'PasC / PasI: pases completados / intentados · Pér: pérdidas · Rec: recuperaciones · Ent: entradas · Int: intercepciones · Par: paradas · ' +
+  'PasC / PasI: pases completados / intentados · Pér: pérdidas · Rec: recuperaciones · Desp: despejes · Ent: entradas · Int: intercepciones · Par: paradas · ' +
   'F: faltas cometidas · TA / TR: tarjetas amarilla / roja';
 
 const TEAM_ROWS = ['Posesión (%)', 'Córners', 'Saques de banda', 'Tiros', 'Tiros a puerta', 'Fueras de juego', 'Faltas cometidas', 'Penaltis', 'Goles a balón parado', '  de ellos, de penalti'];

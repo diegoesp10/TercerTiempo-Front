@@ -3,6 +3,9 @@ import { computed, ref, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import TeamName from '@/components/teams/TeamName.vue';
+import GroundCard from '@/components/trainings/GroundCard.vue';
+import InjuryNote from '@/components/trainings/InjuryNote.vue';
+import SuspensionNote from '@/components/trainings/SuspensionNote.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
@@ -99,7 +102,15 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
                   J{{ c.match.matchday }} · <TeamName prefix="vs" :name="fixture(c).name" :crest-url="fixture(c).crestUrl" :short-name="fixture(c).shortName" :team-id="fixture(c).id" /> · {{ formatKickoff(c.match.kickoffAt) }}
                   <template v-if="c.match.venue"> · {{ c.match.venue }}</template>
                 </p>
-                <p v-if="c.mine.called && c.meetAt" class="text-sm text-slate-600">Cita: {{ formatKickoff(c.meetAt) }}<template v-if="c.meetPlace"> en {{ c.meetPlace }}</template>.</p>
+                <p v-if="c.mine.suspended" class="mt-1 text-sm text-slate-600">Estás sancionado para este partido: no puedes ir convocado.</p>
+                <SuspensionNote v-if="c.mine.suspended" :suspension="c.mine.suspension" class="mt-1" />
+                <p v-if="c.mine.injured && !c.mine.suspended" class="mt-1 text-sm text-slate-600">Estás lesionado el día del partido: no puedes ir convocado.</p>
+                <InjuryNote v-if="c.mine.injured" :injury="c.mine.injury" class="mt-1" />
+                <p v-if="!c.closed && !c.mine.suspended && c.mine.cycleYellows === 4" class="mt-1 text-xs text-amber-700">
+                  <Badge tone="amber" class="mr-1">Apercibido</Badge>Llevas 4 amarillas: con una más te pierdes el siguiente partido de liga.
+                </p>
+                <p v-if="c.mine.called && c.meetAt" class="text-sm text-slate-600">Cita: {{ formatKickoff(c.meetAt) }}.</p>
+                <GroundCard v-if="c.mine.called && (c.meetGround || c.meetPlace)" :ground="c.meetGround" :place="c.meetPlace" compact class="mt-1.5" />
                 <p v-if="c.notes" class="mt-1 whitespace-pre-line text-sm text-slate-600">{{ c.notes }}</p>
               </div>
               <div class="flex flex-wrap gap-2">
@@ -115,7 +126,7 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
           <summary class="cursor-pointer text-sm text-slate-500">Partidos ya jugados ({{ past.length }})</summary>
           <ul class="mt-2 divide-y divide-line rounded-lg border border-line text-sm">
             <li v-for="c in past" :key="c.callUpId" class="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-              <span>J{{ c.match.matchday }} · <TeamName prefix="vs" :name="fixture(c).name" :crest-url="fixture(c).crestUrl" :short-name="fixture(c).shortName" /> · {{ formatKickoff(c.match.kickoffAt) }}</span>
+              <span class="min-w-0">J{{ c.match.matchday }} · <TeamName prefix="vs" :name="fixture(c).name" :crest-url="fixture(c).crestUrl" :short-name="fixture(c).shortName" /> · {{ formatKickoff(c.match.kickoffAt) }}</span>
               <Badge :tone="c.mine.called ? callUpResponseTone[c.mine.response] : 'slate'">{{ c.mine.called ? `Convocado · ${callUpResponseLabels[c.mine.response]}` : 'No convocado' }}</Badge>
             </li>
           </ul>
@@ -142,8 +153,10 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
                 </p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
-                <Badge v-if="item.session.mine" :tone="attendanceStatusTone[item.session.mine.status]">{{ attendanceStatusLabels[item.session.mine.status] }}</Badge>
-                <button v-if="item.session.mine?.status === 'WillMiss'" type="button" class="btn-secondary px-3 py-1 text-xs" v-busy="busy === item.session.id" :disabled="busy !== null" @click="absence(item, false)">Al final sí voy</button>
+                <Badge v-if="item.session.mine?.injured" tone="red" title="Estás de baja por lesión: no entrenas y no tienes que avisar">Lesionado</Badge>
+                <Badge v-else-if="item.session.mine" :tone="attendanceStatusTone[item.session.mine.status]">{{ attendanceStatusLabels[item.session.mine.status] }}</Badge>
+                <template v-if="item.session.mine?.injured" />
+                <button v-else-if="item.session.mine?.status === 'WillMiss'" type="button" class="btn-secondary px-3 py-1 text-xs" v-busy="busy === item.session.id" :disabled="busy !== null" @click="absence(item, false)">Al final sí voy</button>
                 <button v-else-if="absenceFor !== item.session.id" type="button" class="btn-secondary px-3 py-1 text-xs" :disabled="busy !== null" @click="absenceFor = item.session.id">No podré ir</button>
               </div>
             </div>

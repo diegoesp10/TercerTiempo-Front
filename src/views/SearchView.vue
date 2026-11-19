@@ -14,7 +14,7 @@ const route = useRoute();
 const router = useRouter();
 const store = useSearchStore();
 
-const types: SearchType[] = ['squad', 'competition', 'team', 'club', 'player', 'match', 'referee'];
+const types: SearchType[] = ['squad', 'competition', 'team', 'club', 'player', 'coach', 'match', 'referee'];
 const query = computed(() => (typeof route.query.q === 'string' ? route.query.q : ''));
 const type = computed<SearchType | null>(() => (typeof route.query.tipo === 'string' && (types as string[]).includes(route.query.tipo) ? (route.query.tipo as SearchType) : null));
 
@@ -70,7 +70,7 @@ const counts = computed(() => new Map((all.value?.groups ?? []).map((g) => [g.ty
 
 <template>
   <div class="mx-auto max-w-4xl">
-    <PageHeader title="Buscar" subtitle="Ligas, equipos, clubes, jugadores, partidos y tus plantillas." />
+    <PageHeader title="Buscar" subtitle="Ligas, equipos, clubes, jugadores, cuerpos técnicos, partidos y tus plantillas." />
 
     <form class="card flex items-center gap-3 py-3" role="search" @submit.prevent="submit">
       <Icon icon="magnifying-glass" class="h-4 w-4 shrink-0 text-slate-400" />
@@ -78,7 +78,7 @@ const counts = computed(() => new Map((all.value?.groups ?? []).map((g) => [g.ty
         v-model="text"
         type="search"
         class="min-w-0 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400"
-        placeholder="Nombre de una liga, un equipo, un club o un jugador; dos equipos para un partido"
+        placeholder="Nombre de una liga, un equipo, un club, un jugador o un técnico; dos equipos para un partido"
         aria-label="Buscar"
         autocomplete="off"
       />

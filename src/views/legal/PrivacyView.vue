@@ -17,12 +17,13 @@ import { dataSources, legalEntity } from '@/legal/entity';
     <section>
       <h2>2. Qué es Tercer Tiempo y a quién se refieren los datos</h2>
       <p>
-        Tercer Tiempo es una plataforma de seguimiento del rendimiento de cada jugador, partido a partido, en la que los <strong>clubes</strong> dan de alta al cuerpo
-        técnico de sus equipos, el <strong>cuerpo técnico</strong> registra el acta interna de cada partido jugador a
-        jugador, la plataforma la compara con el acta oficial de la federación y calcula estadísticas, y cada
-        <strong>jugador</strong> consulta sus propios números. Tratamos datos de las personas que crean una cuenta y también de
-        personas que no la tienen: jugadores que figuran en las plantillas y en las actas, técnicos nombrados por su club,
-        árbitros y miembros del cuerpo técnico que aparecen en las actas oficiales.
+        Tercer Tiempo es una plataforma para equipos de categoría absoluta (amateur, regional y nacional) en la que los
+        <strong>clubes</strong> dan de alta a sus equipos y a su cuerpo técnico, el <strong>cuerpo técnico</strong> lleva la
+        plantilla (actas internas de cada partido, vídeos, lesiones, entrenamientos, asistencia y convocatorias), la plataforma
+        compara el acta interna con la oficial de la federación y calcula estadísticas, y cada <strong>jugador</strong> consulta
+        sus números, sus entrenamientos y sus convocatorias. Tratamos datos de las personas que crean una cuenta y también de
+        personas que no la tienen: jugadores que figuran en las plantillas y en las actas, jugadores a prueba, técnicos
+        nombrados por su club, y árbitros y miembros del cuerpo técnico que aparecen en las actas oficiales.
       </p>
     </section>
 
@@ -34,22 +35,40 @@ import { dataSources, legalEntity } from '@/legal/entity';
         </thead>
         <tbody>
           <tr>
-            <td data-label="Datos"><strong>Cuenta</strong>: correo electrónico, contraseña (cifrada de forma irreversible), nombre y apellidos o nombre del club, tipo de cuenta; en jugadores, posición y, si se indica, fecha de nacimiento.</td>
-            <td data-label="Origen">El propio usuario al darse de alta.</td>
-            <td data-label="Finalidad">Crear y gestionar la cuenta, identificar al usuario, mostrarle sus plantillas y estadísticas.</td>
+            <td data-label="Datos"><strong>Cuenta</strong>: correo electrónico, contraseña (guardada con un resumen irreversible), nombre y apellidos o nombre del club, tipo de cuenta; en jugadores, posición y, si se indica, fecha de nacimiento; los avisos que recibe en la plataforma.</td>
+            <td data-label="Origen">El propio usuario al darse de alta; los avisos los genera la plataforma.</td>
+            <td data-label="Finalidad">Crear y gestionar la cuenta, identificar al usuario, comprobar que es mayor de edad, mostrarle sus plantillas, estadísticas y avisos.</td>
             <td data-label="Base jurídica">Ejecución del contrato (art. 6.1.b RGPD).</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Nombramientos</strong>: nombre del técnico, correo opcional, rol, equipo, temporada y fechas de validez; código de acceso.</td>
+            <td data-label="Datos"><strong>Nombramientos</strong>: nombre del técnico, correo opcional, función, equipo, temporada y fechas de validez; código de acceso; historial de equipos del técnico.</td>
             <td data-label="Origen">El club que nombra al técnico.</td>
-            <td data-label="Finalidad">Que solo el cuerpo técnico autorizado por el club gestione la plantilla de su equipo durante la temporada.</td>
+            <td data-label="Finalidad">Que solo el cuerpo técnico autorizado por el club gestione la plantilla de su equipo durante la temporada, y mostrar en el perfil del técnico los equipos que ha entrenado.</td>
             <td data-label="Base jurídica">Ejecución del contrato con el club e interés legítimo del técnico y del club (art. 6.1.b y f).</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Fichas y actas internas</strong>: nombre, dorsal y posición de cada jugador; por partido, minutos, titularidad, goles, asistencias de gol, tiros, entradas, intercepciones, paradas, tarjetas y observaciones del técnico.</td>
-            <td data-label="Origen">El cuerpo técnico de la plantilla; las fichas pueden importarse de la plantilla publicada por la fuente pública indicada abajo.</td>
+            <td data-label="Datos"><strong>Fichas y actas internas</strong>: nombre, posición y foto de cada jugador (si la suben; el recorte de la figura se hace en el propio navegador); por partido, dorsal, minutos, titularidad, goles, asistencias, tiros, pases, entradas, intercepciones, despejes, paradas, faltas, pérdidas, recuperaciones, tarjetas y observaciones del técnico.</td>
+            <td data-label="Origen">El club y su cuerpo técnico; las fichas pueden importarse de la plantilla publicada por la fuente pública indicada abajo; el jugador puede sugerir correcciones de su línea.</td>
             <td data-label="Finalidad">Llevar el acta interna del equipo y calcular estadísticas individuales y colectivas.</td>
-            <td data-label="Base jurídica">Ejecución del contrato con el club y su cuerpo técnico; respecto de los jugadores, interés legítimo del club en analizar el rendimiento deportivo de su propia plantilla (art. 6.1.f), ponderado con la privacidad por defecto que se describe en el apartado 6.</td>
+            <td data-label="Base jurídica">Ejecución del contrato con el club y su cuerpo técnico; respecto de los jugadores, interés legítimo del club en analizar el rendimiento deportivo de su propia plantilla (art. 6.1.f), ponderado con la privacidad por defecto del apartado 7.</td>
+          </tr>
+          <tr>
+            <td data-label="Datos"><strong>Entrenamientos y convocatorias</strong>: sesiones y ejercicios; asistencia de cada jugador (vino, faltó, avisó) y el motivo de la falta; jugadores a prueba (nombre y notas); convocatorias: quién va, la cita, la firma del jugador y cuándo le llegó y la abrió.</td>
+            <td data-label="Origen">El club y su cuerpo técnico; el jugador, al avisar de una falta o firmar; la llegada y la apertura, automáticamente.</td>
+            <td data-label="Finalidad">Organizar los entrenamientos y los partidos del equipo y saber con quién se cuenta.</td>
+            <td data-label="Base jurídica">Ejecución del contrato con el club y con el jugador que tiene cuenta; interés legítimo del club respecto de quien no la tiene (art. 6.1.b y f).</td>
+          </tr>
+          <tr>
+            <td data-label="Datos"><strong>Lesiones</strong> (datos de salud): tipo de lesión, fechas de baja, vuelta prevista y alta, motivo, y documentos médicos (radiografías, informes).</td>
+            <td data-label="Origen">El club y su cuerpo técnico.</td>
+            <td data-label="Finalidad">Saber quién está disponible (un lesionado no entrena ni va convocado) y seguir su recuperación.</td>
+            <td data-label="Base jurídica">Consentimiento explícito del jugador (art. 9.2.a RGPD), que el club o su cuerpo técnico deben recabar antes de anotar la lesión o subir sus documentos. Se puede retirar en cualquier momento (apartado 10).</td>
+          </tr>
+          <tr>
+            <td data-label="Datos"><strong>Sanciones de liga</strong>: si un jugador está sancionado para un partido y por qué (5.ª amarilla, doble amarilla o roja directa).</td>
+            <td data-label="Origen">Se calculan con las tarjetas de las actas: la oficial cerrada y, mientras no llega, la interna.</td>
+            <td data-label="Finalidad">Que el cuerpo técnico no convoque ni alinee a un sancionado (apartado 6).</td>
+            <td data-label="Base jurídica">Ejecución del contrato con el club e interés legítimo en cumplir las normas de la competición (art. 6.1.b y f).</td>
           </tr>
           <tr>
             <td data-label="Datos"><strong>Datos deportivos de fuentes públicas</strong>: calendarios, resultados, clasificaciones, plantillas publicadas (nombre y posición) y actas oficiales (alineaciones con el dorsal de cada partido, minutos, goles, tarjetas, árbitros y cuerpo técnico).</td>
@@ -58,26 +77,38 @@ import { dataSources, legalEntity } from '@/legal/entity';
                 <a :href="source.url" target="_blank" rel="noopener">{{ source.name }}</a> ({{ source.what }})<span v-if="index < dataSources.length - 1">; </span>
               </span>
             </td>
-            <td data-label="Finalidad">Mostrar la competición, localizar el acta oficial de cada partido y compararla con el acta interna.</td>
+            <td data-label="Finalidad">Mostrar la competición, el cuerpo técnico de cada equipo y los árbitros de cada categoría, localizar el acta oficial de cada partido y compararla con el acta interna.</td>
             <td data-label="Base jurídica">Interés legítimo (art. 6.1.f): son datos deportivos ya publicados por las propias entidades que organizan o informan de la competición, y su reutilización no afecta a la esfera privada de los deportistas más allá de esa publicación.</td>
+          </tr>
+          <tr>
+            <td data-label="Datos"><strong>Notas a los árbitros</strong>: la nota de 0 a 10 o «no votado», el comentario, el partido y quién la puso (el club o el técnico, con su función).</td>
+            <td data-label="Origen">El club y su cuerpo técnico.</td>
+            <td data-label="Finalidad">La valoración pública del arbitraje por los equipos que lo han tenido.</td>
+            <td data-label="Base jurídica">Interés legítimo (art. 6.1.f) y libertad de expresión, con los comentarios moderados (apartado 6).</td>
           </tr>
           <tr>
             <td data-label="Datos"><strong>Nota calculada</strong> de cada línea del acta.</td>
             <td data-label="Origen">Se calcula a partir de los datos del acta interna y del resultado.</td>
-            <td data-label="Finalidad">Resumir el rendimiento en un partido (ver apartado 5).</td>
+            <td data-label="Finalidad">Resumir el rendimiento en un partido (apartado 5).</td>
             <td data-label="Base jurídica">Interés legítimo (art. 6.1.f).</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Vídeos de partidos</strong>: imágenes y voces de las personas que aparecen; quién lo subió y cuándo.</td>
-            <td data-label="Origen">El cuerpo técnico que lo sube.</td>
-            <td data-label="Finalidad">Alojar el vídeo y mostrarlo a quien tiene acceso.</td>
-            <td data-label="Base jurídica">Ejecución del contrato con quien lo sube; respecto de las personas que aparecen, el consentimiento o la base que haya obtenido el club (ver apartado 7).</td>
+            <td data-label="Datos"><strong>Vídeos de partidos y su análisis</strong>: imágenes y voces de las personas que aparecen; quién lo subió y cuándo; del análisis, la posición de cada jugador en el campo, el color de su camiseta, su dorsal y las acciones propuestas.</td>
+            <td data-label="Origen">El cuerpo técnico que lo sube; el análisis lo hace la plataforma.</td>
+            <td data-label="Finalidad">Alojar el vídeo, mostrarlo a quien tiene acceso y proponer acciones para el acta interna, que el cuerpo técnico revisa antes de guardarlas.</td>
+            <td data-label="Base jurídica">Ejecución del contrato con quien lo sube; respecto de las personas que aparecen, el consentimiento o la base que haya obtenido el club. El análisis no usa reconocimiento facial ni ningún dato biométrico: identifica a cada jugador por su dorsal y el acta oficial.</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Compras de acceso a vídeos</strong>: importe, fecha y referencia del pago. Los datos de la tarjeta los trata exclusivamente la pasarela de pago.</td>
-            <td data-label="Origen">El usuario que compra.</td>
-            <td data-label="Finalidad">Prestar el acceso comprado, facturar y cumplir obligaciones fiscales.</td>
+            <td data-label="Datos"><strong>Licencias y pases</strong>: importe, fecha y referencia del pago; cuenta que canjea cada pase. Los datos de la tarjeta los trata exclusivamente la pasarela de pago.</td>
+            <td data-label="Origen">El club o el usuario que paga.</td>
+            <td data-label="Finalidad">Prestar lo contratado, repartir el importe de los pases con el club, facturar y cumplir obligaciones fiscales.</td>
             <td data-label="Base jurídica">Ejecución del contrato y obligación legal (art. 6.1.b y c).</td>
+          </tr>
+          <tr>
+            <td data-label="Datos"><strong>Analítica propia</strong>: páginas vistas, búsquedas y botones pulsados, con un identificador aleatorio y sin la IP.</td>
+            <td data-label="Origen">Tu navegador, solo si lo aceptas.</td>
+            <td data-label="Finalidad">Saber qué partes de la web se usan para mejorarla.</td>
+            <td data-label="Base jurídica">Consentimiento (art. 6.1.a), que puedes retirar en la política de cookies.</td>
           </tr>
           <tr>
             <td data-label="Datos"><strong>Datos técnicos</strong>: dirección IP, navegador y páginas solicitadas, en los registros del servidor.</td>
@@ -88,20 +119,21 @@ import { dataSources, legalEntity } from '@/legal/entity';
         </tbody>
       </table>
       <p>
-        No tratamos categorías especiales de datos (salud, origen, ideología…). Las observaciones que el cuerpo técnico escribe
-        en el acta deben limitarse al juego: no deben incluir datos de salud ni valoraciones ajenas al rendimiento deportivo.
+        La única categoría especial de datos que se trata son los de salud de las lesiones, con las garantías de este apartado y
+        del 7. Las observaciones del acta, los motivos de las faltas y las notas de los jugadores a prueba deben limitarse al
+        juego: no deben incluir datos de salud (para eso está la lesión) ni valoraciones ajenas al rendimiento deportivo.
       </p>
     </section>
 
     <section>
       <h2>4. Datos que no nos ha facilitado el interesado</h2>
       <p>
-        Cuando tratamos datos de una persona que no los ha introducido ella misma (jugadores de una plantilla, técnicos
-        nombrados, personas que figuran en las actas oficiales), la información que exige el artículo 14 del RGPD se
-        proporciona mediante esta política. Dado el número de personas y que no disponemos de sus datos de contacto, informar
-        individualmente supondría un esfuerzo desproporcionado; los clubes y el cuerpo técnico se comprometen a informar a sus
-        jugadores de que usan Tercer Tiempo. Cualquier persona puede ejercer en todo momento los derechos del apartado 9,
-        en particular el de <strong>oposición</strong>, sin necesidad de tener cuenta.
+        Cuando tratamos datos de una persona que no los ha introducido ella misma (jugadores de una plantilla, jugadores a
+        prueba, técnicos nombrados, personas que figuran en las actas oficiales), la información que exige el artículo 14 del
+        RGPD se proporciona mediante esta política. Dado el número de personas y que no disponemos de sus datos de contacto,
+        informar individualmente supondría un esfuerzo desproporcionado; los clubes y el cuerpo técnico se comprometen a
+        informar a sus jugadores de que usan Tercer Tiempo. Cualquier persona puede ejercer en todo momento los derechos del
+        apartado 10, en particular el de <strong>oposición</strong>, sin necesidad de tener cuenta.
       </p>
     </section>
 
@@ -109,50 +141,61 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <h2>5. La nota calculada</h2>
       <p>
         La nota de cada jugador en un partido no la pone ninguna persona: se calcula con una fórmula fija a partir de los
-        datos del acta (minutos, goles, asistencias de gol, tiros, entradas, intercepciones, paradas y tarjetas), de la
-        posición del jugador y del resultado, en una escala de 3,0 a 10,0. Es una síntesis orientativa, no produce efectos
-        jurídicos ni decisiones automatizadas en el sentido del artículo 22 del RGPD, y la fórmula se explica en la propia
-        pantalla del acta. El jugador puede oponerse a su cálculo (apartado 9).
+        datos del acta (minutos, goles, asistencias, tiros, pases, acciones defensivas, paradas, tarjetas y los goles
+        encajados con él en el campo), de la posición del jugador y del resultado, en una escala de 3,0 a 10,0. Es una
+        síntesis orientativa, no produce efectos jurídicos ni decisiones automatizadas en el sentido del artículo 22 del RGPD,
+        y la fórmula se explica en la propia pantalla del acta. El jugador puede oponerse a su cálculo (apartado 10).
       </p>
     </section>
 
     <section>
-      <h2>6. Quién ve qué: privacidad por defecto</h2>
+      <h2>6. Sanciones y notas a los árbitros</h2>
       <ul>
-        <li>Cada plantilla es <strong>privada</strong>: sus actas internas, notas, estadísticas y vídeos solo los ven su club, su cuerpo técnico vigente y los jugadores vinculados a ella.</li>
+        <li>Las <strong>sanciones de liga</strong> aplican la regla de la competición (la 5.ª amarilla, la 10.ª… y cada expulsión cuestan el siguiente partido de liga) a las tarjetas de las actas. Las ve la plantilla (su club, su cuerpo técnico y sus jugadores vinculados) y no se publican fuera de ella. No sustituyen a las resoluciones del comité de competición, que prevalecen.</li>
+        <li>Las <strong>notas a los árbitros</strong> son públicas en la ficha de cada árbitro, con el nombre del club o del técnico que las puso. Los comentarios se filtran con una lista de palabras prohibidas y la administración retira los que no respetan las normas de uso. El árbitro puede oponerse a un comentario concreto (apartado 10).</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>7. Quién ve qué: privacidad por defecto</h2>
+      <ul>
+        <li>Cada plantilla es <strong>privada</strong>: sus actas internas, notas, estadísticas, vídeos, entrenamientos, asistencia, convocatorias y lesiones solo los ven su club, su cuerpo técnico vigente y los jugadores vinculados a ella, cada uno en lo que le corresponde.</li>
+        <li>Los <strong>datos de salud</strong> (el detalle de la lesión y sus documentos médicos) solo los ven el club, su cuerpo técnico y el propio jugador; sus compañeros solo ven que está lesionado. Los documentos médicos se guardan fuera de cualquier carpeta pública y solo se entregan, sin copias en caché, a quien puede abrirlos.</li>
         <li>El club o su cuerpo técnico pueden dar a una persona concreta un <strong>pase de un partido</strong> (un código de un solo uso, gratuito o de pago) que le deja ver dentro de la plataforma el acta interna o el vídeo de ese partido. El pase queda ligado a la cuenta que lo canjea; el club ve el nombre de esa cuenta, nunca su correo.</li>
         <li>Si la plantilla se abre a solicitudes, cualquier usuario puede pedir ese pase al club, que decide si lo concede. Abrirla no hace visible nada por sí mismo. El club y su cuerpo técnico son responsables de a quién dan acceso y de informar a sus jugadores.</li>
-        <li>Los calendarios, resultados, clasificaciones y actas públicas de la federación son públicos, como lo son en sus fuentes.</li>
+        <li>Son públicos, como lo son en sus fuentes, los calendarios, resultados, clasificaciones y actas oficiales; también el perfil de cada técnico con su cuenta (sus equipos y su balance, sacados de las actas oficiales) y las notas a los árbitros.</li>
         <li>Las estadísticas comparativas «frente a la liga» de un jugador usan, solo de forma agregada (percentiles), las actas de su plantilla y las de las plantillas abiertas a solicitudes; nunca muestran los datos de otro jugador.</li>
+        <li>El personal de administración de Tercer Tiempo puede consultar los datos en modo de solo lectura para dar soporte, garantizar la seguridad y atender requerimientos legales, con verificación en dos pasos y deber de confidencialidad. No puede abrir los documentos médicos.</li>
         <li>Un jugador vinculado puede desvincularse de su ficha en cualquier momento desde su panel.</li>
       </ul>
     </section>
 
     <section>
-      <h2>7. Menores de edad</h2>
+      <h2>8. Menores de edad</h2>
       <ul>
-        <li>No se admite la creación de cuentas por menores de 14 años. Entre 14 y 17 años el jugador necesita la autorización de sus padres o tutores, que el club se compromete a recabar.</li>
-        <li>En las actas oficiales, la federación publica a los menores solo con su nombre de pila; Tercer Tiempo mantiene esa presentación en el acta oficial.</li>
-        <li>Los vídeos en los que aparezcan menores solo pueden subirse si el club cuenta con el consentimiento de sus padres o tutores para la grabación y su difusión en la plataforma, y únicamente para la visualización por su propia plantilla.</li>
+        <li>Tercer Tiempo está dirigido a equipos de categoría absoluta y no admite cuentas de menores de edad: al darse de alta, cada usuario confirma que es mayor de edad.</li>
+        <li>Si en una plantilla figura excepcionalmente un menor, el club debe contar con la autorización de sus padres o tutores para tratar sus datos en la plataforma y, si aparece en un vídeo, para la grabación y su difusión en ella.</li>
+        <li>En las actas oficiales, la federación publica a los menores solo con su nombre de pila; Tercer Tiempo mantiene esa presentación.</li>
       </ul>
     </section>
 
     <section>
-      <h2>8. Destinatarios, encargados y transferencias</h2>
+      <h2>9. Destinatarios, encargados y transferencias</h2>
       <p>No vendemos ni cedemos datos personales a terceros. Acceden a ellos, como encargados del tratamiento y con contrato conforme al artículo 28 del RGPD:</p>
       <ul>
         <li><strong>Alojamiento</strong>: {{ legalEntity.hosting }}.</li>
         <li><strong>Pagos</strong>: {{ legalEntity.payments }}, que trata los datos de pago como responsable propio conforme a su política.</li>
       </ul>
       <p>
-        Podemos comunicar datos a autoridades públicas cuando una norma lo exija. No realizamos transferencias
-        internacionales fuera del Espacio Económico Europeo; si un proveedor lo requiriese, se harían con las garantías del
-        capítulo V del RGPD (decisión de adecuación o cláusulas contractuales tipo).
+        El análisis de los vídeos se hace en nuestros propios equipos o en los del proveedor de alojamiento, sin enviar las
+        imágenes a otros terceros. Podemos comunicar datos a autoridades públicas cuando una norma lo exija. No realizamos
+        transferencias internacionales fuera del Espacio Económico Europeo; si un proveedor lo requiriese, se harían con las
+        garantías del capítulo V del RGPD (decisión de adecuación o cláusulas contractuales tipo).
       </p>
     </section>
 
     <section>
-      <h2>9. Tus derechos</h2>
+      <h2>10. Tus derechos</h2>
       <p>
         Puedes ejercer los derechos de <strong>acceso, rectificación, supresión, oposición, limitación del tratamiento y
         portabilidad</strong>, y retirar un consentimiento prestado, escribiendo a
@@ -162,48 +205,53 @@ import { dataSources, legalEntity } from '@/legal/entity';
       </p>
       <p>
         Si te opones al tratamiento de tus datos como jugador, dejaremos de calcular tu nota y de mostrar tus estadísticas a
-        terceros, salvo los datos que sigan publicados por las fuentes oficiales de la competición.
+        terceros, salvo los datos que sigan publicados por las fuentes oficiales de la competición. Si retiras el
+        consentimiento para tus datos de salud, se borran el detalle de tus lesiones y sus documentos médicos.
       </p>
     </section>
 
     <section>
-      <h2>10. Conservación</h2>
+      <h2>11. Conservación</h2>
       <ul>
         <li>Datos de la cuenta: mientras esté activa y, tras su baja, bloqueados durante los plazos de prescripción legales (hasta 5 años) y después eliminados.</li>
-        <li>Actas internas, notas y estadísticas: mientras exista la plantilla; el cuerpo técnico puede dar de baja fichas y corregir o eliminar líneas del acta.</li>
-        <li>Vídeos: hasta que los elimine quien los subió o se cierre la plantilla.</li>
+        <li>Actas internas, notas, estadísticas, entrenamientos, asistencia y convocatorias: mientras exista la plantilla; el club y el cuerpo técnico pueden corregir o eliminar lo que anotaron.</li>
+        <li>Lesiones y documentos médicos: mientras exista la plantilla, hasta que el club o el cuerpo técnico los borren o hasta que el jugador retire su consentimiento. Borrar una lesión borra sus documentos.</li>
+        <li>Vídeos y su análisis: hasta que los elimine quien los subió o se cierre la plantilla.</li>
+        <li>Notas a los árbitros: mientras la temporada esté disponible en la plataforma.</li>
         <li>Datos de compras: los exigidos por la normativa fiscal y contable (en general, 4 a 6 años).</li>
         <li>Datos deportivos de fuentes públicas: mientras se mantengan publicados y la temporada esté disponible en la plataforma.</li>
-        <li>Registros técnicos del servidor: 12 meses.</li>
+        <li>Analítica propia: 13 meses. Registros técnicos del servidor: 12 meses.</li>
       </ul>
     </section>
 
     <section>
-      <h2>11. Seguridad</h2>
+      <h2>12. Seguridad</h2>
       <p>
-        Las contraseñas se guardan con funciones de resumen irreversibles; la comunicación va cifrada (HTTPS); el acceso a los
-        datos de cada plantilla está limitado por su visibilidad y por los nombramientos vigentes del club; los vídeos se
-        sirven con tickets de corta duración. Mantenemos copias de seguridad y registros de acceso. Si se produjera una brecha
-        de seguridad con riesgo para los interesados, la notificaríamos a la autoridad de control y, cuando proceda, a los
-        afectados en los plazos legales.
+        Las contraseñas se guardan con funciones de resumen irreversibles y se exige una contraseña robusta; la comunicación
+        va cifrada (HTTPS); el acceso a los datos de cada plantilla está limitado por su visibilidad y por los nombramientos
+        vigentes del club; los vídeos se sirven con tickets de corta duración; los documentos médicos no se sirven nunca en
+        abierto, y el acceso de administración exige verificación en dos pasos. Mantenemos copias de seguridad y registros de
+        acceso. Si se produjera una brecha de seguridad con riesgo para los interesados, la notificaríamos a la autoridad de
+        control y, cuando proceda, a los afectados en los plazos legales.
       </p>
     </section>
 
     <section>
-      <h2>12. Cookies y almacenamiento local</h2>
+      <h2>13. Cookies y almacenamiento local</h2>
       <p>
         Tercer Tiempo no utiliza cookies de publicidad ni de terceros. Guarda en el almacenamiento de tu navegador lo necesario
-        para funcionar (tu sesión y tu elección sobre las cookies) y las preferencias que tú eliges (tema, temporada), que
-        están exentas de consentimiento. Con tu permiso, y solo entonces, mide de forma anónima qué páginas, búsquedas y
-        botones se usan (analítica propia): esos datos se guardan en nuestros servidores con un identificador aleatorio, sin
-        tu IP, no se comparten con nadie y se borran a los 13 meses. Guardamos también tu elección (qué aceptaste y cuándo)
-        para poder demostrarla. El detalle de cada dato y cómo cambiar tu elección están en la
-        <RouterLink to="/cookies" class="text-accent-400 hover:underline">política de cookies</RouterLink>.
+        para funcionar (tu sesión, que haya una sola por navegador, tu elección sobre las cookies y la subida de un vídeo que
+        se ha cortado) y las preferencias que tú eliges (tema, temporada, vistas del calendario y de la asistencia, listas
+        agrupadas por posición y búsquedas recientes), que están exentas de consentimiento. Con tu permiso, y solo entonces,
+        mide de forma anónima qué páginas, búsquedas y botones se usan (analítica propia): esos datos se guardan en nuestros
+        servidores con un identificador aleatorio, sin tu IP, no se comparten con nadie y se borran a los 13 meses. Guardamos
+        también tu elección (qué aceptaste y cuándo) para poder demostrarla. Qué guarda cada dato, cuánto dura y cómo cambiar
+        tu elección está en la <RouterLink to="/cookies" class="text-accent-400 hover:underline">política de cookies</RouterLink>.
       </p>
     </section>
 
     <section>
-      <h2>13. Fuentes de terceros</h2>
+      <h2>14. Fuentes de terceros</h2>
       <p>
         Los datos deportivos se obtienen de las fuentes citadas en el apartado 3, a las que se atribuyen y enlazan en la
         propia plataforma. Tercer Tiempo cuenta con los servicios de FútbolAsturiano, diario independiente digital del fútbol
@@ -215,7 +263,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
     </section>
 
     <section>
-      <h2>14. Cambios en esta política</h2>
+      <h2>15. Cambios en esta política</h2>
       <p>
         Publicaremos aquí cualquier cambio y, si es relevante, lo comunicaremos a los usuarios registrados. La fecha de la
         última versión figura al pie.

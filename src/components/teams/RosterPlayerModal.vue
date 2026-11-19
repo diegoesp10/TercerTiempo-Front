@@ -11,8 +11,10 @@ import Badge from '@/components/ui/Badge.vue';
 import Modal from '@/components/ui/Modal.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
-import type { MatchDto, Position, RosterEntryDetailDto, RosterEntryDto } from '@/types/api';
+import { useSort } from '@/composables/useSort';
+import type { MatchDto, Position, RosterEntryDetailDto, RosterEntryDto, RosterInternalAppearanceDto, RosterOfficialAppearanceDto } from '@/types/api';
 import { formatDate, outcomeFor, outcomeLabels, outcomeTone, positionLabels, positionOptions, scoreLabel } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 import { opponentOf } from '@/utils/crests';
@@ -118,6 +120,57 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
     : ` (entra ${line.minuteIn}'${line.minuteOut !== null ? `, sale ${line.minuteOut}'` : ''})`;
   return `${line.minutesPlayed}'${detailText}`;
 };
+
+/** Para ordenar por resultado: primero las victorias (y entre ellas, las de más diferencia). */
+const resultScore = (match: MatchDto, home: boolean) => {
+  const { homeGoals, awayGoals } = match;
+  if (homeGoals === null || awayGoals === null) return null;
+  const diff = home ? homeGoals - awayGoals : awayGoals - homeGoals;
+  return (diff > 0 ? 3 : diff === 0 ? 1 : 0) * 100 + diff;
+};
+// La roja pesa más que cualquier número de amarillas.
+const cardsScore = (yellow: number, red: boolean) => (red ? 10 : 0) + yellow;
+
+type OfficialKey = 'matchday' | 'opponent' | 'result' | 'shirt' | 'minutes' | 'goals' | 'cards';
+const officialRows = computed(() => detail.value?.official ?? []);
+const officialGetters: Record<OfficialKey, (row: RosterOfficialAppearanceDto) => number | string | null> = {
+  matchday: (r) => r.match.matchday,
+  opponent: (r) => opponentOf(r.match, props.teamId).name,
+  result: (r) => resultScore(r.match, r.home),
+  shirt: (r) => r.line.shirtNumber,
+  minutes: (r) => r.line.minutesPlayed,
+  goals: (r) => r.line.goals + r.line.penaltyGoals,
+  cards: (r) => cardsScore(r.line.yellowCards, r.line.redCard),
+};
+const { sorted: officialSorted, sortBy: sortOfficial, state: officialState } = useSort<RosterOfficialAppearanceDto, OfficialKey>(
+  officialRows,
+  officialGetters,
+  'matchday',
+  { ascendingFirst: ['opponent', 'shirt'] },
+);
+
+type InternalKey = 'matchday' | 'opponent' | 'minutes' | 'goals' | 'assists' | 'shots' | 'tackles' | 'interceptions' | 'saves' | 'cards' | 'rating';
+const internalRows = computed(() => detail.value?.internal ?? []);
+const internalGetters: Record<InternalKey, (row: RosterInternalAppearanceDto) => number | string | null> = {
+  matchday: (r) => r.match.matchday,
+  opponent: (r) => opponentOf(r.match, props.teamId).name,
+  minutes: (r) => r.performance.minutesPlayed,
+  goals: (r) => r.performance.goals,
+  assists: (r) => r.performance.assists,
+  // Primero los tiros a puerta y, a igualdad, los totales.
+  shots: (r) => r.performance.shotsOnTarget * 1000 + r.performance.shots,
+  tackles: (r) => r.performance.tackles,
+  interceptions: (r) => r.performance.interceptions,
+  saves: (r) => r.performance.saves,
+  cards: (r) => cardsScore(r.performance.yellowCards, r.performance.redCard),
+  rating: (r) => r.performance.rating,
+};
+const { sorted: internalSorted, sortBy: sortInternal, state: internalState } = useSort<RosterInternalAppearanceDto, InternalKey>(
+  internalRows,
+  internalGetters,
+  'matchday',
+  { ascendingFirst: ['opponent'] },
+);
 </script>
 
 <template>
@@ -157,11 +210,11 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
       </div>
       <div>
         <label class="label" for="player-position">Posición</label>
-        <SearchSelect id="player-position" placeholder="—" clearable :model-value="form.position || null" :options="positionOptions" @update:model-value="form.position = ($event as Position | null) ?? ''" />
+        <SearchSelect id="player-position" placeholder="Elige su posición" :model-value="form.position || null" :options="positionOptions" @update:model-value="form.position = ($event as Position | null) ?? ''" />
       </div>
       <div>
         <span class="label invisible hidden sm:block" aria-hidden="true">Guardar</span>
-        <button type="submit" class="btn-primary w-full sm:w-auto" v-busy="busy" :disabled="busy || !dirty || !form.fullName.trim()"><Icon icon="check" class="mr-1.5 h-3.5 w-3.5" />Guardar</button>
+        <button type="submit" class="btn-primary w-full sm:w-auto" v-busy="busy" :disabled="busy || !dirty || !form.fullName.trim() || !form.position"><Icon icon="check" class="mr-1.5 h-3.5 w-3.5" />Guardar</button>
       </div>
     </form>
 
@@ -205,19 +258,19 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
       <div v-if="tab === 'official'" class="mt-3 overflow-x-auto">
         <p v-if="detail.official.length === 0" class="text-sm text-slate-500">Sin partidos en las actas oficiales.</p>
         <table v-else class="min-w-full text-sm">
-          <thead class="text-xs uppercase tracking-wide text-slate-500">
+          <thead class="text-xs text-slate-500">
             <tr>
-              <th class="py-1 pr-3 text-left">J</th>
-              <th class="py-1 pr-3 text-left">Partido</th>
-              <th class="col-sm py-1 pr-3 text-center">Resultado</th>
-              <th class="py-1 pr-3 text-center" title="Dorsal que llevó en ese partido">Dorsal</th>
-              <th class="py-1 pr-3 text-center">Min</th>
-              <th class="py-1 pr-3 text-center">G</th>
-              <th class="py-1 text-center">TA/TR</th>
+              <SortHeader class="py-1 pr-3 text-left" label="J" title="Jornada" v-bind="officialState('matchday')" @sort="sortOfficial('matchday')" />
+              <SortHeader class="py-1 pr-3 text-left" label="Partido" title="Rival" v-bind="officialState('opponent')" @sort="sortOfficial('opponent')" />
+              <SortHeader class="col-sm py-1 pr-3 text-center" label="Resultado" v-bind="officialState('result')" @sort="sortOfficial('result')" />
+              <SortHeader class="py-1 pr-3 text-center" label="Dorsal" title="Dorsal que llevó en ese partido" v-bind="officialState('shirt')" @sort="sortOfficial('shirt')" />
+              <SortHeader class="py-1 pr-3 text-center" label="Min" title="Minutos" v-bind="officialState('minutes')" @sort="sortOfficial('minutes')" />
+              <SortHeader class="py-1 pr-3 text-center" label="G" title="Goles" v-bind="officialState('goals')" @sort="sortOfficial('goals')" />
+              <SortHeader class="py-1 text-center" label="TA/TR" title="Tarjetas (la roja pesa más)" v-bind="officialState('cards')" @sort="sortOfficial('cards')" />
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr v-for="row in detail.official" :key="row.match.id" :class="row.line.played ? '' : 'text-slate-400'">
+            <tr v-for="row in officialSorted" :key="row.match.id" :class="row.line.played ? '' : 'text-slate-400'">
               <td class="py-1.5 pr-3 tabular-nums text-slate-500">{{ row.match.matchday }}</td>
               <td class="py-1.5 pr-3">
                 <RouterLink :to="{ name: 'match', params: { matchId: row.match.id } }" class="font-medium text-slate-800 hover:underline"><TeamName prefix="vs" :name="opponentOf(row.match, teamId).name" :crest-url="opponentOf(row.match, teamId).crestUrl" /></RouterLink>
@@ -252,23 +305,23 @@ const minutes = (line: { played: boolean; started: boolean; minuteIn: number | n
           </dl>
           <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
-              <thead class="text-xs uppercase tracking-wide text-slate-500">
+              <thead class="text-xs text-slate-500">
                 <tr>
-                  <th class="py-1 pr-3 text-left">J</th>
-                  <th class="py-1 pr-3 text-left">Partido</th>
-                  <th class="py-1 pr-2 text-center">Min</th>
-                  <th class="py-1 pr-2 text-center">G</th>
-                  <th class="col-sm py-1 pr-2 text-center">A</th>
-                  <th class="col-sm py-1 pr-2 text-center" title="Tiros a puerta / tiros">Tiros</th>
-                  <th class="col-md py-1 pr-2 text-center" title="Entradas">Ent</th>
-                  <th class="col-md py-1 pr-2 text-center" title="Intercepciones">Int</th>
-                  <th class="col-md py-1 pr-2 text-center" title="Paradas">Par</th>
-                  <th class="py-1 pr-2 text-center">TA/TR</th>
-                  <th class="py-1 text-center">Nota</th>
+                  <SortHeader class="py-1 pr-3 text-left" label="J" title="Jornada" v-bind="internalState('matchday')" @sort="sortInternal('matchday')" />
+                  <SortHeader class="py-1 pr-3 text-left" label="Partido" title="Rival" v-bind="internalState('opponent')" @sort="sortInternal('opponent')" />
+                  <SortHeader class="py-1 pr-2 text-center" label="Min" title="Minutos" v-bind="internalState('minutes')" @sort="sortInternal('minutes')" />
+                  <SortHeader class="py-1 pr-2 text-center" label="G" title="Goles" v-bind="internalState('goals')" @sort="sortInternal('goals')" />
+                  <SortHeader class="col-sm py-1 pr-2 text-center" label="A" title="Asistencias de gol" v-bind="internalState('assists')" @sort="sortInternal('assists')" />
+                  <SortHeader class="col-sm py-1 pr-2 text-center" label="Tiros" title="Tiros a puerta / tiros" v-bind="internalState('shots')" @sort="sortInternal('shots')" />
+                  <SortHeader class="col-md py-1 pr-2 text-center" label="Ent" title="Entradas" v-bind="internalState('tackles')" @sort="sortInternal('tackles')" />
+                  <SortHeader class="col-md py-1 pr-2 text-center" label="Int" title="Intercepciones" v-bind="internalState('interceptions')" @sort="sortInternal('interceptions')" />
+                  <SortHeader class="col-md py-1 pr-2 text-center" label="Par" title="Paradas" v-bind="internalState('saves')" @sort="sortInternal('saves')" />
+                  <SortHeader class="py-1 pr-2 text-center" label="TA/TR" title="Tarjetas (la roja pesa más)" v-bind="internalState('cards')" @sort="sortInternal('cards')" />
+                  <SortHeader class="py-1 text-center" label="Nota" v-bind="internalState('rating')" @sort="sortInternal('rating')" />
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="row in detail.internal" :key="row.performance.id" :class="row.performance.minutesPlayed > 0 ? '' : 'text-slate-400'">
+                <tr v-for="row in internalSorted" :key="row.performance.id" :class="row.performance.minutesPlayed > 0 ? '' : 'text-slate-400'">
                   <td class="py-1.5 pr-3 tabular-nums text-slate-500">{{ row.match.matchday }}</td>
                   <td class="py-1.5 pr-3 whitespace-nowrap">
                     <RouterLink :to="{ name: 'match', params: { matchId: row.match.id } }" class="font-medium text-slate-800 hover:underline"><TeamName prefix="vs" :name="opponentOf(row.match, teamId).name" :crest-url="opponentOf(row.match, teamId).crestUrl" /></RouterLink>

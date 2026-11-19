@@ -1,0 +1,57 @@
+<script setup lang="ts">
+import { computed } from 'vue';
+import { toDateKey } from '@/utils/format';
+
+// Periodo para contar entrenamientos: toda la temporada (sin fechas), atajos habituales o dos fechas a mano.
+const from = defineModel<string | null>('from', { default: null });
+const to = defineModel<string | null>('to', { default: null });
+const props = defineProps<{ min?: string | null; max?: string | null; allLabel?: string }>();
+
+function daysAgo(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return toDateKey(date);
+}
+
+const presets = computed(() => {
+  const today = new Date();
+  return [
+    { key: 'all', label: props.allLabel ?? 'Toda la temporada', from: null, to: null },
+    { key: 'month', label: 'Este mes', from: toDateKey(new Date(today.getFullYear(), today.getMonth(), 1)), to: toDateKey(today) },
+    { key: '30', label: 'Últimos 30 días', from: daysAgo(29), to: toDateKey(today) },
+    { key: '7', label: 'Última semana', from: daysAgo(6), to: toDateKey(today) },
+  ];
+});
+
+const active = computed(() => presets.value.find((p) => p.from === from.value && p.to === to.value)?.key ?? null);
+
+function pick(preset: { from: string | null; to: string | null }) {
+  from.value = preset.from;
+  to.value = preset.to;
+}
+</script>
+
+<template>
+  <div class="flex flex-wrap items-center gap-2 text-xs">
+    <slot />
+    <div class="flex flex-wrap rounded-lg border border-line" role="group" aria-label="Periodo">
+      <button
+        v-for="p in presets"
+        :key="p.key"
+        type="button"
+        class="px-2.5 py-1 font-medium transition first:rounded-l-lg last:rounded-r-lg"
+        :class="active === p.key ? 'bg-brand-500 text-white' : 'text-slate-600 hover:bg-surface-2'"
+        :aria-pressed="active === p.key"
+        @click="pick(p)"
+      >{{ p.label }}</button>
+    </div>
+    <label class="flex items-center gap-1 text-slate-500">
+      Del
+      <input :value="from ?? ''" type="date" class="input px-2 py-1 text-xs" :min="min ?? undefined" :max="to ?? max ?? undefined" aria-label="Desde" @change="from = ($event.target as HTMLInputElement).value || null" />
+    </label>
+    <label class="flex items-center gap-1 text-slate-500">
+      al
+      <input :value="to ?? ''" type="date" class="input px-2 py-1 text-xs" :min="from ?? min ?? undefined" :max="max ?? undefined" aria-label="Hasta" @change="to = ($event.target as HTMLInputElement).value || null" />
+    </label>
+  </div>
+</template>

@@ -12,12 +12,14 @@ import type {
   MatchStatus,
   OfficialDuty,
   OfficialRole,
+  OfficialStaffRole,
   RefereeRaterDto,
   OfficialEventType,
   Position,
   SheetDifferenceDto,
   SquadVisibility,
   StaffRole,
+  InjuryDocumentKind,
   SuggestionStatus,
   VideoAccessLevel,
   VideoPart,
@@ -61,6 +63,36 @@ export const staffRoleLabels: Record<StaffRole, string> = {
   Physio: 'Fisio',
   Analyst: 'Analista',
   Other: 'Otro',
+};
+
+const officialStaffRoleLabels: Record<OfficialStaffRole, string> = {
+  HeadCoach: 'Entrenador',
+  AssistantCoach: 'Segundo entrenador',
+  GoalkeeperCoach: 'Entrenador de porteros',
+  FitnessCoach: 'Preparador físico',
+  TeamDelegate: 'Delegado',
+  FieldDelegate: 'Delegado de campo',
+  Physio: 'Fisioterapeuta',
+  Medical: 'Servicio médico',
+  KitManager: 'Encargado de material',
+  Other: 'Cuerpo técnico',
+};
+
+const asSentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+
+/** Función del cuerpo técnico en las actas sin las abreviaturas de la federación («2ºEntrenador», «DEL. Campo»). */
+export function officialStaffLabel(role: OfficialStaffRole, label: string | null): string {
+  const text = (label ?? '').trim();
+  if (role === 'AssistantCoach' && /pr[aá]ctica/i.test(text)) return 'Entrenador en prácticas';
+  if (role === 'AssistantCoach' && text && !/^2/.test(text)) return asSentence(text);
+  if (role === 'Other' && text) return asSentence(text);
+  return officialStaffRoleLabels[role];
+}
+
+export const injuryDocumentKindLabels: Record<InjuryDocumentKind, string> = {
+  Imaging: 'Radiografía o prueba de imagen',
+  MedicalReport: 'Informe médico',
+  Other: 'Otro documento',
 };
 
 export const staffRoleOptions = (Object.keys(staffRoleLabels) as StaffRole[]).map((value) => ({
@@ -134,8 +166,11 @@ export const levelLabels: Record<CompetitionLevel, string> = {
   Other: 'Otras',
 };
 
-/** Orden de presentación de los niveles: primero donde juega el fútbol amateur asturiano. */
-export const levelOrder: CompetitionLevel[] = ['National', 'Regional', 'Professional', 'Cup', 'Youth', 'Other'];
+/**
+ * Orden de presentación de los niveles: primero donde juega el fútbol amateur asturiano. Por ahora la app es solo para
+ * equipos de categoría absoluta, así que las ligas de fútbol base no se enseñan aunque llegaran a cargarse.
+ */
+export const levelOrder: CompetitionLevel[] = ['National', 'Regional', 'Professional', 'Cup', 'Other'];
 
 /** Agrupa las competiciones por nivel respetando levelOrder y el sortOrder de cada liga. */
 export function groupByLevel(competitions: CompetitionDto[]): { level: CompetitionLevel; competitions: CompetitionDto[] }[] {

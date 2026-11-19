@@ -9,7 +9,7 @@ import { useSearchStore } from '@/stores/search';
 import type { SearchItemDto, SearchResultsDto, SearchType } from '@/types/api';
 
 /**
- * Buscador de toda la app (Ctrl+K o «/»): ligas, equipos, clubes, jugadores, partidos (dos equipos: «nalón roces») y
+ * Buscador de toda la app (Ctrl+F o «/»): ligas, equipos, clubes, jugadores, cuerpo técnico, partidos (dos equipos: «nalón roces») y
  * las plantillas propias. Busca mientras se escribe, se maneja con el teclado y lleva a la página de cada resultado.
  */
 const store = useSearchStore();
@@ -34,10 +34,10 @@ const filters: { value: SearchType | null; label: string }[] = [
   { value: 'team', label: 'Equipos' },
   { value: 'club', label: 'Clubes' },
   { value: 'player', label: 'Jugadores' },
+  { value: 'coach', label: 'Cuerpo técnico' },
   { value: 'match', label: 'Partidos' },
   { value: 'referee', label: 'Árbitros' },
 ];
-const examples = ['nalón roces', '3ª rfef', 'vallobín', 'garcía'];
 
 const counts = computed(() => new Map((results.value?.groups ?? []).map((g) => [g.type, g.total])));
 const flat = computed<SearchItemDto[]>(() => (results.value?.groups ?? []).flatMap((g) => g.items));
@@ -173,7 +173,7 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
               inputmode="search"
               enterkeyhint="search"
               class="min-w-0 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400"
-              placeholder="Busca ligas, equipos, clubes, jugadores o «equipo equipo» para un partido"
+              placeholder="Buscar"
               aria-label="Buscar"
               aria-controls="search-results"
               autocomplete="off"
@@ -206,7 +206,7 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
           <div id="search-results" ref="list" class="min-h-0 flex-1 overflow-y-auto px-2 py-2">
             <p v-if="error" class="px-3 py-6 text-center text-sm text-red-500">{{ error }}</p>
 
-            <!-- Antes de escribir: lo último que buscaste y ejemplos -->
+            <!-- Antes de escribir: lo último que buscaste y cómo buscar -->
             <div v-else-if="!searched" class="px-3 py-3">
               <template v-if="store.recent.length">
                 <div class="flex items-center justify-between">
@@ -221,13 +221,10 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
                   </li>
                 </ul>
               </template>
-              <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Prueba con</p>
-              <div class="mt-2 flex flex-wrap gap-1.5">
-                <button v-for="example in examples" :key="example" type="button" class="rounded-full border border-line px-3 py-1 text-xs text-slate-600 hover:border-brand-400/60" @click="query = example">{{ example }}</button>
-              </div>
-              <p class="mt-4 text-xs leading-relaxed text-slate-500">
+              <p class="text-xs leading-relaxed text-slate-500" :class="store.recent.length ? 'mt-4' : ''">
+                Ligas, equipos, clubes, jugadores, técnicos, partidos y árbitros. 
                 Sin tildes ni mayúsculas, por el principio de cada palabra y aunque haya alguna errata. Escribe dos equipos para encontrar su partido y un
-                apellido con su equipo para encontrar a un jugador.
+                apellido con su equipo para encontrar a un jugador o a un técnico.
               </p>
             </div>
 

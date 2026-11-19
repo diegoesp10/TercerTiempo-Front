@@ -188,7 +188,7 @@ const faqs = computed(() => {
   return [
     {
       q: '¿Qué incluye la licencia de club?',
-      a: 'Todo, para el club: el primer equipo y todos sus filiales (el B, el juvenil…), con actas internas, datos del equipo, lesiones, vídeos, previas y comparador. El club trabaja directamente como su cuerpo técnico, sin necesidad de técnicos con cuenta.',
+      a: 'Todo, para el club: el primer equipo y todos sus filiales (el B, el C…), con actas internas, datos del equipo, lesiones, vídeos, previas y comparador. El club trabaja directamente como su cuerpo técnico, sin necesidad de técnicos con cuenta.',
     },
     {
       q: '¿Para qué sirven las licencias de técnico?',

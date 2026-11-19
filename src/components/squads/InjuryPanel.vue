@@ -9,11 +9,14 @@ import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vu
 import type { InjuryDto, InjuryRequest, InjuryType, InjuryTypeDto, SquadPlayerDto } from '@/types/api';
 import { formatDate } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
+import { useViewer } from '@/composables/useViewer';
 import PlayerName from '@/components/players/PlayerName.vue';
+import InjuryDocuments from '@/components/squads/InjuryDocuments.vue';
 
-// Control de lesionados de la plantilla: lesiones abiertas con motivo, fechas y días de baja, alta e historial.
-// Opcional para el cuerpo técnico; los jugadores vinculados lo ven sin poder tocarlo.
-const props = defineProps<{ squadId: string; players: SquadPlayerDto[]; canManage: boolean }>();
+// Control de lesionados de la plantilla: lesiones abiertas con motivo, fechas y días de baja, alta, historial y las
+// pruebas e informes de cada una. Opcional para el cuerpo técnico; los jugadores vinculados ven las suyas sin poder
+// tocarlas. Con playerId es el historial de un solo jugador (su perfil): todas sus lesiones y el tiempo de baja.
+const props = defineProps<{ squadId: string; players: SquadPlayerDto[]; canManage: boolean; playerId?: string | null }>();
 
 const photoOf = (squadPlayerId: string) => props.players.find((p) => p.id === squadPlayerId)?.photoUrl ?? null;
 const emit = defineEmits<{ changed: [] }>();
@@ -37,8 +40,19 @@ async function load() {
 onMounted(load);
 watch(() => props.squadId, load);
 
-const active = computed(() => injuries.value.filter((i) => i.active));
-const history = computed(() => injuries.value.filter((i) => !i.active));
+const scoped = computed(() => (props.playerId ? injuries.value.filter((i) => i.squadPlayerId === props.playerId) : injuries.value));
+const active = computed(() => scoped.value.filter((i) => i.active));
+const history = computed(() => scoped.value.filter((i) => !i.active));
+const totalDaysOut = computed(() => scoped.value.reduce((sum, i) => sum + i.daysOut, 0));
+
+// Las pruebas e informes los abren el club, el cuerpo técnico y el propio jugador (que solo recibe las suyas); el
+// administrador ve que existen, pero no los abre.
+const { isAdmin } = useViewer();
+const canOpenDocuments = computed(() => props.canManage || !isAdmin.value);
+function onDocuments(list: InjuryDto[]) {
+  injuries.value = list;
+  emit('changed');
+}
 
 const busy = ref(false);
 const error = ref<string | null>(null);
@@ -83,7 +97,7 @@ const playerOptions = computed<SelectOption[]>(() => {
   const injured = new Set(active.value.map((i) => i.squadPlayerId));
   return props.players
     .filter((p) => p.status === 'Active')
-    .map((p) => ({ value: p.id, label: p.fullName, hint: p.shirtNumber ? `#${p.shirtNumber}` : undefined, disabled: injured.has(p.id) && editing.value?.squadPlayerId !== p.id, photo: p.photoUrl ?? null }));
+    .map((p) => ({ value: p.id, label: p.fullName, disabled: injured.has(p.id) && editing.value?.squadPlayerId !== p.id, photo: p.photoUrl ?? null }));
 });
 const typeOptions = computed<SelectOption[]>(() =>
   types.value.map((t) => ({ value: t.type, label: t.label, hint: t.averageDays ? `≈ ${t.averageDays} días` : 'sin referencia' })),
@@ -96,7 +110,7 @@ function proposeReturn() {
   form.expectedReturnOn = days && form.startedOn ? addDays(form.startedOn, days) : '';
 }
 
-function openNew(playerId: string | null = null) {
+function openNew(playerId: string | null = props.playerId ?? null) {
   editing.value = null;
   form.squadPlayerId = playerId;
   form.type = null;
@@ -159,8 +173,14 @@ const expectedTone = (injury: InjuryDto) => {
   <section class="card">
     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
       <div>
-        <h2 class="font-semibold text-slate-900"><Icon icon="user-injured" class="mr-2 h-4 w-4 text-red-500" />Lesionados</h2>
-        <p class="text-xs text-slate-500">Quién está de baja, por qué, desde cuándo y cuándo se espera que vuelva.</p>
+        <template v-if="playerId">
+          <h2 class="font-semibold text-slate-900"><Icon icon="user-injured" class="mr-2 h-4 w-4 text-red-500" />Lesiones</h2>
+          <p class="text-xs text-slate-500">Las de esta temporada: tiempo de baja, pruebas e informes. Las registra el cuerpo técnico.</p>
+        </template>
+        <template v-else>
+          <h2 class="font-semibold text-slate-900"><Icon icon="user-injured" class="mr-2 h-4 w-4 text-red-500" />Lesionados</h2>
+          <p class="text-xs text-slate-500">Quién está de baja, por qué, desde cuándo y cuándo se espera que vuelva.</p>
+        </template>
       </div>
       <button v-if="canManage" type="button" class="btn-secondary px-3 py-1 text-xs" v-busy="busy" :disabled="busy || loading" @click="openNew()">
         <Icon icon="plus" class="mr-1.5 h-3 w-3" />Nueva lesión
@@ -170,16 +190,34 @@ const expectedTone = (injury: InjuryDto) => {
     <Alert v-if="loadError" kind="error">{{ loadError }}</Alert>
     <Alert v-else-if="error && !formOpen" kind="error" class="mb-3">{{ error }}</Alert>
 
-    <p v-if="!loading && active.length === 0" class="text-sm text-slate-500">
+    <div v-if="playerId && !loading && scoped.length > 0" class="mb-3 grid grid-cols-3 gap-2 text-center">
+      <div class="rounded-xl border border-line bg-surface-2 p-2.5">
+        <p class="text-lg font-bold text-slate-900">{{ scoped.length }}</p>
+        <p class="text-[11px] text-slate-500">{{ scoped.length === 1 ? 'lesión' : 'lesiones' }}</p>
+      </div>
+      <div class="rounded-xl border border-line bg-surface-2 p-2.5">
+        <p class="text-lg font-bold text-slate-900">{{ totalDaysOut }}</p>
+        <p class="text-[11px] text-slate-500">{{ totalDaysOut === 1 ? 'día de baja' : 'días de baja' }}</p>
+      </div>
+      <div class="rounded-xl border border-line bg-surface-2 p-2.5">
+        <p class="text-lg font-bold" :class="active.length ? 'text-red-500' : 'text-emerald-500'">{{ active.length ? 'De baja' : 'Disponible' }}</p>
+        <p class="text-[11px] text-slate-500">ahora</p>
+      </div>
+    </div>
+
+    <p v-if="!loading && active.length === 0 && playerId && scoped.length === 0" class="text-sm text-slate-500">
+      No tiene ninguna lesión registrada esta temporada.<template v-if="canManage"> Si cae, regístrala aquí y adjunta las pruebas y los informes.</template>
+    </p>
+    <p v-else-if="!loading && active.length === 0 && !playerId" class="text-sm text-slate-500">
       No hay nadie lesionado ahora mismo.<template v-if="canManage"> Cuando alguien caiga, regístralo para tenerlo controlado en las convocatorias.</template>
     </p>
 
-    <ul v-else class="divide-y divide-slate-100">
+    <ul v-if="active.length > 0" class="divide-y divide-slate-100">
       <li v-for="injury in active" :key="injury.id" class="flex flex-wrap items-start justify-between gap-3 py-3">
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1">
           <p class="font-medium text-slate-800">
-            <span v-if="injury.shirtNumber" class="mr-1 text-slate-400">{{ injury.shirtNumber }}</span><PlayerName :name="injury.playerName" :photo-url="photoOf(injury.squadPlayerId)" />
-            <Badge tone="red" class="ml-2">{{ injury.typeLabel }}</Badge>
+            <PlayerName v-if="!playerId" :name="injury.playerName" :photo-url="photoOf(injury.squadPlayerId)" />
+            <Badge tone="red" :class="playerId ? '' : 'ml-2'">{{ injury.typeLabel }}</Badge>
           </p>
           <p v-if="injury.reason" class="mt-0.5 text-sm text-slate-600">{{ injury.reason }}</p>
           <p class="mt-1 text-xs text-slate-500">
@@ -192,6 +230,7 @@ const expectedTone = (injury: InjuryDto) => {
               <template v-else>Sin fecha de vuelta</template>
             </Badge>
           </p>
+          <InjuryDocuments :squad-id="squadId" :injury="injury" :can-manage="canManage" :can-open="canOpenDocuments" @updated="onDocuments" />
         </div>
         <div v-if="canManage" class="flex shrink-0 gap-1">
           <button type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="close(injury)"><Icon icon="check" class="mr-1 h-3 w-3" />Alta</button>
@@ -201,13 +240,14 @@ const expectedTone = (injury: InjuryDto) => {
       </li>
     </ul>
 
-    <details v-if="history.length > 0" class="mt-3 text-sm">
-      <summary class="cursor-pointer text-slate-500">Historial ({{ history.length }})</summary>
+    <details v-if="history.length > 0" class="mt-3 text-sm" :open="!!playerId">
+      <summary class="cursor-pointer text-slate-500">{{ playerId ? 'Lesiones anteriores' : 'Historial' }} ({{ history.length }})</summary>
       <ul class="mt-2 divide-y divide-slate-100">
-        <li v-for="injury in history" :key="injury.id" class="flex flex-wrap items-center justify-between gap-2 py-2 text-slate-600">
-          <span>
-            <PlayerName :name="injury.playerName" :photo-url="photoOf(injury.squadPlayerId)" class="font-medium text-slate-800" /> · {{ injury.typeLabel }}<template v-if="injury.reason"> · {{ injury.reason }}</template>
+        <li v-for="injury in history" :key="injury.id" class="flex flex-wrap items-start justify-between gap-2 py-2 text-slate-600">
+          <span class="min-w-0 flex-1">
+            <template v-if="!playerId"><PlayerName :name="injury.playerName" :photo-url="photoOf(injury.squadPlayerId)" class="font-medium text-slate-800" /> · </template><span :class="playerId ? 'font-medium text-slate-800' : ''">{{ injury.typeLabel }}</span><template v-if="injury.reason"> · {{ injury.reason }}</template>
             <span class="block text-xs text-slate-500">{{ formatDate(injury.startedOn) }} → {{ formatDate(injury.returnedOn!) }} · {{ injury.daysOut }} días</span>
+            <InjuryDocuments :squad-id="squadId" :injury="injury" :can-manage="canManage" :can-open="canOpenDocuments" @updated="onDocuments" />
           </span>
           <span v-if="canManage" class="flex gap-1">
             <button type="button" class="btn-ghost px-2 py-1 text-xs" v-busy="busy" :disabled="busy" @click="reopen(injury)">Recaída</button>
@@ -222,7 +262,7 @@ const expectedTone = (injury: InjuryDto) => {
         <Alert v-if="error" kind="error">{{ error }}</Alert>
         <div>
           <label class="label" for="injury-player">Jugador</label>
-          <SearchSelect id="injury-player" placeholder="Elige al jugador" :disabled="editing !== null" :model-value="form.squadPlayerId" :options="playerOptions" @update:model-value="form.squadPlayerId = ($event as string | null)" />
+          <SearchSelect id="injury-player" placeholder="Elige al jugador" :disabled="editing !== null || !!playerId" :model-value="form.squadPlayerId" :options="playerOptions" @update:model-value="form.squadPlayerId = ($event as string | null)" />
         </div>
         <div>
           <label class="label" for="injury-type">Tipo de lesión</label>

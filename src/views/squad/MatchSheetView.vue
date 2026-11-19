@@ -19,12 +19,17 @@ import CardIcon from '@/components/ui/CardIcon.vue';
 import CardMarks from '@/components/sheet/CardMarks.vue';
 import PlayerNoteModal from '@/components/sheet/PlayerNoteModal.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
+import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vue';
+import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useBackFallback } from '@/composables/useBackFallback';
+import { useGroupByPosition } from '@/composables/usePositionGrouping';
+import { useSort, type SortValue } from '@/composables/useSort';
 import { useAuthStore } from '@/stores/auth';
-import type { MatchSheetDto, MatchSheetEntryInput, SquadPlayerDto, SuggestionDto } from '@/types/api';
-import { awaitingResultHint, formatKickoff, matchDisplayLabels, matchDisplayStatus, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, passPrice, positionShortLabels, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
+import type { MatchSheetDto, MatchSheetEntryInput, Position, SquadPlayerDto, SuggestionDto, SuspensionBriefDto } from '@/types/api';
+import { awaitingResultHint, formatKickoff, matchDisplayLabels, matchDisplayStatus, opponentLabel, outcomeFor, outcomeLabels, outcomeTone, passPrice, positionLabels, positionShortLabels, suggestionStatusLabels, suggestionStatusTone } from '@/utils/format';
 import { downloadPaperSheet } from '@/utils/paperSheet';
 import PlayerName from '@/components/players/PlayerName.vue';
 import { opponentOf } from '@/utils/crests';
@@ -111,6 +116,15 @@ interface Row extends MatchSheetEntryInput {
   player: SquadPlayerDto;
   /** Nota calculada por la API al guardar (solo lectura). */
   rating: number | null;
+  /** Sus acciones las puso el vídeo y aún no cuentan en la nota (solo lectura). */
+  actionsFromVideo: boolean;
+  /** Va en la convocatoria del partido. */
+  called: boolean;
+  /** Tenía línea guardada en el acta. */
+  recorded: boolean;
+  /** Sancionado para este partido (5.ª amarilla o expulsión en uno anterior): no puede salir como que jugó. */
+  suspended: boolean;
+  suspension: SuspensionBriefDto | null;
 }
 
 const blank = (player: SquadPlayerDto): Row => ({
@@ -134,14 +148,20 @@ const blank = (player: SquadPlayerDto): Row => ({
   recoveries: 0,
   passesCompleted: 0,
   passesAttempted: 0,
+  clearances: 0,
   rating: null,
+  actionsFromVideo: false,
+  called: false,
+  recorded: false,
+  suspended: false,
+  suspension: null,
   notes: null,
   shirtNumber: null,
 });
 
 const fromSheet = (sheet: MatchSheetDto): Row[] =>
-  sheet.entries.map(({ player, performance }) =>
-    performance
+  sheet.entries.map(({ player, performance, calledUp, suspended, suspension }) => ({
+    ...(performance
       ? {
           ...blank(player),
           played: true,
@@ -162,12 +182,24 @@ const fromSheet = (sheet: MatchSheetDto): Row[] =>
           recoveries: performance.recoveries ?? 0,
           passesCompleted: performance.passesCompleted ?? 0,
           passesAttempted: performance.passesAttempted ?? 0,
+          clearances: performance.clearances ?? 0,
           rating: performance.rating,
+          actionsFromVideo: performance.actionsFromVideo ?? false,
           notes: performance.notes,
           shirtNumber: performance.matchShirtNumber,
         }
-      : blank(player),
-  );
+      : blank(player)),
+    called: calledUp ?? false,
+    recorded: performance !== null,
+    suspended: suspended ?? false,
+    suspension: suspension ?? null,
+  }));
+
+// Un sancionado no pudo jugar el partido de su sanción: no se le puede marcar. La línea que ya tuviera se conserva (la
+// sanción pudo saberse después, con el acta oficial del partido anterior).
+const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
+const suspendedText = (row: Row) => `Sancionado para este partido${row.suspension ? ` (${lowerFirst(row.suspension.reason)})` : ''}`;
+const cannotPlay = (row: Row) => row.suspended && !row.recorded && !row.played;
 
 const toEntry = (row: Row): MatchSheetEntryInput => ({
   squadPlayerId: row.squadPlayerId,
@@ -189,6 +221,7 @@ const toEntry = (row: Row): MatchSheetEntryInput => ({
   recoveries: row.recoveries ?? 0,
   passesCompleted: row.passesCompleted ?? 0,
   passesAttempted: row.passesAttempted ?? 0,
+  clearances: row.clearances ?? 0,
   notes: row.notes?.trim() ? row.notes.trim() : null,
   shirtNumber: row.shirtNumber || null,
 });
@@ -237,7 +270,49 @@ function onSuggestionSent(suggestion: SuggestionDto) {
   sentNotice.value = true;
 }
 const playedRows = computed(() => rows.value.filter((r) => r.played));
-const outcome = computed(() => (data.value ? outcomeFor(data.value.match, teamId.value) : null));
+
+// El acta se prepara con la convocatoria del partido: salen los convocados y lo que ya estaba apuntado. Si a última hora
+// jugó alguien más de la plantilla, se añade a mano. Sin convocatoria (partidos de antes) sale toda la plantilla.
+const hasCallUp = computed(() => data.value?.hasCallUp ?? false);
+const added = ref<string[]>([]);
+const inSheet = (r: Row) => !hasCallUp.value || r.called || r.recorded || r.played || added.value.includes(r.squadPlayerId);
+const sheetRows = computed(() => rows.value.filter(inSheet));
+const calledCount = computed(() => rows.value.filter((r) => r.called).length);
+const addable = computed<SelectOption[]>(() =>
+  rows.value
+    .filter((r) => !inSheet(r))
+    .sort((a, b) => a.player.fullName.localeCompare(b.player.fullName, 'es'))
+    .map((r) => ({
+      value: r.squadPlayerId,
+      label: r.player.fullName,
+      photo: r.player.photoUrl ?? null,
+      group: r.player.position ? `${positionLabels[r.player.position]}s` : 'Sin posición',
+      disabled: cannotPlay(r),
+      hint: cannotPlay(r) ? `${suspendedText(r)}: no pudo jugar` : undefined,
+    })),
+);
+function addPlayer(id: string | number | null) {
+  const row = rows.value.find((r) => r.squadPlayerId === id);
+  if (!row) return;
+  added.value = [...added.value, row.squadPlayerId];
+  row.played = true;
+  onPlayedChange(row);
+}
+
+// Como en la plantilla y la convocatoria: porteros, defensas, centrocampistas y delanteros, y al final los que no tienen posición.
+const groupByPosition = useGroupByPosition('match-sheet');
+const positionOrder: (Position | null)[] = ['Goalkeeper', 'Defender', 'Midfielder', 'Forward', null];
+function grouped(list: Row[]) {
+  if (!groupByPosition.value) return [{ key: 'all', label: '', rows: list }];
+  return positionOrder
+    .map((p) => ({ key: p ?? 'none', label: p ? `${positionLabels[p]}s` : 'Sin posición', rows: list.filter((r) => r.player.position === p) }))
+    .filter((g) => g.rows.length > 0);
+}
+const editGroups = computed(() => grouped(sortedRows.value.filter(inSheet)));
+const playedGroups = computed(() => grouped(sortedRows.value.filter((r) => r.played)));
+const withVideoActions = computed(() => playedRows.value.filter((r) => r.actionsFromVideo).length);
+const videoActionsTitle = 'La nota aún no cuenta sus tiros, pases, paradas, recuperaciones ni pérdidas: los puso el vídeo, que solo los ve mientras lo identifica. Cuentan cuando el cuerpo técnico guarda el acta.';
+const outcome =computed(() => (data.value ? outcomeFor(data.value.match, teamId.value) : null));
 
 // Notas de cada línea en un modal: en la tabla solo cabe un trozo y la casilla cortaba lo escrito.
 const noteRow = ref<Row | null>(null);
@@ -256,16 +331,9 @@ function onPlayedChange(row: Row) {
   }
 }
 
-function everyoneFullMatch() {
-  for (const row of rows.value) {
-    row.played = true;
-    row.started = true;
-    row.minutesPlayed = 90;
-  }
-}
-
 function reset() {
   if (data.value) rows.value = fromSheet(data.value);
+  added.value = [];
   saved.value = false;
   saveError.value = null;
   lineErrors.value = [];
@@ -300,7 +368,7 @@ async function save() {
   }
 }
 
-const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'shotsOnTarget' | 'keyPasses' | 'passesCompleted' | 'passesAttempted' | 'ballLosses' | 'recoveries' | 'tackles' | 'interceptions' | 'saves' | 'fouls'>; label: string; title: string }[] = [
+const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'shotsOnTarget' | 'keyPasses' | 'passesCompleted' | 'passesAttempted' | 'ballLosses' | 'recoveries' | 'clearances' | 'tackles' | 'interceptions' | 'saves' | 'fouls'>; label: string; title: string }[] = [
   { key: 'goals', label: 'G', title: 'Goles' },
   { key: 'assists', label: 'A', title: 'Asistencias de gol' },
   { key: 'shots', label: 'T', title: 'Tiros' },
@@ -309,11 +377,26 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
   { key: 'passesAttempted', label: 'PasI', title: 'Pases intentados' },
   { key: 'ballLosses', label: 'Pér', title: 'Pérdidas de balón' },
   { key: 'recoveries', label: 'Rec', title: 'Recuperaciones de balón' },
+  { key: 'clearances', label: 'Desp', title: 'Despejes' },
   { key: 'tackles', label: 'Ent', title: 'Entradas' },
   { key: 'interceptions', label: 'Int', title: 'Intercepciones' },
   { key: 'saves', label: 'Par', title: 'Paradas' },
   { key: 'fouls', label: 'F', title: 'Faltas cometidas' },
 ];
+
+// Mientras se edita solo se ordena por el jugador y la nota (que no se escriben): así ninguna fila se mueve al teclear.
+// El orden se aplica dentro de cada posición cuando se agrupa.
+type SheetSortKey = 'player' | 'started' | 'minutes' | 'yellowCards' | 'redCard' | 'rating' | (typeof numericColumns)[number]['key'];
+const sheetGetters = {
+  player: (r: Row) => r.player.fullName,
+  started: (r: Row) => Number(r.started),
+  minutes: (r: Row) => r.minutesPlayed,
+  yellowCards: (r: Row) => r.yellowCards,
+  redCard: (r: Row) => Number(r.redCard),
+  rating: (r: Row) => r.rating,
+  ...Object.fromEntries(numericColumns.map((column) => [column.key, (r: Row) => r[column.key] ?? null])),
+} as Record<SheetSortKey, (r: Row) => SortValue>;
+const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, sheetGetters, 'player', { desc: false, ascendingFirst: ['player'] });
 </script>
 
 <template>
@@ -457,21 +540,36 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
         <div>
           <h2 class="font-semibold text-slate-900">Acta interna del partido</h2>
           <p class="text-xs text-slate-500">
-            <template v-if="canEdit">Marca quién jugó y rellena su línea. {{ playedRows.length }} de {{ rows.length }} jugadores en el acta.</template>
+            <template v-if="canEdit && hasCallUp">
+              Salen los {{ calledCount }} convocados del partido: marca quién jugó y rellena su línea. {{ playedRows.length }} de {{ sheetRows.length }} en el acta.
+            </template>
+            <template v-else-if="canEdit">Este partido no tiene convocatoria, así que sale toda la plantilla: marca quién jugó y rellena su línea. {{ playedRows.length }} de {{ rows.length }} en el acta.</template>
             <template v-else>{{ playedRows.length }} jugadores en el acta.</template>
           </p>
         </div>
-        <div v-if="canSuggest" class="flex flex-wrap items-center gap-2">
-          <Badge v-if="pendingSuggestion" tone="amber">Sugerencia pendiente de revisión</Badge>
-          <button v-else type="button" class="btn-secondary" @click="suggesting = true">
-            <Icon icon="pen" class="mr-1.5 h-3.5 w-3.5" />{{ myPerformance ? 'Sugerir una corrección' : 'Sugerir mi línea' }}
-          </button>
-        </div>
-        <div v-if="canEdit" class="flex flex-wrap gap-2">
-          <button type="button" class="btn-ghost" title="PDF para imprimir y apuntar el partido a mano" @click="downloadPaper"><Icon icon="file-pdf" class="mr-1.5 h-3.5 w-3.5" />Acta en papel</button>
-          <button type="button" class="btn-ghost" v-busy="saving" :disabled="saving" @click="everyoneFullMatch">Todos 90'</button>
-          <button type="button" class="btn-secondary" v-busy="saving" :disabled="saving" @click="reset">Deshacer cambios</button>
-          <button type="button" class="btn-primary" v-busy="saving" :disabled="saving" @click="save">{{ saving ? 'Guardando…' : 'Guardar acta' }}</button>
+        <div class="flex flex-wrap items-center gap-2">
+          <GroupByPositionToggle v-if="canEdit || playedRows.length > 0" v-model="groupByPosition" />
+          <template v-if="canSuggest">
+            <Badge v-if="pendingSuggestion" tone="amber">Sugerencia pendiente de revisión</Badge>
+            <button v-else type="button" class="btn-secondary" @click="suggesting = true">
+              <Icon icon="pen" class="mr-1.5 h-3.5 w-3.5" />{{ myPerformance ? 'Sugerir una corrección' : 'Sugerir mi línea' }}
+            </button>
+          </template>
+          <SearchSelect
+            v-if="canEdit && hasCallUp && addable.length > 0"
+            class="w-56"
+            :model-value="null"
+            :options="addable"
+            placeholder="Añadir jugador"
+            aria-label="Añadir al acta a un jugador de la plantilla que no iba convocado"
+            title="Por si a última hora jugó alguien de la plantilla que no iba en la convocatoria"
+            @update:model-value="addPlayer"
+          />
+          <template v-if="canEdit">
+            <button type="button" class="btn-ghost" title="PDF para imprimir y apuntar el partido a mano" @click="downloadPaper"><Icon icon="file-pdf" class="mr-1.5 h-3.5 w-3.5" />Acta en papel</button>
+            <button type="button" class="btn-secondary" v-busy="saving" :disabled="saving" @click="reset">Deshacer cambios</button>
+            <button type="button" class="btn-primary" v-busy="saving" :disabled="saving" @click="save">{{ saving ? 'Guardando…' : 'Guardar acta' }}</button>
+          </template>
         </div>
       </div>
 
@@ -489,29 +587,70 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
         <Badge :tone="suggestionStatusTone[lastResolved.status]" class="ml-1">{{ suggestionStatusLabels[lastResolved.status] }}</Badge>
       </Alert>
 
+      <Alert v-if="canEdit && withVideoActions > 0" kind="info" class="mb-3">
+        <Icon icon="video" class="mr-1.5" />Las acciones que puso el vídeo ({{ withVideoActions === 1 ? '1 jugador' : `${withVideoActions} jugadores` }})
+        aún no cuentan en la nota: el vídeo solo las ve mientras identifica a cada uno, y si contaran puntuaría cuánto se le ve.
+        Revísalas y guarda el acta para que cuenten.
+      </Alert>
+
       <p v-if="!canEdit && playedRows.length === 0" class="text-sm text-slate-500">El cuerpo técnico todavía no ha registrado el acta de este partido.</p>
 
       <div v-else class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
         <table class="min-w-full text-sm">
-          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-            <tr>
-              <th v-if="canEdit" class="px-2 py-2 text-center" title="Jugó">Jugó</th>
-              <th v-if="canEdit" class="px-2 py-2 text-center" title="Dorsal en este partido (vacío = el de la ficha)">Dorsal</th>
-              <th class="px-3 py-2 text-left">Jugador</th>
-              <th class="px-2 py-2 text-center" title="Titular">Tit</th>
-              <th class="px-2 py-2 text-center" title="Minutos">Min</th>
-              <th v-for="column in numericColumns" :key="column.key" class="px-2 py-2 text-center" :title="column.title">{{ column.label }}</th>
-              <th class="px-2 py-2 text-center" title="Tarjetas amarillas">TA</th>
-              <th class="px-2 py-2 text-center" title="Tarjeta roja">TR</th>
-              <th class="px-2 py-2 text-center" title="Nota calculada con los datos al guardar">Nota</th>
-              <th class="px-3 py-2 text-left">Notas</th>
+          <thead class="bg-slate-50 text-xs text-slate-500">
+            <tr v-if="canEdit">
+              <th class="px-2 py-2 text-center uppercase tracking-wide" title="Jugó">Jugó</th>
+              <th class="px-2 py-2 text-center uppercase tracking-wide" title="Dorsal en este partido (vacío = el de la ficha)">Dorsal</th>
+              <SortHeader class="px-3 py-2 text-left" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
+              <th class="px-2 py-2 text-center uppercase tracking-wide" title="Titular">Tit</th>
+              <th class="px-2 py-2 text-center uppercase tracking-wide" title="Minutos">Min</th>
+              <th v-for="column in numericColumns" :key="column.key" class="px-2 py-2 text-center uppercase tracking-wide" :title="column.title">{{ column.label }}</th>
+              <th class="px-2 py-2 text-center uppercase tracking-wide" title="Tarjetas amarillas">TA</th>
+              <th class="px-2 py-2 text-center uppercase tracking-wide" title="Tarjeta roja">TR</th>
+              <SortHeader class="px-2 py-2 text-center" label="Nota" title="Nota calculada con los datos al guardar" v-bind="state('rating')" @sort="sortBy('rating')" />
+              <th class="px-3 py-2 text-left uppercase tracking-wide">Notas</th>
+            </tr>
+            <tr v-else>
+              <SortHeader class="px-3 py-2 text-left" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
+              <SortHeader class="px-2 py-2 text-center" label="Tit" title="Titular" v-bind="state('started')" @sort="sortBy('started')" />
+              <SortHeader class="px-2 py-2 text-center" label="Min" title="Minutos" v-bind="state('minutes')" @sort="sortBy('minutes')" />
+              <SortHeader
+                v-for="column in numericColumns"
+                :key="column.key"
+                class="px-2 py-2 text-center"
+                :label="column.label"
+                :title="column.title"
+                v-bind="state(column.key)"
+                @sort="sortBy(column.key)"
+              />
+              <SortHeader class="px-2 py-2 text-center" label="TA" title="Tarjetas amarillas" v-bind="state('yellowCards')" @sort="sortBy('yellowCards')" />
+              <SortHeader class="px-2 py-2 text-center" label="TR" title="Tarjeta roja" v-bind="state('redCard')" @sort="sortBy('redCard')" />
+              <SortHeader class="px-2 py-2 text-center" label="Nota" title="Nota calculada con los datos al guardar" v-bind="state('rating')" @sort="sortBy('rating')" />
+              <th class="px-3 py-2 text-left uppercase tracking-wide">Notas</th>
             </tr>
           </thead>
 
-          <tbody v-if="canEdit" class="divide-y divide-slate-100">
-            <tr v-for="row in rows" :key="row.squadPlayerId" :class="row.played ? '' : 'text-slate-400'">
+          <template v-if="canEdit">
+          <tbody v-for="group in editGroups" :key="group.key" class="divide-y divide-slate-100">
+            <tr v-if="group.label">
+              <td :colspan="numericColumns.length + 9" class="bg-surface-2 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {{ group.label }} · {{ group.rows.filter((r) => r.played).length }} de {{ group.rows.length }} en el acta
+                <RouterLink v-if="group.key === 'none'" :to="{ name: 'squad', params: { squadId } }" class="ml-2 normal-case tracking-normal text-amber-400 hover:underline">
+                  La federación no la publica: pónsela en Jugadores
+                </RouterLink>
+              </td>
+            </tr>
+            <tr v-for="row in group.rows" :key="row.squadPlayerId" :class="row.played ? '' : 'text-slate-400'">
               <td class="px-2 py-1 text-center">
-                <input v-model="row.played" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-accent-400" :aria-label="`${row.player.fullName} jugó`" @change="onPlayedChange(row)" />
+                <input
+                  v-model="row.played"
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-slate-300 text-accent-400 disabled:cursor-not-allowed disabled:opacity-40"
+                  :disabled="cannotPlay(row)"
+                  :title="cannotPlay(row) ? `${suspendedText(row)}: no puede salir en el acta como que jugó` : undefined"
+                  :aria-label="`${row.player.fullName} jugó`"
+                  @change="onPlayedChange(row)"
+                />
               </td>
               <td class="px-2 py-1 text-center">
                 <input
@@ -521,13 +660,15 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
                   max="99"
                   class="input w-14 px-1 py-1 text-center"
                   :disabled="!row.played"
-                  :placeholder="row.player.shirtNumber ? String(row.player.shirtNumber) : '—'"
+                  placeholder="—"
                   aria-label="Dorsal en este partido"
                 />
               </td>
               <td class="px-3 py-1 whitespace-nowrap">
                 <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium" :class="row.played ? 'text-slate-800' : ''" />
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
+                <Badge v-if="row.suspended" tone="red" class="ml-1.5" :title="`${suspendedText(row)}: no puede salir en el acta como que jugó`"><Icon icon="ban" class="mr-1 h-2.5 w-2.5" />Sancionado</Badge>
+                <Badge v-else-if="hasCallUp && !row.called" tone="amber" class="ml-1.5" title="No iba en la convocatoria: se ha añadido al acta">Fuera de la convocatoria</Badge>
                 <button
                   v-if="hasNote(row)"
                   type="button"
@@ -552,8 +693,9 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
               <td class="px-2 py-1 text-center">
                 <input v-model="row.redCard" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600" :disabled="!row.played" aria-label="Roja" />
               </td>
-              <td class="px-2 py-1 text-center">
+              <td class="px-2 py-1 text-center whitespace-nowrap">
                 <RatingBadge v-if="row.played" :rating="row.rating" size="sm" />
+                <Icon v-if="row.played && row.actionsFromVideo" icon="video" class="ml-1 text-[11px] text-amber-400" :title="videoActionsTitle" />
               </td>
               <td class="px-3 py-1">
                 <button
@@ -573,11 +715,17 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
               </td>
             </tr>
           </tbody>
+          </template>
 
-          <tbody v-else class="divide-y divide-slate-100">
-            <tr v-for="row in playedRows" :key="row.squadPlayerId">
+          <template v-else>
+          <tbody v-for="group in playedGroups" :key="group.key" class="divide-y divide-slate-100">
+            <tr v-if="group.label">
+              <td :colspan="numericColumns.length + 7" class="bg-surface-2 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {{ group.label }} · {{ group.rows.length }}
+              </td>
+            </tr>
+            <tr v-for="row in group.rows" :key="row.squadPlayerId">
               <td class="px-3 py-2 whitespace-nowrap">
-                <span v-if="row.shirtNumber ?? row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.shirtNumber ?? row.player.shirtNumber }}</span>
                 <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium text-slate-800" />
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
                 <Icon v-if="hasNote(row)" icon="comment-dots" class="ml-1.5 text-[12px] text-accent-400" :title="`Tiene nota: ${row.notes}`" />
@@ -587,7 +735,10 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
               <td v-for="column in numericColumns" :key="column.key" class="px-2 py-2 text-center tabular-nums">{{ row[column.key] }}</td>
               <td class="px-2 py-2 text-center"><CardMarks :yellow-cards="row.yellowCards" :red-card="false" /></td>
               <td class="px-2 py-2 text-center"><CardIcon v-if="row.redCard" kind="red" /></td>
-              <td class="px-2 py-2 text-center"><RatingBadge :rating="row.rating" size="sm" /></td>
+              <td class="px-2 py-2 text-center whitespace-nowrap">
+                <RatingBadge :rating="row.rating" size="sm" />
+                <Icon v-if="row.actionsFromVideo" icon="video" class="ml-1 text-[11px] text-amber-400" :title="videoActionsTitle" />
+              </td>
               <td class="px-3 py-2">
                 <button
                   v-if="hasNote(row)"
@@ -603,20 +754,24 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
               </td>
             </tr>
           </tbody>
+          </template>
         </table>
       </div>
 
       <p class="content-note mt-3">
         Tit = titular · Min = minutos (0-120) · G goles · A asistencias de gol · T tiros · TP tiros a puerta · PasC pases
-        completados · PasI pases intentados · Pér pérdidas de balón · Rec recuperaciones · Ent entradas · Int intercepciones ·
+        completados · PasI pases intentados · Pér pérdidas de balón · Rec recuperaciones · Desp despejes · Ent entradas · Int intercepciones ·
         Par paradas · F faltas · TA amarillas (dos implican roja). Con «jugó» desmarcado la línea se elimina del acta al guardar.
       </p>
       <p class="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
         <strong>La nota no se pone a mano:</strong> se calcula al guardar con los datos de cada línea, la posición del jugador y el
         resultado. Parte de 6,0 y suma o resta por ataque (goles, tiros a puerta), creación (asistencias de gol, acierto en el
-        pase con 10 o más intentados y pérdidas de balón), defensa (entradas, intercepciones, recuperaciones, portería a cero y
+        pase con 10 o más intentados y pérdidas de balón), defensa (entradas, intercepciones, recuperaciones, despejes, portería a cero y
         goles encajados para defensas), portería (paradas), disciplina (tarjetas) y
-        resultado (según los minutos jugados). Escala de 3,0 a 10,0.
+        resultado (según los minutos jugados). Escala de 3,0 a 10,0. Con el acta oficial cerrada, la portería a cero y los goles
+        encajados son los de mientras el jugador estaba en el campo; sin ella, la parte de los del partido que le toca por sus
+        minutos. Las acciones que vuelca el vídeo (<Icon icon="video" class="text-[10px] text-amber-400" />) no cuentan hasta
+        que se guarda el acta: el vídeo solo las ve mientras identifica a cada jugador.
       </p>
     </section>
     <PlayerNoteModal

@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, reactive, ref } from 'vue';
 import { api } from '@/api';
 import { ApiError, errorMessage } from '@/api/http';
+import VideoAnalysisProgress from '@/components/sheet/VideoAnalysisProgress.vue';
 import VideoCrop from '@/components/sheet/VideoCrop.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -23,7 +24,11 @@ import { formatKickoff, positionShortLabels, videoPartLabels } from '@/utils/for
 /**
  * «Del vídeo»: la propuesta de acta interna que deja el analizador al pasar por el vídeo del partido. Enseña el estado
  * del análisis y cuánto se puede fiar uno de él, los datos de equipo propuestos frente a los del acta (se aceptan uno a
- * uno) y los jugadores seguidos, que el cuerpo técnico asigna a una ficha. Nada se escribe hasta «Volcar al acta».
+ * uno) y los jugadores. Con el acta oficial, el analizador lee el dorsal de cada jugador en el vídeo: dice cuál de los dos
+ * equipos es el nuestro y cada jugador llega ya con su ficha (el técnico solo corrige si hace falta). Sin acta, cada línea
+ * es un tramo seguido que el técnico asigna a mano. Con el acta oficial cerrada, al volcar los minutos (por descarte: sin
+ * cambio, el partido entero), la titularidad, los goles y las tarjetas salen de ella, también para los que no salen en el
+ * vídeo. Nada se escribe hasta «Volcar al acta».
  */
 const props = defineProps<{
   squadId: string;
@@ -52,26 +57,37 @@ function adopt(next: MatchVideoAnalysisDto, reset = false) {
     // Una pasada nueva del analizador numera a los jugadores de otra forma: lo elegido antes ya no vale.
     const fresh = reset || !previous || previous.finishedAt !== part.finishedAt;
     if (fresh || !(part.videoId in ourTeam)) {
-      ourTeam[part.videoId] = part.ourTeam;
-      assigned[part.videoId] = Object.fromEntries(part.players.filter((p) => p.squadPlayerId).map((p) => [p.tracklet, p.squadPlayerId]));
-      shown[part.videoId] = PAGE;
+      ourTeam[part.videoId] = teamFixed(part) ? part.suggestedOurTeam : (part.ourTeam ?? part.suggestedOurTeam);
+      assigned[part.videoId] = proposedAssignments(part, ourTeam[part.videoId]);
+      shown[part.videoId] = part.identified ? part.players.length : PAGE;
     }
   }
   analysis.value = next;
 }
 
-const waitingStates: VideoAnalysisState[] = ['WaitingForVideo', 'Pending', 'Running'];
-const busyWithAnalysis = computed(() => analysis.value?.videos.some((v) => waitingStates.includes(v.state)) ?? false);
-/** Hay algo esperando a un analizador y no hay ninguno encendido (ningún latido en los últimos 2 minutos): no avanzaría. */
-const noAnalyzer = computed(() => !!analysis.value?.enabled && busyWithAnalysis.value && !analysis.value.analyzerOnline);
+/** Lo asignado al volcar la última vez o, si no, la ficha que propone el acta oficial por el dorsal (solo en nuestro equipo). */
+function proposedAssignments(part: VideoAnalysisPartDto, team: number | null): Record<number, string | null> {
+  return Object.fromEntries(part.players
+    .filter((p) => p.team === team)
+    .map((p) => [p.tracklet, p.squadPlayerId ?? p.suggestedSquadPlayerId] as const)
+    .filter(([, id]) => !!id));
+}
 
-// Mientras se analiza se pregunta cada 10 s; con la pestaña oculta se para y, al volver, se pregunta enseguida. Tras
-// salir del acta no se programa nada más, aunque quede una respuesta en camino.
+const waitingStates: VideoAnalysisState[] = ['WaitingForVideo', 'Pending', 'Running'];
+const busyWithAnalysis = computed(() => analysis.value?.videos.some((v) => waitingStates.includes(v.state) || v.state === 'Paused') ?? false);
+/** Se está analizando (o el analizador espera en pausa): se pregunta a menudo para ver el avance casi en directo. */
+const analysingNow = computed(() => analysis.value?.videos.some((v) => v.state === 'Running' || (v.state === 'Paused' && v.pausedMidway)) ?? false);
+/** Hay algo esperando a un analizador y no hay ninguno encendido (ningún latido en los últimos 2 minutos): no avanzaría. */
+const noAnalyzer = computed(() =>
+  !!analysis.value?.enabled && !analysis.value.analyzerOnline && analysis.value.videos.some((v) => waitingStates.includes(v.state)));
+
+// Mientras se analiza se pregunta cada 3 s (lo que esté en cola o comprimiéndose, cada 10 s); con la pestaña oculta se
+// para y, al volver, se pregunta enseguida. Tras salir del acta no se programa nada más, aunque quede una respuesta en camino.
 let timer: ReturnType<typeof setTimeout> | null = null;
 let disposed = false;
 function schedule() {
   if (timer) clearTimeout(timer);
-  timer = !disposed && !document.hidden && busyWithAnalysis.value ? setTimeout(() => void load(true), 10_000) : null;
+  timer = !disposed && !document.hidden && busyWithAnalysis.value ? setTimeout(() => void load(true), analysingNow.value ? 3_000 : 10_000) : null;
 }
 function onVisibility() {
   if (!document.hidden && !disposed && busyWithAnalysis.value) void load(true);
@@ -112,6 +128,7 @@ const stateLabels: Record<VideoAnalysisState, string> = {
   Ready: 'Listo',
   Failed: 'Fallido',
   Cancelled: 'Cancelado',
+  Paused: 'En pausa',
 };
 const stateTones: Record<VideoAnalysisState, 'green' | 'amber' | 'red' | 'blue' | 'slate'> = {
   NotRequested: 'slate',
@@ -121,6 +138,7 @@ const stateTones: Record<VideoAnalysisState, 'green' | 'amber' | 'red' | 'blue' 
   Ready: 'green',
   Failed: 'red',
   Cancelled: 'slate',
+  Paused: 'amber',
 };
 
 const percent = (value: number) => value.toLocaleString('es-ES', { maximumFractionDigits: 1 });
@@ -129,6 +147,20 @@ const ballKnownPct = (part: VideoAnalysisPartDto) => part.teams.find((t) => t.po
 const confidenceLabels: Record<VideoPossessionConfidence, string> = { Low: 'confianza baja: no se vuelca', Medium: 'confianza media', High: 'confianza alta' };
 const metres = (value: number) => value.toLocaleString('es-ES', { maximumFractionDigits: 1 });
 const teamLetter = (index: number) => (index === 0 ? 'A' : 'B');
+// Con el acta oficial, el analizador sabe de qué lado es cada equipo por los dorsales y cruza los nombres con ese lado:
+// tu equipo es el de tu lado y no se elige. El otro es el rival: cuenta para los datos de equipo, nunca para tu plantilla.
+function teamFixed(part: VideoAnalysisPartDto): boolean {
+  return part.identified && part.suggestedOurTeam !== null;
+}
+const rivalName = computed(() =>
+  props.sheet.match.homeTeam.id === props.sheet.squad.teamId ? props.sheet.match.awayTeam.name : props.sheet.match.homeTeam.name,
+);
+const sideLabels = { Home: 'local', Away: 'visitante' } as const;
+/** Minutos con jugadores de nuestro equipo a la vista sin identificar (no cuentan para nadie, sí para el equipo). */
+const unidentifiedMinutes = (part: VideoAnalysisPartDto) =>
+  Math.round((part.unidentifiedSeconds?.[String(ourTeam[part.videoId])] ?? 0) / 60);
+/** Por debajo de esto, la mayoría de lo que se leyó en su espalda no era ese número: que lo mire el técnico. */
+const DOUBTFUL_SHIRT = 0.3;
 
 /** Cuánto va a tardar: más o menos lo que dura el vídeo. */
 const duration = (part: VideoAnalysisPartDto) =>
@@ -162,8 +194,8 @@ const cancelling = ref<string | null>(null);
 async function cancel(part: VideoAnalysisPartDto) {
   if (!(await confirmDialog({
     title: 'Cancelar el análisis',
-    message: part.state === 'Running'
-      ? 'Se para el analizador (en unos segundos) y se pierde lo analizado hasta ahora. El vídeo y el acta no se tocan; puedes volver a pedirlo luego.'
+    message: part.state === 'Running' || part.pausedMidway
+      ? 'Se para el analizador (en unos segundos) y se pierde lo analizado hasta ahora. Si solo quieres liberar el equipo un rato, mejor «Pausar»: no se pierde nada. El vídeo y el acta no se tocan; puedes volver a pedirlo luego.'
       : 'El vídeo sale de la cola de análisis. Puedes volver a pedirlo cuando quieras.',
     confirmLabel: 'Cancelar el análisis',
     cancelLabel: 'Seguir',
@@ -179,6 +211,26 @@ async function cancel(part: VideoAnalysisPartDto) {
     requestError.value = errorMessage(e);
   } finally {
     cancelling.value = null;
+  }
+}
+
+// Pausar no pierde nada: lo que está en cola no empieza y lo que se analiza espera donde va hasta reanudarlo.
+const pausing = ref<string | null>(null);
+async function togglePause(part: VideoAnalysisPartDto) {
+  const resume = part.state === 'Paused';
+  pausing.value = part.videoId;
+  requestError.value = null;
+  try {
+    adopt(resume
+      ? await api.squads.resumeVideoAnalysis(props.squadId, props.matchId, part.videoId)
+      : await api.squads.pauseVideoAnalysis(props.squadId, props.matchId, part.videoId));
+  } catch (e) {
+    requestError.value = errorMessage(e);
+    // Puede que mientras tanto haya terminado o lo haya tocado otro: se enseña cómo está.
+    void load(true);
+  } finally {
+    pausing.value = null;
+    schedule();
   }
 }
 
@@ -201,7 +253,7 @@ const teamRows = computed<TeamRow[]>(() => {
 
   const mine = (part: VideoAnalysisPartDto) => part.teams.find((t) => t.index === ourTeam[part.videoId]);
   const theirs = (part: VideoAnalysisPartDto) => part.teams.find((t) => t.index !== ourTeam[part.videoId]);
-  type Counter = 'shots' | 'shotsOnTarget' | 'corners' | 'throwIns' | 'goalKicks';
+  type Counter = 'shots' | 'shotsOnTarget' | 'corners' | 'throwIns' | 'goalKicks' | 'fouls' | 'offsides';
   const sum = (side: typeof mine, key: Counter) => chosen.reduce((total, part) => total + (side(part)?.[key] ?? 0), 0);
 
   // La posesión de las dos partes, ponderada por lo que se analizó de cada una (como hace la API al volcar). La de
@@ -235,6 +287,9 @@ const teamRows = computed<TeamRow[]>(() => {
     counter('Corners', 'Córners', 'corners', s?.cornersFor, s?.cornersAgainst),
     counter('ThrowIns', 'Saques de banda', 'throwIns', s?.throwInsFor, s?.throwInsAgainst),
     counter('GoalKicks', 'Saques de puerta', 'goalKicks', s?.goalKicksFor, s?.goalKicksAgainst),
+    // Las que comete el rival son las que recibimos; y sus fueras de juego, los que le pitan a él.
+    counter('Fouls', 'Faltas cometidas', 'fouls', s?.foulsCommitted, s?.foulsReceived),
+    counter('Offsides', 'Fueras de juego', 'offsides', s?.offsidesFor, s?.offsidesAgainst),
   ];
 });
 
@@ -262,18 +317,19 @@ const playerOptions = computed<SelectOption[]>(() =>
   props.sheet.entries.map(({ player }) => ({
     value: player.id,
     label: player.fullName,
-    hint: [player.shirtNumber ? `n.º ${player.shirtNumber}` : null, player.position ? positionShortLabels[player.position] : null].filter(Boolean).join(' · '),
+    hint: player.position ? positionShortLabels[player.position] : undefined,
     photo: player.photoUrl,
   })),
 );
 
-const hasActions = (a: VideoPlayerActions) => a.shots > 0 || a.goals > 0 || a.saves > 0 || a.recoveries > 0 || a.ballLosses > 0 || a.passesAttempted > 0;
+const hasActions = (a: VideoPlayerActions) =>
+  a.shots > 0 || a.goals > 0 || a.saves > 0 || a.recoveries > 0 || a.ballLosses > 0 || a.passesAttempted > 0 || (a.fouls ?? 0) > 0;
 
-/** Los del equipo elegido: primero los que traen algo para el acta, y dentro, los que más se ha visto. */
+/** Los del equipo elegido: identificados, por dorsal; si no, primero los que traen algo para el acta y los que más se ha visto. */
 function playersOf(part: VideoAnalysisPartDto): VideoAnalysisPlayerDto[] {
-  return part.players
-    .filter((p) => p.team === ourTeam[part.videoId])
-    .sort((a, b) => Number(hasActions(b.proposal)) - Number(hasActions(a.proposal)) || b.minutesVisible - a.minutesVisible || a.tracklet - b.tracklet);
+  const mine = part.players.filter((p) => p.team === ourTeam[part.videoId]);
+  if (part.identified) return mine.sort((a, b) => (a.shirtNumber ?? 100) - (b.shirtNumber ?? 100) || a.tracklet - b.tracklet);
+  return mine.sort((a, b) => Number(hasActions(b.proposal)) - Number(hasActions(a.proposal)) || b.minutesVisible - a.minutesVisible || a.tracklet - b.tracklet);
 }
 const samplesOf = (part: VideoAnalysisPartDto, team: number) =>
   part.players.filter((p) => p.team === team && p.cropUrl).sort((a, b) => b.minutesVisible - a.minutesVisible).slice(0, 4);
@@ -286,6 +342,9 @@ function describe(a: VideoPlayerActions): string {
     a.recoveries > 0 && `${a.recoveries} ${a.recoveries === 1 ? 'recuperación' : 'recuperaciones'}`,
     a.ballLosses > 0 && `${a.ballLosses} ${a.ballLosses === 1 ? 'pérdida' : 'pérdidas'}`,
     a.saves > 0 && `${a.saves} ${a.saves === 1 ? 'parada' : 'paradas'}`,
+    (a.fouls ?? 0) > 0 && `${a.fouls} ${a.fouls === 1 ? 'falta cometida' : 'faltas cometidas'}`,
+    (a.foulsReceived ?? 0) > 0 && `${a.foulsReceived} ${a.foulsReceived === 1 ? 'falta recibida' : 'faltas recibidas'}`,
+    (a.offsides ?? 0) > 0 && `${a.offsides} ${a.offsides === 1 ? 'fuera de juego' : 'fueras de juego'}`,
   ].filter(Boolean);
   return bits.length ? bits.join(' · ') : 'Sin acciones con balón que llevar al acta';
 }
@@ -296,11 +355,11 @@ function assign(videoId: string, tracklet: number, value: string | number | null
 }
 
 function chooseTeam(part: VideoAnalysisPartDto, team: number) {
-  if (ourTeam[part.videoId] === team) return;
+  if (teamFixed(part) || ourTeam[part.videoId] === team) return;
   ourTeam[part.videoId] = team;
   // Los jugadores asignados eran del otro equipo.
-  assigned[part.videoId] = {};
-  shown[part.videoId] = PAGE;
+  assigned[part.videoId] = proposedAssignments(part, team);
+  shown[part.videoId] = part.identified ? part.players.length : PAGE;
   applied.value = null;
 }
 
@@ -320,7 +379,10 @@ const nothingToApply = computed(() => acceptedFields.value.length === 0 && assig
 
 const applying = ref(false);
 const applyError = ref<string | null>(null);
-const applied = ref<{ team: number; lines: number; untouched: number } | null>(null);
+const applied = ref<{ team: number; lines: number; untouched: number; fromSheet: number } | null>(null);
+/** Con el acta oficial cerrada: minutos, titulares, goles y tarjetas de ella, también de los que no salen en el vídeo. */
+const fillFromOfficialSheet = ref(true);
+const officialSheetClosed = computed(() => analysis.value?.officialSheetClosed ?? false);
 
 async function apply(overwrite = false) {
   if (!overwrite && props.unsavedSheet && !(await confirmDialog({
@@ -339,10 +401,16 @@ async function apply(overwrite = false) {
       videos: assignments.value,
       teamFields: acceptedFields.value,
       overwrite,
+      fillFromOfficialSheet: fillFromOfficialSheet.value,
     });
     for (const field of Object.keys(ticked) as VideoTeamField[]) delete ticked[field];
     adopt(result.analysis);
-    applied.value = { team: result.teamValuesWritten, lines: result.linesWritten, untouched: result.playersWithoutChanges };
+    applied.value = {
+      team: result.teamValuesWritten,
+      lines: result.linesWritten,
+      untouched: result.playersWithoutChanges,
+      fromSheet: result.linesFromOfficialSheet ?? 0,
+    };
     emit('applied', result.sheet);
   } catch (e) {
     // El acta ya tiene otros valores en algo de lo que se vuelca: se enseña qué cambia y se pide confirmarlo dos veces.
@@ -385,7 +453,7 @@ async function apply(overwrite = false) {
       <div class="flex flex-wrap items-center gap-2">
         <template v-if="!open">
           <Badge v-for="part in parts" :key="part.videoId" :tone="stateTones[part.state]">
-            <template v-if="parts.length > 1">{{ videoPartLabels[part.part] }} · </template>{{ part.state === 'Ready' && part.appliedAt ? 'Volcado al acta' : stateLabels[part.state] }}<template v-if="part.state === 'Running'"> · {{ part.progress }} %</template>
+            <template v-if="parts.length > 1">{{ videoPartLabels[part.part] }} · </template>{{ part.state === 'Ready' && part.appliedAt ? 'Volcado al acta' : stateLabels[part.state] }}<template v-if="part.state === 'Running' || part.pausedMidway"> · {{ part.progress }} %</template>
           </Badge>
         </template>
         <button v-if="analysis && parts.length > 0" type="button" class="btn-ghost px-3 py-1 text-xs" :aria-expanded="open" aria-controls="video-proposal-body" @click="open = !open">
@@ -421,20 +489,33 @@ async function apply(overwrite = false) {
             {{ videoPartLabels[part.part] }}
             <Badge :tone="stateTones[part.state]">
               <Icon v-if="part.state === 'Running'" icon="rotate-right" class="mr-1 h-3 w-3 animate-spin" />
-              {{ stateLabels[part.state] }}<template v-if="part.state === 'Running'"> · {{ part.progress }} %</template>
+              <Icon v-else-if="part.state === 'Paused'" icon="pause" class="mr-1 h-3 w-3" />
+              {{ stateLabels[part.state] }}<template v-if="part.state === 'Running' || part.pausedMidway"> · {{ part.progress }} %</template>
             </Badge>
             <span v-if="part.state === 'Ready' && part.finishedAt" class="text-xs font-normal text-slate-500">analizado el {{ formatKickoff(part.finishedAt) }}</span>
           </p>
-          <button
-            v-if="canManage && ['Pending', 'Running'].includes(part.state)"
-            v-busy="cancelling === part.videoId"
-            type="button"
-            class="btn-ghost px-3 py-1 text-xs"
-            :disabled="cancelling !== null || requesting !== null"
-            @click="cancel(part)"
-          >
-            <Icon icon="xmark" class="h-3 w-3" />Cancelar
-          </button>
+          <div v-if="canManage && ['Pending', 'Running', 'Paused'].includes(part.state)" class="flex flex-wrap gap-2">
+            <button
+              v-busy="pausing === part.videoId"
+              type="button"
+              :class="part.state === 'Paused' ? 'btn-primary' : 'btn-secondary'"
+              class="px-3 py-1 text-xs"
+              :disabled="pausing !== null || cancelling !== null || requesting !== null"
+              :title="part.state === 'Paused' ? 'Sigue donde se quedó' : 'Para sin perder nada de lo analizado'"
+              @click="togglePause(part)"
+            >
+              <Icon :icon="part.state === 'Paused' ? 'play' : 'pause'" class="h-3 w-3" />{{ part.state === 'Paused' ? 'Reanudar' : 'Pausar' }}
+            </button>
+            <button
+              v-busy="cancelling === part.videoId"
+              type="button"
+              class="btn-ghost px-3 py-1 text-xs"
+              :disabled="pausing !== null || cancelling !== null || requesting !== null"
+              @click="cancel(part)"
+            >
+              <Icon icon="xmark" class="h-3 w-3" />Cancelar
+            </button>
+          </div>
           <button
             v-if="canManage && analysis.enabled && ['NotRequested', 'Ready', 'Failed', 'Cancelled'].includes(part.state)"
             v-busy="requesting === part.videoId"
@@ -466,18 +547,9 @@ async function apply(overwrite = false) {
         <p v-else-if="part.state === 'Cancelled'" class="mt-2 text-sm text-slate-600">
           Análisis cancelado<template v-if="part.finishedAt"> el {{ formatKickoff(part.finishedAt) }}</template>. El vídeo y el acta siguen como estaban; puedes volver a pedirlo cuando quieras.
         </p>
-        <div v-else-if="part.state === 'Running'" class="mt-3">
-          <div
-            class="h-2 overflow-hidden rounded-full bg-slate-200"
-            role="progressbar"
-            :aria-valuenow="part.progress"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            :aria-label="`Análisis del vídeo: ${part.progress} %`"
-          >
-            <div class="h-full rounded-full bg-brand-500 transition-[width] duration-500" :style="{ width: `${part.progress}%` }" />
-          </div>
-          <p class="mt-2 text-xs text-slate-500">Siguiendo a los jugadores y al balón fotograma a fotograma: tarda {{ duration(part) }}. Puedes cerrar esta página y volver luego.</p>
+        <div v-else-if="part.state === 'Running' || part.state === 'Paused'">
+          <VideoAnalysisProgress :part="part" />
+          <p v-if="part.state === 'Running'" class="mt-2 text-[11px] text-slate-400">Se analiza en segundo plano: puedes cerrar esta página y volver luego.</p>
         </div>
         <Alert v-else-if="part.state === 'Failed'" kind="error" class="mt-3">
           No se ha podido analizar el vídeo: {{ part.error ?? 'error desconocido' }}
@@ -522,51 +594,86 @@ async function apply(overwrite = false) {
 
           <!-- Cuál de los dos equipos es el nuestro -->
           <fieldset class="mt-4">
-            <legend class="label">¿Cuál de los dos es {{ sheet.squad.teamName }}?</legend>
-            <p class="mb-2 text-xs text-slate-500">El analizador separa a los jugadores por el color de la equipación, pero no sabe de qué club es cada una.</p>
+            <legend class="label">{{ teamFixed(part) ? 'Los dos equipos del vídeo' : `¿Cuál de los dos es ${sheet.squad.teamName}?` }}</legend>
+            <p v-if="teamFixed(part)" class="mb-2 text-xs text-slate-500">
+              Por los dorsales del acta oficial, {{ sheet.squad.teamName }} es el equipo {{ teamLetter(part.suggestedOurTeam!) }}: solo se identifican y se vinculan a
+              tu plantilla sus jugadores. {{ rivalName }} es el rival: cuenta para los datos del equipo (posesión, faltas, fueras de juego…), no para tus fichas.
+            </p>
+            <p v-else class="mb-2 text-xs text-slate-500">El analizador separa a los jugadores por el color de la equipación, pero no sabe de qué club es cada una.</p>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button
+              <component
+                :is="teamFixed(part) ? 'div' : 'button'"
                 v-for="team in part.teams"
                 :key="team.index"
-                type="button"
+                v-bind="teamFixed(part) ? {} : { type: 'button', 'aria-pressed': ourTeam[part.videoId] === team.index }"
                 class="flex items-center gap-3 rounded-xl border p-3 text-left transition"
-                :class="ourTeam[part.videoId] === team.index ? 'border-accent-400 bg-brand-500/10' : 'border-line bg-surface hover:border-brand-400'"
-                :aria-pressed="ourTeam[part.videoId] === team.index"
+                :class="ourTeam[part.videoId] === team.index ? 'border-accent-400 bg-brand-500/10' : teamFixed(part) ? 'border-line bg-surface' : 'border-line bg-surface hover:border-brand-400'"
                 @click="chooseTeam(part, team.index)"
               >
                 <span class="h-9 w-9 shrink-0 rounded-full ring-1 ring-line" :style="{ backgroundColor: team.color ?? 'transparent' }" aria-hidden="true" />
                 <span class="min-w-0 flex-1">
-                  <span class="block text-sm font-semibold text-slate-900">
-                    Equipo {{ teamLetter(team.index) }}
-                    <Icon v-if="ourTeam[part.videoId] === team.index" icon="circle-check" class="ml-1 h-3.5 w-3.5 text-accent-400" />
-                  </span>
-                  <span class="block text-xs text-slate-500">{{ team.players }} {{ team.players === 1 ? 'jugador seguido' : 'jugadores seguidos' }}<template v-if="team.possessionPct !== null"> · {{ team.possessionPct }} % de posesión<template v-if="team.possessionConfidence"> ({{ confidenceLabels[team.possessionConfidence] }})</template></template></span>
+                  <template v-if="teamFixed(part)">
+                    <span class="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-slate-900">
+                      <span class="truncate">{{ ourTeam[part.videoId] === team.index ? sheet.squad.teamName : rivalName }}</span>
+                      <Badge :tone="ourTeam[part.videoId] === team.index ? 'blue' : 'slate'" class="shrink-0">{{ ourTeam[part.videoId] === team.index ? 'Tu equipo' : 'Rival' }}</Badge>
+                    </span>
+                    <span class="block text-xs text-slate-500">
+                      Equipo {{ teamLetter(team.index) }}<template v-if="team.side"> · {{ sideLabels[team.side] }}</template><template v-if="ourTeam[part.videoId] === team.index"> · {{ team.players }} {{ team.players === 1 ? 'jugador identificado' : 'jugadores identificados' }}</template><template v-if="team.possessionPct !== null"> · {{ team.possessionPct }} % de posesión<template v-if="team.possessionConfidence"> ({{ confidenceLabels[team.possessionConfidence] }})</template></template>
+                    </span>
+                  </template>
+                  <template v-else>
+                    <span class="block text-sm font-semibold text-slate-900">
+                      Equipo {{ teamLetter(team.index) }}<template v-if="team.side"> · {{ sideLabels[team.side] }}</template>
+                      <Icon v-if="ourTeam[part.videoId] === team.index" icon="circle-check" class="ml-1 h-3.5 w-3.5 text-accent-400" />
+                    </span>
+                    <span class="block text-xs text-slate-500">{{ team.players }} {{ part.identified ? (team.players === 1 ? 'jugador identificado' : 'jugadores identificados') : (team.players === 1 ? 'jugador seguido' : 'jugadores seguidos') }}<template v-if="team.possessionPct !== null"> · {{ team.possessionPct }} % de posesión<template v-if="team.possessionConfidence"> ({{ confidenceLabels[team.possessionConfidence] }})</template></template></span>
+                  </template>
                 </span>
                 <span class="flex shrink-0 gap-1">
                   <VideoCrop v-for="sample in samplesOf(part, team.index)" :key="sample.tracklet" :url="sample.cropUrl" :alt="`Jugador del equipo ${teamLetter(team.index)}`" size="sm" />
                 </span>
-              </button>
+              </component>
             </div>
           </fieldset>
 
           <!-- Jugadores seguidos del equipo elegido -->
           <div v-if="ourTeam[part.videoId] !== null && ourTeam[part.videoId] !== undefined" class="mt-5">
-            <h3 class="text-sm font-semibold text-slate-900">Jugadores seguidos ({{ playersOf(part).length }})</h3>
-            <p class="text-xs text-slate-500">
-              Cada vez que el analizador pierde de vista a un jugador y lo vuelve a encontrar le da otro número: asigna a la misma ficha todos los
-              tramos de un jugador y sus acciones se suman.
+            <template v-if="part.identified">
+              <h3 class="text-sm font-semibold text-slate-900">Jugadores identificados ({{ playersOf(part).length }})</h3>
+              <p class="text-xs text-slate-500">
+                Los de {{ sheet.squad.teamName }}, cada uno por el dorsal que se le lee en la espalda, cruzado con tu lado del acta oficial (solo los
+                que jugaron y en sus minutos), y ya con su ficha. Cambia la ficha solo si no es él.
+                <template v-if="unidentifiedMinutes(part) > 0">Hay {{ unidentifiedMinutes(part) }} min de jugadores a la vista sin identificar: cuentan para el equipo, no para nadie en concreto.</template>
+              </p>
+            </template>
+            <template v-else>
+              <h3 class="text-sm font-semibold text-slate-900">Jugadores seguidos ({{ playersOf(part).length }})</h3>
+              <p class="text-xs text-slate-500">
+                Cada vez que el analizador pierde de vista a un jugador y lo vuelve a encontrar le da otro número: asigna a la misma ficha todos los
+                tramos de un jugador y sus acciones se suman.
+              </p>
+            </template>
+            <p v-if="playersOf(part).length === 0" class="mt-2 text-sm text-slate-500">
+              {{ part.identified ? 'No se ha podido leer el dorsal de ningún jugador de este equipo.' : 'El analizador no ha seguido a ningún jugador de este equipo durante medio minuto.' }}
             </p>
-            <p v-if="playersOf(part).length === 0" class="mt-2 text-sm text-slate-500">El analizador no ha seguido a ningún jugador de este equipo durante medio minuto.</p>
             <ul v-else class="mt-3 divide-y divide-slate-100 rounded-xl border border-line">
               <li v-for="player in playersOf(part).slice(0, shown[part.videoId] ?? PAGE)" :key="player.tracklet" class="flex flex-wrap items-center gap-3 px-3 py-2">
-                <VideoCrop :url="player.cropUrl" :alt="`Jugador seguido n.º ${player.tracklet}`" />
+                <VideoCrop :url="player.cropUrl" :alt="part.identified ? `Dorsal ${player.shirtNumber} en el vídeo` : `Jugador seguido n.º ${player.tracklet}`" />
                 <div class="min-w-0 flex-1 basis-56">
-                  <p class="text-sm font-medium text-slate-800">
+                  <p v-if="part.identified" class="text-sm font-medium text-slate-800">
+                    Dorsal {{ player.shirtNumber }}<template v-if="player.sheetName"> · {{ player.sheetName }}</template>
+                    <Badge v-if="player.goalkeeper" tone="blue" class="ml-1">Portero</Badge>
+                    <Badge v-if="player.shirtConfidence !== null && player.shirtConfidence < DOUBTFUL_SHIRT" tone="amber" class="ml-1" title="Pocas lecturas claras de su número: míralo en el recorte">Dorsal dudoso</Badge>
+                  </p>
+                  <p v-else class="text-sm font-medium text-slate-800">
                     Seguido n.º {{ player.tracklet }}
                     <Badge v-if="player.goalkeeper" tone="blue" class="ml-1">Portero</Badge>
                     <Badge v-if="player.shirtNumber" tone="slate" class="ml-1">¿Dorsal {{ player.shirtNumber }}?</Badge>
                   </p>
-                  <p class="text-xs text-slate-500">Del {{ player.from }} al {{ player.to }} · {{ player.minutesVisible }} min a la vista · {{ player.distanceM.toLocaleString('es-ES') }} m</p>
+                  <p class="text-xs text-slate-500">
+                    Del {{ player.from }} al {{ player.to }} · {{ player.minutesVisible }} min a la vista<template v-if="player.sheetMinutes !== null"> · <span class="text-slate-700" title="Por descarte: sin cambio, el partido entero, aunque el vídeo no lo vea todo el rato">{{ player.sheetMinutes }} min jugados según el acta</span></template>
+                    · {{ player.distanceM.toLocaleString('es-ES') }} m
+                  </p>
                   <p class="mt-0.5 text-xs" :class="hasActions(player.proposal) ? 'text-slate-700' : 'text-slate-400'">{{ describe(player.proposal) }}</p>
                 </div>
                 <div v-if="canManage" class="w-full sm:w-64">
@@ -577,7 +684,7 @@ async function apply(overwrite = false) {
                     clearable
                     searchable
                     size="sm"
-                    :aria-label="`Ficha del jugador seguido n.º ${player.tracklet}`"
+                    :aria-label="part.identified ? `Ficha del dorsal ${player.shirtNumber}` : `Ficha del jugador seguido n.º ${player.tracklet}`"
                     @update:model-value="(value) => assign(part.videoId, player.tracklet, value)"
                   />
                 </div>
@@ -602,7 +709,9 @@ async function apply(overwrite = false) {
         <h3 class="text-sm font-semibold text-slate-900">Datos del equipo</h3>
         <p class="text-xs text-slate-500">
           <template v-if="chosenParts.length > 1">Sumadas las {{ chosenParts.length }} partes. </template>
-          Marca los que quieras llevar al acta. Faltas, fueras de juego y tarjetas no salen del vídeo.
+          Marca los que quieras llevar al acta. Una falta sale cuando el juego se para con el balón en el campo y el rival tenía a alguien a menos de 5 m
+          del que llevaba el balón (la recibe él; la comete el rival más cercano), y un fuera de juego cuando además saca el otro equipo desde donde
+          estaba el atacante adelantado: salen de menos, nunca de más. Las tarjetas no salen del vídeo.
         </p>
         <div class="mt-3 overflow-x-auto">
           <table class="w-full min-w-[32rem] text-sm">
@@ -653,16 +762,28 @@ async function apply(overwrite = false) {
           <template v-else>
             Volcado al acta: {{ applied.team }} {{ applied.team === 1 ? 'dato' : 'datos' }} de equipo y {{ applied.lines }} {{ applied.lines === 1 ? 'línea' : 'líneas' }} de jugador.
           </template>
+          <template v-if="applied.fromSheet > 0"> {{ applied.fromSheet }} {{ applied.fromSheet === 1 ? 'sale' : 'salen' }} solo del acta oficial: {{ applied.fromSheet === 1 ? 'jugó' : 'jugaron' }} sin que el vídeo {{ applied.fromSheet === 1 ? 'lo identificara' : 'los identificara' }}.</template>
           <template v-if="applied.untouched > 0"> {{ applied.untouched }} {{ applied.untouched === 1 ? 'jugador asignado no tenía' : 'jugadores asignados no tenían' }} nada que cambiar.</template>
-          <template v-if="applied.lines > 0"> Revisa abajo los minutos de las líneas nuevas.</template>
+          <template v-if="applied.lines > 0 && !(officialSheetClosed && fillFromOfficialSheet)"> Revisa abajo los minutos de las líneas nuevas.</template>
         </Alert>
+
+        <label v-if="canManage && officialSheetClosed" class="mb-3 flex items-start gap-2 text-sm text-slate-700">
+          <input v-model="fillFromOfficialSheet" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-accent-400" />
+          <span>
+            Completar con el acta oficial
+            <span class="block text-xs text-slate-500">
+              El acta oficial está cerrada: los minutos (sin cambio, el partido entero, aunque el vídeo no lo vea todo el rato), quién fue titular, los goles y
+              las tarjetas salen de ella, también para los que jugaron y el vídeo no identificó.
+            </span>
+          </span>
+        </label>
 
         <div v-if="canManage" class="flex flex-wrap items-center justify-between gap-3">
           <p class="text-xs text-slate-500">
             <template v-if="chosenParts.length === 0">Elige primero cuál de los dos equipos es el tuyo.</template>
             <template v-else>
               Vas a volcar {{ acceptedFields.length }} {{ acceptedFields.length === 1 ? 'dato' : 'datos' }} de equipo y {{ assignedCount }}
-              {{ assignedCount === 1 ? 'jugador seguido asignado' : 'jugadores seguidos asignados' }}.
+              {{ assignedCount === 1 ? 'jugador asignado' : 'jugadores asignados' }}.
             </template>
           </p>
           <button type="button" class="btn-primary" v-busy="applying" :disabled="applying || nothingToApply || chosenParts.length === 0" @click="apply()">
@@ -673,8 +794,12 @@ async function apply(overwrite = false) {
 
         <p class="content-note mt-3">
           El vídeo propone, tú decides: un dato que el vídeo no ha visto nunca borra lo apuntado, y si lo que vuelcas cambia algo que ya estaba en el
-          acta se te pide confirmarlo dos veces. A quien no tenía línea se le crea con los minutos que se le ha visto en el vídeo (corrígelos en el
-          acta) y los goles solo se apuntan a quien no tuviera ninguno: mandan los del acta oficial.
+          acta se te pide confirmarlo dos veces.
+          <template v-if="officialSheetClosed && fillFromOfficialSheet">Los minutos, los titulares, los goles y las tarjetas son los del acta oficial.</template>
+          <template v-else>
+            A quien no tenía línea se le crea con los minutos que se le ha visto en el vídeo (corrígelos en el acta) y los goles solo se apuntan a quien
+            no tuviera ninguno: mandan los del acta oficial.
+          </template>
         </p>
       </div>
     </div>

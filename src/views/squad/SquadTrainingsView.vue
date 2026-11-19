@@ -5,6 +5,7 @@ import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import AgendaList from '@/components/trainings/AgendaList.vue';
 import ExerciseLibraryModal from '@/components/trainings/ExerciseLibraryModal.vue';
+import TrainingAttendancePanel from '@/components/trainings/attendance/TrainingAttendancePanel.vue';
 import TrainingCalendar from '@/components/trainings/TrainingCalendar.vue';
 import TrainingPlanModal from '@/components/trainings/TrainingPlanModal.vue';
 import TrainingSessionModal from '@/components/trainings/TrainingSessionModal.vue';
@@ -14,7 +15,7 @@ import Badge from '@/components/ui/Badge.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useSquad } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
-import type { ExerciseDto, MatchDto, TrainingSummaryDto, TrialPlayerDto } from '@/types/api';
+import type { ExerciseDto, MatchDto, Position, TrainingSummaryDto, TrialPlayerDto } from '@/types/api';
 import { toDateKey } from '@/utils/format';
 
 const { squadId, detail, reload } = useSquad();
@@ -25,35 +26,19 @@ const router = useRouter();
 const canManage = computed(() => detail.value?.canManage ?? false);
 const teamId = computed(() => detail.value?.summary.teamId ?? '');
 const photos = computed<Record<string, string | null>>(() => Object.fromEntries((detail.value?.players ?? []).map((p) => [p.id, p.photoUrl])));
+const positions = computed<Record<string, Position | null>>(() => Object.fromEntries((detail.value?.players ?? []).map((p) => [p.id, p.position ?? null])));
 
-// Mes visible (primer día) y la agenda (entrenamientos y partidos) de las seis semanas que muestra el calendario.
-const month = ref(firstOfMonth(new Date()));
-const monthLabel = computed(() => {
-  const text = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(new Date(`${month.value}T00:00:00`));
-  return text.charAt(0).toUpperCase() + text.slice(1);
-});
-
-function firstOfMonth(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
+// Agenda (entrenamientos y partidos) de los días que enseña el calendario: la pide él al cambiar de vista o de fechas.
+const range = ref<{ from: string; to: string } | null>(null);
+const agenda = useAsync(
+  () => (range.value ? api.trainings.agenda(squadId.value, range.value.from, range.value.to) : Promise.resolve([])),
+  { immediate: false, redirectOnError: false },
+);
+function onRange(next: { from: string; to: string }) {
+  if (range.value?.from === next.from && range.value?.to === next.to) return;
+  range.value = next;
+  void agenda.run();
 }
-
-function shiftMonth(delta: number) {
-  const date = new Date(`${month.value}T00:00:00`);
-  date.setMonth(date.getMonth() + delta);
-  month.value = firstOfMonth(date);
-}
-
-const range = computed(() => {
-  const first = new Date(`${month.value}T00:00:00`);
-  const start = new Date(first);
-  start.setDate(first.getDate() - ((first.getDay() + 6) % 7));
-  const end = new Date(start);
-  end.setDate(start.getDate() + 41);
-  return { from: toDateKey(start), to: toDateKey(end) };
-});
-
-const agenda = useAsync(() => api.trainings.agenda(squadId.value, range.value.from, range.value.to), { redirectOnError: false });
-watch(range, () => void agenda.run());
 
 const catalog = useAsync(() => api.trainings.catalog(), { redirectOnError: false });
 const library = ref<ExerciseDto[]>([]);
@@ -100,14 +85,18 @@ const next = computed(() => {
   return [...list.filter((i) => i.done).slice(-1), ...list.filter((i) => !i.done).slice(0, 6)];
 });
 
+// Se sube al guardar algo de una sesión (lista incluida) para que la tabla de asistencia se vuelva a contar.
+const attendanceKey = ref(0);
 function refresh() {
   void agenda.run();
   void upcoming.run();
+  attendanceKey.value++;
 }
 
 // Modales: sesión abierta (también desde ?sesion= de un aviso), nuevo entrenamiento y biblioteca.
 const selectedId = ref<string | null>(typeof route.query.sesion === 'string' ? route.query.sesion : null);
 const planDate = ref<string | null>(null);
+const planTime = ref<string | null>(null);
 const planOpen = ref(false);
 const libraryOpen = ref(false);
 
@@ -126,8 +115,9 @@ function closeSession() {
   if (route.query.sesion) void router.replace({ query: { ...route.query, sesion: undefined } });
 }
 
-function plan(date: string | null) {
+function plan(date: string | null, time: string | null = null) {
   planDate.value = date;
+  planTime.value = time;
   planOpen.value = true;
 }
 
@@ -141,13 +131,7 @@ function onCreated() {
   <Alert v-if="agenda.error.value" kind="error" class="mb-4">{{ agenda.error.value }}</Alert>
   <Alert v-if="libraryError" kind="warning" class="mb-4">{{ libraryError }}</Alert>
 
-  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-    <div class="flex items-center gap-1">
-      <button type="button" class="btn-ghost px-2" aria-label="Mes anterior" @click="shiftMonth(-1)"><Icon icon="chevron-left" class="h-4 w-4" /></button>
-      <h2 class="min-w-[11rem] text-center text-lg font-semibold text-slate-900">{{ monthLabel }}</h2>
-      <button type="button" class="btn-ghost px-2" aria-label="Mes siguiente" @click="shiftMonth(1)"><Icon icon="chevron-right" class="h-4 w-4" /></button>
-      <button type="button" class="btn-ghost px-2 text-xs" @click="month = firstOfMonth(new Date())">Hoy</button>
-    </div>
+  <div class="mb-4 flex flex-wrap items-center justify-end gap-3">
     <div class="flex flex-wrap gap-2">
       <button type="button" class="btn-secondary" @click="libraryOpen = true"><Icon icon="list-ol" class="mr-1.5 h-3.5 w-3.5" />Biblioteca de ejercicios</button>
       <button v-if="canManage" type="button" class="btn-secondary" @click="trialsOpen = true">
@@ -161,7 +145,6 @@ function onCreated() {
   <div class="grid gap-6 xl:grid-cols-[1fr_20rem]">
     <div :class="agenda.loading.value ? 'is-refreshing' : ''">
       <TrainingCalendar
-        :month="month"
         :items="agenda.data.value ?? []"
         :team-id="teamId"
         :can-plan="canManage"
@@ -169,9 +152,10 @@ function onCreated() {
         @select="openSession"
         @match="openMatch"
         @plan="plan"
+        @range="onRange"
       />
       <p class="mt-1 text-xs text-slate-500">
-        <template v-if="canManage">Pulsa un día para crear un entrenamiento ese día, una sesión para preparar sus ejercicios y pasar lista, o un partido para preparar su convocatoria.</template>
+        <template v-if="canManage">Pulsa un día (o una hora, en Semana y Día) para crear un entrenamiento ahí, una sesión para preparar sus ejercicios y pasar lista, o un partido para preparar su convocatoria.</template>
         <template v-else-if="auth.isPlayer">Pulsa una sesión para ver sus ejercicios y, si no puedes ir, avisar al cuerpo técnico; o un partido para ver y firmar su convocatoria.</template>
         <template v-else>Pulsa una sesión para ver sus ejercicios y la asistencia, o un partido para ver su convocatoria.</template>
       </p>
@@ -188,6 +172,8 @@ function onCreated() {
     </aside>
   </div>
 
+  <TrainingAttendancePanel v-if="canManage" class="mt-6" :squad-id="squadId" :photos="photos" :positions="positions" :reload-key="attendanceKey" />
+
   <TrainingSessionModal
     :open="selectedId !== null"
     :squad-id="squadId"
@@ -195,13 +181,14 @@ function onCreated() {
     :library="library"
     :catalog="catalog.data.value"
     :photos="photos"
+    :positions="positions"
     :trial-players="trials"
     @close="closeSession"
     @changed="refresh"
     @trials-changed="loadTrials"
     @promoted="onPromoted"
   />
-  <TrainingPlanModal :open="planOpen" :squad-id="squadId" :date="planDate" :library="library" :catalog="catalog.data.value" @close="planOpen = false" @created="onCreated" />
+  <TrainingPlanModal :open="planOpen" :squad-id="squadId" :date="planDate" :time="planTime" :library="library" :catalog="catalog.data.value" @close="planOpen = false" @created="onCreated" />
   <ExerciseLibraryModal :open="libraryOpen" :squad-id="squadId" :exercises="library" :exercise-types="catalog.data.value?.exerciseTypes ?? []" :readonly="!canManage" @close="libraryOpen = false" @changed="library = $event" />
   <TrialPlayersModal :open="trialsOpen" :squad-id="squadId" :trial-players="trials" :readonly="!canManage" @close="trialsOpen = false" @changed="loadTrials" @promoted="onPromoted" />
 </template>

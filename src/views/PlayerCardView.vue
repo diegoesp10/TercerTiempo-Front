@@ -8,16 +8,19 @@ import CardMarks from '@/components/sheet/CardMarks.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import TeamName from '@/components/teams/TeamName.vue';
 import { useAsync } from '@/composables/useAsync';
+import { useSort } from '@/composables/useSort';
 import type { MatchDto } from '@/types/api';
 import { formatDate, formatNumber, outcomeLabels, outcomeTone, positionLabels, type Outcome } from '@/utils/format';
+import { keyColumnsFor, keyStatsFor, keyTotals, matchesOfTeam, type KeyStat, type KeyTotals } from '@/utils/keyStats';
 
 /**
  * Ficha de un jugador para cualquier cuenta con sesión: datos básicos y la temporada según las actas oficiales. Su
  * club y su plantilla (o todos, si el jugador lo ha hecho público) ven además las actas de Tercer Tiempo: asistencias
- * de gol, faltas y nota.
+ * de gol, faltas, nota y el dato de su puesto (paradas, despejes, pases...).
  */
 const props = defineProps<{ teamId: string; entryId: string }>();
 const { data, loading, error, run } = useAsync(() => api.teams.playerCard(props.teamId, props.entryId));
@@ -35,6 +38,12 @@ const meta = computed(() => {
     .join(' · ');
 });
 
+const position = computed(() => data.value?.entry.position ?? null);
+const columns = computed(() => {
+  const { stats, withAssists } = keyColumnsFor(position.value);
+  return { stats: stats.map((stat) => ({ stat, sortKey: `key-${stat.key}` as const })), withAssists };
+});
+
 interface Row {
   match: MatchDto;
   home: boolean;
@@ -49,6 +58,8 @@ interface Row {
   red: boolean;
   fouls: number | null;
   rating: number | null;
+  /** Lo del acta interna para el dato del puesto; null con el acta oficial, que no lo trae. */
+  stats: KeyTotals | null;
 }
 
 /** Partido a partido: el acta interna si se ve y existe; si no, la oficial. */
@@ -61,7 +72,7 @@ const rows = computed<Row[]>(() => {
     if (!o.line.played) continue;
     byMatch.set(o.match.id, {
       match: o.match, home: o.home, source: 'official', shirt: o.line.shirtNumber, started: o.line.started, minutes: o.line.minutesPlayed,
-      goals: o.line.goals + o.line.penaltyGoals, assists: null, yellow: o.line.yellowCards, red: o.line.redCard, fouls: null, rating: null,
+      goals: o.line.goals + o.line.penaltyGoals, assists: null, yellow: o.line.yellowCards, red: o.line.redCard, fouls: null, rating: null, stats: null,
     });
   }
   for (const i of card.internal) {
@@ -70,7 +81,7 @@ const rows = computed<Row[]>(() => {
     byMatch.set(i.match.id, {
       match: i.match, home: i.home, source: 'internal', shirt: p.matchShirtNumber ?? officialShirt.get(i.match.id) ?? null,
       started: p.started, minutes: p.minutesPlayed,
-      goals: p.goals, assists: p.assists, yellow: p.yellowCards, red: p.redCard, fouls: p.fouls ?? 0, rating: p.rating,
+      goals: p.goals, assists: p.assists, yellow: p.yellowCards, red: p.redCard, fouls: p.fouls ?? 0, rating: p.rating, stats: keyTotals(p),
     });
   }
   return [...byMatch.values()].sort((a, b) => b.match.matchday - a.match.matchday);
@@ -84,22 +95,50 @@ const outcome = (row: Row): Outcome => {
   const theirs = row.home ? awayGoals : homeGoals;
   return mine > theirs ? 'win' : mine === theirs ? 'draw' : 'loss';
 };
+/** Para ordenar por resultado: primero las victorias (y entre ellas, las de más diferencia). */
+const resultScore = (row: Row) => {
+  const { homeGoals, awayGoals } = row.match;
+  if (homeGoals === null || awayGoals === null) return null;
+  const diff = row.home ? homeGoals - awayGoals : awayGoals - homeGoals;
+  return (diff > 0 ? 3 : diff === 0 ? 1 : 0) * 100 + diff;
+};
 
-/** Cifras de la banda: las oficiales siempre; con el perfil completo, también asistencias de gol y nota. */
+type SortKey = 'match' | 'result' | 'shirt' | 'minutes' | 'goals' | 'assists' | 'cards' | 'fouls' | 'rating' | 'source' | `key-${KeyStat['key']}`;
+const getters = computed(() => {
+  const base: Partial<Record<SortKey, (row: Row) => number | string | null>> = {
+    match: (r) => r.match.matchday,
+    result: resultScore,
+    shirt: (r) => r.shirt,
+    minutes: (r) => r.minutes,
+    goals: (r) => r.goals,
+    assists: (r) => r.assists,
+    // La roja pesa más que cualquier número de amarillas.
+    cards: (r) => (r.red ? 10 : 0) + r.yellow,
+    fouls: (r) => r.fouls,
+    rating: (r) => r.rating,
+    source: (r) => (r.source === 'internal' ? 'Acta interna' : 'Acta oficial'),
+  };
+  for (const { stat, sortKey } of columns.value.stats) base[sortKey] = (r) => (r.stats ? stat.sort(r.stats) : null);
+  return base as Record<SortKey, (row: Row) => number | string | null>;
+});
+const { sorted, sortBy, state } = useSort<Row, SortKey>(rows, getters, 'match', { ascendingFirst: ['shirt', 'source'] });
+
+/** Cifras de la banda: las oficiales siempre; con el perfil completo, también el dato de su puesto y la nota. */
 const band = computed(() => {
   const card = data.value;
   if (!card) return [];
   const official = card.entry.stats;
   const internal = card.internalStats;
-  const items = [
-    { label: 'Partidos', value: String(Math.max(official?.appearances ?? 0, internal?.appearances ?? 0)) },
+  const played = Math.max(official?.appearances ?? 0, internal?.appearances ?? 0);
+  const items: { label: string; value: string; title?: string }[] = [
+    { label: 'Partidos', ...matchesOfTeam(played, card.teamMatchesPlayed) },
     { label: 'Titular', value: String(Math.max(official?.started ?? 0, internal?.started ?? 0)) },
     { label: 'Minutos', value: String(Math.max(official?.minutesPlayed ?? 0, internal?.minutesPlayed ?? 0)) },
     { label: 'Goles', value: String(Math.max(official?.goals ?? 0, internal?.goals ?? 0)) },
-    { label: 'Tarjetas', value: `${Math.max(official?.yellowCards ?? 0, internal?.yellowCards ?? 0)}/${Math.max(official?.redCards ?? 0, internal?.redCards ?? 0)}` },
+    { label: 'Tarjetas', value: `${Math.max(official?.yellowCards ?? 0, internal?.yellowCards ?? 0)}/${Math.max(official?.redCards ?? 0, internal?.redCards ?? 0)}`, title: 'Amarillas / rojas' },
   ];
   if (card.extended) {
-    items.push({ label: 'Asistencias de gol', value: internal ? String(internal.assists) : '—' });
+    for (const stat of keyStatsFor(position.value)) items.push({ label: stat.label, value: internal ? String(stat.value(keyTotals(internal))) : '—', title: stat.title });
     items.push({ label: 'Nota media', value: internal?.averageRating != null ? formatNumber(internal.averageRating, 1) : '—' });
   }
   return items;
@@ -129,6 +168,15 @@ const band = computed(() => {
         <RouterLink v-if="data.internalProfileLink" :to="data.internalProfileLink" class="btn-secondary px-3 py-1.5 text-xs">
           <Icon icon="chart-line" class="h-3 w-3" />Perfil en la plantilla
         </RouterLink>
+        <RouterLink
+          v-if="data.isMe"
+          :to="{ name: 'settings' }"
+          class="group grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line bg-surface text-slate-600 shadow-sm transition hover:border-brand-400/60 hover:text-brand-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+          title="Ajustes de tu cuenta: tema, contraseña y más"
+          aria-label="Ajustes de tu cuenta"
+        >
+          <Icon icon="gear" class="h-4 w-4 transition-transform duration-500 group-hover:rotate-90" />
+        </RouterLink>
       </template>
     </PlayerHeroCard>
 
@@ -155,28 +203,40 @@ const band = computed(() => {
     <section class="card">
       <h2 class="font-semibold text-slate-900">Partido a partido</h2>
       <p class="text-xs text-slate-500">
-        <template v-if="data.extended">Acta interna del cuerpo técnico cuando existe; si no, el acta pública de la federación (sin asistencias, faltas ni nota).</template>
+        <template v-if="data.extended">Acta interna del cuerpo técnico cuando existe; si no, el acta pública de la federación (sin asistencias, faltas, nota ni el dato de su puesto).</template>
         <template v-else>Según las actas públicas de la federación.</template>
+        Pulsa en una columna para ordenar por ella.
       </p>
       <p v-if="rows.length === 0" class="mt-3 text-sm text-slate-500">Todavía no aparece en ningún acta de esta temporada.</p>
       <div v-else class="mt-3 overflow-x-auto">
-        <table class="min-w-full text-sm">
-          <thead class="text-xs uppercase tracking-wide text-slate-500">
+        <table class="table-sticky min-w-full text-sm">
+          <thead class="text-xs text-slate-500">
             <tr>
-              <th class="py-2 pr-3 text-left">Partido</th>
-              <th class="px-2 py-2 text-center">Resultado</th>
-              <th class="px-2 py-2 text-center" title="Dorsal que llevó en ese partido">Dorsal</th>
-              <th class="px-2 py-2 text-center">Min</th>
-              <th class="px-2 py-2 text-center">G</th>
-              <th v-if="data.extended" class="px-2 py-2 text-center" title="Asistencias de gol">A</th>
-              <th class="px-2 py-2 text-center">Tarjetas</th>
-              <th v-if="data.extended" class="col-md px-2 py-2 text-center">Faltas</th>
-              <th v-if="data.extended" class="px-2 py-2 text-center">Nota</th>
-              <th class="col-md px-2 py-2 text-right">Fuente</th>
+              <SortHeader class="py-2 pr-3 text-left" label="Partido" title="Jornada" v-bind="state('match')" @sort="sortBy('match')" />
+              <SortHeader class="px-2 py-2 text-center" label="Resultado" v-bind="state('result')" @sort="sortBy('result')" />
+              <SortHeader class="col-sm px-2 py-2 text-center" label="Dorsal" title="Dorsal que llevó en ese partido" v-bind="state('shirt')" @sort="sortBy('shirt')" />
+              <SortHeader class="px-2 py-2 text-center" label="Min" title="Minutos" v-bind="state('minutes')" @sort="sortBy('minutes')" />
+              <SortHeader class="px-2 py-2 text-center" label="G" title="Goles" v-bind="state('goals')" @sort="sortBy('goals')" />
+              <template v-if="data.extended">
+                <SortHeader
+                  v-for="{ stat, sortKey } in columns.stats"
+                  :key="stat.key"
+                  class="px-2 py-2 text-center"
+                  :label="stat.short"
+                  :title="stat.title"
+                  v-bind="state(sortKey)"
+                  @sort="sortBy(sortKey)"
+                />
+                <SortHeader v-if="columns.withAssists" class="col-sm px-2 py-2 text-center" label="A" title="Asistencias de gol" v-bind="state('assists')" @sort="sortBy('assists')" />
+              </template>
+              <SortHeader class="px-2 py-2 text-center" label="Tarjetas" title="Tarjetas (la roja pesa más)" v-bind="state('cards')" @sort="sortBy('cards')" />
+              <SortHeader v-if="data.extended" class="col-md px-2 py-2 text-center" label="Faltas" title="Faltas cometidas" v-bind="state('fouls')" @sort="sortBy('fouls')" />
+              <SortHeader v-if="data.extended" class="px-2 py-2 text-center" label="Nota" v-bind="state('rating')" @sort="sortBy('rating')" />
+              <SortHeader class="col-md px-2 py-2 text-right" label="Fuente" v-bind="state('source')" @sort="sortBy('source')" />
             </tr>
           </thead>
           <tbody class="divide-y divide-line">
-            <tr v-for="row in rows" :key="row.match.id">
+            <tr v-for="row in sorted" :key="row.match.id">
               <td class="py-2 pr-3">
                 <RouterLink :to="{ name: 'match', params: { matchId: row.match.id } }" class="font-medium text-slate-900 hover:text-brand-500 hover:underline">
                   J{{ row.match.matchday }} · <TeamName :prefix="row.home ? 'vs' : 'en'" :name="opponent(row).name" :crest-url="opponent(row).crestUrl" />
@@ -187,10 +247,13 @@ const band = computed(() => {
                 {{ row.match.homeGoals ?? '—' }}-{{ row.match.awayGoals ?? '—' }}
                 <Badge v-if="outcome(row)" :tone="outcomeTone(outcome(row))" class="ml-1">{{ outcomeLabels[outcome(row)!] }}</Badge>
               </td>
-              <td class="px-2 py-2 text-center tabular-nums text-slate-600">{{ row.shirt ?? '—' }}</td>
+              <td class="col-sm px-2 py-2 text-center tabular-nums text-slate-600">{{ row.shirt ?? '—' }}</td>
               <td class="px-2 py-2 text-center tabular-nums">{{ row.minutes }}'</td>
               <td class="px-2 py-2 text-center font-semibold tabular-nums">{{ row.goals }}</td>
-              <td v-if="data.extended" class="px-2 py-2 text-center tabular-nums">{{ row.assists ?? '—' }}</td>
+              <template v-if="data.extended">
+                <td v-for="{ stat } in columns.stats" :key="stat.key" class="px-2 py-2 text-center whitespace-nowrap tabular-nums">{{ row.stats ? stat.value(row.stats) : '—' }}</td>
+                <td v-if="columns.withAssists" class="col-sm px-2 py-2 text-center tabular-nums">{{ row.assists ?? '—' }}</td>
+              </template>
               <td class="px-2 py-2 text-center"><CardMarks :yellow-cards="row.yellow" :red-card="row.red" /></td>
               <td v-if="data.extended" class="col-md px-2 py-2 text-center tabular-nums">{{ row.fouls ?? '—' }}</td>
               <td v-if="data.extended" class="px-2 py-2 text-center"><RatingBadge v-if="row.source === 'internal'" :rating="row.rating" size="sm" /><span v-else class="text-slate-400">—</span></td>

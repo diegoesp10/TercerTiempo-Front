@@ -6,9 +6,13 @@ import AppChart from '@/components/charts/AppChart.vue';
 import ChartCard from '@/components/charts/ChartCard.vue';
 import Alert from '@/components/ui/Alert.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
+import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import TeamSeasonStats from '@/components/squads/TeamSeasonStats.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
+import { groupByPosition, useGroupByPosition } from '@/composables/usePositionGrouping';
+import { useSort } from '@/composables/useSort';
 import { useSquad } from '@/composables/useSquad';
 import { useSettingsStore } from '@/stores/settings';
 import type { SquadPlayerStatsDto } from '@/types/api';
@@ -88,6 +92,7 @@ const columnsByView: Record<View, Column[]> = {
   defensa: [
     { key: 'recoveries', label: 'Recup.', title: 'Recuperaciones de balón', value: (r) => s(r).recoveries, strong: true },
     { key: 'recoveriesPer90', label: "Rec/90'", title: 'Recuperaciones por 90 minutos', from: 'sm', value: (r) => s(r).recoveriesPer90, format: 'decimal' },
+    { key: 'clearances', label: 'Desp.', title: 'Despejes', value: (r) => s(r).clearances ?? 0 },
     { key: 'tackles', label: 'Ent', title: 'Entradas', value: (r) => s(r).tackles },
     { key: 'interceptions', label: 'Int', title: 'Intercepciones', value: (r) => s(r).interceptions },
     { key: 'saves', label: 'Par', title: 'Paradas', from: 'sm', value: (r) => s(r).saves },
@@ -106,39 +111,23 @@ const display = (column: Column, row: SquadPlayerStatsDto) => {
   return v ?? '—';
 };
 
-const sortKey = ref<string>('minutes');
-const sortAsc = ref(false);
-
-function sortBy(key: string) {
-  if (sortKey.value === key) {
-    sortAsc.value = !sortAsc.value;
-  } else {
-    sortKey.value = key;
-    sortAsc.value = key === 'name';
-  }
-}
+// Una misma clave vale lo mismo en todas las vistas (G, A...), así que basta un getter por clave.
+const getters: Record<string, (row: SquadPlayerStatsDto) => number | string | null> = {
+  name: (r) => r.player.fullName,
+  ...Object.fromEntries(Object.values(columnsByView).flat().map((c) => [c.key, c.value])),
+};
+const players = computed(() => data.value?.players ?? []);
+const { sortKey, sortDesc, sorted, sortBy, state } = useSort<SquadPlayerStatsDto, string>(players, getters, 'minutes', { ascendingFirst: ['name'] });
+const grouped = useGroupByPosition('squad-stats');
+const groups = computed(() => groupByPosition(sorted.value, (row) => row.player.position, grouped.value));
 
 // Al cambiar de vista se ordena por su primera columna si la que había no existe en ella.
 watch(view, () => {
   if (sortKey.value !== 'name' && !columns.value.some((c) => c.key === sortKey.value)) {
     sortKey.value = columns.value[0].key;
-    sortAsc.value = false;
+    sortDesc.value = true;
   }
 });
-
-const sorted = computed(() => {
-  const rows = [...(data.value?.players ?? [])];
-  const column = columns.value.find((c) => c.key === sortKey.value);
-  rows.sort((a, b) => {
-    const cmp = !column
-      ? a.player.fullName.localeCompare(b.player.fullName, 'es')
-      : (column.value(a) ?? -1) - (column.value(b) ?? -1);
-    return sortAsc.value ? cmp : -cmp;
-  });
-  return rows;
-});
-
-const arrow = (key: string) => (sortKey.value === key ? (sortAsc.value ? ' ▲' : ' ▼') : '');
 </script>
 
 <template>
@@ -195,38 +184,50 @@ const arrow = (key: string) => (sortKey.value === key ? (sortAsc.value ? ' ▲' 
 
     <div v-else class="mb-3 flex flex-wrap items-center justify-between gap-2">
       <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Estadísticas por jugador</h2>
-      <div class="inline-flex rounded-lg border border-slate-200 p-0.5 text-sm" role="tablist" aria-label="Estadísticas">
-        <button
-          v-for="item in views"
-          :key="item.id"
-          type="button"
-          role="tab"
-          :aria-selected="view === item.id"
-          class="rounded-md px-3 py-1 font-medium"
-          :class="view === item.id ? 'bg-action text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
-          @click="view = item.id"
-        >
-          {{ item.label }}
-        </button>
+      <div class="flex flex-wrap items-center gap-2">
+        <GroupByPositionToggle v-model="grouped" />
+        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 text-sm" role="tablist" aria-label="Estadísticas">
+          <button
+            v-for="item in views"
+            :key="item.id"
+            type="button"
+            role="tab"
+            :aria-selected="view === item.id"
+            class="cursor-pointer rounded-md px-3 py-1 font-medium"
+            :class="view === item.id ? 'bg-action text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
+            @click="view = item.id"
+          >
+            {{ item.label }}
+          </button>
+        </div>
       </div>
     </div>
 
     <div v-if="data.players.length > 0" class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
-      <table class="min-w-full text-sm">
-        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <table class="table-sticky min-w-full text-sm">
+        <thead class="bg-slate-50 text-xs text-slate-500">
           <tr>
-            <th class="px-3 py-2 text-left">
-              <button type="button" class="hover:text-slate-800" @click="sortBy('name')">Jugador{{ arrow('name') }}</button>
-            </th>
-            <th v-for="column in columns" :key="column.key" class="px-2 py-2 text-center" :class="colClass(column.from)" :title="column.title">
-              <button type="button" class="whitespace-nowrap hover:text-slate-800" @click="sortBy(column.key)">{{ column.label }}{{ arrow(column.key) }}</button>
-            </th>
+            <SortHeader class="px-3 py-2 text-left" label="Jugador" v-bind="state('name')" @sort="sortBy('name')" />
+            <SortHeader
+              v-for="column in columns"
+              :key="column.key"
+              class="px-2 py-2 text-center"
+              :class="colClass(column.from)"
+              :label="column.label"
+              :title="column.title"
+              v-bind="state(column.key)"
+              @sort="sortBy(column.key)"
+            />
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
-          <tr v-for="row in sorted" :key="row.player.id" :class="row.stats.matchesLogged === 0 ? 'text-slate-400' : 'hover:bg-slate-50'">
-            <td class="px-3 py-2 whitespace-nowrap">
-              <span v-if="row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.player.shirtNumber }}</span>
+        <tbody v-for="group in groups" :key="group.key" class="divide-y divide-slate-100">
+          <tr v-if="group.label">
+            <td :colspan="columns.length + 1" class="bg-surface-2 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+              {{ group.label }} · {{ group.rows.length }}
+            </td>
+          </tr>
+          <tr v-for="row in group.rows" :key="row.player.id" :class="row.stats.matchesLogged === 0 ? 'text-slate-400' : 'hover:bg-slate-50'">
+            <td class="px-3 py-2 lg:whitespace-nowrap">
               <RouterLink
                 :to="{ name: 'squad-player', params: { squadId, squadPlayerId: row.player.id } }"
                 class="font-medium hover:text-accent-400 hover:underline"

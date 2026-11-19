@@ -4,11 +4,13 @@ import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import GroundCard from '@/components/trainings/GroundCard.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
 import PlayerPhotoWizard from '@/components/players/PlayerPhotoWizard.vue';
-import type { MyCallUpDto, MyTrainingDto, PlayerDto } from '@/types/api';
+import type { MyCallUpDto, MyTrainingDto, PerformanceWithMatchDto, PlayerDto } from '@/types/api';
 import PercentileBar from '@/components/ui/PercentileBar.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
@@ -16,6 +18,7 @@ import AppChart from '@/components/charts/AppChart.vue';
 import ChartCard from '@/components/charts/ChartCard.vue';
 import { profileRadarOption, ratingBreakdownOption, ratingTrendOption } from '@/charts/options';
 import { useAsync } from '@/composables/useAsync';
+import { useSort } from '@/composables/useSort';
 import { markCallUpsSeen } from '@/composables/useCallUpSeen';
 import { useAuthStore } from '@/stores/auth';
 import { useSettingsStore } from '@/stores/settings';
@@ -40,8 +43,10 @@ import {
 } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 import { opponentOf } from '@/utils/crests';
+import MyTrainingTallyCard from '@/components/trainings/MyTrainingTallyCard.vue';
 import DashboardSearch from '@/components/search/DashboardSearch.vue';
 import PublicProfileToggle from '@/components/players/PublicProfileToggle.vue';
+import { keyStatsFor, keyTotals, matchesOfTeam } from '@/utils/keyStats';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
@@ -78,17 +83,38 @@ const radarChart = computed(() =>
 const breakdownChart = computed(() => (profile.data.value ? ratingBreakdownOption(profile.data.value.matches) : null));
 const hasCharts = computed(() => profile.data.value?.matches.some((m) => m.performance) ?? false);
 
-const heroStats = computed(() =>
-  data.value
-    ? [
-        { label: 'Partidos', value: data.value.individual.matchesLogged },
-        { label: 'Minutos', value: data.value.individual.minutes },
-        { label: 'Goles', value: data.value.individual.goals },
-        { label: 'Asistencias de gol', value: data.value.individual.assists },
-        { label: 'Nota media', value: data.value.individual.averageRating === null ? '—' : formatNumber(data.value.individual.averageRating, 1) },
-      ]
-    : [],
-);
+// Además de lo de todos, el dato de su puesto (paradas, despejes, pases...).
+const heroStats = computed(() => {
+  if (!data.value) return [];
+  const individual = data.value.individual;
+  return [
+    { label: 'Partidos', ...matchesOfTeam(individual.matchesLogged, data.value.teamImpact?.teamMatchesPlayed) },
+    { label: 'Titular', value: individual.starts },
+    { label: 'Minutos', value: individual.minutes },
+    { label: 'Goles', value: individual.goals },
+    ...keyStatsFor(data.value.player.position).map((stat) => ({ label: stat.label, value: stat.value(keyTotals(individual)), title: stat.title })),
+    { label: 'Nota media', value: individual.averageRating === null ? '—' : formatNumber(individual.averageRating, 1) },
+  ];
+});
+
+// Últimas actas: llegan de la más reciente a la más antigua y se ordenan por cualquier columna.
+type RecentKey = 'match' | 'result' | 'minutes' | 'goals' | 'assists' | 'rating';
+const recentRows = computed(() => data.value?.recentPerformances ?? []);
+const recentGetters: Record<RecentKey, (item: PerformanceWithMatchDto) => number | null> = {
+  match: (i) => new Date(i.match.kickoffAt).getTime(),
+  // Primero las victorias (y entre ellas, las de más diferencia).
+  result: (i) => {
+    const { homeGoals, awayGoals } = i.match;
+    if (homeGoals === null || awayGoals === null) return null;
+    const diff = i.match.homeTeam.id === squad.value?.teamId ? homeGoals - awayGoals : awayGoals - homeGoals;
+    return (diff > 0 ? 3 : diff === 0 ? 1 : 0) * 100 + diff;
+  },
+  minutes: (i) => i.performance.minutesPlayed,
+  goals: (i) => i.performance.goals,
+  assists: (i) => i.performance.assists,
+  rating: (i) => i.performance.rating,
+};
+const { sorted: recentSorted, sortBy: sortRecent, state: recentState } = useSort<PerformanceWithMatchDto, RecentKey>(recentRows, recentGetters, 'match');
 
 const impact = computed(() => data.value?.teamImpact ?? null);
 const league = computed(() => data.value?.league ?? null);
@@ -127,8 +153,9 @@ async function leave() {
 
 <template>
   <template v-if="!squad">
-    <PageHeader :title="`Hola, ${auth.displayName}`" subtitle="Todavía no estás vinculado a ninguna plantilla." />
-    <DashboardSearch class="mb-6 max-w-2xl" />
+    <PageHeader :title="`Hola, ${auth.displayName}`" subtitle="Todavía no estás vinculado a ninguna plantilla.">
+      <template #actions><DashboardSearch /></template>
+    </PageHeader>
     <div class="card max-w-2xl">
       <h2 class="font-semibold text-slate-900">Vincúlate a tu ficha</h2>
       <p class="mt-2 text-sm text-slate-600">
@@ -150,12 +177,13 @@ async function leave() {
       :team-crest-url="squad.teamCrestUrl"
       :team-id="squad.teamId"
       :name="data.player.displayName"
-      :number="squad.shirtNumber"
+      :number="null"
       :photo-url="auth.player?.photoUrl ?? profile.data.value?.player.photoUrl ?? null"
-      :meta="`${positionLabels[data.player.position]}${squad.shirtNumber ? ` · dorsal ${squad.shirtNumber}` : ''}`"
+      :meta="positionLabels[data.player.position]"
       :stats="heroStats"
     >
       <template #actions>
+        <DashboardSearch />
         <button type="button" class="btn-primary" @click="photoOpen = true"><Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />{{ auth.player?.photoUrl ? 'Cambiar mi foto' : 'Subir mi foto' }}</button>
         <RouterLink :to="{ name: 'squad', params: { squadId: squad.squadId } }" class="btn-secondary min-w-0 max-w-full">
           <TeamName :name="squad.teamName" :crest-url="squad.teamCrestUrl" :team-id="squad.teamId" />
@@ -164,15 +192,9 @@ async function leave() {
       </template>
     </PlayerHeroCard>
 
-    <section class="card mb-8 flex flex-wrap items-center justify-between gap-4">
-      <PublicProfileToggle class="min-w-0 flex-1" />
-      <RouterLink
-        v-if="squad.rosterEntryId"
-        :to="{ name: 'player-card', params: { teamId: squad.teamId, entryId: squad.rosterEntryId } }"
-        class="btn-secondary shrink-0 px-3 py-1.5 text-xs"
-      >Ver mi ficha como la ven los demás</RouterLink>
+    <section class="card mb-8">
+      <PublicProfileToggle />
     </section>
-    <DashboardSearch class="mb-8" />
 
     <PlayerPhotoWizard :open="photoOpen" :has-photo="!!auth.player?.photoUrl" @close="photoOpen = false" @saved="onPhotoSaved" />
 
@@ -189,6 +211,8 @@ async function leave() {
             <strong>{{ nextCallUp.mine.called ? 'Vas convocado' : 'No vas convocado' }}</strong> · J{{ nextCallUp.match.matchday }}
             <TeamName prefix="vs" :name="opponentOf(nextCallUp.match, squad.teamId).name" :crest-url="opponentOf(nextCallUp.match, squad.teamId).crestUrl" /> · {{ formatKickoff(nextCallUp.match.kickoffAt) }}
           </p>
+          <p v-if="nextCallUp.mine.called && nextCallUp.meetAt" class="mt-1 text-xs text-slate-600">Cita: {{ formatKickoff(nextCallUp.meetAt) }}</p>
+          <GroundCard v-if="nextCallUp.mine.called && (nextCallUp.meetGround || nextCallUp.meetPlace)" :ground="nextCallUp.meetGround" :place="nextCallUp.meetPlace" compact class="mt-1.5" />
           <p class="mt-1 flex flex-wrap items-center gap-2 text-xs">
             <Badge :tone="nextCallUp.mine.called ? callUpResponseTone[nextCallUp.mine.response] : nextCallUp.mine.response === 'Acknowledged' ? 'slate' : 'amber'">
               {{ nextCallUp.mine.called ? callUpResponseLabels[nextCallUp.mine.response] : nextCallUp.mine.response === 'Acknowledged' ? 'Enterado' : 'Sin firmar' }}
@@ -208,11 +232,14 @@ async function leave() {
             <RouterLink :to="{ name: 'squad-trainings', params: { squadId: t.squadId }, query: { sesion: t.session.id } }" class="min-w-0 text-slate-700 hover:text-accent-400">
               {{ formatDayHeading(t.session.startsAt) }} · {{ t.session.title }}
             </RouterLink>
-            <Badge v-if="t.session.mine" :tone="attendanceStatusTone[t.session.mine.status]">{{ attendanceStatusLabels[t.session.mine.status] }}</Badge>
+            <Badge v-if="t.session.mine?.injured" tone="red">Lesionado</Badge>
+            <Badge v-else-if="t.session.mine" :tone="attendanceStatusTone[t.session.mine.status]">{{ attendanceStatusLabels[t.session.mine.status] }}</Badge>
           </li>
         </ul>
       </div>
     </section>
+
+    <MyTrainingTallyCard class="mb-8" :current-squad-id="squad.squadId" />
 
     <Alert v-if="data.individual.matchesLogged === 0" kind="info" class="mb-6">
       Tu cuerpo técnico todavía no ha registrado ninguna acta con tu ficha. En cuanto lo haga, aquí aparecerán tus números.
@@ -233,7 +260,7 @@ async function leave() {
         <StatCard label="Acierto en el pase" :value="formatPct(data.individual.passAccuracyPct)" :hint="`${data.individual.passesCompleted}/${data.individual.passesAttempted} completados`" />
         <StatCard label="Recuperaciones" :value="data.individual.recoveries" :hint="`${formatNumber(data.individual.recoveriesPer90)} por 90'`" />
         <StatCard label="Pérdidas de balón" :value="data.individual.ballLosses" :hint="`${data.individual.fouls} faltas cometidas`" />
-        <StatCard label="Entradas" :value="data.individual.tackles" :hint="`${data.individual.interceptions} intercepciones`" />
+        <StatCard label="Entradas" :value="data.individual.tackles" :hint="`${data.individual.interceptions} intercepciones · ${data.individual.clearances ?? 0} despejes`" />
       </div>
     </section>
 
@@ -359,18 +386,18 @@ async function leave() {
       </div>
       <div class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
         <table class="min-w-full text-sm">
-          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <thead class="bg-slate-50 text-xs text-slate-500">
             <tr>
-              <th class="px-3 py-2 text-left">Partido</th>
-              <th class="px-3 py-2 text-center">Resultado</th>
-              <th class="col-sm px-3 py-2 text-center">Min</th>
-              <th class="px-3 py-2 text-center">G</th>
-              <th class="col-sm px-3 py-2 text-center">A</th>
-              <th class="px-3 py-2 text-center">Nota</th>
+              <SortHeader class="px-3 py-2 text-left" label="Partido" title="Fecha del partido" v-bind="recentState('match')" @sort="sortRecent('match')" />
+              <SortHeader class="px-3 py-2 text-center" label="Resultado" v-bind="recentState('result')" @sort="sortRecent('result')" />
+              <SortHeader class="col-sm px-3 py-2 text-center" label="Min" title="Minutos" v-bind="recentState('minutes')" @sort="sortRecent('minutes')" />
+              <SortHeader class="px-3 py-2 text-center" label="G" title="Goles" v-bind="recentState('goals')" @sort="sortRecent('goals')" />
+              <SortHeader class="col-sm px-3 py-2 text-center" label="A" title="Asistencias de gol" v-bind="recentState('assists')" @sort="sortRecent('assists')" />
+              <SortHeader class="px-3 py-2 text-center" label="Nota" v-bind="recentState('rating')" @sort="sortRecent('rating')" />
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr v-for="item in data.recentPerformances" :key="item.performance.id" class="hover:bg-slate-50">
+            <tr v-for="item in recentSorted" :key="item.performance.id" class="hover:bg-slate-50">
               <td class="px-3 py-2">
                 <RouterLink :to="{ name: 'match', params: { matchId: item.match.id } }" class="font-medium text-slate-800 hover:text-accent-400">
                   J{{ item.match.matchday }} · <TeamName prefix="vs" :name="opponentOf(item.match, squad.teamId).name" :crest-url="opponentOf(item.match, squad.teamId).crestUrl" />

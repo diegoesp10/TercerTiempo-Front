@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import { useRoute, useRouter } from 'vue-router';
 import { ApiError, errorMessage } from '@/api/http';
+import AppFeaturesInfo from '@/components/auth/AppFeaturesInfo.vue';
 import PasswordChecklist from '@/components/auth/PasswordChecklist.vue';
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '@/utils/password';
 import ClubPicker from '@/components/clubs/ClubPicker.vue';
@@ -146,10 +147,16 @@ async function submit() {
 </script>
 
 <template>
-  <AuthPanel title="Tu equipo, con datos de verdad" subtitle="Para clubes, cuerpos técnicos y jugadores.">
+  <AuthPanel narrow title="Tu equipo, con datos de verdad" subtitle="Para clubes, cuerpos técnicos y jugadores.">
     <div>
-      <h1 class="text-3xl font-bold text-slate-900">Darme de alta</h1>
-      <p class="mt-1 text-sm text-slate-500">Elige qué papel tienes: la cuenta no se puede cambiar después.</p>
+      <!-- En el móvil «Qué incluye» va debajo: al lado partiría el título. -->
+      <div class="flex flex-col items-start gap-3 sm:flex-row sm:justify-between">
+        <div class="min-w-0">
+          <h1 class="text-3xl font-bold text-slate-900">Darme de alta</h1>
+          <p class="mt-1 text-sm text-slate-500">Elige qué papel tienes: la cuenta no se puede cambiar después.</p>
+        </div>
+        <AppFeaturesInfo class="sm:mt-1.5" />
+      </div>
 
       <form class="mt-6 space-y-4" @submit.prevent="submit">
         <Alert v-if="error" kind="error">{{ error }}</Alert>
@@ -216,7 +223,6 @@ async function submit() {
             <p class="mt-1 text-sm text-slate-500">
               <TeamName :name="invite.teamName" :crest-url="invite.teamCrestUrl" :team-id="invite.teamId" /> · {{ invite.competitionName }} · {{ invite.seasonLabel }}
               <template v-if="invite.player.position"> · {{ positionLabels[invite.player.position] }}</template>
-              <template v-if="invite.player.shirtNumber"> · dorsal {{ invite.player.shirtNumber }}</template>
             </p>
             <p class="mt-2 text-xs text-slate-500">Si esta no es tu ficha, no sigas: avisa a quien te dio el código.</p>
           </div>
@@ -287,8 +293,7 @@ async function submit() {
             <RouterLink to="/condiciones" target="_blank" class="font-semibold text-accent-400 hover:underline">condiciones de uso</RouterLink>
             y la
             <RouterLink to="/privacidad" target="_blank" class="font-semibold text-accent-400 hover:underline">política de privacidad</RouterLink>.
-            <template v-if="isPlayer">Si tienes entre 14 y 17 años, confirmas que cuentas con la autorización de tus padres o tutores.</template>
-            <template v-else>Confirmas que eres mayor de edad{{ isClub ? ' y que puedes actuar en nombre del club' : '' }}.</template>
+            Confirmas que eres mayor de edad{{ isClub ? ' y que puedes actuar en nombre del club' : '' }}.
           </span>
         </label>
 

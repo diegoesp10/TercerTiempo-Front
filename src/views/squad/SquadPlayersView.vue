@@ -3,7 +3,9 @@ import { computed, reactive, ref } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
+import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Badge from '@/components/ui/Badge.vue';
 import InjuryPanel from '@/components/squads/InjuryPanel.vue';
 import SquadSeasonTable from '@/components/squads/SquadSeasonTable.vue';
@@ -15,6 +17,8 @@ import { confirmDialog } from '@/composables/useConfirm';
 import PlayerName from '@/components/players/PlayerName.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import { useViewer } from '@/composables/useViewer';
+import { useSort } from '@/composables/useSort';
+import { groupByPosition, useGroupByPosition } from '@/composables/usePositionGrouping';
 
 const { squadId, detail, reload } = useSquad();
 const auth = useAuthStore();
@@ -27,6 +31,20 @@ const { isAdmin } = useViewer();
 const seesInjuries = computed(() => canManage.value || myEntryId.value !== null || isAdmin.value);
 const left = computed(() => (detail.value?.players ?? []).filter((p) => p.status !== 'Active'));
 const myEntryId = computed(() => (auth.playerSquad?.squadId === squadId.value ? auth.playerSquad.squadPlayerId : null));
+
+// Fichas: llegan por nombre. Se ordena solo por lo que no se edita en la fila (lee la ficha guardada, no el
+// formulario), así que una edición en curso no mueve su fila.
+const positionRank = Object.fromEntries(positionOptions.map((o, i) => [o.value, i])) as Record<Position, number>;
+type SortKey = 'name' | 'position' | 'account';
+const getters: Record<SortKey, (p: SquadPlayerDto) => number | string | null> = {
+  name: (p) => p.fullName,
+  position: (p) => (p.position ? positionRank[p.position] : null),
+  account: (p) => (p.linked ? 1 : 0),
+};
+const { sorted, sortBy, state } = useSort<SquadPlayerDto, SortKey>(active, getters, 'name', { desc: false, ascendingFirst: ['name', 'position'] });
+const grouped = useGroupByPosition('squad-players');
+const groups = computed(() => groupByPosition(sorted.value, (p) => p.position, grouped.value));
+const columnCount = computed(() => 3 + (canInvitePlayers.value ? 1 : 0) + (canManage.value ? 1 : 0));
 
 const busy = ref(false);
 const error = ref<string | null>(null);
@@ -82,7 +100,15 @@ function setVisibility(visibility: SquadVisibility) {
 }
 
 // --- Proveedor ---
-function importRoster() {
+// Va a la web del proveedor y puede tardar: se avisa en cada clic, para que no se pulse a la ligera.
+async function importRoster() {
+  const ok = await confirmDialog({
+    title: 'Importar fichas de la federación',
+    message:
+      'Se traerán las fichas de la plantilla que publica la federación (a través de futbolasturiano.es) y que todavía no estén aquí; las que ya tienes no se repiten. Puede tardar un poco.',
+    confirmLabel: 'Importar fichas',
+  });
+  if (!ok) return;
   void act(async () => {
     const before = detail.value?.players.length ?? 0;
     detail.value = await api.squads.importRoster(squadId.value);
@@ -114,6 +140,18 @@ function add() {
     newPlayer.shirtNumber = '';
     await reload();
     return `${player.fullName} añadido a la plantilla.`;
+  });
+}
+
+// La federación no publica la posición de todos: hasta que el club se la pone, salen arriba con su selector.
+const withoutPosition = computed(() => active.value.filter((p) => p.position === null));
+
+function setPosition(player: SquadPlayerDto, position: Position | null) {
+  if (!position) return;
+  void act(async () => {
+    await api.squads.updatePlayer(squadId.value, player.id, { fullName: player.fullName, position, shirtNumber: player.shirtNumber });
+    await reload();
+    return `${player.fullName}: ${positionLabels[position].toLowerCase()}.`;
   });
 }
 
@@ -181,10 +219,45 @@ async function remove(player: SquadPlayerDto) {
 
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Proveedor de datos</p>
-          <p class="mt-2 text-xs text-slate-500">Añade las fichas publicadas por futbolasturiano.es que aún no estén en la plantilla.</p>
-          <button type="button" class="btn-secondary mt-3 px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="importRoster">Importar plantilla publicada</button>
+          <p class="mt-2 text-xs text-slate-500">Si la federación publica fichas nuevas (futbolasturiano.es), tráelas a la plantilla. Antes de importar te avisa: puede tardar.</p>
+          <button
+            type="button"
+            class="btn-secondary mt-3 px-3 py-1 text-xs"
+            v-busy="busy"
+            :disabled="busy"
+            :title="busy ? 'Espera a que termine lo que se está guardando' : 'Trae las fichas nuevas de la federación; antes te pide confirmación'"
+            @click="importRoster"
+          >
+            <Icon icon="download" class="mr-1.5 h-3 w-3" />Importar fichas de la federación
+          </button>
         </div>
       </div>
+    </section>
+
+    <section v-if="canManage && withoutPosition.length > 0" class="card mb-6 border-amber-400/40">
+      <h2 class="flex items-center gap-2 font-semibold text-slate-900">
+        <Icon icon="triangle-exclamation" class="h-4 w-4 text-amber-400" />
+        {{ withoutPosition.length }} {{ withoutPosition.length === 1 ? 'jugador sin posición' : 'jugadores sin posición' }}
+      </h2>
+      <p class="mt-1 text-xs text-slate-500">
+        La federación no publica la posición de todos sus jugadores: pónsela tú. La convocatoria y el acta los agrupan por posición y la
+        nota de cada partido depende de ella. Si la federación la publica más adelante, se pone sola.
+      </p>
+      <ul class="mt-3 divide-y divide-slate-100">
+        <li v-for="player in withoutPosition" :key="player.id" class="flex flex-wrap items-center justify-between gap-2 py-2">
+          <PlayerName :name="player.fullName" :photo-url="player.photoUrl" size="sm" class="font-medium text-slate-800" />
+          <SearchSelect
+            class="w-48"
+            size="sm"
+            :aria-label="`Posición de ${player.fullName}`"
+            placeholder="Elige su posición"
+            :model-value="null"
+            :options="positionOptions"
+            :disabled="busy"
+            @update:model-value="setPosition(player, $event as Position | null)"
+          />
+        </li>
+      </ul>
     </section>
 
     <SquadSeasonTable class="mb-6" :squad-id="squadId" :highlight-id="myEntryId" />
@@ -197,9 +270,12 @@ async function remove(player: SquadPlayerDto) {
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <!-- Jugadores -->
       <section class="card lg:col-span-2">
-        <div class="mb-3 flex items-center justify-between">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 class="font-semibold text-slate-900">{{ canManage || canInvitePlayers ? 'Fichas e invitaciones' : 'Fichas' }}</h2>
-          <span class="text-xs text-slate-500">{{ active.length }} activos</span>
+          <div class="flex items-center gap-3">
+            <GroupByPositionToggle v-if="active.length > 0" v-model="grouped" />
+            <span class="text-xs text-slate-500">{{ active.length }} activos</span>
+          </div>
         </div>
 
         <p v-if="active.length === 0" class="text-sm text-slate-500">
@@ -208,22 +284,23 @@ async function remove(player: SquadPlayerDto) {
 
         <div v-else class="overflow-x-auto">
           <table class="min-w-full text-sm">
-            <thead class="text-xs uppercase tracking-wide text-slate-500">
+            <thead class="text-xs text-slate-500">
               <tr>
-                <th class="py-2 pr-3 text-left">#</th>
-                <th class="py-2 pr-3 text-left">Jugador</th>
-                <th class="col-sm py-2 pr-3 text-left">Posición</th>
-                <th class="col-md py-2 pr-3 text-left">Cuenta</th>
-                <th v-if="canInvitePlayers" class="py-2 pr-3 text-left">Invitación personal</th>
-                <th v-if="canManage" class="py-2 text-right"></th>
+                <SortHeader class="py-2 pr-3 text-left" label="Jugador" v-bind="state('name')" @sort="sortBy('name')" />
+                <SortHeader class="col-sm py-2 pr-3 text-left" label="Posición" title="Posición (portero, defensa, centrocampista, delantero)" v-bind="state('position')" @sort="sortBy('position')" />
+                <SortHeader class="col-md py-2 pr-3 text-left" label="Cuenta" title="Cuenta vinculada" v-bind="state('account')" @sort="sortBy('account')" />
+                <th v-if="canInvitePlayers" class="py-2 pr-3 text-left uppercase tracking-wide">Invitación personal</th>
+                <th v-if="canManage" class="py-2 text-right uppercase tracking-wide"></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="player in active" :key="player.id" :class="player.id === myEntryId ? 'bg-brand-500/10' : ''">
+            <tbody v-for="group in groups" :key="group.key" class="divide-y divide-slate-100">
+              <tr v-if="group.label">
+                <td :colspan="columnCount" class="bg-surface-2 px-2 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {{ group.label }} · {{ group.rows.length }}
+                </td>
+              </tr>
+              <tr v-for="player in group.rows" :key="player.id" :class="player.id === myEntryId ? 'bg-brand-500/10' : ''">
                 <template v-if="editingId === player.id">
-                  <td class="py-2 pr-3">
-                    <input v-model.number="edit.shirtNumber" type="number" min="1" max="99" class="input w-16 px-2 py-1" aria-label="Dorsal" />
-                  </td>
                   <td class="py-2 pr-3">
                     <input v-model="edit.fullName" type="text" required maxlength="150" class="input px-2 py-1" aria-label="Nombre" />
                   </td>
@@ -231,8 +308,7 @@ async function remove(player: SquadPlayerDto) {
                     <SearchSelect
                       size="sm"
                       aria-label="Posición"
-                      placeholder="—"
-                      clearable
+                      placeholder="Elige su posición"
                       :model-value="edit.position || null"
                       :options="positionOptions"
                       @update:model-value="edit.position = ($event as Position | null) ?? ''"
@@ -241,12 +317,11 @@ async function remove(player: SquadPlayerDto) {
                   <td class="col-md py-2 pr-3 text-xs text-slate-500">{{ player.linked ? player.linkedPlayerName : '—' }}</td>
                   <td v-if="canInvitePlayers" class="py-2 pr-3 text-xs text-slate-500">{{ player.linked ? 'Vinculado' : '—' }}</td>
                   <td class="py-2 text-right whitespace-nowrap">
-                    <button type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="saveEdit">Guardar</button>
+                    <button type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy" :disabled="busy || !edit.position || !edit.fullName.trim()" :title="edit.position ? undefined : 'Elige su posición'" @click="saveEdit">Guardar</button>
                     <button type="button" class="btn-ghost ml-1 px-3 py-1 text-xs" @click="editingId = null">Cancelar</button>
                   </td>
                 </template>
                 <template v-else>
-                  <td class="py-2 pr-3 tabular-nums text-slate-500">{{ player.shirtNumber ?? '—' }}</td>
                   <td class="py-2 pr-3">
                     <RouterLink
                       :to="{ name: 'squad-player', params: { squadId, squadPlayerId: player.id } }"
@@ -259,7 +334,11 @@ async function remove(player: SquadPlayerDto) {
                       </Badge>
                     </p>
                   </td>
-                  <td class="col-sm py-2 pr-3 text-slate-600">{{ player.position ? positionLabels[player.position] : '—' }}</td>
+                  <td class="col-sm py-2 pr-3 text-slate-600">
+                    <template v-if="player.position">{{ positionLabels[player.position] }}</template>
+                    <span v-else-if="canManage" class="text-amber-400">Sin posición</span>
+                    <template v-else>—</template>
+                  </td>
                   <td class="col-md py-2 pr-3">
                     <Badge v-if="player.linked" tone="green">{{ player.id === myEntryId ? 'Eres tú' : 'Vinculado' }}</Badge>
                     <span v-else class="text-xs text-slate-400">Sin vincular</span>
@@ -286,10 +365,6 @@ async function remove(player: SquadPlayerDto) {
         </div>
 
         <form v-if="canManage" class="mt-4 flex flex-wrap items-end gap-2 border-t border-slate-100 pt-4" @submit.prevent="add">
-          <div class="w-20">
-            <label class="label" for="new-shirt">Dorsal</label>
-            <input id="new-shirt" v-model.number="newPlayer.shirtNumber" type="number" min="1" max="99" class="input px-2" />
-          </div>
           <div class="min-w-48 flex-1">
             <label class="label" for="new-name">Nombre y apellidos</label>
             <input id="new-name" v-model="newPlayer.fullName" type="text" required maxlength="150" class="input" placeholder="Nuevo jugador" />
@@ -298,14 +373,13 @@ async function remove(player: SquadPlayerDto) {
             <label class="label" for="new-position">Posición</label>
             <SearchSelect
               id="new-position"
-              placeholder="—"
-              clearable
+              placeholder="Elige su posición"
               :model-value="newPlayer.position || null"
               :options="positionOptions"
               @update:model-value="newPlayer.position = ($event as Position | null) ?? ''"
             />
           </div>
-          <button type="submit" class="btn-primary" v-busy="busy" :disabled="busy || !newPlayer.fullName.trim()">Añadir</button>
+          <button type="submit" class="btn-primary" v-busy="busy" :disabled="busy || !newPlayer.fullName.trim() || !newPlayer.position">Añadir</button>
         </form>
 
         <details v-if="left.length > 0" class="mt-4 text-sm">

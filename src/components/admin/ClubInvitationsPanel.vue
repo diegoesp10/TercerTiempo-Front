@@ -4,7 +4,9 @@ import { adminApi } from '@/api/admin';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import { confirmDialog } from '@/composables/useConfirm';
+import { useSort } from '@/composables/useSort';
 import type { ClubInvitationDto, ClubInvitationStatus, InvitationClubDto } from '@/types/api';
 import { formatKickoff } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
@@ -35,6 +37,22 @@ let searchId = 0;
 
 const statusLabels: Record<ClubInvitationStatus, string> = { available: 'Disponible', used: 'Usada', expired: 'Caducada', revoked: 'Anulada' };
 const statusTone: Record<ClubInvitationStatus, 'green' | 'blue' | 'slate' | 'red'> = { available: 'green', used: 'blue', expired: 'slate', revoked: 'red' };
+const statusOrder: Record<ClubInvitationStatus, number> = { available: 0, used: 1, expired: 2, revoked: 3 };
+
+type SortKey = 'code' | 'club' | 'status' | 'created' | 'expires';
+const { sorted, sortBy, state } = useSort<ClubInvitationDto, SortKey>(
+  invitations,
+  {
+    code: (i) => i.code,
+    club: (i) => i.note,
+    status: (i) => statusOrder[i.status],
+    created: (i) => Date.parse(i.createdAt),
+    // Sin caducidad es la más lejana.
+    expires: (i) => (i.expiresAt ? Date.parse(i.expiresAt) : Number.MAX_SAFE_INTEGER),
+  },
+  'created',
+  { ascendingFirst: ['code', 'club', 'status'] },
+);
 
 async function guard<T>(action: () => Promise<T>): Promise<T | undefined> {
   try {
@@ -239,16 +257,16 @@ onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer); });
       <table class="min-w-full text-sm">
         <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
-            <th class="px-3 py-2 text-left">Código</th>
-            <th class="px-3 py-2 text-left">Club</th>
-            <th class="px-3 py-2 text-left">Estado</th>
-            <th class="px-3 py-2 text-left">Creada</th>
-            <th class="px-3 py-2 text-left">Caduca</th>
+            <SortHeader class="px-3 py-2 text-left" label="Código" v-bind="state('code')" @sort="sortBy('code')" />
+            <SortHeader class="px-3 py-2 text-left" label="Club" v-bind="state('club')" @sort="sortBy('club')" />
+            <SortHeader class="px-3 py-2 text-left" label="Estado" v-bind="state('status')" @sort="sortBy('status')" />
+            <SortHeader class="px-3 py-2 text-left" label="Creada" v-bind="state('created')" @sort="sortBy('created')" />
+            <SortHeader class="px-3 py-2 text-left" label="Caduca" v-bind="state('expires')" @sort="sortBy('expires')" />
             <th class="px-3 py-2 text-right"></th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
-          <tr v-for="invitation in invitations" :key="invitation.id">
+          <tr v-for="invitation in sorted" :key="invitation.id">
             <td class="px-3 py-2 font-mono tracking-widest text-slate-900">{{ invitation.code }}</td>
             <td class="px-3 py-2 text-slate-700">
               <TeamName v-if="invitation.teamId" :name="invitation.note ?? 'Club'" :team-id="invitation.teamId" />

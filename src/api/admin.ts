@@ -9,7 +9,7 @@ import type {
   ForbiddenWordsDto,
   RefereeCommentAdminDto,
   RefereeCommentsDto,
-  CookiePolicyDto,
+  AdminCookiePolicyDto,
   UpsertCookieRequest,
   ClubInvitationDto,
   FootballSyncSettingsDto,
@@ -52,12 +52,13 @@ export const adminApi = {
       `/api/admin/analytics?from=${from}&to=${to}&scope=${scope}${clubId ? `&clubId=${clubId}` : ''}`,
       { token, silent: true },
     ),
-  createCookie: (token: string, body: UpsertCookieRequest) => http<CookiePolicyDto>('/api/admin/cookies', { method: 'POST', token, body }),
+  cookies: (token: string) => http<AdminCookiePolicyDto>('/api/admin/cookies', { token, silent: true }),
+  createCookie: (token: string, body: UpsertCookieRequest) => http<AdminCookiePolicyDto>('/api/admin/cookies', { method: 'POST', token, body }),
   updateCookie: (token: string, id: string, body: UpsertCookieRequest) =>
-    http<CookiePolicyDto>(`/api/admin/cookies/${id}`, { method: 'PUT', token, body }),
-  deleteCookie: (token: string, id: string) => http<CookiePolicyDto>(`/api/admin/cookies/${id}`, { method: 'DELETE', token }),
+    http<AdminCookiePolicyDto>(`/api/admin/cookies/${id}`, { method: 'PUT', token, body }),
+  deleteCookie: (token: string, id: string) => http<AdminCookiePolicyDto>(`/api/admin/cookies/${id}`, { method: 'DELETE', token }),
   publishCookiePolicy: (token: string, version: string) =>
-    http<CookiePolicyDto>('/api/admin/cookies/policy', { method: 'POST', token, body: { version } }),
+    http<AdminCookiePolicyDto>('/api/admin/cookies/policy', { method: 'POST', token, body: { version } }),
   licenses: (token: string) => http<LicensesOverviewDto>('/api/admin/licenses', { token }),
   /** Pases vendidos en toda la plataforma: total, parte de los clubes y parte de la plataforma, por club. */
   passEarnings: (token: string) => http<PlatformPassEarningsDto>('/api/admin/pass-earnings', { token }),

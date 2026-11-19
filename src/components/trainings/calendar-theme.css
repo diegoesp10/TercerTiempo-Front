@@ -1,0 +1,44 @@
+/*
+ * Paleta del tema Breezy de FullCalendar con los colores de la app: cada variable apunta a un token --t-*, así que el
+ * calendario cambia solo con el tema claro u oscuro (data-theme) sin repetir los valores. Los fondos y bordes suaves son
+ * mezclas del texto principal (oscuro en claro, claro en oscuro) con transparente.
+ */
+:root {
+  --fc-breezy-primary: var(--t-brand-500);
+  --fc-breezy-primary-over: var(--t-brand-600);
+  --fc-breezy-primary-foreground: #ffffff;
+
+  --fc-breezy-secondary: var(--fc-breezy-background);
+  --fc-breezy-secondary-over: var(--fc-breezy-muted);
+  --fc-breezy-secondary-border: var(--fc-breezy-strong-border);
+  --fc-breezy-secondary-foreground: var(--fc-breezy-strong-foreground);
+  --fc-breezy-secondary-icon: var(--fc-breezy-faint-foreground);
+  --fc-breezy-secondary-icon-over: var(--fc-breezy-muted-foreground);
+
+  --fc-breezy-event: var(--t-brand-500);
+  --fc-breezy-event-contrast: #ffffff;
+  --fc-breezy-background-event: var(--t-accent-400);
+  --fc-breezy-highlight: color-mix(in srgb, var(--t-brand-500) 9%, transparent);
+  --fc-breezy-now: var(--t-red-600);
+
+  --fc-breezy-selected: var(--fc-breezy-strong);
+
+  --fc-breezy-popover: var(--t-surface);
+  --fc-breezy-popover-border: var(--t-line);
+
+  --fc-breezy-background: var(--t-surface);
+  --fc-breezy-faint: color-mix(in srgb, var(--t-slate-900) 2.5%, transparent);
+  --fc-breezy-muted: color-mix(in srgb, var(--t-slate-900) 5%, transparent);
+  --fc-breezy-strong: color-mix(in srgb, var(--t-slate-900) 10%, transparent);
+  --fc-breezy-stronger: color-mix(in srgb, var(--t-slate-900) 14%, transparent);
+  --fc-breezy-strongest: color-mix(in srgb, var(--t-slate-900) 18%, transparent);
+
+  --fc-breezy-foreground: var(--t-slate-700);
+  --fc-breezy-faint-foreground: color-mix(in srgb, var(--t-slate-400) 75%, var(--t-surface));
+  --fc-breezy-muted-foreground: var(--t-slate-500);
+  --fc-breezy-strong-foreground: var(--t-slate-900);
+
+  --fc-breezy-border: var(--t-line);
+  --fc-breezy-muted-border: color-mix(in srgb, var(--t-line) 55%, var(--t-surface));
+  --fc-breezy-strong-border: var(--t-slate-300);
+}

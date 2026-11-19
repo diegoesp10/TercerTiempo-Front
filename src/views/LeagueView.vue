@@ -8,10 +8,13 @@ import Alert from '@/components/ui/Alert.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Skeleton from '@/components/ui/Skeleton.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import MyClubBadge from '@/components/teams/MyClubBadge.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useMyClub } from '@/composables/useMyClub';
+import { useSort } from '@/composables/useSort';
+import type { StandingDto } from '@/types/api';
 import { groupByLevel, levelLabels } from '@/utils/format';
 import { useSeasonStore } from '@/stores/season';
 import { rangeText, zoneRanges, zoneStyle } from '@/utils/zones';
@@ -55,6 +58,25 @@ const myRows = computed(() => (table.data.value?.standings ?? []).filter((row) =
 // Los puestos de ascenso, promoción y descenso, con los colores de la clasificación de la liga en futbolasturiano.es.
 const zones = computed(() => table.data.value?.zones ?? []);
 const ranges = computed(() => zoneRanges(zones.value));
+
+const standings = computed(() => table.data.value?.standings ?? []);
+type StandingKey = 'position' | 'team' | 'played' | 'won' | 'drawn' | 'lost' | 'goalsFor' | 'goalsAgainst' | 'goalDifference' | 'points';
+const standingGetters: Record<StandingKey, (row: StandingDto) => number | string> = {
+  position: (r) => r.position,
+  team: (r) => r.teamName,
+  played: (r) => r.played,
+  won: (r) => r.won,
+  drawn: (r) => r.drawn,
+  lost: (r) => r.lost,
+  goalsFor: (r) => r.goalsFor,
+  goalsAgainst: (r) => r.goalsAgainst,
+  goalDifference: (r) => r.goalDifference,
+  points: (r) => r.points,
+};
+const { sorted: sortedStandings, sortBy, state } = useSort<StandingDto, StandingKey>(standings, standingGetters, 'position', {
+  desc: false,
+  ascendingFirst: ['position', 'team'],
+});
 
 watch(selectedId, (id) => {
   if (!id) return;
@@ -139,23 +161,23 @@ watch(selectedId, (id) => {
 
       <div class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
         <table class="min-w-full text-sm">
-          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <thead class="bg-slate-50 text-xs text-slate-500">
             <tr>
-              <th class="px-2 py-2 text-left sm:px-3">#</th>
-              <th class="px-3 py-2 text-left">Equipo</th>
-              <th class="px-3 py-2 text-center">PJ</th>
-              <th class="px-3 py-2 text-center">G</th>
-              <th class="px-3 py-2 text-center">E</th>
-              <th class="px-3 py-2 text-center">P</th>
-              <th class="col-md px-3 py-2 text-center">GF</th>
-              <th class="col-md px-3 py-2 text-center">GC</th>
-              <th class="col-sm px-3 py-2 text-center">DG</th>
-              <th class="px-3 py-2 text-center font-semibold">Pts</th>
+              <SortHeader class="px-2 py-2 text-left sm:px-3" label="#" title="Posición" v-bind="state('position')" @sort="sortBy('position')" />
+              <SortHeader class="px-2 py-2 text-left sm:px-3" label="Equipo" v-bind="state('team')" @sort="sortBy('team')" />
+              <SortHeader class="px-2 py-2 text-center sm:px-3" label="PJ" title="Partidos jugados" v-bind="state('played')" @sort="sortBy('played')" />
+              <SortHeader class="col-sm px-3 py-2 text-center" label="G" title="Ganados" v-bind="state('won')" @sort="sortBy('won')" />
+              <SortHeader class="col-sm px-3 py-2 text-center" label="E" title="Empatados" v-bind="state('drawn')" @sort="sortBy('drawn')" />
+              <SortHeader class="col-sm px-3 py-2 text-center" label="P" title="Perdidos" v-bind="state('lost')" @sort="sortBy('lost')" />
+              <SortHeader class="col-md px-3 py-2 text-center" label="GF" title="Goles a favor" v-bind="state('goalsFor')" @sort="sortBy('goalsFor')" />
+              <SortHeader class="col-md px-3 py-2 text-center" label="GC" title="Goles en contra" v-bind="state('goalsAgainst')" @sort="sortBy('goalsAgainst')" />
+              <SortHeader class="px-2 py-2 text-center sm:px-3" label="DG" title="Diferencia de goles" v-bind="state('goalDifference')" @sort="sortBy('goalDifference')" />
+              <SortHeader class="px-2 py-2 text-center font-semibold sm:px-3" label="Pts" title="Puntos" v-bind="state('points')" @sort="sortBy('points')" />
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr
-              v-for="row in table.data.value.standings"
+              v-for="row in sortedStandings"
               :key="row.teamId"
               :class="isMine(row.teamId) ? 'my-club-row font-semibold' : 'hover:bg-slate-50'"
             >
@@ -167,21 +189,21 @@ watch(selectedId, (id) => {
                   :title="zones.find((z) => z.position === row.position)?.label"
                 >{{ row.position }}</span>
               </td>
-              <td class="px-3 py-2">
+              <td class="px-2 py-2 sm:px-3">
                 <RouterLink :to="{ name: 'team', params: { teamId: row.teamId } }" class="flex items-center gap-2 hover:text-accent-400 hover:underline">
                   <TeamCrest :src="row.crestUrl" :name="row.teamName" size="xs" />
                   {{ row.teamName }}
                   <MyClubBadge v-if="isMine(row.teamId)" />
                 </RouterLink>
               </td>
-              <td class="px-3 py-2 text-center tabular-nums">{{ row.played }}</td>
-              <td class="px-3 py-2 text-center tabular-nums">{{ row.won }}</td>
-              <td class="px-3 py-2 text-center tabular-nums">{{ row.drawn }}</td>
-              <td class="px-3 py-2 text-center tabular-nums">{{ row.lost }}</td>
+              <td class="px-2 py-2 text-center tabular-nums sm:px-3">{{ row.played }}</td>
+              <td class="col-sm px-3 py-2 text-center tabular-nums">{{ row.won }}</td>
+              <td class="col-sm px-3 py-2 text-center tabular-nums">{{ row.drawn }}</td>
+              <td class="col-sm px-3 py-2 text-center tabular-nums">{{ row.lost }}</td>
               <td class="col-md px-3 py-2 text-center tabular-nums">{{ row.goalsFor }}</td>
               <td class="col-md px-3 py-2 text-center tabular-nums">{{ row.goalsAgainst }}</td>
-              <td class="col-sm px-3 py-2 text-center tabular-nums">{{ row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference }}</td>
-              <td class="px-3 py-2 text-center font-semibold tabular-nums">{{ row.points }}</td>
+              <td class="px-2 py-2 text-center tabular-nums sm:px-3">{{ row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference }}</td>
+              <td class="px-2 py-2 text-center font-semibold tabular-nums sm:px-3">{{ row.points }}</td>
             </tr>
           </tbody>
         </table>

@@ -105,8 +105,6 @@ onMounted(() => {
           <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Tu ficha de jugador</p>
           <p class="mt-1 text-lg font-semibold text-slate-900"><PlayerName :name="invite.player.fullName" :photo-url="invite.player.photoUrl" size="sm" /></p>
           <p class="mt-1 text-sm text-slate-500">
-            <span v-if="invite.player.shirtNumber">Dorsal {{ invite.player.shirtNumber }}</span>
-            <span v-if="invite.player.shirtNumber && invite.player.position"> · </span>
             <span v-if="invite.player.position">{{ positionLabels[invite.player.position] }}</span>
           </p>
           <button type="button" class="btn-primary mt-4" v-busy="joining" :disabled="joining" @click="joinAsPlayer">

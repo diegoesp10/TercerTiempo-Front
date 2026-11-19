@@ -87,7 +87,7 @@ async function choose(action: ConsentAction) {
         </div>
         <ul v-if="byCategory[category.value]?.length" class="mt-3 space-y-1 text-xs text-slate-500">
           <li v-for="cookie in byCategory[category.value]" :key="cookie.id">
-            <code class="text-slate-700">{{ cookie.name }}</code> · {{ cookie.purpose }} · {{ cookie.duration }}
+            {{ cookie.purpose }} · <span class="whitespace-nowrap">{{ cookie.duration }}</span>
           </li>
         </ul>
       </section>

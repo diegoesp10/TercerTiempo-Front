@@ -14,8 +14,12 @@ import Badge from '@/components/ui/Badge.vue';
 import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
 import PlayerMatchLog from '@/components/players/PlayerMatchLog.vue';
 import PlayerPhotoWizard from '@/components/players/PlayerPhotoWizard.vue';
+import PlayerTrainingTallyCard from '@/components/trainings/PlayerTrainingTallyCard.vue';
+import InjuryPanel from '@/components/squads/InjuryPanel.vue';
+import { useViewer } from '@/composables/useViewer';
 import ShirtNumberUsage from '@/components/players/ShirtNumberUsage.vue';
 import { useBackFallback } from '@/composables/useBackFallback';
+import { useSquad } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
 import type { PlayerDto } from '@/types/api';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
@@ -24,6 +28,7 @@ import StatCard from '@/components/ui/StatCard.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useSettingsStore } from '@/stores/settings';
 import { formatNumber, formatPct, positionLabels } from '@/utils/format';
+import { keyStatsFor, keyTotals, matchesOfTeam } from '@/utils/keyStats';
 
 const props = defineProps<{ squadId: string; squadPlayerId: string }>();
 const settings = useSettingsStore();
@@ -36,36 +41,44 @@ const played = computed(() => data.value?.matches.filter((m) => m.performance) ?
 // Cifras de la cabecera: por partido, el acta interna si existe y, si no, la oficial (así no salen ceros cuando el
 // cuerpo técnico aún no lleva sus actas pero la federación sí ha publicado las suyas).
 const combined = computed(() => {
-  const totals = { matches: 0, minutes: 0, goals: 0, assists: 0, yellow: 0, red: 0 };
+  const totals = { matches: 0, starts: 0, minutes: 0, goals: 0, assists: 0, yellow: 0, red: 0 };
   for (const m of data.value?.matches ?? []) {
     const p = m.performance;
     const o = m.official;
     if (p && p.minutesPlayed > 0) {
-      totals.matches++; totals.minutes += p.minutesPlayed; totals.goals += p.goals; totals.assists += p.assists;
+      totals.matches++; if (p.started) totals.starts++; totals.minutes += p.minutesPlayed; totals.goals += p.goals; totals.assists += p.assists;
       totals.yellow += p.yellowCards; if (p.redCard) totals.red++;
     } else if (o && o.played) {
-      totals.matches++; totals.minutes += o.minutesPlayed; totals.goals += o.goals + o.penaltyGoals;
+      totals.matches++; if (o.started) totals.starts++; totals.minutes += o.minutesPlayed; totals.goals += o.goals + o.penaltyGoals;
       totals.yellow += o.yellowCards; if (o.redCard) totals.red++;
     }
   }
   return totals;
 });
-const heroStats = computed(() =>
-  data.value
-    ? [
-        { label: 'Partidos', value: combined.value.matches },
-        { label: 'Minutos', value: combined.value.minutes },
-        { label: 'Goles', value: combined.value.goals },
-        { label: 'Asistencias de gol', value: combined.value.assists },
-        { label: 'Tarjetas', value: `${combined.value.yellow} / ${combined.value.red}` },
-        { label: 'Nota media', value: data.value.stats.averageRating === null ? '—' : formatNumber(data.value.stats.averageRating, 1) },
-      ]
-    : [],
-);
+// Además de lo de todos, el dato de su puesto (paradas, despejes, pases...), que solo sale de las actas internas.
+const heroStats = computed(() => {
+  if (!data.value) return [];
+  const totals = keyTotals({ ...data.value.stats, assists: combined.value.assists });
+  return [
+    { label: 'Partidos', ...matchesOfTeam(combined.value.matches, data.value.impact.teamMatchesPlayed) },
+    { label: 'Titular', value: combined.value.starts },
+    { label: 'Minutos', value: combined.value.minutes },
+    { label: 'Goles', value: combined.value.goals },
+    ...keyStatsFor(data.value.player.position).map((stat) => ({ label: stat.label, value: stat.value(totals), title: stat.title })),
+    { label: 'Tarjetas', value: `${combined.value.yellow}/${combined.value.red}`, title: 'Amarillas / rojas' },
+    { label: 'Nota media', value: data.value.stats.averageRating === null ? '—' : formatNumber(data.value.stats.averageRating, 1) },
+  ];
+});
 
 // El propio jugador puede subir su foto desde su ficha.
 const auth = useAuthStore();
 const isMe = computed(() => auth.playerSquad?.squadPlayerId === props.squadPlayerId);
+// Sus entrenamientos los ven el club, el cuerpo técnico y él mismo; el resto de la plantilla, no.
+const { detail: squadDetail } = useSquad();
+const showTrainings = computed(() => isMe.value || (squadDetail.value?.canManage ?? false));
+// Sus lesiones (datos de salud): el club, el cuerpo técnico, él mismo y el administrador, que solo mira.
+const { isAdmin } = useViewer();
+const showInjuries = computed(() => showTrainings.value || isAdmin.value);
 const photoOpen = ref(false);
 function onPhotoSaved(player: PlayerDto) {
   auth.setPlayer(player);
@@ -102,9 +115,9 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
       :team-crest-url="data.squad.teamCrestUrl"
       :team-id="data.squad.teamId"
       :name="data.player.fullName"
-      :number="data.player.shirtNumber"
+      :number="data.shirtNumbers[0]?.number ?? null"
       :photo-url="data.player.photoUrl"
-      :meta="`${data.player.position ? positionLabels[data.player.position] : 'Posición sin indicar'}${data.player.shirtNumber ? ` · dorsal ${data.player.shirtNumber}` : ''} · nota media calculada con los datos de sus actas`"
+      :meta="`${data.player.position ? positionLabels[data.player.position] : 'Posición sin indicar'}${data.shirtNumbers[0] ? ` · dorsal más usado: ${data.shirtNumbers[0].number}` : ''} · nota media calculada con los datos de sus actas`"
       :stats="heroStats"
     >
       <template #actions>
@@ -122,7 +135,18 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
       <ShirtNumberUsage :usage="data.shirtNumbers" class="mt-3 max-w-md" />
     </section>
 
-    <PlayerMatchLog class="mb-6" :matches="data.matches" :squad-id="squadId" />
+    <PlayerTrainingTallyCard v-if="showTrainings" class="mb-6" :squad-id="squadId" :squad-player-id="squadPlayerId" />
+
+    <InjuryPanel
+      v-if="showInjuries && squadDetail"
+      class="mb-6"
+      :squad-id="squadId"
+      :players="squadDetail.players"
+      :can-manage="squadDetail.canManage"
+      :player-id="squadPlayerId"
+    />
+
+    <PlayerMatchLog class="mb-6" :matches="data.matches" :squad-id="squadId" :position="data.player.position" />
     <PlayerPhotoWizard v-if="isMe" :open="photoOpen" :has-photo="!!auth.player?.photoUrl" @close="photoOpen = false" @saved="onPhotoSaved" />
 
     <Alert v-if="played.length === 0" kind="info" class="mb-6">
@@ -146,7 +170,7 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
         <StatCard label="Acierto en el pase" :value="formatPct(data.stats.passAccuracyPct)" :hint="`${data.stats.passesCompleted}/${data.stats.passesAttempted} completados`" />
         <StatCard label="Recuperaciones" :value="data.stats.recoveries" :hint="`${formatNumber(data.stats.recoveriesPer90)} por 90'`" />
         <StatCard label="Pérdidas de balón" :value="data.stats.ballLosses" :hint="`${data.stats.fouls} faltas cometidas`" />
-        <StatCard label="Entradas" :value="data.stats.tackles" :hint="`${data.stats.interceptions} intercepciones`" />
+        <StatCard label="Entradas" :value="data.stats.tackles" :hint="`${data.stats.interceptions} intercepciones · ${data.stats.clearances ?? 0} despejes`" />
       </div>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">

@@ -5,7 +5,10 @@ import { useConsentStore } from '@/stores/consent';
 import type { CookieCategory, CookieStorage } from '@/types/api';
 import { formatDate } from '@/utils/format';
 
-/** Política de cookies: el catálogo sale de la base de datos, así que siempre coincide con lo que la web guarda. */
+/**
+ * Política de cookies: el catálogo sale de la base de datos, así que siempre coincide con lo que la web guarda. Cada dato
+ * se explica por lo que hace, sin su nombre técnico.
+ */
 const consent = useConsentStore();
 onMounted(() => { if (!consent.policy) void consent.load(); });
 
@@ -45,17 +48,16 @@ const state = computed(() => {
       <div class="overflow-x-auto rounded-lg border border-line">
         <table class="min-w-full text-xs">
           <thead class="bg-surface-2 text-left uppercase tracking-wide text-slate-500">
-            <tr><th class="px-3 py-2">Nombre</th><th class="px-3 py-2">Tipo</th><th class="px-3 py-2">Finalidad</th><th class="px-3 py-2">Duración</th><th class="px-3 py-2">Responsable</th></tr>
+            <tr><th class="px-3 py-2">Finalidad</th><th class="px-3 py-2">Tipo</th><th class="px-3 py-2">Duración</th><th class="px-3 py-2">Responsable</th></tr>
           </thead>
           <tbody class="divide-y divide-line">
             <tr v-for="cookie in cookiesOf(category)" :key="cookie.id">
-              <td data-label="Nombre" class="px-3 py-2 font-mono text-slate-800">{{ cookie.name }}</td>
-              <td data-label="Tipo" class="px-3 py-2">{{ storageLabels[cookie.storage] }}</td>
-              <td data-label="Finalidad" class="px-3 py-2">{{ cookie.purpose }}</td>
+              <td data-label="Finalidad" class="px-3 py-2 text-slate-800">{{ cookie.purpose }}</td>
+              <td data-label="Tipo" class="px-3 py-2 sm:whitespace-nowrap">{{ storageLabels[cookie.storage] }}</td>
               <td data-label="Duración" class="px-3 py-2 sm:whitespace-nowrap">{{ cookie.duration }}</td>
               <td data-label="Responsable" class="px-3 py-2 sm:whitespace-nowrap">{{ cookie.provider }}</td>
             </tr>
-            <tr v-if="cookiesOf(category).length === 0"><td colspan="5" class="px-3 py-2 text-slate-400">Ninguna.</td></tr>
+            <tr v-if="cookiesOf(category).length === 0"><td colspan="4" class="px-3 py-2 text-slate-400">Ninguna.</td></tr>
           </tbody>
         </table>
       </div>

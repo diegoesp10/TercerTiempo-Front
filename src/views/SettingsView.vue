@@ -4,6 +4,7 @@ import ChangePasswordCard from '@/components/auth/ChangePasswordCard.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
+import { useBackFallback } from '@/composables/useBackFallback';
 import { useAuthStore } from '@/stores/auth';
 import { useSettingsStore, type ThemePreference } from '@/stores/settings';
 import { accountTypeLabels } from '@/utils/format';
@@ -11,6 +12,9 @@ import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
+
+// Se entra desde la rueda del perfil: «Volver» (arriba a la izquierda, como en toda la app) regresa a él.
+useBackFallback(() => (auth.profileRoute ? { to: auth.profileRoute, label: 'Volver a mi perfil' } : { to: { name: 'home' }, label: 'Volver al inicio' }));
 
 const themes: { value: ThemePreference; label: string; description: string }[] = [
   { value: 'light', label: 'Claro', description: 'Fondo claro, para trabajar de día o con mucha luz.' },

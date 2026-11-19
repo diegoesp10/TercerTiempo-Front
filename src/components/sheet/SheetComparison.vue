@@ -7,7 +7,9 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import CardMarks from '@/components/sheet/CardMarks.vue';
 import GoalMarks from '@/components/sheet/GoalMarks.vue';
+import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import { useSort, type SortValue } from '@/composables/useSort';
 import type { SheetComparisonDto, SheetComparisonRowDto } from '@/types/api';
 import { positionShortLabels, sheetFieldLabels } from '@/utils/format';
 import PlayerName from '@/components/players/PlayerName.vue';
@@ -51,6 +53,29 @@ const rows = computed<SheetComparisonRowDto[]>(() => {
   return filter.value === 'differences' ? relevant.filter((r) => r.differences.length > 0) : relevant;
 });
 
+type CompareSortKey =
+  | 'player' | 'differences'
+  | 'coachPlayed' | 'coachStarted' | 'coachMinutes' | 'coachGoals' | 'coachCards'
+  | 'officialPlayed' | 'officialStarted' | 'officialMinutes' | 'officialGoals' | 'officialCards';
+const compareGetters: Record<CompareSortKey, (row: SheetComparisonRowDto) => SortValue> = {
+  player: (r) => r.player.fullName,
+  differences: (r) => r.differences.length,
+  coachPlayed: (r) => (r.coach ? Number(r.coach.minutesPlayed > 0) : null),
+  coachStarted: (r) => (r.coach ? Number(r.coach.started) : null),
+  coachMinutes: (r) => r.coach?.minutesPlayed ?? null,
+  coachGoals: (r) => r.coach?.goals ?? null,
+  coachCards: (r) => (r.coach ? (r.coach.redCard ? 10 : 0) + r.coach.yellowCards : null),
+  officialPlayed: (r) => (r.official ? Number(r.official.played) : null),
+  officialStarted: (r) => (r.official ? Number(r.official.started) : null),
+  officialMinutes: (r) => (r.official?.played ? r.official.minutesPlayed : null),
+  officialGoals: (r) => (r.official ? r.official.goals + r.official.penaltyGoals : null),
+  officialCards: (r) => (r.official ? (r.official.redCard ? 10 : 0) + r.official.yellowCards : null),
+};
+const { sorted, sortBy, state } = useSort<SheetComparisonRowDto, CompareSortKey>(rows, compareGetters, 'player', {
+  desc: false,
+  ascendingFirst: ['player'],
+});
+
 const hasDifference = (row: SheetComparisonRowDto, field: string) => row.differences.some((d) => d.field === field);
 const cell = (row: SheetComparisonRowDto, field: string) => (hasDifference(row, field) ? 'bg-red-50 text-red-700 font-semibold' : '');
 const yes = (value: boolean) => (value ? 'sí' : 'no');
@@ -89,31 +114,30 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
           {{ filter === 'differences' ? 'No hay discrepancias entre las dos actas.' : 'Ninguna de las dos actas tiene líneas.' }}
         </p>
         <div v-else class="mt-4 overflow-x-auto">
-          <table class="min-w-full text-sm">
-            <thead class="text-xs uppercase tracking-wide text-slate-500">
+          <table class="table-sticky min-w-full text-sm">
+            <thead class="text-xs text-slate-500">
               <tr>
-                <th class="py-2 pr-3 text-left" rowspan="2">Jugador</th>
-                <th class="border-l border-slate-200 px-2 py-1 text-center text-sky-700" colspan="5">Acta interna</th>
-                <th class="border-l border-slate-200 px-2 py-1 text-center text-amber-700" colspan="5">Acta oficial</th>
-                <th class="border-l border-slate-200 px-2 py-1 text-left" rowspan="2">Discrepancias</th>
+                <SortHeader class="py-2 pr-3 text-left" rowspan="2" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
+                <th class="border-l border-slate-200 px-2 py-1 text-center uppercase tracking-wide text-sky-700" colspan="5">Acta interna</th>
+                <th class="border-l border-slate-200 px-2 py-1 text-center uppercase tracking-wide text-amber-700" colspan="5">Acta oficial</th>
+                <SortHeader class="border-l border-slate-200 px-2 py-1 text-left" rowspan="2" label="Discrepancias" title="Número de discrepancias" v-bind="state('differences')" @sort="sortBy('differences')" />
               </tr>
               <tr>
-                <th class="border-l border-slate-200 px-2 py-1 text-center">Jugó</th>
-                <th class="px-2 py-1 text-center">Tit</th>
-                <th class="px-2 py-1 text-center">Min</th>
-                <th class="px-2 py-1 text-center">G</th>
-                <th class="px-2 py-1 text-center">TA/TR</th>
-                <th class="border-l border-slate-200 px-2 py-1 text-center">Jugó</th>
-                <th class="px-2 py-1 text-center">Tit</th>
-                <th class="px-2 py-1 text-center">Min</th>
-                <th class="px-2 py-1 text-center">G</th>
-                <th class="px-2 py-1 text-center">TA/TR</th>
+                <SortHeader class="border-l border-slate-200 px-2 py-1 text-center" label="Jugó" title="Jugó (acta interna)" v-bind="state('coachPlayed')" @sort="sortBy('coachPlayed')" />
+                <SortHeader class="px-2 py-1 text-center" label="Tit" title="Titular (acta interna)" v-bind="state('coachStarted')" @sort="sortBy('coachStarted')" />
+                <SortHeader class="px-2 py-1 text-center" label="Min" title="Minutos (acta interna)" v-bind="state('coachMinutes')" @sort="sortBy('coachMinutes')" />
+                <SortHeader class="px-2 py-1 text-center" label="G" title="Goles (acta interna)" v-bind="state('coachGoals')" @sort="sortBy('coachGoals')" />
+                <SortHeader class="px-2 py-1 text-center" label="TA/TR" title="Tarjetas, la roja pesa más (acta interna)" v-bind="state('coachCards')" @sort="sortBy('coachCards')" />
+                <SortHeader class="border-l border-slate-200 px-2 py-1 text-center" label="Jugó" title="Jugó (acta oficial)" v-bind="state('officialPlayed')" @sort="sortBy('officialPlayed')" />
+                <SortHeader class="px-2 py-1 text-center" label="Tit" title="Titular (acta oficial)" v-bind="state('officialStarted')" @sort="sortBy('officialStarted')" />
+                <SortHeader class="px-2 py-1 text-center" label="Min" title="Minutos (acta oficial)" v-bind="state('officialMinutes')" @sort="sortBy('officialMinutes')" />
+                <SortHeader class="px-2 py-1 text-center" label="G" title="Goles (acta oficial)" v-bind="state('officialGoals')" @sort="sortBy('officialGoals')" />
+                <SortHeader class="px-2 py-1 text-center" label="TA/TR" title="Tarjetas, la roja pesa más (acta oficial)" v-bind="state('officialCards')" @sort="sortBy('officialCards')" />
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="row in rows" :key="row.player.id" :class="row.differences.length > 0 ? '' : 'text-slate-600'">
-                <td class="py-2 pr-3 whitespace-nowrap">
-                  <span v-if="row.player.shirtNumber" class="mr-1 text-slate-400">{{ row.player.shirtNumber }}</span>
+              <tr v-for="row in sorted" :key="row.player.id" :class="row.differences.length > 0 ? '' : 'text-slate-600'">
+                <td class="py-2 pr-3 lg:whitespace-nowrap">
                   <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium text-slate-800" />
                   <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
                   <p v-if="row.official" class="text-xs text-slate-400">en el acta: {{ row.official.fullName }}</p>
@@ -152,11 +176,11 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
 
         <div v-if="data.unmatchedOfficial.length > 0" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           <p class="font-medium">En el acta oficial pero sin ficha en la plantilla ({{ data.unmatchedOfficial.length }})</p>
-          <p class="text-xs text-amber-800">Añade la ficha (o corrige el nombre o el dorsal) para que se empareje la próxima vez.</p>
+          <p class="text-xs text-amber-800">Añade la ficha (o corrige el nombre) para que se empareje la próxima vez.</p>
           <ul class="mt-2 flex flex-wrap gap-2">
-            <li v-for="line in data.unmatchedOfficial" :key="line.id">
-              <Badge :tone="line.played ? 'amber' : 'slate'">
-                <span v-if="line.shirtNumber" class="mr-1 text-amber-700/70">{{ line.shirtNumber }}</span><PlayerName :name="line.fullName" /><template v-if="line.played"> · {{ line.minutesPlayed }}'</template>
+            <li v-for="line in data.unmatchedOfficial" :key="line.id" class="max-w-full">
+              <Badge :tone="line.played ? 'amber' : 'slate'" class="max-w-full">
+                <PlayerName :name="line.fullName" /><template v-if="line.played"> · {{ line.minutesPlayed }}'</template>
               </Badge>
             </li>
           </ul>
