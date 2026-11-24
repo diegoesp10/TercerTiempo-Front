@@ -75,6 +75,7 @@ const rules: { test: RegExp; method?: string; label: string }[] = [
   { test: /^\/api\/squads\/[^/]+\/players\/[^/]+\/profile/, label: 'Cargando la ficha' },
   { test: /^\/api\/squads\/[^/]+\/players\/[^/]+\/invite-code/, label: 'Generando el código' },
   { test: /^\/api\/squads\/[^/]+\/players\/import/, label: 'Importando la plantilla' },
+  { test: /^\/api\/squads\/[^/]+\/players\/[^/]+\/injuries/, method: 'GET', label: 'Cargando sus lesiones' },
   { test: /^\/api\/squads\/[^/]+\/players/, method: 'GET', label: 'Cargando la plantilla' },
   { test: /^\/api\/squads\/[^/]+\/players/, label: 'Guardando la ficha' },
   { test: /^\/api\/squads\/[^/]+\/injuries/, method: 'GET', label: 'Cargando lesionados' },

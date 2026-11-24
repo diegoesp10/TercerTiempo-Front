@@ -3,7 +3,7 @@ import { api } from '@/api';
 import { useMyClub } from '@/composables/useMyClub';
 import { useSeasonStore } from '@/stores/season';
 import type { CompetitionDto } from '@/types/api';
-import { groupByLevel, levelLabels } from '@/utils/format';
+import { competitionOptions } from '@/utils/territories';
 
 const STORAGE_KEY = 'tt.home-competition';
 
@@ -49,9 +49,7 @@ export function useHomeCompetition() {
       });
   }
 
-  const options = computed(() =>
-    withMyClubFirst(groupByLevel(competitions.value).flatMap((group) => group.competitions.map((c) => ({ value: c.id, label: c.name, group: levelLabels[group.level] })))),
-  );
+  const options = computed(() => withMyClubFirst(competitionOptions(competitions.value)));
   const competition = computed(() => competitions.value.find((c) => c.id === selectedId.value) ?? null);
 
   function select(id: string | null) {

@@ -5,6 +5,7 @@ import { errorMessage } from '@/api/http';
 import TrainingPeriodFilter from '@/components/trainings/TrainingPeriodFilter.vue';
 import Alert from '@/components/ui/Alert.vue';
 import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
+import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import SearchCombobox, { type ComboboxOption } from '@/components/ui/SearchCombobox.vue';
 import { useGroupByPosition } from '@/composables/usePositionGrouping';
 import { useSort, type SortValue } from '@/composables/useSort';
@@ -232,7 +233,7 @@ const names = (rows: AttendanceRow[]) => rows.map((r) => r.name).join(', ');
         <div class="col-span-2 bg-surface px-4 py-3 sm:col-span-1">
           <dt class="eyebrow text-slate-500">Por debajo del 60 %</dt>
           <dd class="mt-1 font-figures text-2xl font-bold" :class="kpis.low.length ? 'text-red-600' : 'text-emerald-600'">{{ kpis.low.length }}</dd>
-          <dd class="truncate text-xs text-slate-500" :title="kpis.low.length ? names(kpis.low) : undefined">
+          <dd class="break-words text-xs text-slate-500">
             {{ kpis.low.length ? names(kpis.low) : `${kpis.perfect.length} con el 100 %` }}
           </dd>
         </div>
@@ -259,21 +260,13 @@ const names = (rows: AttendanceRow[]) => rows.map((r) => r.name).join(', ');
         >
           <Icon :icon="allClosed ? 'angles-down' : 'angles-up'" class="mr-1 h-3 w-3" />{{ allClosed ? 'Desplegar' : 'Plegar' }}
         </button>
-        <div class="flex max-w-full overflow-x-auto rounded-lg border border-line text-xs" role="tablist" aria-label="Vista">
-          <button
-            v-for="v in views"
-            :key="v.key"
-            type="button"
-            role="tab"
-            class="flex shrink-0 items-center gap-1.5 px-3 py-1.5 font-medium transition first:rounded-l-lg last:rounded-r-lg"
-            :class="view === v.key ? 'bg-brand-500 text-white' : 'text-slate-600 hover:bg-surface-2'"
-            :aria-selected="view === v.key"
-            :title="v.hint"
-            @click="view = v.key"
-          >
-            <Icon :icon="v.icon" class="h-3 w-3" />{{ v.label }}
-          </button>
-        </div>
+        <ResponsiveTabs
+          :items="views.map((v) => ({ key: v.key, label: v.label, icon: v.icon, title: v.hint }))"
+          :model-value="view"
+          label="Vista de la asistencia"
+          variant="segmented"
+          @update:model-value="(key) => (view = key as AttendanceViewKey)"
+        />
       </div>
 
       <!-- Filtro de faltas a la izquierda; la leyenda de las casillas a la derecha -->

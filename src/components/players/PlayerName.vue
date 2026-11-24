@@ -2,15 +2,15 @@
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 
 /**
- * Nombre de un jugador siempre con su foto al lado (o sus iniciales si no tiene). Por defecto se recorta con «…» si no
- * cabe; con wrap parte línea (para listas estrechas en el móvil con nombres largos, como los de las actas oficiales).
+ * Nombre de un jugador siempre con su foto al lado (o sus iniciales si no tiene). Si no cabe, baja de línea (nunca «…»);
+ * `truncate` solo para huecos de alto fijo.
  */
-withDefaults(defineProps<{ name: string; photoUrl?: string | null; size?: 'xs' | 'sm' | 'md'; wrap?: boolean }>(), { photoUrl: null, size: 'xs', wrap: false });
+withDefaults(defineProps<{ name: string; photoUrl?: string | null; size?: 'xs' | 'sm' | 'md'; truncate?: boolean }>(), { photoUrl: null, size: 'xs', truncate: false });
 </script>
 
 <template>
   <span class="inline-flex min-w-0 max-w-full items-center gap-2 align-middle">
     <PlayerAvatar :src="photoUrl" :name="name" :size="size" class="shrink-0" />
-    <span :class="wrap ? 'min-w-0 break-words leading-snug' : 'truncate'"><slot>{{ name }}</slot></span>
+    <span :class="truncate ? 'truncate' : 'min-w-0 break-words leading-snug'"><slot>{{ name }}</slot></span>
   </span>
 </template>

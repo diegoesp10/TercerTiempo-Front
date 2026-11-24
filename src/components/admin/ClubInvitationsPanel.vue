@@ -229,7 +229,7 @@ onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer); });
           >
             <span class="min-w-0">
               <TeamName :name="club.name" :team-id="club.teamId" class="text-slate-900" size="sm" />
-              <span class="block truncate text-xs text-slate-500">{{ teamsLine(club) }}</span>
+              <span class="block break-words text-xs text-slate-500">{{ teamsLine(club) }}</span>
             </span>
             <Badge :tone="clubState(club).tone" class="shrink-0">{{ clubState(club).label }}</Badge>
           </li>

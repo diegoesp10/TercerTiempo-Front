@@ -146,7 +146,8 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
         </button>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2">
+      <!-- En el móvil va en su propia línea, a todo el ancho de la tarjeta: nunca más ancho que ella. -->
+      <div class="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
         <button
           v-if="current !== null && selected !== current"
           type="button"
@@ -190,8 +191,10 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
               class="block px-3 py-2 text-sm hover:bg-slate-50"
               :class="isHighlighted(match) ? 'my-club-row font-semibold' : ''"
             >
-              <span class="grid grid-cols-[minmax(3.25rem,max-content)_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 @md:hidden">
-                <span class="row-span-2 text-center text-xs">
+              <!-- Muy estrecha (< 18rem), el estado va en su propia línea encima: los nombres se quedan con toda la fila y
+                   ninguna palabra tiene que partirse. -->
+              <span class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 @2xs:grid-cols-[minmax(3.25rem,max-content)_minmax(0,1fr)_auto] @md:hidden">
+                <span class="col-span-2 text-xs @2xs:col-span-1 @2xs:row-span-2 @2xs:text-center">
                   <span v-if="hasScore(match)" class="text-slate-500">Final</span>
                   <span v-else-if="matchDisplayStatus(match) === 'Scheduled'" class="text-sm tabular-nums text-slate-600">{{ formatTime(match.kickoffAt) }}</span>
                   <Badge v-else-if="matchDisplayStatus(match) === 'AwaitingResult'" tone="slate" :title="awaitingResultHint">{{ matchDisplayLabels.AwaitingResult }}</Badge>
@@ -199,19 +202,19 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
                 </span>
                 <span class="flex min-w-0 items-center gap-2" :class="isMine(match.homeTeam.id) ? 'text-accent-400' : 'text-slate-800'" :title="match.homeTeam.name">
                   <TeamCrest :src="match.homeTeam.crestUrl" :name="match.homeTeam.name" :short-name="match.homeTeam.shortName" size="xs" />
-                  <span class="truncate">{{ match.homeTeam.name }}</span>
+                  <span class="min-w-0 break-words">{{ match.homeTeam.name }}</span>
                 </span>
                 <span class="min-w-5 text-right font-semibold tabular-nums text-slate-900">{{ hasScore(match) ? match.homeGoals : '' }}</span>
                 <span class="flex min-w-0 items-center gap-2" :class="isMine(match.awayTeam.id) ? 'text-accent-400' : 'text-slate-800'" :title="match.awayTeam.name">
                   <TeamCrest :src="match.awayTeam.crestUrl" :name="match.awayTeam.name" :short-name="match.awayTeam.shortName" size="xs" />
-                  <span class="truncate">{{ match.awayTeam.name }}</span>
+                  <span class="min-w-0 break-words">{{ match.awayTeam.name }}</span>
                 </span>
                 <span class="min-w-5 text-right font-semibold tabular-nums text-slate-900">{{ hasScore(match) ? match.awayGoals : '' }}</span>
               </span>
 
               <span class="hidden grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 @md:grid">
                 <span class="flex min-w-0 items-center justify-end gap-1.5 text-right" :class="isMine(match.homeTeam.id) ? 'text-accent-400' : 'text-slate-800'" :title="match.homeTeam.name">
-                  <span class="truncate">{{ match.homeTeam.name }}</span>
+                  <span class="min-w-0 break-words">{{ match.homeTeam.name }}</span>
                   <TeamCrest :src="match.homeTeam.crestUrl" :name="match.homeTeam.name" :short-name="match.homeTeam.shortName" size="xs" />
                 </span>
                 <span class="min-w-16 text-center">
@@ -224,11 +227,11 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
                 </span>
                 <span class="flex min-w-0 items-center gap-1.5" :class="isMine(match.awayTeam.id) ? 'text-accent-400' : 'text-slate-800'" :title="match.awayTeam.name">
                   <TeamCrest :src="match.awayTeam.crestUrl" :name="match.awayTeam.name" :short-name="match.awayTeam.shortName" size="xs" />
-                  <span class="truncate">{{ match.awayTeam.name }}</span>
+                  <span class="min-w-0 break-words">{{ match.awayTeam.name }}</span>
                 </span>
               </span>
 
-              <span v-if="match.venue" class="mt-1 block truncate pl-[4rem] text-xs font-normal text-slate-400 @md:mt-0.5 @md:pl-0 @md:text-center">{{ match.venue }}</span>
+              <span v-if="match.venue" class="mt-1 block break-words text-xs font-normal text-slate-400 @2xs:pl-[4rem] @md:mt-0.5 @md:pl-0 @md:text-center">{{ match.venue }}</span>
             </RouterLink>
           </li>
         </ul>

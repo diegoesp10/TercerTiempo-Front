@@ -60,7 +60,7 @@ export function predictionBarsOption(
       type: 'category',
       inverse: true,
       data: names,
-      axisLabel: { width: 150, overflow: 'truncate', color: colors.text, fontSize: 12 },
+      axisLabel: { width: 150, overflow: 'break', lineHeight: 14, color: colors.text, fontSize: 12 },
     },
     series: metrics.map((m) => ({
       name: labels[m],
@@ -117,7 +117,7 @@ export function positionHeatmapOption(teams: TeamPredictionDto[], zones: LeagueZ
       inverse: true,
       data: teams.map((t) => t.teamName),
       splitArea: { show: true },
-      axisLabel: { width: labelWidth, overflow: 'truncate', color: colors.text, fontSize: labelWidth < 120 ? 11 : 12 },
+      axisLabel: { width: labelWidth, overflow: 'break', lineHeight: labelWidth < 120 ? 12 : 14, color: colors.text, fontSize: labelWidth < 120 ? 11 : 12 },
     },
     visualMap: {
       min: 0,

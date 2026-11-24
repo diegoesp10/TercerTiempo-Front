@@ -102,6 +102,8 @@ export interface TrainingAttendanceDto {
   injured: boolean;
   /** Por qué (tipo, motivo y fechas); null si no lo está o si quien mira no puede verlo (un compañero). */
   injury: InjuryBriefDto | null;
+  /** Causó baja en la plantilla después de esta sesión: su línea es historial. */
+  left?: boolean;
 }
 
 /** Lo justo de una lesión para explicar por qué un jugador no entrena o no va convocado. */
@@ -115,6 +117,8 @@ export interface InjuryBriefDto {
   expectedReturnOn: string | null;
   /** Día del alta; null si sigue lesionado. */
   returnedOn: string | null;
+  /** Días de baja contados desde el parte: hasta hoy si sigue lesionado, hasta el alta si ya la tiene. */
+  daysOut?: number;
 }
 
 /** Alguien que viene a entrenar a prueba, sin ficha: se le pasa lista y, si le hacen ficha, pasa a la plantilla. */
@@ -253,17 +257,30 @@ export interface CallUpEntryDto {
   suspension: SuspensionBriefDto | null;
   /** Amarillas del ciclo que lleva al empezar el partido (de 0 a 4): con 4 está apercibido. */
   cycleYellows: number;
+  /** Apercibido para este partido: cuatro amarillas del ciclo y ninguna sanción (la misma regla que en la plantilla). */
+  warned: boolean;
+  /** Causó baja en la plantilla después del partido: la línea es historial. */
+  left?: boolean;
 }
 
-/** Por qué está sancionado: el ciclo de cinco amarillas, una doble amarilla o una roja directa. */
-export type SuspensionCause = 'YellowCards' | 'SecondYellow' | 'RedCard';
+/**
+ * Por qué está sancionado: el ciclo de cinco amarillas, una doble amarilla, una roja directa o lo que ha publicado el
+ * comité de competición (que manda sobre lo de las tarjetas).
+ */
+export type SuspensionCause = 'YellowCards' | 'SecondYellow' | 'RedCard' | 'Committee';
 
 export interface SuspensionBriefDto {
   cause: SuspensionCause;
-  /** Para leer: «5.ª amarilla en la jornada 7», «Roja directa en la jornada 8»… */
+  /** Para leer: «5.ª amarilla en la jornada 7», «Sanción del comité por la jornada 8: agredir a otro (2.º de 4 partidos)»… */
   reason: string;
   fromMatchId: string;
   fromMatchday: number;
+  /** De cuántos partidos es la sanción (las de las tarjetas, de uno). */
+  matches: number;
+  /** Cuál de esos partidos se cumple en este. */
+  nth: number;
+  /** En una inhabilitación por días del comité (solo al cuerpo técnico), su último día. */
+  until?: string | null;
 }
 
 export interface CallUpCountsDto {
@@ -320,6 +337,18 @@ export interface MatchCallUpDto {
   mine: CallUpEntryDto | null;
   /** El campo del partido (el que trae o el habitual del local): el que se propone para la cita. */
   matchGround: GroundDto | null;
+  /** A cuántos se convoca (exacto: nunca más; con menos se avisa). null: aún no se ha dicho. */
+  size?: number | null;
+  /** La plantilla tiene un número fijo: manda ese y no se pregunta. */
+  sizeFixed?: boolean;
+  /** Sin número todavía: el de la última convocatoria, para proponerlo al preguntar. */
+  suggestedSize?: number | null;
+  /** Huella de lo que se ve: si la de `callUpStamp` no coincide, alguien ha firmado o algo ha cambiado. */
+  stamp: string;
+}
+
+export interface CallUpStampDto {
+  stamp: string;
 }
 
 export interface CallUpSummaryDto {
@@ -340,6 +369,8 @@ export interface CallUpRequest {
   notes: string | null;
   /** true publica y avisa a la plantilla; false deja el borrador. */
   publish: boolean;
+  /** A cuántos se convoca; con número fijo en la plantilla, manda ese. */
+  size?: number | null;
 }
 
 /** Un día del calendario de la plantilla: un entrenamiento o un partido. */

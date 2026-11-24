@@ -16,10 +16,10 @@ export const legalEntity = {
 };
 
 /** Fecha de la última versión de los textos legales. */
-export const legalVersion = '19 de noviembre de 2026';
+export const legalVersion = '21 de noviembre de 2026';
 
 /** Fuentes públicas de datos deportivos que usa la plataforma, con atribución. */
 export const dataSources = [
   { name: 'FútbolAsturiano, diario independiente digital del fútbol asturiano (futbolasturiano.es)', url: 'https://www.futbolasturiano.es', what: 'calendarios, resultados, clasificaciones, plantillas publicadas y escudos de los equipos, con su autorización' },
-  { name: 'asturfutbol.es (Real Federación de Fútbol del Principado de Asturias)', url: 'https://www.asturfutbol.es', what: 'actas oficiales de los partidos: alineaciones, sustituciones, goles, tarjetas y árbitros' },
+  { name: 'asturfutbol.es (Real Federación de Fútbol del Principado de Asturias)', url: 'https://www.asturfutbol.es', what: 'actas oficiales de los partidos (alineaciones, sustituciones, goles, tarjetas y árbitros) y sanciones del comité de competición a jugadores y cuerpos técnicos' },
 ];

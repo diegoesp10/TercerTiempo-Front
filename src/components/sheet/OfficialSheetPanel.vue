@@ -15,6 +15,7 @@ import type { OfficialLineDto, OfficialSheetDto, OfficialTeamSheetDto } from '@/
 import { officialEventLabels, sheetSourceLabel } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 import PlayerName from '@/components/players/PlayerName.vue';
+import SheetReferees from '@/components/sheet/SheetReferees.vue';
 import { httpUrl } from '@/utils/links';
 
 const props = defineProps<{
@@ -78,6 +79,8 @@ const teams = computed(() => (sheet.value ? [sheet.value.home, sheet.value.away]
 
 /** Acta sin cerrar: solo valen las alineaciones; los minutos, goles y tarjetas todavía no están en la federación. */
 const provisional = computed(() => sheet.value?.status === 'Provisional');
+/** Con alineaciones: el equipo arbitral va junto a ellas; si no, debajo del aviso del estado del acta. */
+const withLineups = computed(() => sheet.value?.status === 'Available' || sheet.value?.status === 'Provisional');
 
 /** "90'", "48' (sale 48')" para un titular sustituido o expulsado, "32' (entra 58')" para un suplente. */
 const minutes = (line: OfficialLineDto) => (line.played ? `${line.minutesPlayed}'` : '—');
@@ -127,7 +130,7 @@ const groups = (team: OfficialTeamSheetDto) => {
         <h2 class="font-semibold text-slate-900">Acta pública</h2>
         <p class="text-xs text-slate-500">
           <template v-if="sheet?.status === 'Available' || sheet?.status === 'Provisional'">
-            {{ provisional ? 'Acta provisional guardada' : 'Acta guardada' }} en Tercer Tiempo · fuente: {{ sheetSourceLabel(sheet.provider) }}<template v-if="sheet.referee"> · árbitro: {{ sheet.referee }}</template>
+            {{ provisional ? 'Acta provisional guardada' : 'Acta guardada' }} en Tercer Tiempo · fuente: {{ sheetSourceLabel(sheet.provider) }}
           </template>
           <template v-else>Alineaciones, minutos, goles y tarjetas publicados tras el partido por la federación.</template>
         </p>
@@ -184,7 +187,7 @@ const groups = (team: OfficialTeamSheetDto) => {
                 <tr v-for="line in group.lines" :key="line.id" :class="line.played || provisional ? '' : 'text-slate-400'">
                   <!-- w-full + max-w-0: el nombre ocupa lo que sobra y se recorta en vez de ensanchar la tabla en el móvil -->
                   <td class="w-full max-w-0 py-1 pr-2">
-                    <PlayerName :name="line.fullName" wrap class="font-medium" :class="line.played || provisional ? 'text-slate-800' : ''" />
+                    <PlayerName :name="line.fullName" class="font-medium" :class="line.played || provisional ? 'text-slate-800' : ''" />
                   </td>
                   <template v-if="!provisional">
                     <td class="py-1 pr-2 text-center tabular-nums whitespace-nowrap">
@@ -205,11 +208,15 @@ const groups = (team: OfficialTeamSheetDto) => {
                   <span class="w-28 shrink-0 text-xs text-slate-500">{{ person.roleLabel }}</span>
                   <RouterLink v-if="person.coachId" :to="{ name: 'coach', params: { coachId: person.coachId } }" class="min-w-0 break-words font-medium text-slate-800 hover:text-accent-400" title="Ver su perfil">{{ person.fullName }}</RouterLink>
                   <span v-else class="min-w-0 break-words font-medium text-slate-800">{{ person.fullName }}</span>
+                  <!-- Al cuerpo técnico también le enseña tarjetas el árbitro: van en la misma lista que las de los jugadores. -->
+                  <CardMarks class="self-center" :yellow-cards="person.yellowCards ?? 0" :red-card="person.redCard ?? false" />
                 </li>
               </ul>
             </div>
           </div>
         </div>
+
+        <SheetReferees v-if="sheet.referees" :referees="sheet.referees" class="mt-4" />
 
         <details v-if="sheet.events.length > 0" class="mt-4 text-sm">
           <summary class="cursor-pointer font-medium text-slate-700">Sucesos del partido ({{ sheet.events.length }})</summary>
@@ -226,7 +233,7 @@ const groups = (team: OfficialTeamSheetDto) => {
                 <Icon v-else icon="arrow-right-arrow-left" class="text-slate-400" />
               </span>
               <span class="min-w-0 flex-1">
-                <PlayerName :name="event.playerName" wrap /><template v-if="event.relatedPlayerName"><span class="mx-2 text-slate-400">por</span><PlayerName :name="event.relatedPlayerName" wrap /></template>
+                <PlayerName :name="event.playerName" /><template v-if="event.relatedPlayerName"><span class="mx-2 text-slate-400">por</span><PlayerName :name="event.relatedPlayerName" /></template>
                 <span class="text-xs text-slate-400"> · <TeamName
                   :name="(event.side === 'Home' ? sheet.home?.teamName : sheet.away?.teamName) ?? ''"
                   :team-id="event.side === 'Home' ? sheet.home?.teamId : sheet.away?.teamId"
@@ -236,6 +243,9 @@ const groups = (team: OfficialTeamSheetDto) => {
           </ul>
         </details>
       </template>
+
+      <!-- Sin alineaciones (por jugar, pendiente o sin acta): el equipo arbitral designado o el que se sabe. -->
+      <SheetReferees v-if="!withLineups && sheet.referees" :referees="sheet.referees" class="mt-4" />
     </template>
   </section>
 </template>

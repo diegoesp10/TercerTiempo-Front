@@ -209,7 +209,7 @@ const sizeClasses = computed(() => (props.size === 'sm' ? 'px-2.5 py-1 text-sm' 
       :class="sizeClasses"
       @click="toggle"
     >
-      <span class="min-w-0 flex-1 truncate" :class="selected ? '' : 'text-slate-400'">
+      <span class="min-w-0 flex-1 break-words" :class="selected ? '' : 'text-slate-400'">
         <template v-if="selected">
           <TeamCrest v-if="selected.crest !== undefined" :src="selected.crest" :name="selected.label" size="xs" class="mr-1.5 align-middle" />
           <PlayerAvatar v-else-if="selected.photo !== undefined" :src="selected.photo" :name="selected.label" size="xs" class="mr-1.5 align-middle" />
@@ -268,7 +268,7 @@ const sizeClasses = computed(() => (props.size === 'sm' ? 'px-2.5 py-1 text-sm' 
               <span class="flex min-w-0 items-center gap-1.5">
                 <TeamCrest v-if="option.crest !== undefined" :src="option.crest" :name="option.label" size="xs" />
                 <PlayerAvatar v-else-if="option.photo !== undefined" :src="option.photo" :name="option.label" size="xs" />
-                <span class="truncate">{{ option.label }}<span v-if="option.hint" class="ml-1 text-xs text-slate-500">· {{ option.hint }}</span></span>
+                <span class="min-w-0 break-words">{{ option.label }}<span v-if="option.hint" class="ml-1 text-xs text-slate-500">· {{ option.hint }}</span></span>
               </span>
               <Icon v-if="option.value === modelValue" icon="check" class="h-3.5 w-3.5 shrink-0 text-brand-500" />
             </li>

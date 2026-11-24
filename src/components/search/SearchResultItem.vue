@@ -48,10 +48,10 @@ const badgeTone = (badge: string) => (badge.startsWith('Tu') || badge.startsWith
 
     <!-- Texto -->
     <div class="min-w-0 flex-1">
-      <p class="truncate font-semibold text-slate-900" :class="compact ? 'text-sm' : ''">
+      <p class="break-words font-semibold text-slate-900" :class="compact ? 'text-sm' : ''">
         <template v-for="(part, i) in title" :key="i"><mark v-if="part.match" class="rounded-sm bg-accent-400/25 px-0.5 text-inherit">{{ part.text }}</mark><template v-else>{{ part.text }}</template></template>
       </p>
-      <p v-if="item.subtitle || item.date" class="truncate text-xs text-slate-500">
+      <p v-if="item.subtitle || item.date" class="break-words text-xs text-slate-500">
         {{ item.subtitle }}<template v-if="item.date"> · {{ formatKickoff(item.date) }}</template>
       </p>
     </div>

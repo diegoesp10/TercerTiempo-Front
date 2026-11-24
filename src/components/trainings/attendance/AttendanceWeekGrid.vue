@@ -61,8 +61,8 @@ function title(row: AttendanceRow, week: AttendanceWeek, t: Tally | undefined) {
         <tr v-for="r in g.open ? g.rows : []" :key="r.id" class="group" :class="r.player.active ? '' : 'opacity-60'">
           <td class="sticky left-0 z-10 w-32 min-w-32 max-w-32 border-b border-line bg-surface px-2 py-1 group-hover:bg-surface-2 sm:w-48 sm:min-w-48 sm:max-w-48">
             <button type="button" class="flex w-full min-w-0 items-center gap-1.5 text-left font-medium text-slate-800 hover:text-brand-500" :title="`Ver todo lo de ${r.name}`" @click="$emit('pick', r)">
-              <span class="truncate">{{ r.name }}</span>
-              <Badge v-if="!r.player.active" tone="slate" class="hidden sm:inline-flex">Ya no está</Badge>
+              <span class="min-w-0 break-words leading-snug">{{ r.name }}</span>
+              <Badge v-if="!r.player.active" tone="slate" class="hidden sm:inline-flex" title="Causó baja en la plantilla: sale con lo que entrenó mientras estuvo">De baja</Badge>
             </button>
           </td>
           <td class="sticky left-32 z-10 border-b border-r border-line bg-surface px-2 py-1 text-right font-semibold tabular-nums group-hover:bg-surface-2 sm:left-48" :class="rateText(r.player.attendanceRate)">

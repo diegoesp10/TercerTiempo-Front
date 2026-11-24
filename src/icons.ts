@@ -1,4 +1,4 @@
-import { library } from '@fortawesome/fontawesome-svg-core';
+import { config, library } from '@fortawesome/fontawesome-svg-core';
 import {
   faArrowDownWideShort,
   faArrowLeft,
@@ -8,6 +8,7 @@ import {
   faArrowTrendUp,
   faArrowUpShortWide,
   faBan,
+  faBars,
   faBell,
   faCalendarCheck,
   faCalendarDays,
@@ -96,6 +97,20 @@ import {
   faPaperclip,
   faFileImage,
   faClockRotateLeft,
+  faCircleUser,
+  faLinkSlash,
+  faPalette,
+  faUpDownLeftRight,
+  faEraser,
+  faPaintbrush,
+  faUserCheck,
+  faArrowRotateLeft,
+  faArrowRotateRight,
+  faLeftRight,
+  faCrosshairs,
+  faWandMagicSparkles,
+  faBrush,
+  faDrawPolygon,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
@@ -103,6 +118,9 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
  * Iconos de Font Awesome que usa la interfaz (solo los registrados aquí entran en el bundle).
  * Se usan como <Icon icon="chevron-down" />.
  */
+// Su CSS entra por style.css en la capa base: inyectado sin capa pisaría los h-*/w-* de cada icono (1em × 1.25em).
+config.autoAddCss = false;
+
 library.add(
   faArrowDownWideShort,
   faArrowLeft,
@@ -112,6 +130,7 @@ library.add(
   faArrowTrendUp,
   faArrowUpShortWide,
   faBan,
+  faBars,
   faBell,
   faCalendarCheck,
   faCalendarDays,
@@ -200,6 +219,20 @@ library.add(
   faPaperclip,
   faFileImage,
   faClockRotateLeft,
+  faCircleUser,
+  faLinkSlash,
+  faPalette,
+  faUpDownLeftRight,
+  faEraser,
+  faPaintbrush,
+  faUserCheck,
+  faArrowRotateLeft,
+  faArrowRotateRight,
+  faLeftRight,
+  faCrosshairs,
+  faWandMagicSparkles,
+  faBrush,
+  faDrawPolygon,
 );
 
 export { FontAwesomeIcon as Icon };

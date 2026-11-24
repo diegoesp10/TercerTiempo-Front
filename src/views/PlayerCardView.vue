@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { api } from '@/api';
 import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
-import PublicProfileToggle from '@/components/players/PublicProfileToggle.vue';
+import PositionSummaryPicker from '@/components/players/PositionSummaryPicker.vue';
 import ShirtNumberUsage from '@/components/players/ShirtNumberUsage.vue';
 import CardMarks from '@/components/sheet/CardMarks.vue';
 import Alert from '@/components/ui/Alert.vue';
@@ -13,6 +13,8 @@ import Spinner from '@/components/ui/Spinner.vue';
 import TeamName from '@/components/teams/TeamName.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useSort } from '@/composables/useSort';
+import { useSummaryPosition } from '@/composables/useSummaryPosition';
+import { useAuthStore } from '@/stores/auth';
 import type { MatchDto } from '@/types/api';
 import { formatDate, formatNumber, outcomeLabels, outcomeTone, positionLabels, type Outcome } from '@/utils/format';
 import { keyColumnsFor, keyStatsFor, keyTotals, matchesOfTeam, type KeyStat, type KeyTotals } from '@/utils/keyStats';
@@ -23,7 +25,8 @@ import { keyColumnsFor, keyStatsFor, keyTotals, matchesOfTeam, type KeyStat, typ
  * de gol, faltas, nota y el dato de su puesto (paradas, despejes, pases...).
  */
 const props = defineProps<{ teamId: string; entryId: string }>();
-const { data, loading, error, run } = useAsync(() => api.teams.playerCard(props.teamId, props.entryId));
+const { data, loading, error } = useAsync(() => api.teams.playerCard(props.teamId, props.entryId));
+const auth = useAuthStore();
 
 /** No hay dorsal fijo: el de cabecera es el que más ha llevado según las actas. */
 const usualShirt = computed(() => data.value?.entry.shirtNumbers[0] ?? null);
@@ -123,7 +126,11 @@ const getters = computed(() => {
 });
 const { sorted, sortBy, state } = useSort<Row, SortKey>(rows, getters, 'match', { ascendingFirst: ['shirt', 'source'] });
 
-/** Cifras de la banda: las oficiales siempre; con el perfil completo, también el dato de su puesto y la nota. */
+/**
+ * Cifras de la banda: las oficiales siempre; con el perfil completo, también la nota y el dato del puesto (el suyo o el
+ * que se elija en «Resumen como»). El partido a partido sigue con las columnas de su puesto.
+ */
+const summaryPosition = useSummaryPosition(() => data.value?.entry);
 const band = computed(() => {
   const card = data.value;
   if (!card) return [];
@@ -138,7 +145,7 @@ const band = computed(() => {
     { label: 'Tarjetas', value: `${Math.max(official?.yellowCards ?? 0, internal?.yellowCards ?? 0)}/${Math.max(official?.redCards ?? 0, internal?.redCards ?? 0)}`, title: 'Amarillas / rojas' },
   ];
   if (card.extended) {
-    for (const stat of keyStatsFor(position.value)) items.push({ label: stat.label, value: internal ? String(stat.value(keyTotals(internal))) : '—', title: stat.title });
+    for (const stat of keyStatsFor(summaryPosition.value)) items.push({ label: stat.label, value: internal ? String(stat.value(keyTotals(internal))) : '—', title: stat.title });
     items.push({ label: 'Nota media', value: internal?.averageRating != null ? formatNumber(internal.averageRating, 1) : '—' });
   }
   return items;
@@ -168,21 +175,19 @@ const band = computed(() => {
         <RouterLink v-if="data.internalProfileLink" :to="data.internalProfileLink" class="btn-secondary px-3 py-1.5 text-xs">
           <Icon icon="chart-line" class="h-3 w-3" />Perfil en la plantilla
         </RouterLink>
-        <RouterLink
-          v-if="data.isMe"
-          :to="{ name: 'settings' }"
-          class="group grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line bg-surface text-slate-600 shadow-sm transition hover:border-brand-400/60 hover:text-brand-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-          title="Ajustes de tu cuenta: tema, contraseña y más"
-          aria-label="Ajustes de tu cuenta"
-        >
-          <Icon icon="gear" class="h-4 w-4 transition-transform duration-500 group-hover:rotate-90" />
-        </RouterLink>
+      </template>
+      <!-- Sin el perfil completo la banda no lleva el dato del puesto: no hay nada que cambiar. -->
+      <template v-if="data.extended" #summary>
+        <PositionSummaryPicker v-model="summaryPosition" :own="position" :you="data.isMe" />
       </template>
     </PlayerHeroCard>
 
-    <section v-if="data.isMe" class="card">
-      <PublicProfileToggle @changed="run" />
-    </section>
+    <!-- Su propia ficha: quién la ve así y dónde se cambia (el interruptor está en «Mi perfil»). -->
+    <Alert v-if="data.isMe" kind="info">
+      Esta es tu ficha pública. Tu club y tu plantilla la ven completa; fuera de ellos,
+      {{ auth.player?.publicProfile ? 'también completa, porque tu perfil es público' : 'solo tus datos básicos y las actas oficiales' }}.
+      Lo cambias en <RouterLink :to="{ name: 'my-profile' }" class="font-semibold underline hover:no-underline">Mi perfil</RouterLink>.
+    </Alert>
 
     <Alert v-else-if="!data.extended" kind="info">
       <template v-if="data.hasAccount">

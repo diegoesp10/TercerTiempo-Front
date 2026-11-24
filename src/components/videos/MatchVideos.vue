@@ -197,12 +197,13 @@ const accessIcon = (video: MatchVideoDto) => (video.access === 'Locked' ? 'lock'
                 </Badge>
                 <Badge v-else-if="video.height" tone="slate">{{ video.height }}p</Badge>
               </div>
-              <p class="mt-2 truncate font-semibold text-slate-900" :title="video.title">{{ video.title }}</p>
+              <p class="mt-2 break-words font-semibold text-slate-900">{{ video.title }}</p>
               <p class="mt-1 text-xs text-slate-500">
                 <TeamName :name="video.teamName" :team-id="video.teamId" />
                 <span class="mx-1.5 text-slate-300">·</span>subido por {{ video.uploadedBy }}
                 <span class="mx-1.5 text-slate-300">·</span>{{ formatKickoff(video.uploadedAt) }}
-                <span class="mx-1.5 text-slate-300">·</span>{{ formatBytes(video.sizeBytes) }}<template v-if="video.originalSizeBytes"> (antes {{ formatBytes(video.originalSizeBytes) }})</template>
+                <!-- Lo que ocupa solo le importa a quien lo subió: a los demás la API no se lo manda. -->
+                <template v-if="video.sizeBytes != null"><span class="mx-1.5 text-slate-300">·</span>{{ formatBytes(video.sizeBytes) }}<template v-if="video.originalSizeBytes"> (antes {{ formatBytes(video.originalSizeBytes) }})</template></template>
                 <template v-if="video.durationSeconds"><span class="mx-1.5 text-slate-300">·</span>{{ formatMinutes(video.durationSeconds) }}</template>
               </p>
             </div>

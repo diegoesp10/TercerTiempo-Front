@@ -99,7 +99,7 @@ const { sorted, sortBy, state } = useSort<Row, SortKey>(rows, getters, 'match', 
             <p class="flex items-center gap-1.5 whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide text-accent-400">
               <span class="h-2 w-2 shrink-0 rounded-full bg-accent-400" />Tu equipo
             </p>
-            <p class="truncate text-sm font-semibold text-slate-900">{{ ownTeam?.name ?? 'Tu equipo' }}</p>
+            <p class="break-words text-sm font-semibold leading-snug text-slate-900">{{ ownTeam?.name ?? 'Tu equipo' }}</p>
           </div>
         </div>
         <span class="shrink-0 text-xs font-semibold text-slate-400">vs</span>
@@ -108,7 +108,7 @@ const { sorted, sortBy, state } = useSort<Row, SortKey>(rows, getters, 'match', 
             <p class="flex items-center justify-end gap-1.5 whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide text-slate-500">
               Media en contra<span class="h-2 w-2 shrink-0 rounded-full bg-slate-400" />
             </p>
-            <p class="truncate text-sm font-semibold text-slate-900">Sus rivales</p>
+            <p class="break-words text-sm font-semibold leading-snug text-slate-900">Sus rivales</p>
           </div>
           <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-3 text-slate-500 ring-1 ring-line">
             <Icon icon="users" class="text-sm" />

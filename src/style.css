@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* En la capa base para que las utilidades (h-*, w-*) manden sobre el tamaño por defecto de los iconos. */
+@import "@fortawesome/fontawesome-svg-core/styles.css" layer(base);
 
 /* El tema lo decide el atributo data-theme de <html> (stores/settings.ts): claro u oscuro. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
@@ -334,9 +336,10 @@
 }
 
 @layer components {
-  /* Todas las rutas comparten una superficie de lectura opaca: el césped queda en los márgenes. */
+  /* Todas las rutas comparten una superficie de lectura opaca: el césped queda en los márgenes (más finos por debajo
+     de 360 px, junto con los del main, para que el contenido no pierda un tercio del ancho). */
   .page-root {
-    @apply rounded-2xl bg-canvas p-4 sm:p-6;
+    @apply rounded-2xl bg-canvas p-4 max-[360px]:p-3 sm:p-6;
   }
   .content-note {
     @apply rounded-lg border border-line bg-surface-2 px-4 py-3 text-xs leading-relaxed text-slate-600;
@@ -395,6 +398,11 @@
   /* Etiqueta pequeña en mayúsculas, estilo marcador deportivo */
   .eyebrow {
     @apply inline-block font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-500;
+  }
+  /* Cifra de una casilla que cabe siempre entera: dentro de un @container sin relleno se encoge lo justo según sus
+     caracteres (--chars) y nunca pasa de --fit-max. En Archivo cada carácter ocupa hasta ~0,62 em; 0,66 deja margen. */
+  .fit-figure {
+    font-size: min(var(--fit-max, 1.5rem), calc(100cqi / (var(--chars, 4) * 0.66)));
   }
 
   /* Transición entre páginas: con keyframes (y sin estado *-from) la página nunca se queda invisible aunque el

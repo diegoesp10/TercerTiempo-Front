@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import LegalPage from '@/components/legal/LegalPage.vue';
+import MailLink from '@/components/legal/MailLink.vue';
 import { dataSources, legalEntity } from '@/legal/entity';
 </script>
 
@@ -9,7 +10,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <h2>1. Titular y objeto</h2>
       <p>
         Tercer Tiempo es un servicio de <strong>{{ legalEntity.name }}</strong>, NIF {{ legalEntity.nif }}, con domicilio en
-        {{ legalEntity.address }} y correo de contacto <a :href="`mailto:${legalEntity.email}`">{{ legalEntity.email }}</a>.
+        {{ legalEntity.address }} y correo de contacto <MailLink :email="legalEntity.email" />.
         Estas condiciones regulan el acceso y el uso de la plataforma (web y API). Al crear una cuenta o utilizar el servicio
         aceptas estas condiciones y la <RouterLink to="/privacidad">política de privacidad</RouterLink>. Si no estás de
         acuerdo, no utilices el servicio.
@@ -20,11 +21,11 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <h2>2. Qué ofrece el servicio</h2>
       <p>Tercer Tiempo está pensado para equipos de categoría absoluta: amateur, regional y nacional.</p>
       <ul>
-        <li><strong>Sin cuenta</strong>: calendarios, resultados, clasificaciones y actas oficiales de las ligas, de 1.ª RFEF a 3.ª AsturFútbol, a partir de fuentes públicas (apartado 9); el previsor de cada liga; la plantilla publicada y el cuerpo técnico de cada equipo, y los árbitros de cada categoría con las notas que les ponen los equipos.</li>
-        <li><strong>Con cualquier cuenta</strong>: el buscador, la ficha de cada jugador con sus actas oficiales y el perfil de cada técnico con sus equipos y su balance.</li>
+        <li><strong>Sin cuenta</strong>: calendarios, resultados, clasificaciones y actas oficiales de las ligas, de 1.ª RFEF a 3.ª AsturFútbol, a partir de fuentes públicas (apartado 9); el previsor de cada liga; la plantilla publicada y el cuerpo técnico de cada equipo (con sus tarjetas y sanciones), y los árbitros de cada categoría con las notas que les ponen los equipos.</li>
+        <li><strong>Con cualquier cuenta</strong>: el buscador, la ficha de cada jugador con sus actas oficiales y el perfil de cada técnico con sus equipos, su balance y sus tarjetas de la temporada.</li>
         <li><strong>Para clubes</strong>: sus equipos y su cuerpo técnico temporada a temporada, la licencia del club, los pases de partido (apartado 7) y todo lo del cuerpo técnico, en todos sus equipos.</li>
-        <li><strong>Para el cuerpo técnico</strong>: la plantilla con fichas, fotos y jugadores a prueba; el acta interna de cada partido con una nota calculada; el vídeo del partido y su análisis automático; estadísticas y comparador; las lesiones con sus documentos médicos; entrenamientos con ejercicios y asistencia; convocatorias con su cita; las sanciones de liga de cada jugador; las previas de los partidos y la nota al árbitro de cada partido.</li>
-        <li><strong>Para jugadores</strong>: sus cifras, sus entrenamientos y su asistencia (con aviso cuando va a faltar), sus convocatorias para firmarlas, sus avisos y su perfil.</li>
+        <li><strong>Para el cuerpo técnico</strong>: la plantilla con fichas, fotos y jugadores a prueba; el acta interna de cada partido con una nota calculada; el vídeo del partido y su análisis automático; estadísticas y comparador; las lesiones con sus documentos médicos; entrenamientos con ejercicios y asistencia; convocatorias con su cita; las sanciones de liga de cada jugador y quién llega apercibido; las previas de los partidos y la nota al árbitro de cada partido.</li>
+        <li><strong>Para jugadores</strong>: sus cifras, con su puesto frente a sus compañeros, sus entrenamientos y su asistencia (con aviso cuando va a faltar), sus convocatorias para firmarlas, sus avisos y su perfil.</li>
       </ul>
     </section>
 
@@ -56,14 +57,16 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <h2>5. Entrenamientos, convocatorias, lesiones y sanciones</h2>
       <ul>
         <li>El cuerpo técnico planifica los entrenamientos y anota la asistencia; el jugador puede avisar de que va a faltar y por qué. Los jugadores a prueba se apuntan con su nombre y unas notas, y pasan a la plantilla cuando se les hace ficha.</li>
-        <li>Las convocatorias las envía el cuerpo técnico: a cada jugador con cuenta le llega un aviso de si va o no, y el cuerpo técnico ve cuándo le ha llegado, cuándo la ha abierto y si la ha firmado.</li>
-        <li>Las lesiones las anotan el club y el cuerpo técnico; mientras dura la baja, el jugador no entrena ni puede ir convocado. Sus documentos médicos (radiografías, informes) solo pueden subirse con el <strong>consentimiento expreso del jugador</strong> y solo los abren el club, su cuerpo técnico y el propio jugador; sus compañeros solo ven que está lesionado.</li>
+        <li>Las convocatorias las envía el cuerpo técnico: a cada jugador con cuenta le llega un aviso de si va o no, y el cuerpo técnico ve cuándo le ha llegado, cuándo la ha abierto y si la ha firmado. Enviada, la lista queda fija: para cambiarla, el cuerpo técnico la modifica a propósito y solo se avisa a quien entra o sale (y a todos los convocados si cambia la cita).</li>
+        <li>Las lesiones las anotan el club y el cuerpo técnico; mientras dura la baja, el jugador no entrena ni puede ir convocado. Los días de baja se cuentan desde la fecha del parte hasta el alta, que no puede ser posterior a hoy; una recaída se registra como lesión nueva enlazada a la anterior, y la ficha de cada jugador guarda su historial de lesiones superadas, también de otras temporadas en el club. Si al empezar la temporada sigue lesionado, la lesión pasa a su plantilla de la temporada nueva con la misma fecha del parte y se lleva desde allí. Sus documentos médicos (radiografías, informes) solo pueden subirse con el <strong>consentimiento expreso del jugador</strong> y solo los abren el club, su cuerpo técnico y el propio jugador; sus compañeros solo ven que está lesionado.</li>
         <li>
           <strong>Sanciones de liga</strong>: Tercer Tiempo calcula con las tarjetas de las actas quién no puede jugar cada partido de liga
           (la 5.ª amarilla, la 10.ª, la 15.ª… y cada expulsión cuestan el siguiente partido) y no deja convocarle ni ponerle en el acta
-          como que jugó. Es una ayuda: usa el acta oficial cuando está cerrada y, mientras tanto, la interna, y de una roja directa
-          cuenta el mínimo de un partido. Prevalecen siempre las resoluciones del comité de competición, que el club debe comprobar
-          antes de alinear a un jugador: Tercer Tiempo no responde de una alineación indebida.
+          como que jugó. Usa el acta oficial cuando está cerrada y, mientras tanto, la interna. Cuando el comité de competición
+          publica en la web de la federación la sanción de un jugador, cuentan los partidos que pone (una roja directa puede costar
+          varios) y se avisa al jugador, a su cuerpo técnico y a su club; hasta entonces, el mínimo de las tarjetas. Es una ayuda:
+          esa publicación puede tardar en leerse o no leerse, y prevalecen siempre las resoluciones del comité de competición, que el
+          club debe comprobar antes de alinear a un jugador: Tercer Tiempo no responde de una alineación indebida.
         </li>
       </ul>
     </section>
@@ -73,7 +76,8 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <ul>
         <li>Conservas los derechos sobre los contenidos que subes (vídeos, fotos, documentos, observaciones, fichas). Concedes a Tercer Tiempo una licencia no exclusiva, mundial y gratuita para alojarlos, reproducirlos, transmitirlos y mostrarlos en la plataforma con el único fin de prestar el servicio, durante el tiempo que permanezcan en ella.</li>
         <li>Quien sube un vídeo o una foto garantiza que tiene derecho a hacerlo: que lo ha grabado él o su club, que no vulnera derechos de terceros y que cuenta con el <strong>consentimiento para la grabación y su difusión</strong> de las personas que aparecen.</li>
-        <li>El vídeo se puede <strong>analizar automáticamente</strong>: el analizador sigue a los jugadores y el balón, distingue los equipos por el color de la camiseta y reconoce a cada jugador por su dorsal cruzado con el acta oficial, sin reconocimiento facial, y propone acciones para el acta. Es una propuesta: el cuerpo técnico la revisa antes de volcarla y nada cuenta hasta que guarda el acta.</li>
+        <li>El vídeo se puede <strong>analizar automáticamente</strong>: el analizador sigue a los jugadores y el balón, distingue los equipos por el color de la camiseta y reconoce a cada jugador por su dorsal cruzado con el acta oficial, sin reconocimiento facial, y propone acciones para el acta. Es una propuesta: el cuerpo técnico la revisa antes de volcarla y nada cuenta hasta que guarda el acta. Cada análisis queda con el nombre y la versión del analizador que lo hizo, también en los datos del equipo que se vuelquen de él.</li>
+        <li>Al subirlo, el vídeo toma el nombre del partido (los dos equipos y la fecha), sea cual sea el nombre del archivo.</li>
         <li>Está prohibido subir contenidos ilícitos, ofensivos, que vulneren la intimidad o el honor de alguien, o que incluyan música u otras obras sin licencia.</li>
         <li>Tercer Tiempo puede retirar cualquier contenido que incumpla estas condiciones o a requerimiento de un afectado o de una autoridad, y puede eliminar los vídeos de plantillas inactivas avisando con antelación.</li>
       </ul>
@@ -165,7 +169,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
     <section>
       <h2>14. Baja, suspensión y cambios</h2>
       <ul>
-        <li>Puedes darte de baja en cualquier momento escribiendo a <a :href="`mailto:${legalEntity.email}`">{{ legalEntity.email }}</a>; los datos se tratan según la política de privacidad.</li>
+        <li>Puedes darte de baja en cualquier momento escribiendo a <MailLink :email="legalEntity.email" />; los datos se tratan según la política de privacidad.</li>
         <li>Podemos suspender o cancelar una cuenta que incumpla estas condiciones, con aviso previo salvo urgencia o requerimiento legal.</li>
         <li>Podemos modificar estas condiciones; avisaremos a los usuarios registrados con antelación razonable y los cambios no se aplicarán retroactivamente a compras ya realizadas.</li>
       </ul>

@@ -55,7 +55,7 @@ const columns: { key: SortKey; icon: string; tone?: string; label: string; title
             <td class="px-2 py-1.5">
               <button type="button" class="flex min-w-0 items-center gap-2 text-left hover:text-brand-500" :title="`Ver todo lo de ${r.name}`" @click="$emit('pick', r)">
                 <PlayerName :name="r.name" :photo-url="photos?.[r.id] ?? null" class="min-w-0" />
-                <Badge v-if="!r.player.active" tone="slate">Ya no está</Badge>
+                <Badge v-if="!r.player.active" tone="slate" title="Causó baja en la plantilla: sale con lo que entrenó mientras estuvo">De baja</Badge>
               </button>
               <p v-for="i in r.player.injuries ?? []" :key="i.id" class="mt-0.5 flex items-start gap-1.5 pl-9">
                 <Icon icon="user-injured" class="mt-0.5 h-3 w-3 shrink-0 text-red-500" />

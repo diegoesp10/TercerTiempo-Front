@@ -121,7 +121,7 @@ async function act(call: () => Promise<ClubLicenseDto>) {
     <article v-else-if="license" class="mt-4 rounded-xl border border-line bg-surface-2 p-4">
       <div class="flex flex-wrap items-start justify-between gap-2">
         <div class="min-w-0">
-          <p class="truncate font-semibold text-slate-900">{{ license.clubName }}</p>
+          <p class="break-words font-semibold text-slate-900">{{ license.clubName }}</p>
           <p class="text-xs text-slate-500">
             <template v-if="license.contracted">{{ subscriptionLabel(license.staffSeats) }} · {{ billingIntervalLabels[license.interval!].toLowerCase() }}</template>
             <template v-else>Prueba con {{ staffCountLabel(license.staffLimit) }} · sin contratar</template>

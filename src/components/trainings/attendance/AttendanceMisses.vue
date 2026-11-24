@@ -27,7 +27,7 @@ const title = (m: AttendanceMiss) =>
       </span>
       <span v-if="m.reason" class="flex min-w-0 items-center gap-1.5 px-2 py-1 text-slate-800">
         <Icon icon="comment-dots" class="h-3 w-3 shrink-0 text-slate-400" aria-hidden="true" />
-        <span class="truncate">{{ m.reason }}</span>
+        <span class="min-w-0 break-words">{{ m.reason }}</span>
       </span>
       <span v-else class="px-2 py-1 italic text-slate-400">sin motivo</span>
     </li>

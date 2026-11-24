@@ -8,7 +8,8 @@ import { crestFor } from '@/utils/crests';
 /**
  * Cabecera de ficha de jugador, al estilo de las tarjetas de estadísticas de los medios deportivos: el equipo en
  * pequeño, el nombre a gran tamaño, una banda oscura con las tres o cuatro cifras que importan y, si el club ha subido
- * su foto, el jugador recortado a la derecha. Sin foto, el dorsal ocupa ese sitio.
+ * su foto, el jugador recortado a la derecha. Sin foto, el dorsal ocupa ese sitio. Bajo las acciones puede ir un
+ * selector (hueco `summary`) para ver la banda como la de otro puesto.
  */
 export interface HeroStat {
   label: string;
@@ -43,7 +44,8 @@ const nameParts = computed(() => {
 
 <template>
   <section class="hero-card relative overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
-    <div class="relative z-10 grid gap-6 p-6 sm:p-8" :class="photo || number ? 'lg:grid-cols-[1fr_auto]' : ''">
+    <!-- Sin z-index propio: así el menú del resumen por puesto, plegado en el móvil, se abre por encima de la banda. -->
+    <div class="relative grid gap-6 p-6 sm:p-8" :class="photo || number ? 'lg:grid-cols-[1fr_auto]' : ''">
       <div class="min-w-0">
         <!-- Con el id del equipo, el equipo lleva a su página. -->
         <RouterLink
@@ -68,6 +70,9 @@ const nameParts = computed(() => {
         <p v-if="meta" class="mt-3 text-sm text-slate-500">{{ meta }}</p>
         <div class="mt-5 flex flex-wrap items-center gap-3">
           <slot name="actions" />
+        </div>
+        <div v-if="$slots.summary" class="mt-5">
+          <slot name="summary" />
         </div>
       </div>
 

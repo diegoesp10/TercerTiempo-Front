@@ -22,6 +22,7 @@ import RatingBadge from '@/components/ui/RatingBadge.vue';
 import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vue';
 import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
+import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useBackFallback } from '@/composables/useBackFallback';
@@ -302,11 +303,17 @@ function addPlayer(id: string | number | null) {
 // Como en la plantilla y la convocatoria: porteros, defensas, centrocampistas y delanteros, y al final los que no tienen posición.
 const groupByPosition = useGroupByPosition('match-sheet');
 const positionOrder: (Position | null)[] = ['Goalkeeper', 'Defender', 'Midfielder', 'Forward', null];
+// Quien causó baja después del partido sigue en el acta (lo jugó), en su último grupo «De baja».
+const isLeftRow = (r: Row) => r.player.status !== 'Active';
 function grouped(list: Row[]) {
-  if (!groupByPosition.value) return [{ key: 'all', label: '', rows: list }];
-  return positionOrder
-    .map((p) => ({ key: p ?? 'none', label: p ? `${positionLabels[p]}s` : 'Sin posición', rows: list.filter((r) => r.player.position === p) }))
-    .filter((g) => g.rows.length > 0);
+  const current = list.filter((r) => !isLeftRow(r));
+  const left = list.filter(isLeftRow);
+  const groups = !groupByPosition.value
+    ? current.length > 0 || left.length === 0 ? [{ key: 'all', label: '', rows: current }] : []
+    : positionOrder
+      .map((p) => ({ key: p ?? 'none', label: p ? `${positionLabels[p]}s` : 'Sin posición', rows: current.filter((r) => r.player.position === p) }))
+      .filter((g) => g.rows.length > 0);
+  return left.length > 0 ? [...groups, { key: 'left', label: 'De baja', rows: left }] : groups;
 }
 const editGroups = computed(() => grouped(sortedRows.value.filter(inSheet)));
 const playedGroups = computed(() => grouped(sortedRows.value.filter((r) => r.played)));
@@ -462,18 +469,13 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
       @requested="onRivalRequested"
     />
 
-    <nav class="mt-6 flex gap-1 overflow-x-auto border-b border-slate-200 whitespace-nowrap" aria-label="Secciones del partido">
-      <button
-        v-for="item in visibleTabs"
-        :key="item.id"
-        type="button"
-        class="-mb-px border-b-2 px-4 py-2 text-sm font-medium transition"
-        :class="tab === item.id ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'"
-        @click="selectTab(item.id)"
-      >
-        {{ item.label }}
-      </button>
-    </nav>
+    <ResponsiveTabs
+      :items="visibleTabs.map((item) => ({ key: item.id, label: item.label }))"
+      :model-value="tab"
+      label="Secciones del partido"
+      class="mt-6"
+      @update:model-value="(key) => selectTab(key as Tab)"
+    />
 
     <div v-if="tab === 'partido'" class="mt-6">
       <OfficialSheetPanel :match-id="matchId" :highlight-team-id="teamId" />
@@ -700,7 +702,7 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
               <td class="px-3 py-1">
                 <button
                   type="button"
-                  class="inline-flex w-44 items-center gap-1.5 rounded-lg border px-2 py-1 text-left text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
+                  class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-2 py-1 text-left text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
                   :class="hasNote(row)
                     ? 'border-accent-400/60 bg-accent-500/10 text-slate-800 hover:bg-accent-500/20'
                     : 'border-dashed border-slate-300 text-slate-500 hover:border-accent-400 hover:text-slate-800'"
@@ -710,7 +712,7 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
                   @click="noteRow = row"
                 >
                   <Icon :icon="hasNote(row) ? 'circle-check' : 'plus'" class="shrink-0 text-[12px]" :class="hasNote(row) ? 'text-accent-400' : ''" />
-                  <span class="truncate">{{ hasNote(row) ? row.notes : 'Añadir nota' }}</span>
+                  {{ hasNote(row) ? 'Editar la nota' : 'Añadir nota' }}
                 </button>
               </td>
             </tr>
@@ -743,13 +745,13 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
                 <button
                   v-if="hasNote(row)"
                   type="button"
-                  class="inline-flex w-48 items-center gap-1.5 rounded-lg border border-accent-400/60 bg-accent-500/10 px-2 py-1 text-left text-xs text-slate-800 hover:bg-accent-500/20"
+                  class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-accent-400/60 bg-accent-500/10 px-2 py-1 text-left text-xs text-slate-800 hover:bg-accent-500/20"
                   :title="row.notes ?? ''"
                   :aria-label="`Leer la nota de ${row.player.fullName}`"
                   @click="noteRow = row"
                 >
                   <Icon icon="comment-dots" class="shrink-0 text-[12px] text-accent-400" />
-                  <span class="truncate">{{ row.notes }}</span>
+                  Leer la nota
                 </button>
               </td>
             </tr>

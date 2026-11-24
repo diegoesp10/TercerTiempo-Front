@@ -105,7 +105,7 @@ const num = (value: number) => value.toLocaleString('es-ES', { maximumFractionDi
       <TeamCrest :src="team.crestUrl" :name="team.teamName" :short-name="team.shortName" size="lg" />
       <div class="min-w-0 flex-1">
         <p class="eyebrow flex items-center gap-1.5"><Icon icon="shield-halved" class="h-3 w-3" />{{ title }} · tu previsión</p>
-        <h3 class="truncate text-lg font-bold text-slate-900">{{ team.teamName }}</h3>
+        <h3 class="min-w-0 break-words text-lg font-bold text-slate-900">{{ team.teamName }}</h3>
         <p class="text-xs text-slate-500">
           Ahora {{ team.position }}.º con {{ team.points }} pts · acabaría {{ num(team.expectedPosition) }}.º con unos {{ num(team.expectedPoints) }} pts
         </p>

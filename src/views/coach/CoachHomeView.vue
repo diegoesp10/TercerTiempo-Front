@@ -26,7 +26,6 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
   <PageHeader :title="`Hola, ${auth.displayName}`" subtitle="Plantillas en las que formas parte del cuerpo técnico esta temporada.">
     <template #actions>
       <DashboardSearch />
-      <RouterLink to="/codigo-acceso" :class="squads.length > 0 ? 'btn-secondary' : 'btn-primary'">Canjear un código de acceso</RouterLink>
     </template>
   </PageHeader>
 
@@ -81,6 +80,12 @@ const pastAppointments = computed(() => appointments.value.filter((a) => a.statu
       </ul>
       <p v-if="pastAppointments.length > 0" class="mt-3 text-xs text-slate-500">
         Los nombramientos caducados o revocados dejan de dar acceso a la plantilla; las actas que registraste se conservan.
+      </p>
+      <!-- El código de acceso (club → técnico) no es un pase de partido: no se canjea en «Mis pases». Sin plantillas ya lo
+           enlaza el recuadro de arriba. -->
+      <p v-if="squads.length > 0" class="mt-3 text-xs text-slate-500">
+        ¿Te han nombrado para otro equipo?
+        <RouterLink to="/codigo-acceso" class="font-medium text-accent-400 hover:underline">Canjea el código de acceso</RouterLink> que te dé el club.
       </p>
     </section>
   </template>

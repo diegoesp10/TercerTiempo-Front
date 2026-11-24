@@ -85,14 +85,21 @@ export function groupRows(
   byPosition: boolean,
   closed: string[],
 ): AttendanceGroup[] {
-  if (!byPosition) return [{ key: 'all', label: '', rows, open: true, rate: null }];
-  return positionOrder
-    .map((p) => {
-      const key = p ?? 'none';
-      const list = rows.filter((r) => (positions[r.id] ?? null) === p);
-      return { key, label: p ? `${positionLabels[p]}s` : 'Sin posición', rows: list, open: !closed.includes(key), rate: groupRate(list) };
-    })
-    .filter((g) => g.rows.length > 0);
+  // Los que causaron baja (con lo que entrenaron mientras estuvieron) van siempre aparte, en un último grupo «De baja».
+  const current = rows.filter((r) => r.player.active);
+  const left = rows.filter((r) => !r.player.active);
+  const leftGroup: AttendanceGroup[] = left.length > 0 ? [{ key: 'left', label: 'De baja', rows: left, open: !closed.includes('left'), rate: null }] : [];
+  if (!byPosition) return [...(current.length > 0 || left.length === 0 ? [{ key: 'all', label: '', rows: current, open: true, rate: null }] : []), ...leftGroup];
+  return [
+    ...positionOrder
+      .map((p) => {
+        const key = p ?? 'none';
+        const list = current.filter((r) => (positions[r.id] ?? null) === p);
+        return { key, label: p ? `${positionLabels[p]}s` : 'Sin posición', rows: list, open: !closed.includes(key), rate: groupRate(list) };
+      })
+      .filter((g) => g.rows.length > 0),
+    ...leftGroup,
+  ];
 }
 
 // Filtro de faltas: quién faltó (de cualquier forma), quién avisó y quién no. Con él, cada jugador enseña sus faltas.

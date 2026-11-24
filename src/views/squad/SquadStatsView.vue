@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { api } from '@/api';
-import { goalsDonutOption, minutesBarsOption, ratingRankingOption, teamRatingOption, teamResultsOption } from '@/charts/options';
+import { goalsDonutOption, minutesBarsOption, rankingChartHeight, ratingRankingOption, ratingRankingPool, teamRatingOption, teamResultsOption } from '@/charts/options';
 import AppChart from '@/components/charts/AppChart.vue';
 import ChartCard from '@/components/charts/ChartCard.vue';
 import Alert from '@/components/ui/Alert.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
+import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
 import TeamSeasonStats from '@/components/squads/TeamSeasonStats.vue';
@@ -14,16 +15,25 @@ import { useAsync } from '@/composables/useAsync';
 import { groupByPosition, useGroupByPosition } from '@/composables/usePositionGrouping';
 import { useSort } from '@/composables/useSort';
 import { useSquad } from '@/composables/useSquad';
+import { useAuthStore } from '@/stores/auth';
 import { useSettingsStore } from '@/stores/settings';
 import type { SquadPlayerStatsDto } from '@/types/api';
 import { formatNumber, formatPct, positionShortLabels } from '@/utils/format';
 import PlayerName from '@/components/players/PlayerName.vue';
+import MySquadRankCard from '@/components/squads/MySquadRankCard.vue';
+import Badge from '@/components/ui/Badge.vue';
 
 const { squadId } = useSquad();
 const settings = useSettingsStore();
+const auth = useAuthStore();
 
 const { data, loading, error } = useAsync(() => api.squads.stats(squadId.value));
 const timeline = useAsync(() => api.squads.timeline(squadId.value), { redirectOnError: false });
+
+// El jugador mira sus estadísticas (Diego, 21-11): primero las suyas frente a las de los compañeros, su fila y sus barras
+// resaltadas; las de todos siguen ahí.
+const myId = computed(() => (auth.playerSquad?.squadId === squadId.value ? auth.playerSquad.squadPlayerId : null));
+const me = computed(() => data.value?.players.find((r) => r.player.id === myId.value) ?? null);
 
 const donutMetric = ref<'goals' | 'goalContributions'>('goals');
 
@@ -33,8 +43,10 @@ const teamRating = computed(() =>
   timeline.data.value?.matches.some((m) => m.averageRating !== null) ? teamRatingOption(timeline.data.value.matches) : null,
 );
 const donut = computed(() => (data.value ? goalsDonutOption(data.value.players, donutMetric.value, settings.resolvedTheme) : null));
-const minutes = computed(() => (data.value ? minutesBarsOption(data.value.players, 16, settings.resolvedTheme) : null));
-const ranking = computed(() => (data.value ? ratingRankingOption(data.value.players, 12, settings.resolvedTheme) : null));
+const minutes = computed(() => (data.value ? minutesBarsOption(data.value.players, 16, settings.resolvedTheme, myId.value) : null));
+const ranking = computed(() => (data.value ? ratingRankingOption(data.value.players, 12, settings.resolvedTheme, myId.value) : null));
+const minutesHeight = computed(() => rankingChartHeight(Math.min(16, data.value?.players.filter((r) => r.stats.minutes > 0).length ?? 0)));
+const rankingHeight = computed(() => rankingChartHeight(Math.min(12, ratingRankingPool(data.value?.players ?? []).length)));
 
 /** Vistas de la tabla: cada una agrupa las estadísticas de una faceta para que la tabla siga siendo legible. */
 type View = 'general' | 'ataque' | 'pases' | 'defensa';
@@ -119,7 +131,8 @@ const getters: Record<string, (row: SquadPlayerStatsDto) => number | string | nu
 const players = computed(() => data.value?.players ?? []);
 const { sortKey, sortDesc, sorted, sortBy, state } = useSort<SquadPlayerStatsDto, string>(players, getters, 'minutes', { ascendingFirst: ['name'] });
 const grouped = useGroupByPosition('squad-stats');
-const groups = computed(() => groupByPosition(sorted.value, (row) => row.player.position, grouped.value));
+// Los que causaron baja salen con lo que hicieron mientras estuvieron, en su último grupo «De baja».
+const groups = computed(() => groupByPosition(sorted.value, (row) => row.player.position, grouped.value, undefined, (row) => row.player.status !== 'Active'));
 
 // Al cambiar de vista se ordena por su primera columna si la que había no existe en ella.
 watch(view, () => {
@@ -139,6 +152,8 @@ watch(view, () => {
       <strong>{{ data.matchesRecorded }}</strong> de {{ data.teamMatchesPlayed }} partidos disputados tienen acta.
       <span v-if="data.matchesRecorded < data.teamMatchesPlayed" class="text-slate-500">Las estadísticas solo cuentan los partidos con acta.</span>
     </p>
+
+    <MySquadRankCard v-if="me" class="mb-8" :me="me" :players="data.players" />
 
     <!-- Gráficos del equipo -->
     <div v-if="hasRecords || teamResults" class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -169,11 +184,11 @@ watch(view, () => {
       </ChartCard>
 
       <ChartCard v-if="hasRecords" title="Ranking de nota" subtitle="Nota media de los jugadores con 90' o más.">
-        <AppChart v-if="ranking" :option="ranking" :height="280" label="Ranking de nota media" />
+        <AppChart v-if="ranking" :option="ranking" :height="rankingHeight" label="Ranking de nota media" />
       </ChartCard>
 
       <ChartCard v-if="hasRecords" title="Minutos jugados" subtitle="Con el porcentaje de los minutos posibles del equipo." class="lg:col-span-3">
-        <AppChart v-if="minutes" :option="minutes" :height="Math.max(220, data.players.filter((r) => r.stats.minutes > 0).slice(0, 16).length * 26)" label="Minutos jugados por jugador" />
+        <AppChart v-if="minutes" :option="minutes" :height="minutesHeight" label="Minutos jugados por jugador" />
       </ChartCard>
     </div>
 
@@ -186,20 +201,13 @@ watch(view, () => {
       <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Estadísticas por jugador</h2>
       <div class="flex flex-wrap items-center gap-2">
         <GroupByPositionToggle v-model="grouped" />
-        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 text-sm" role="tablist" aria-label="Estadísticas">
-          <button
-            v-for="item in views"
-            :key="item.id"
-            type="button"
-            role="tab"
-            :aria-selected="view === item.id"
-            class="cursor-pointer rounded-md px-3 py-1 font-medium"
-            :class="view === item.id ? 'bg-action text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
-            @click="view = item.id"
-          >
-            {{ item.label }}
-          </button>
-        </div>
+        <ResponsiveTabs
+          :items="views.map((item) => ({ key: item.id, label: item.label }))"
+          :model-value="view"
+          label="Estadísticas"
+          variant="segmented"
+          @update:model-value="(key) => (view = key as View)"
+        />
       </div>
     </div>
 
@@ -226,7 +234,11 @@ watch(view, () => {
               {{ group.label }} · {{ group.rows.length }}
             </td>
           </tr>
-          <tr v-for="row in group.rows" :key="row.player.id" :class="row.stats.matchesLogged === 0 ? 'text-slate-400' : 'hover:bg-slate-50'">
+          <tr
+            v-for="row in group.rows"
+            :key="row.player.id"
+            :class="[row.stats.matchesLogged === 0 ? 'text-slate-400' : 'hover:bg-slate-50', row.player.id === myId ? 'bg-brand-500/10' : '']"
+          >
             <td class="px-3 py-2 lg:whitespace-nowrap">
               <RouterLink
                 :to="{ name: 'squad-player', params: { squadId, squadPlayerId: row.player.id } }"
@@ -234,6 +246,7 @@ watch(view, () => {
                 :class="row.stats.matchesLogged === 0 ? '' : 'text-slate-800'"
               ><PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" /></RouterLink>
               <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
+              <Badge v-if="row.player.id === myId" tone="blue" class="ml-1.5">Tú</Badge>
             </td>
             <td
               v-for="column in columns"

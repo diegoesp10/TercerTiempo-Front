@@ -154,7 +154,7 @@ const playerSorts = reactive([
       <div class="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-500 sm:grid-cols-3 sm:gap-2">
         <span v-for="(segment, i) in segments" :key="segment.key" class="flex min-w-0 items-center gap-1.5" :class="i === 1 ? 'sm:justify-center' : i === 2 ? 'sm:justify-end' : ''">
           <span class="h-2.5 w-2.5 shrink-0 rounded-sm" :class="segment.tone" aria-hidden="true" />
-          <span class="truncate">{{ segment.label }}</span>
+          <span class="min-w-0 break-words">{{ segment.label }}</span>
           <strong class="tabular-nums text-slate-700">{{ segment.text }}</strong>
         </span>
       </div>
@@ -195,7 +195,7 @@ const playerSorts = reactive([
         <div class="flex items-center gap-3">
           <TeamCrest :src="side.team.crestUrl" :name="side.team.name" :short-name="side.team.shortName" size="lg" />
           <div class="min-w-0 flex-1">
-            <h3 class="truncate text-lg font-semibold text-slate-900">{{ side.team.name }}</h3>
+            <h3 class="min-w-0 break-words text-lg font-semibold text-slate-900">{{ side.team.name }}</h3>
             <p class="text-xs text-slate-500">
               {{ side.position ? `${side.position}º` : 'Sin clasificar' }} · {{ side.points }} pts · {{ record(side) }} · {{ side.goalsFor }}:{{ side.goalsAgainst }}
             </p>
@@ -286,9 +286,9 @@ const playerSorts = reactive([
       </p>
       <template v-else>
         <dl class="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
-          <div class="rounded-lg bg-sky-100 py-2 text-sky-800"><dt class="truncate px-1 text-xs">Gana {{ data.home.team.shortName }}</dt><dd class="font-display text-xl font-bold tabular-nums">{{ h2h.homeWins }}</dd></div>
+          <div class="rounded-lg bg-sky-100 py-2 text-sky-800"><dt class="break-words px-1 text-xs">Gana {{ data.home.team.shortName }}</dt><dd class="font-display text-xl font-bold tabular-nums">{{ h2h.homeWins }}</dd></div>
           <div class="rounded-lg bg-slate-100 py-2 text-slate-700"><dt class="text-xs">Empates</dt><dd class="font-display text-xl font-bold tabular-nums">{{ h2h.draws }}</dd></div>
-          <div class="rounded-lg bg-amber-100 py-2 text-amber-800"><dt class="truncate px-1 text-xs">Gana {{ data.away.team.shortName }}</dt><dd class="font-display text-xl font-bold tabular-nums">{{ h2h.awayWins }}</dd></div>
+          <div class="rounded-lg bg-amber-100 py-2 text-amber-800"><dt class="break-words px-1 text-xs">Gana {{ data.away.team.shortName }}</dt><dd class="font-display text-xl font-bold tabular-nums">{{ h2h.awayWins }}</dd></div>
         </dl>
         <p class="mt-2 text-center text-xs tabular-nums text-slate-500">Goles: {{ data.home.team.shortName }} {{ h2h.homeGoals }} – {{ h2h.awayGoals }} {{ data.away.team.shortName }}</p>
 

@@ -5,13 +5,15 @@ import { api } from '@/api';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import type { TabItem } from '@/components/ui/tabs';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { squadKey } from '@/composables/useSquad';
 import { useViewer } from '@/composables/useViewer';
 import { useAuthStore } from '@/stores/auth';
 import type { SquadDetailDto } from '@/types/api';
-import { levelLabels, staffRoleLabels, visibilityLabels } from '@/utils/format';
+import { levelLabel, staffRoleLabels, visibilityLabels } from '@/utils/format';
 
 const props = defineProps<{ squadId: string }>();
 
@@ -49,14 +51,16 @@ const isMyPlayerSquad = computed(() => auth.playerSquad?.squadId === props.squad
 const { isAdmin } = useViewer();
 // Agenda (entrenamientos y partidos con su convocatoria): lo interno de la plantilla (club, cuerpo técnico y sus
 // jugadores; el administrador mira).
-const tabs = computed(() => [
-  { name: 'squad', label: 'Plantilla' },
-  { name: 'squad-matches', label: 'Partidos y actas' },
-  ...(detail.value?.canManage || isMyPlayerSquad.value || isAdmin.value ? [{ name: 'squad-trainings', label: 'Agenda' }] : []),
-  { name: 'squad-stats', label: 'Estadísticas' },
-  { name: 'squad-compare', label: 'Comparador' },
-]);
-const activeTab = computed(() => (route.name === 'squad-callup' ? 'squad-trainings' : route.name));
+const tabs = computed<TabItem[]>(() =>
+  [
+    { name: 'squad', label: 'Plantilla' },
+    { name: 'squad-matches', label: 'Partidos y actas' },
+    ...(detail.value?.canManage || isMyPlayerSquad.value || isAdmin.value ? [{ name: 'squad-trainings', label: 'Agenda' }] : []),
+    { name: 'squad-stats', label: 'Estadísticas' },
+    { name: 'squad-compare', label: 'Comparador' },
+  ].map((tab) => ({ key: tab.name, label: tab.label, to: { name: tab.name, params: { squadId: props.squadId } } })),
+);
+const activeTab = computed(() => String(route.name === 'squad-callup' ? 'squad-trainings' : (route.name ?? '')));
 </script>
 
 <template>
@@ -87,7 +91,7 @@ const activeTab = computed(() => (route.name === 'squad-callup' ? 'squad-trainin
         <h1 class="text-2xl font-semibold tracking-tight text-slate-900">
           <RouterLink :to="{ name: 'team', params: { teamId: summary.teamId } }" class="hover:text-accent-400">{{ summary.teamName }}</RouterLink>
         </h1>
-        <p class="text-sm text-slate-500">{{ levelLabels[summary.competitionLevel] }} · {{ summary.competitionName }} · {{ summary.seasonLabel }}</p>
+        <p class="text-sm text-slate-500">{{ levelLabel(summary.competitionLevel) }} · {{ summary.competitionName }} · {{ summary.seasonLabel }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <Badge :tone="summary.visibility === 'Public' ? 'green' : 'slate'">Plantilla {{ visibilityLabels[summary.visibility].toLowerCase() }}</Badge>
@@ -98,18 +102,7 @@ const activeTab = computed(() => (route.name === 'squad-callup' ? 'squad-trainin
       </div>
     </div>
 
-    <nav class="mb-6 flex gap-1 overflow-x-auto border-b border-slate-200 whitespace-nowrap" aria-label="Secciones de la plantilla">
-      <RouterLink
-        v-for="tab in tabs"
-        :key="tab.name"
-        :to="{ name: tab.name, params: { squadId } }"
-        class="-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition"
-        :class="activeTab === tab.name ? 'border-brand-500 text-brand-500' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'"
-        :aria-current="activeTab === tab.name ? 'page' : undefined"
-      >
-        {{ tab.label }}
-      </RouterLink>
-    </nav>
+    <ResponsiveTabs :items="tabs" :model-value="activeTab" label="Secciones de la plantilla" class="mb-6" />
 
     <!-- Las pestañas se cambian con un fundido corto; la cabecera de la plantilla se queda montada. -->
     <RouterView v-slot="{ Component, route: tabRoute }">

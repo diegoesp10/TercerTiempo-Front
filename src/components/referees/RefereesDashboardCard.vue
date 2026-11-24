@@ -100,7 +100,7 @@ async function noVote(item: PendingRefereeRatingDto) {
         <li v-for="item in pending" :key="keyOf(item)" class="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2">
           <TeamCrest :src="rival(item).crestUrl" :name="rival(item).name" size="sm" />
           <span class="min-w-0 flex-1">
-            <span class="block truncate text-sm font-medium text-slate-900">{{ item.match.homeTeam.name }} – {{ item.match.awayTeam.name }}</span>
+            <span class="block break-words text-sm font-medium text-slate-900">{{ item.match.homeTeam.name }} – {{ item.match.awayTeam.name }}</span>
             <span class="block text-xs text-slate-500">
               Jugado · J{{ item.match.matchday }} · {{ formatDate(item.match.kickoffAt) }}<template v-if="result(item)"> · {{ result(item) }}</template>
               · {{ item.rated }}/{{ item.officials }} contestados<template v-if="item.noVotes"> ({{ item.noVotes }} «No votado»)</template>
@@ -128,7 +128,7 @@ async function noVote(item: PendingRefereeRatingDto) {
         <li v-for="(referee, index) in best" :key="referee.id" class="flex items-center justify-between gap-3 text-sm">
           <span class="flex min-w-0 items-center gap-2">
             <span class="w-4 shrink-0 text-center font-figures text-xs text-slate-500">{{ index + 1 }}</span>
-            <RouterLink :to="{ name: 'referee', params: { refereeId: referee.id }, query: { categoria: referee.categoryKey } }" class="min-w-0 truncate font-medium text-slate-900 hover:text-accent-400">{{ referee.name }}</RouterLink>
+            <RouterLink :to="{ name: 'referee', params: { refereeId: referee.id }, query: { categoria: referee.categoryKey } }" class="min-w-0 break-words font-medium text-slate-900 hover:text-accent-400">{{ referee.name }}</RouterLink>
           </span>
           <span class="flex shrink-0 items-center gap-2 text-xs text-slate-500">
             <StarRating :score="referee.average" size="sm" />

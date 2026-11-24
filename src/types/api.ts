@@ -215,6 +215,8 @@ export interface CoachTeamDto {
   officialAppearances?: number;
   /** Cómo lo apunta la federación en el acta («Entrenador», «2º Entrenador», «Delegado»...); null si no figura. */
   officialRole?: string | null;
+  /** En el equipo actual: sus tarjetas de la temporada y cómo llega al próximo partido; null en los anteriores. */
+  discipline?: StaffDisciplineDto | null;
 }
 
 // --- Clubes ---
@@ -268,6 +270,7 @@ export interface RefereeCategoryDto {
   name: string;
   level: CompetitionLevel;
   tier: number;
+  territory: TerritoryDto;
   /** Árbitros principales con algún partido en la categoría. */
   referees: number;
   /** Asistentes y cuartos árbitros. */
@@ -480,9 +483,18 @@ export interface PendingRefereeRatingDto {
 
 /**
  * MatchCallUp y MatchNotCalledUp son de partidos (convocatoria, que el jugador firma); TrainingCall (citación al jugador,
- * o cambio o anulación de una sesión) y TrainingAbsence (el jugador avisa de que falta), de entrenamientos.
+ * o cambio o anulación de una sesión) y TrainingAbsence (el jugador avisa de que falta), de entrenamientos. CallUpShort
+ * (al cuerpo técnico y al club): la convocatoria se ha enviado sin llegar al número de convocados.
  */
-export type AlertKind = 'LicenseExpiring' | 'PassRequest' | 'MatchCallUp' | 'MatchNotCalledUp' | 'TrainingCall' | 'TrainingAbsence';
+export type AlertKind =
+  | 'LicenseExpiring'
+  | 'PassRequest'
+  | 'MatchCallUp'
+  | 'MatchNotCalledUp'
+  | 'TrainingCall'
+  | 'TrainingAbsence'
+  | 'CallUpShort'
+  | 'LeagueSuspension';
 
 export interface AlertDto {
   id: string;
@@ -743,22 +755,12 @@ export interface SquadPlayerDto {
   inviteCode: string | null;
   /** Foto de la ficha publicada por el club, si la ha subido. */
   photoUrl: string | null;
+  /** Día (YYYY-MM-DD) en que causó baja; null si sigue en la plantilla. */
+  leftOn?: string | null;
 }
 
-export type InjuryType =
-  | 'MuscleContracture'
-  | 'MuscleTear'
-  | 'AnkleSprain'
-  | 'KneeSprain'
-  | 'CruciateLigament'
-  | 'Meniscus'
-  | 'Fracture'
-  | 'Contusion'
-  | 'Tendinitis'
-  | 'Pubalgia'
-  | 'Concussion'
-  | 'Illness'
-  | 'Other';
+/** Código de un tipo del catálogo de lesiones (lo mantiene el administrador; solo se enseña su nombre). */
+export type InjuryType = string;
 
 export interface InjuryTypeDto {
   type: InjuryType;
@@ -781,10 +783,66 @@ export interface InjuryDto {
   expectedReturnOn: string | null;
   returnedOn: string | null;
   active: boolean;
-  /** Días de baja hasta hoy (o hasta el alta). */
+  /** Días de baja contados desde el parte: hasta hoy si sigue lesionado, hasta el alta si ya la tiene (de quien causó baja en la plantilla, hasta ese día). */
   daysOut: number;
   /** Pruebas e informes (radiografías, informes del hospital...), los últimos primero. */
   documents: InjuryDocumentDto[];
+  /** El jugador causó baja en la plantilla: la lesión es historial (se consulta y se puede borrar, no se cambia). */
+  playerLeft?: boolean;
+  /** Cuándo se registró el parte en la app; no cambia al corregir las fechas. */
+  reportedAt?: string | null;
+  /** La vuelta que se previó al dar el parte, para comparar lo previsto con lo real. */
+  initialExpectedReturnOn?: string | null;
+  /** Días de baja previstos ahora (del parte a la vuelta prevista). */
+  expectedDays?: number | null;
+  /** Días de baja previstos al dar el parte. */
+  initialExpectedDays?: number | null;
+  /** Solo si sigue lesionado y hay vuelta prevista: días que faltan para ella (negativo si ya ha pasado). */
+  daysLeft?: number | null;
+  /** La lesión superada de la que esta es recaída; null si no lo es. */
+  relapseOfInjuryId?: string | null;
+  /** Viene de la temporada anterior: la misma lesión, que seguía abierta al cambiar de temporada, con su parte. */
+  continuesInjuryId?: string | null;
+  /** Día en que pasó sin el alta a la temporada siguiente: aquí es historial y se lleva desde allí. */
+  continuedOn?: string | null;
+}
+
+/** El historial de lesiones de un jugador en el club: las de esta temporada y las de otras (y otros equipos del club). */
+export interface PlayerInjuryHistoryDto {
+  squadPlayerId: string;
+  /** La abierta primero y después de la más reciente a la más antigua. */
+  injuries: InjuryHistoryEntryDto[];
+  totals: InjuryHistoryTotalsDto;
+}
+
+export interface InjuryHistoryEntryDto {
+  injury: InjuryDto;
+  squadId: string;
+  teamName: string;
+  seasonLabel: string;
+  /** Es de otra plantilla del club (otra temporada u otro equipo): aquí se consulta; se corrige desde aquella. */
+  otherSquad: boolean;
+  /** Si pasó abierta desde otra temporada, la del parte (es la misma lesión y sale una sola vez). */
+  fromSeasonLabel?: string | null;
+}
+
+export interface InjuryHistoryTotalsDto {
+  injuries: number;
+  /** Lesiones superadas: las que tienen el alta. */
+  recovered: number;
+  /** Días de baja de todas (la abierta, hasta hoy). */
+  daysOut: number;
+  /** Media de días del parte al alta de las superadas; null si no hay ninguna. */
+  averageRecoveryDays: number | null;
+  /** Cuántas fueron recaídas de una anterior. */
+  relapses: number;
+}
+
+/** Recaída: vuelve a lesionarse de lo mismo después del alta. Es una lesión nueva enlazada a la superada. */
+export interface RelapseRequest {
+  startedOn: string;
+  expectedReturnOn: string | null;
+  reason: string | null;
 }
 
 export type InjuryDocumentKind = 'Imaging' | 'MedicalReport' | 'Other';
@@ -815,7 +873,12 @@ export interface SquadDetailDto {
   canInvitePlayers: boolean;
   canManage: boolean;
   staff: SquadStaffDto[];
+  /** Los que están en la plantilla: solo con ellos se convoca, se entrena y se hacen actas. */
   players: SquadPlayerDto[];
+  /** Los que estuvieron y causaron baja (leftOn), los últimos primero: se consultan, pero no entran en nada nuevo. */
+  leftPlayers?: SquadPlayerDto[];
+  /** A cuántos se convoca siempre; null: se pregunta en cada convocatoria. */
+  callUpSize?: number | null;
 }
 
 export interface SquadPlayerRequest {
@@ -894,6 +957,10 @@ export interface TeamMatchStatsInput {
 
 export interface TeamMatchStatsDto extends TeamMatchStatsInput {
   updatedAt: string;
+  /** Con qué analizador del vídeo salieron (nombre y versión, p. ej. «Ojeador 1.0.0»); null si se apuntaron a mano. */
+  videoAnalyzer: string | null;
+  /** Cuándo se volcaron del vídeo; si updatedAt es posterior, se retocaron a mano después. */
+  fromVideoAt: string | null;
 }
 
 /** Medias por partido con datos apuntados (la posesión, sobre los partidos en que se apuntó). */
@@ -965,6 +1032,34 @@ export interface SquadSeasonTableDto {
   rows: SquadSeasonRowDto[];
 }
 
+/** Cómo llega alguien al próximo partido de liga: amarillas del ciclo y, si no puede estar, el porqué. */
+export interface DisciplineDto {
+  /** Amarillas del ciclo antes de ese partido (con la quinta se pierde el siguiente). */
+  cycleYellows: number;
+  /** Si no puede jugar ni entrar en la convocatoria (o, en el cuerpo técnico, estar en el banquillo); null si puede. */
+  suspension: SuspensionBriefDto | null;
+  /** Cuatro amarillas del ciclo y ninguna sanción: con una más se pierde el siguiente. */
+  warned: boolean;
+}
+
+/** Tarjetas de la temporada de alguien del cuerpo técnico en las actas oficiales cerradas y cómo llega al próximo partido. */
+export interface StaffDisciplineDto {
+  yellowCards: number;
+  redCards: number;
+  next: DisciplineDto;
+}
+
+export interface SquadDisciplineDto {
+  /** El próximo partido de liga del equipo, al que se refiere todo; null si no queda ninguno. */
+  nextMatchId: string | null;
+  nextMatchKickoffAt: string | null;
+  nextMatchday: number | null;
+  /** Solo los apercibidos o sancionados para ese partido. */
+  players: { squadPlayerId: string; next: DisciplineDto }[];
+  /** El cuerpo técnico de la plantilla que figura en las actas oficiales, con sus tarjetas. */
+  staff: { coachId: string; discipline: StaffDisciplineDto }[];
+}
+
 export interface SquadStatsDto {
   squad: SquadSummaryDto;
   teamMatchesPlayed: number;
@@ -974,6 +1069,15 @@ export interface SquadStatsDto {
 
 // --- Competiciones / equipos ---
 
+export type TerritoryKind = 'National' | 'Regional';
+
+/** Ámbito de una liga: quién la organiza, la federación española (Nacional) o la de una comunidad (Asturias…). */
+export interface TerritoryDto {
+  id: string;
+  name: string;
+  kind: TerritoryKind;
+}
+
 export interface CompetitionDto {
   id: string;
   name: string;
@@ -981,7 +1085,9 @@ export interface CompetitionDto {
   level: CompetitionLevel;
   tier: number;
   group: string | null;
+  /** Dónde se juega (la 3ª RFEF · Grupo 2 es nacional y asturiana). */
   region: string;
+  territory: TerritoryDto;
   sortOrder: number;
   /** Temporada de la liga dentro de la temporada elegida. */
   seasonId: string | null;
@@ -1182,6 +1288,8 @@ export interface TeamStaffMemberDto {
   coachId: string | null;
   /** Si ya tiene perfil en la app; si no, sale con el nombre del acta oficial. */
   hasProfile: boolean;
+  /** Sus tarjetas de la temporada y cómo llega al próximo partido; null si solo está nombrado en la app. */
+  discipline?: StaffDisciplineDto | null;
 }
 
 export interface TeamProfileDto {
@@ -1725,6 +1833,10 @@ export interface OfficialStaffDto {
   fullName: string;
   /** Su perfil en Tercer Tiempo, si tiene un nombramiento del club con ese nombre. */
   coachId?: string | null;
+  /** Amarillas que le enseñó el árbitro en el partido (0 a 2). */
+  yellowCards?: number;
+  /** Expulsado: roja directa o doble amarilla. */
+  redCard?: boolean;
 }
 
 export interface OfficialEventDto {
@@ -1744,11 +1856,27 @@ export interface OfficialSheetDto {
   sourceUrl: string | null;
   checkedAt: string | null;
   fetchedAt: string | null;
-  referee: string | null;
+  /** Equipo arbitral: el que pitó (o, sin leerlo aún, el árbitro que trae el acta) o, en un partido por jugar, el designado; null si no se sabe nada. */
+  referees: SheetRefereesDto | null;
   message: string | null;
   home: OfficialTeamSheetDto | null;
   away: OfficialTeamSheetDto | null;
   events: OfficialEventDto[];
+}
+
+/** Equipo arbitral del acta pública. */
+export interface SheetRefereesDto {
+  /** Partido por jugar: los designados por la federación, que pueden cambiar hasta el día del partido (vacío: aún sin designar). */
+  designated: boolean;
+  /** Por función: árbitro, asistentes y cuarto árbitro. */
+  officials: SheetOfficialDto[];
+}
+
+export interface SheetOfficialDto {
+  role: OfficialRole;
+  name: string;
+  /** Su ficha de árbitro; null si solo se sabe el nombre que trae el acta. */
+  refereeId: string | null;
 }
 
 /** Campo en el que difieren las dos actas. */
@@ -1796,10 +1924,12 @@ export interface MatchVideoDto {
   teamId: string;
   teamName: string;
   part: VideoPart;
+  /** Siempre el nombre del partido: «Local vs Visitante dd-mm-aaaa» (con la parte si va en dos). */
   title: string;
   fileName: string;
   contentType: string;
-  sizeBytes: number;
+  /** Lo que ocupa; solo para quien lo subió (null para los demás). */
+  sizeBytes: number | null;
   uploadedAt: string;
   uploadedBy: string;
   access: VideoAccessLevel;
@@ -1810,7 +1940,7 @@ export interface MatchVideoDto {
   status: VideoStatus;
   /** Avance de la compresión en %, mientras está en Processing. */
   progress: number;
-  /** Lo que ocupaba el archivo subido, cuando se ha sustituido por el comprimido. */
+  /** Lo que ocupaba el archivo subido, cuando se ha sustituido por el comprimido; solo para quien lo subió. */
   originalSizeBytes: number | null;
   durationSeconds: number | null;
   /** Alto en píxeles (1080 = Full HD) cuando se conoce. */
@@ -1970,7 +2100,10 @@ export interface VideoAnalysisPartDto {
   requestedAt: string | null;
   startedAt: string | null;
   finishedAt: string | null;
+  /** Nombre del analizador que analizó el vídeo (p. ej. «Ojeador»). */
+  analyzerName: string | null;
   analyzerVersion: string | null;
+  /** Modelos con los que se analizó (arquitectura, entrenamiento, motor y huella de cada uno, separados por « · »); solo para el administrador. */
   weights: string | null;
   quality: VideoAnalysisQualityDto | null;
   teams: VideoAnalysisTeamDto[];
@@ -2048,7 +2181,7 @@ export interface VideoUploadDto {
 
 export interface BeginVideoUploadRequest {
   part: VideoPart;
-  title: string | null;
+  /** Solo para reanudar y por su extensión: el vídeo se llama como el partido. */
   fileName: string;
   contentType: string;
   sizeBytes: number;
@@ -2738,6 +2871,22 @@ export interface CookiePolicyDto {
   updatedAt: string;
   cookies: CookieDto[];
 }
+
+/** Un tipo del catálogo de lesiones, como lo ve el administrador. */
+export interface AdminInjuryTypeDto {
+  code: string;
+  label: string;
+  /** Duración media orientativa en días; null si no hay referencia. */
+  averageDays: number | null;
+  sortOrder: number;
+  /** false = retirado: no se ofrece para lesiones nuevas, pero sigue en las que ya lo tienen. */
+  active: boolean;
+  /** Lesiones guardadas con este tipo; con alguna no se puede borrar. */
+  injuries: number;
+  updatedAt: string;
+}
+
+export type SaveInjuryTypeRequest = Pick<AdminInjuryTypeDto, 'label' | 'averageDays' | 'sortOrder' | 'active'>;
 
 /** El catálogo del administrador: lo mismo más el nombre técnico de cada dato. */
 export interface AdminCookieDto extends CookieDto {

@@ -4,9 +4,12 @@ import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import PlayerName from '@/components/players/PlayerName.vue';
 import InjuryNote from '@/components/trainings/InjuryNote.vue';
+import MyAttendanceBadge from '@/components/trainings/MyAttendanceBadge.vue';
 import TrainingItemsEditor from '@/components/trainings/TrainingItemsEditor.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
+import type { ChoiceOption } from '@/components/ui/choice';
 import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
 import Modal from '@/components/ui/Modal.vue';
 import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vue';
@@ -96,6 +99,7 @@ const attendanceDirty = computed(() => session.value !== null && attendance.valu
 // Antes de empezar se cuenta con venir o se avisa de que se falta; acabada, solo vino o faltó; durante, todo.
 const statuses = computed<AttendanceStatus[]>(() =>
   finished.value ? ['Attended', 'Missed'] : session.value?.started ? ['Expected', 'WillMiss', 'Attended', 'Missed'] : ['Expected', 'WillMiss']);
+const statusOptions = computed<ChoiceOption<AttendanceStatus>[]>(() => statuses.value.map((value) => ({ value, label: attendanceStatusLabels[value] })));
 const trialCandidates = computed<SelectOption[]>(() => {
   const inSession = new Set((session.value?.attendance ?? []).map((a) => a.trialPlayerId).filter((id): id is string => id !== null));
   return props.trialPlayers
@@ -107,11 +111,13 @@ const keyOf = (a: { squadPlayerId: string | null; trialPlayerId: string | null }
 
 // Quién viene, agrupable por posición como todas las listas; los que vienen a prueba (sin ficha) van aparte, al final.
 const groupedRollCall = useGroupByPosition('training-roll-call');
+// Quien causó baja después de la sesión sigue en su lista (es historial), en el grupo «De baja».
+const leftLine = (a: AttendanceInput) => session.value?.attendance.find((l) => keyOf(l) === keyOf(a))?.left ?? false;
 const rollCallGroups = computed<PositionGroup<AttendanceInput>[]>(() => {
-  if (!groupedRollCall.value) return groupByPosition(attendance.value, () => null, false);
+  if (!groupedRollCall.value) return groupByPosition(attendance.value, () => null, false, undefined, leftLine);
   const squad = attendance.value.filter((a) => a.squadPlayerId !== null);
   const trials = attendance.value.filter((a) => a.squadPlayerId === null);
-  const groups = groupByPosition(squad, (a) => props.positions?.[a.squadPlayerId ?? ''] ?? null, true);
+  const groups = groupByPosition(squad, (a) => props.positions?.[a.squadPlayerId ?? ''] ?? null, true, undefined, leftLine);
   return trials.length > 0 ? [...groups, { key: 'trial', label: 'A prueba', position: null, rows: trials }] : groups;
 });
 const lineOf = (key: string): TrainingAttendanceDto | undefined => session.value?.attendance.find((a) => keyOf(a) === key);
@@ -388,12 +394,12 @@ async function remove() {
         <!-- El jugador: su línea y el aviso -->
         <div v-if="session.mine && !canEdit" class="mb-4 rounded-lg border border-line bg-surface-2 p-3">
           <div v-if="session.mine.injured" class="text-sm text-slate-700">
-            <p class="mb-1">Estás de baja por lesión: no entrenas y no tienes que avisar. Cuando te den el alta, el cuerpo técnico la apunta.</p>
+            <p class="mb-1">Estás lesionado: no entrenas y no tienes que avisar. Cuando te den el alta, el cuerpo técnico la apunta.</p>
             <InjuryNote :injury="session.mine.injury" />
           </div>
           <div v-else class="flex flex-wrap items-center justify-between gap-2">
             <p class="text-sm text-slate-700">
-              Tú: <Badge :tone="attendanceStatusTone[session.mine.status]">{{ attendanceStatusLabels[session.mine.status] }}</Badge>
+              <MyAttendanceBadge :status="session.mine.status" />
               <span v-if="session.mine.reason" class="ml-1 text-xs text-slate-500">({{ session.mine.reason }})</span>
             </p>
             <div v-if="!session.started" class="flex gap-2">
@@ -435,17 +441,14 @@ async function remove() {
                 <Badge v-if="lineOf(keyOf(line))?.warned && !injured(line)" tone="amber" title="Avisó antes de la sesión de que no iba">Avisó</Badge>
                 <InjuryNote v-if="injured(line)" :injury="lineOf(keyOf(line))?.injury ?? null" class="basis-full sm:basis-auto" />
                 <template v-else-if="canEdit">
-                  <div class="flex rounded-lg border border-line" role="group" aria-label="Estado">
-                    <button
-                      v-for="status in statuses"
-                      :key="status"
-                      type="button"
-                      class="px-2 py-1 text-xs font-medium transition first:rounded-l-lg last:rounded-r-lg"
-                      :class="line.status === status ? 'bg-brand-500 text-white' : 'text-slate-600 hover:bg-surface-2'"
-                      :aria-pressed="line.status === status"
-                      @click="setStatus(keyOf(line), status)"
-                    >{{ attendanceStatusLabels[status] }}</button>
-                  </div>
+                  <ChoiceToggle
+                    :model-value="line.status"
+                    :options="statusOptions"
+                    :label="`Asistencia de ${lineOf(keyOf(line))?.playerName ?? 'este jugador'}`"
+                    size="xs"
+                    tone="brand"
+                    @update:model-value="setStatus(keyOf(line), $event)"
+                  />
                   <input
                     v-if="line.status === 'WillMiss' || line.status === 'Missed'"
                     :value="line.reason ?? ''"

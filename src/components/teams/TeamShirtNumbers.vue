@@ -48,10 +48,10 @@ const matchesLabel = (matches: number) => `${matches} ${matches === 1 ? 'partido
             <RouterLink
               v-if="linked"
               :to="{ name: 'player-card', params: { teamId, entryId: player.entry.id } }"
-              class="truncate hover:text-brand-500 hover:underline"
+              class="min-w-0 break-words hover:text-brand-500 hover:underline"
               :class="i === 0 ? 'font-medium text-slate-800' : 'text-slate-600'"
             >{{ player.entry.fullName }}</RouterLink>
-            <span v-else class="truncate" :class="i === 0 ? 'font-medium text-slate-800' : 'text-slate-600'">{{ player.entry.fullName }}</span>
+            <span v-else class="min-w-0 break-words" :class="i === 0 ? 'font-medium text-slate-800' : 'text-slate-600'">{{ player.entry.fullName }}</span>
             <span class="shrink-0 whitespace-nowrap text-xs tabular-nums text-slate-500">
               {{ matchesLabel(player.matches) }} · <span class="font-semibold text-slate-700">{{ player.percentage }} %</span>
             </span>

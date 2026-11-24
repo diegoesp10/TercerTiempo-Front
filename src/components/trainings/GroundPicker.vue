@@ -153,7 +153,7 @@ function onBlur() {
             <span v-if="g.id === homeGroundId" class="rounded bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-500">En casa</span>
             <span v-else-if="g.id === matchGroundId" class="rounded bg-accent-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-400">Del partido</span>
           </p>
-          <p class="truncate text-xs text-slate-500">{{ g.address ?? g.locality ?? 'Sin dirección exacta' }}<template v-if="g.homeTeams.length"> · {{ g.homeTeams.join(', ') }}</template></p>
+          <p class="break-words text-xs text-slate-500">{{ g.address ?? g.locality ?? 'Sin dirección exacta' }}<template v-if="g.homeTeams.length"> · {{ g.homeTeams.join(', ') }}</template></p>
         </li>
         <li
           v-if="showCustom"

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import StarRating from '@/components/referees/StarRating.vue';
+import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import { useHomeCompetition } from '@/composables/useHomeCompetition';
 import type { OfficialDuty, RefereeCategoryDto, RefereeSummaryDto } from '@/types/api';
 import { formatDate, formatScore } from '@/utils/format';
@@ -129,18 +130,14 @@ const initials = (name: string) =>
 
         <div class="flex flex-wrap items-end justify-between gap-x-3">
           <p class="whitespace-nowrap pb-3 text-sm font-bold text-slate-900">{{ rated ? 'Los mejor valorados' : 'Los que más han pitado' }}</p>
-          <div class="flex gap-1" role="tablist" aria-label="Función">
-            <button
-              v-for="option in duties"
-              :key="option.value"
-              type="button"
-              role="tab"
-              :aria-selected="duty === option.value"
-              class="-mb-px border-b-2 px-2.5 pb-3 text-sm font-semibold transition"
-              :class="duty === option.value ? 'border-accent-400 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'"
-              @click="duty = option.value"
-            >{{ option.label }}</button>
-          </div>
+          <ResponsiveTabs
+            :items="duties.map((option) => ({ key: option.value, label: option.label }))"
+            :model-value="duty"
+            label="Función"
+            tone="accent"
+            inset
+            @update:model-value="(key) => (duty = key as OfficialDuty)"
+          />
         </div>
       </header>
 
@@ -155,7 +152,7 @@ const initials = (name: string) =>
               {{ initials(referee.name) }}
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-sm font-semibold text-slate-900">{{ referee.name }}</span>
+              <span class="block break-words text-sm font-semibold text-slate-900">{{ referee.name }}</span>
               <span class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
                 <StarRating :score="referee.average" size="sm" />
                 <span v-if="referee.average === null">Sin notas aún</span>

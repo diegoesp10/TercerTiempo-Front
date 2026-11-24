@@ -5,18 +5,26 @@ import type { InjuryBriefDto } from '@/types/api';
 import { formatDate } from '@/utils/format';
 
 /**
- * Por qué un jugador no entrena o no va convocado: «Lesionado» con el tipo, las fechas y el motivo. Sin detalle (un
- * compañero no puede verlo) se queda en «Lesionado».
+ * Por qué un jugador no entrena o no va convocado: «Lesionado» con el tipo, los días de baja que lleva contados desde el
+ * parte, del día del parte a la vuelta prevista (o al alta) y el motivo. Sin detalle (un compañero no puede verlo) se
+ * queda en «Lesionado».
  */
 const props = withDefaults(defineProps<{ injury: InjuryBriefDto | null; badge?: boolean }>(), { badge: true });
+
+const days = (n: number) => (n === 1 ? '1 día' : `${n} días`);
 
 const detail = computed(() => {
   const i = props.injury;
   if (!i) return null;
-  const parts = [i.typeLabel, `desde el ${formatDate(i.startedOn)}`];
-  if (i.returnedOn) parts.push(`alta el ${formatDate(i.returnedOn)}`);
-  else if (i.expectedReturnOn) parts.push(`vuelta prevista el ${formatDate(i.expectedReturnOn)}`);
-  else parts.push('sin fecha de vuelta');
+  const parts = [i.typeLabel];
+  const out = i.daysOut ?? null;
+  if (i.returnedOn) {
+    if (out !== null) parts.push(`${days(out)} de baja`);
+    parts.push(`del ${formatDate(i.startedOn)} al ${formatDate(i.returnedOn)} (alta)`);
+  } else {
+    if (out !== null) parts.push(out === 0 ? 'parte de hoy' : `lleva ${days(out)} de baja`);
+    parts.push(i.expectedReturnOn ? `del ${formatDate(i.startedOn)} al ${formatDate(i.expectedReturnOn)} (vuelta prevista)` : `desde el ${formatDate(i.startedOn)}, sin fecha de vuelta`);
+  }
   return parts.join(' · ');
 });
 </script>

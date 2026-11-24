@@ -151,20 +151,29 @@ export const matchDisplayLabels: Record<MatchDisplayStatus, string> = { ...match
 
 export const awaitingResultHint = 'Ya se ha jugado: el resultado aparecerá en cuanto llegue de futbolasturiano.es.';
 
-/** Por jugar: con la hora por llegar o aplazado (un partido en juego o sin resultado ya no está pendiente). */
-export const isPendingMatch = (match: Pick<MatchDto, 'status' | 'kickoffAt'>) => {
-  const status = matchDisplayStatus(match);
-  return status === 'Scheduled' || status === 'Postponed';
-};
+/**
+ * El partido que toca: el que se está jugando o, si no, el siguiente por fecha (no por jornada: un aplazado de una
+ * jornada anterior puede jugarse más tarde). Los aplazados sin fecha nueva no cuentan.
+ */
+export function nextMatchOf<T>(items: T[], matchOf: (item: T) => Pick<MatchDto, 'status' | 'kickoffAt'>): T | null {
+  return items
+    .filter((item) => ['Scheduled', 'InProgress'].includes(matchDisplayStatus(matchOf(item))))
+    .sort((a, b) => new Date(matchOf(a).kickoffAt).getTime() - new Date(matchOf(b).kickoffAt).getTime())[0] ?? null;
+}
 
 export const levelLabels: Record<CompetitionLevel, string> = {
   Professional: 'Profesional',
   National: 'Nacional',
-  Regional: 'Regional · Asturias',
+  Regional: 'Regional',
   Cup: 'Copas',
   Youth: 'Fútbol base',
   Other: 'Otras',
 };
+
+/** El nivel de una liga para leer; las regionales, con su comunidad cuando se sabe: «Regional · Asturias». */
+export function levelLabel(level: CompetitionLevel, territory?: string | null): string {
+  return level === 'Regional' && territory ? `Regional · ${territory}` : levelLabels[level];
+}
 
 /**
  * Orden de presentación de los niveles: primero donde juega el fútbol amateur asturiano. Por ahora la app es solo para
@@ -196,6 +205,14 @@ export const formatDayHeading = (iso: string) => {
   const text = dayHeading.format(new Date(iso));
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
+/** «Hoy», «Mañana» o «Dentro de 5 días», contando días del calendario (no horas). */
+export const formatDaysUntil = (iso: string, now = new Date()) => {
+  const day = new Date(iso);
+  const days = Math.round(
+    (new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime() - new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) / 86_400_000,
+  );
+  return days <= 0 ? 'Hoy' : days === 1 ? 'Mañana' : `Dentro de ${days} días`;
+};
 /** Fecha local "yyyy-mm-dd" para agrupar partidos por día. */
 export const localDayKey = (iso: string) => {
   const d = new Date(iso);
@@ -208,6 +225,23 @@ export const formatDayRange = (startIso: string, endIso: string) => {
   return start === end ? start : `${start} – ${end}`;
 };
 export const formatDate = (iso: string) => dateOnly.format(new Date(iso));
+
+/** «Lesionado · 12 días · hasta 30 nov 2026»: los días de baja reales contados desde el parte y la vuelta prevista. */
+export function injuredLabel(injury: { daysOut?: number; expectedReturnOn: string | null }) {
+  const parts = ['Lesionado'];
+  if (injury.daysOut !== undefined) parts.push(injury.daysOut === 0 ? 'desde hoy' : injury.daysOut === 1 ? '1 día' : `${injury.daysOut} días`);
+  if (injury.expectedReturnOn) parts.push(`hasta ${formatDate(injury.expectedReturnOn)}`);
+  return parts.join(' · ');
+}
+
+/** El detalle de una lesión abierta para un title: tipo y motivo, día del parte y vuelta prevista. */
+export function injuryTitle(injury: { typeLabel: string; reason: string | null; startedOn: string; expectedReturnOn: string | null }) {
+  return [
+    injury.reason ? `${injury.typeLabel}: ${injury.reason}` : injury.typeLabel,
+    `parte del ${formatDate(injury.startedOn)}`,
+    injury.expectedReturnOn ? `vuelta prevista el ${formatDate(injury.expectedReturnOn)}` : 'sin fecha de vuelta',
+  ].join(' · ');
+}
 
 export const formatNumber = (value: number | null | undefined, digits = 2) =>
   value === null || value === undefined ? '—' : value.toLocaleString('es-ES', { maximumFractionDigits: digits });
@@ -382,6 +416,21 @@ export const attendanceStatusLabels: Record<AttendanceStatus, string> = {
   WillMiss: 'Va a faltar',
   Attended: 'Vino',
   Missed: 'Faltó',
+};
+
+/** La asistencia del propio jugador, dicha a él («Asistencia realizada» con su check), nunca «Vino». */
+export const myAttendanceLabels: Record<AttendanceStatus, string> = {
+  Expected: 'Asistencia pendiente',
+  WillMiss: 'Falta avisada',
+  Attended: 'Asistencia realizada',
+  Missed: 'No asististe',
+};
+
+export const myAttendanceIcons: Record<AttendanceStatus, string> = {
+  Expected: 'clock',
+  WillMiss: 'triangle-exclamation',
+  Attended: 'circle-check',
+  Missed: 'circle-xmark',
 };
 
 export const attendanceStatusTone: Record<AttendanceStatus, 'green' | 'amber' | 'red' | 'slate' | 'blue'> = {

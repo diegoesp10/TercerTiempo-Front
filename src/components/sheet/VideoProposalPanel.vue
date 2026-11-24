@@ -492,7 +492,9 @@ async function apply(overwrite = false) {
               <Icon v-else-if="part.state === 'Paused'" icon="pause" class="mr-1 h-3 w-3" />
               {{ stateLabels[part.state] }}<template v-if="part.state === 'Running' || part.pausedMidway"> · {{ part.progress }} %</template>
             </Badge>
-            <span v-if="part.state === 'Ready' && part.finishedAt" class="text-xs font-normal text-slate-500">analizado el {{ formatKickoff(part.finishedAt) }}</span>
+            <span v-if="part.state === 'Ready' && part.finishedAt" class="text-xs font-normal text-slate-500">
+              analizado el {{ formatKickoff(part.finishedAt) }}<template v-if="part.analyzerName"> con <strong class="font-semibold text-slate-700">{{ part.analyzerName }} {{ part.analyzerVersion }}</strong></template>
+            </span>
           </p>
           <div v-if="canManage && ['Pending', 'Running', 'Paused'].includes(part.state)" class="flex flex-wrap gap-2">
             <button
@@ -614,7 +616,7 @@ async function apply(overwrite = false) {
                 <span class="min-w-0 flex-1">
                   <template v-if="teamFixed(part)">
                     <span class="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-slate-900">
-                      <span class="truncate">{{ ourTeam[part.videoId] === team.index ? sheet.squad.teamName : rivalName }}</span>
+                      <span class="min-w-0 break-words">{{ ourTeam[part.videoId] === team.index ? sheet.squad.teamName : rivalName }}</span>
                       <Badge :tone="ourTeam[part.videoId] === team.index ? 'blue' : 'slate'" class="shrink-0">{{ ourTeam[part.videoId] === team.index ? 'Tu equipo' : 'Rival' }}</Badge>
                     </span>
                     <span class="block text-xs text-slate-500">
@@ -700,7 +702,16 @@ async function apply(overwrite = false) {
             </button>
           </div>
 
-          <p class="mt-3 text-[11px] text-slate-400">Analizador {{ part.analyzerVersion }} · {{ part.weights }}</p>
+          <!-- Con qué modelos se analizó: solo llega para el administrador -->
+          <div v-if="part.weights" class="mt-3 rounded-lg border border-dashed border-line px-3 py-2 text-[11px] text-slate-500">
+            <p class="font-semibold text-slate-600">
+              Modelos de {{ part.analyzerName }} {{ part.analyzerVersion }}
+              <span class="font-normal text-slate-400">· solo lo ves tú, como administrador</span>
+            </p>
+            <ul class="mt-1 space-y-0.5">
+              <li v-for="model in part.weights.split(' · ')" :key="model" class="break-words">{{ model }}</li>
+            </ul>
+          </div>
         </template>
       </div>
 

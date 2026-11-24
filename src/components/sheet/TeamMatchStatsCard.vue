@@ -71,7 +71,7 @@ const saved = ref<TeamMatchStatsDto | null>(null);
 
 function load(stats: TeamMatchStatsDto | null | undefined) {
   saved.value = stats ?? null;
-  const { updatedAt: _, ...values } = stats ?? { ...empty(), updatedAt: '' };
+  const { updatedAt: _u, videoAnalyzer: _a, fromVideoAt: _f, ...values } = stats ?? { ...empty(), updatedAt: '', videoAnalyzer: null, fromVideoAt: null };
   Object.assign(form, values);
 }
 watch(() => props.stats, load, { immediate: true });
@@ -79,7 +79,15 @@ watch(() => props.stats, load, { immediate: true });
 const possessionAgainst = computed(() => (form.possessionPct === null ? null : 100 - form.possessionPct));
 const dirty = computed(() => {
   const base: TeamMatchStatsInput = saved.value ?? empty();
-  return (Object.keys(base) as (keyof TeamMatchStatsInput)[]).some((k) => k !== ('updatedAt' as never) && (form[k] ?? null) !== (base[k] ?? null));
+  return (Object.keys(empty()) as (keyof TeamMatchStatsInput)[]).some((k) => (form[k] ?? null) !== (base[k] ?? null));
+});
+
+/** Volcados del análisis del vídeo: con qué analizador y si alguien los ha retocado a mano después. */
+const fromVideo = computed(() => {
+  const s = saved.value;
+  if (!s?.videoAnalyzer) return null;
+  const retouched = !!s.fromVideoAt && new Date(s.updatedAt).getTime() > new Date(s.fromVideoAt).getTime();
+  return { analyzer: s.videoAnalyzer, at: s.fromVideoAt, retouched };
 });
 
 const saving = ref(false);
@@ -118,8 +126,25 @@ async function save() {
           Lo que no trae el acta pública: posesión, córners, saques de banda y de puerta, tiros, fueras de juego, faltas, penaltis y goles a balón parado.
           <template v-if="saved"> Actualizado el {{ formatKickoff(saved.updatedAt) }}.</template>
         </p>
+        <p v-if="fromVideo" class="mt-1 flex items-start gap-1.5 text-xs text-slate-500">
+          <Icon icon="video" class="mt-0.5 h-3 w-3 shrink-0 text-brand-500" />
+          <span>
+            <template v-if="fromVideo.retouched">
+              Volcados del vídeo<template v-if="fromVideo.at"> el {{ formatKickoff(fromVideo.at) }}</template>, analizado con <strong class="font-semibold text-slate-700">{{ fromVideo.analyzer }}</strong>, y retocados a mano después.
+            </template>
+            <template v-else>Volcados del vídeo, analizado con <strong class="font-semibold text-slate-700">{{ fromVideo.analyzer }}</strong>.</template>
+          </span>
+        </p>
       </div>
-      <button v-if="canEdit" type="button" class="btn-primary" v-busy="saving" :disabled="saving || !dirty" @click="save">
+      <button
+        v-if="canEdit"
+        type="button"
+        class="btn-primary"
+        v-busy="saving"
+        :disabled="saving || !dirty"
+        :title="!dirty && !saving ? 'No has cambiado ningún dato' : undefined"
+        @click="save"
+      >
         {{ saving ? 'Guardando…' : 'Guardar datos del equipo' }}
       </button>
     </div>
@@ -143,13 +168,13 @@ async function save() {
               <th class="px-2 pb-3" scope="col">
                 <div class="flex flex-col items-center gap-1.5 text-center">
                   <TeamCrest :src="teamCrestUrl" :name="teamName" size="md" />
-                  <span class="line-clamp-2 text-xs font-bold uppercase tracking-wide text-accent-400">{{ teamName }}</span>
+                  <span class="max-w-full break-words text-xs font-bold uppercase tracking-wide text-accent-400">{{ teamName }}</span>
                 </div>
               </th>
               <th class="px-2 pb-3" scope="col">
                 <div class="flex flex-col items-center gap-1.5 text-center">
                   <TeamCrest :src="opponentCrestUrl" :name="opponentName" size="md" />
-                  <span class="line-clamp-2 text-xs font-bold uppercase tracking-wide text-slate-500">{{ opponentName }}</span>
+                  <span class="max-w-full break-words text-xs font-bold uppercase tracking-wide text-slate-500">{{ opponentName }}</span>
                 </div>
               </th>
             </tr>

@@ -429,9 +429,37 @@ export function goalsDonutOption(rows: SquadPlayerStatsDto[], metric: 'goals' | 
 }
 
 /** Minutos jugados por jugador (barras horizontales), con el porcentaje de participación. */
-export function minutesBarsOption(rows: SquadPlayerStatsDto[], limit = 16, theme: ChartTheme = 'light'): EChartsOption {
+/**
+ * Las filas de un ranking de barras, de abajo arriba: las primeras `limit` y, si quien mira (`highlightId`) se queda fuera,
+ * él en el último hueco, para que siempre se vea dónde está.
+ */
+function rankedWithMe(rows: SquadPlayerStatsDto[], limit: number, highlightId: string | null | undefined): SquadPlayerStatsDto[] {
+  const top = rows.slice(0, limit);
+  const me = highlightId ? rows.find((r) => r.player.id === highlightId) : undefined;
+  return (me && !top.includes(me) ? [...top.slice(0, limit - 1), me] : top).reverse();
+}
+
+/** Alto de un ranking de barras horizontales: 30 px por fila, para que un nombre largo quepa en dos líneas. */
+export const rankingChartHeight = (rows: number) => Math.max(220, rows * 30);
+
+/** Quién entra en el ranking de nota media: con nota y al menos 90'. */
+export const ratingRankingPool = (rows: SquadPlayerStatsDto[]) => rows.filter((r) => r.stats.averageRating !== null && r.stats.minutes >= 90);
+
+/** Etiqueta del eje con el nombre de quien mira en negrita; un nombre largo baja de línea (nunca «…»). */
+function highlightLabel(ranked: SquadPlayerStatsDto[], highlightId: string | null | undefined, theme: ChartTheme) {
+  return {
+    width: 130,
+    overflow: 'break',
+    lineHeight: 13,
+    formatter: (value: string, index: number) => (highlightId && ranked[index]?.player.id === highlightId ? `{me|${value}}` : value),
+    rich: { me: { fontWeight: 'bold', color: chartPalettes[theme].textStrong, lineHeight: 13 } },
+  };
+}
+
+export function minutesBarsOption(rows: SquadPlayerStatsDto[], limit = 16, theme: ChartTheme = 'light', highlightId?: string | null): EChartsOption {
   const colors = chartPalettes[theme];
-  const top = rows.filter((r) => r.stats.minutes > 0).sort((a, b) => b.stats.minutes - a.stats.minutes).slice(0, limit).reverse();
+  const top = rankedWithMe(rows.filter((r) => r.stats.minutes > 0).sort((a, b) => b.stats.minutes - a.stats.minutes), limit, highlightId);
+  const bar = new graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#6ee7b7' }, { offset: 1, color: palette.emerald }]);
 
   return {
     grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },
@@ -446,39 +474,50 @@ export function minutesBarsOption(rows: SquadPlayerStatsDto[], limit = 16, theme
       },
     },
     xAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: colors.gridLine } } },
-    yAxis: { type: 'category', data: top.map((r) => r.player.fullName), axisLabel: { width: 130, overflow: 'truncate' } },
+    yAxis: { type: 'category', data: top.map((r) => r.player.fullName), axisLabel: highlightLabel(top, highlightId, theme) },
     series: [
       {
         type: 'bar',
         barMaxWidth: 16,
-        itemStyle: { borderRadius: [0, 6, 6, 0], color: new graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#6ee7b7' }, { offset: 1, color: palette.emerald }]) },
         label: { show: true, position: 'right', formatter: (p: { dataIndex: number }) => `${Math.round(top[p.dataIndex].impact.participationPct)} %`, color: colors.textMuted, fontSize: 11 },
-        data: top.map((r) => r.stats.minutes),
+        // Quien mira, en azul; el resto, en verde.
+        data: top.map((r) => ({
+          value: r.stats.minutes,
+          itemStyle: { borderRadius: [0, 6, 6, 0], color: r.player.id === highlightId ? palette.sky : bar },
+        })),
       },
     ],
   } as EChartsOption;
 }
 
 /** Ranking de nota media (jugadores con al menos 90'), cada barra con el color de su nota. */
-export function ratingRankingOption(rows: SquadPlayerStatsDto[], limit = 12, theme: ChartTheme = 'light'): EChartsOption {
+export function ratingRankingOption(rows: SquadPlayerStatsDto[], limit = 12, theme: ChartTheme = 'light', highlightId?: string | null): EChartsOption {
   const colors = chartPalettes[theme];
-  const ranked = rows
-    .filter((r) => r.stats.averageRating !== null && r.stats.minutes >= 90)
-    .sort((a, b) => b.stats.averageRating! - a.stats.averageRating!)
-    .slice(0, limit)
-    .reverse();
+  const ranked = rankedWithMe(
+    ratingRankingPool(rows).sort((a, b) => b.stats.averageRating! - a.stats.averageRating!),
+    limit,
+    highlightId,
+  );
 
   return {
     grid: { left: 8, right: 40, top: 8, bottom: 8, containLabel: true },
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v) => n1(Number(v)) },
     xAxis: { type: 'value', min: 3, max: 10, splitLine: { lineStyle: { type: 'dashed', color: colors.gridLine } } },
-    yAxis: { type: 'category', data: ranked.map((r) => r.player.fullName), axisLabel: { width: 130, overflow: 'truncate' } },
+    yAxis: { type: 'category', data: ranked.map((r) => r.player.fullName), axisLabel: highlightLabel(ranked, highlightId, theme) },
     series: [
       {
         type: 'bar',
         barMaxWidth: 16,
         label: { show: true, position: 'right', formatter: (p: { value: number }) => n1(p.value), fontWeight: 600, color: colors.text },
-        data: ranked.map((r) => ({ value: r.stats.averageRating!, itemStyle: { color: ratingColor(r.stats.averageRating), borderRadius: [0, 6, 6, 0] } })),
+        // La barra de quien mira lleva un borde: el color ya es el de su nota.
+        data: ranked.map((r) => ({
+          value: r.stats.averageRating!,
+          itemStyle: {
+            color: ratingColor(r.stats.averageRating),
+            borderRadius: [0, 6, 6, 0],
+            ...(r.player.id === highlightId ? { borderColor: colors.textStrong, borderWidth: 2 } : {}),
+          },
+        })),
       },
     ],
   } as EChartsOption;

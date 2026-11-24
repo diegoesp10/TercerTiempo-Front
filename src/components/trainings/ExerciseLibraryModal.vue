@@ -211,7 +211,7 @@ async function remove() {
                       <Icon icon="stopwatch" class="h-2.5 w-2.5" />{{ formatDurationMinutes(e.durationMinutes) }}
                     </span>
                   </span>
-                  <span v-if="e.description" class="mt-0.5 line-clamp-2 block text-xs text-slate-600">{{ e.description }}</span>
+                  <span v-if="e.description" class="mt-0.5 block whitespace-pre-line break-words text-xs text-slate-600">{{ e.description }}</span>
                   <span v-if="e.material" class="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500"><Icon icon="toolbox" class="h-2.5 w-2.5 shrink-0" />{{ e.material }}</span>
                 </span>
                 <Icon
@@ -233,7 +233,7 @@ async function remove() {
           <header class="flex items-center justify-between gap-2 border-b border-line px-4 py-3" :class="editing ? 'bg-brand-500/5' : 'bg-surface-2/60'">
             <h3 class="flex min-w-0 items-center gap-2 font-semibold text-slate-900">
               <Icon :icon="editing ? 'pen' : 'plus'" class="h-3.5 w-3.5 shrink-0 text-brand-500" />
-              <span class="truncate">{{ editing ? 'Editar ejercicio' : 'Nuevo ejercicio' }}</span>
+              <span class="min-w-0 break-words">{{ editing ? 'Editar ejercicio' : 'Nuevo ejercicio' }}</span>
             </h3>
             <button v-if="editing" type="button" class="btn-ghost shrink-0 px-2 py-1 text-xs" title="Dejar de editar y crear uno nuevo" @click="cancelEdit">
               <Icon icon="plus" class="mr-1 h-3 w-3" />Nuevo
@@ -249,20 +249,23 @@ async function remove() {
 
             <fieldset>
               <legend class="label">Tipo</legend>
-              <div class="grid grid-cols-3 gap-1.5">
-                <button
-                  v-for="t in exerciseTypes"
-                  :key="t.type"
-                  type="button"
-                  class="flex cursor-pointer flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[11px] font-medium leading-tight transition"
-                  :class="form.type === t.type ? 'border-brand-500 bg-brand-500/10 text-slate-900 ring-1 ring-brand-500' : 'border-line text-slate-600 hover:bg-surface-2'"
-                  :aria-pressed="form.type === t.type"
-                  :title="t.description"
-                  @click="form.type = t.type"
-                >
-                  <span class="grid h-6 w-6 place-items-center rounded-md" :class="exerciseTypeStyle[t.type].chip"><Icon :icon="exerciseTypeStyle[t.type].icon" class="h-3 w-3" /></span>
-                  {{ t.label }}
-                </button>
+              <!-- De tres en tres solo si «Calentamiento» cabe entero en su casilla; si no, de dos en dos. -->
+              <div class="@container">
+                <div class="grid grid-cols-2 gap-1.5 @[18rem]:grid-cols-3">
+                  <button
+                    v-for="t in exerciseTypes"
+                    :key="t.type"
+                    type="button"
+                    class="flex cursor-pointer flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[11px] font-medium leading-tight transition"
+                    :class="form.type === t.type ? 'border-brand-500 bg-brand-500/10 text-slate-900 ring-1 ring-brand-500' : 'border-line text-slate-600 hover:bg-surface-2'"
+                    :aria-pressed="form.type === t.type"
+                    :title="t.description"
+                    @click="form.type = t.type"
+                  >
+                    <span class="grid h-6 w-6 place-items-center rounded-md" :class="exerciseTypeStyle[t.type].chip"><Icon :icon="exerciseTypeStyle[t.type].icon" class="h-3 w-3" /></span>
+                    {{ t.label }}
+                  </button>
+                </div>
               </div>
               <p v-if="typeDescription" class="mt-1.5 text-[11px] text-slate-500">{{ typeDescription }}</p>
             </fieldset>

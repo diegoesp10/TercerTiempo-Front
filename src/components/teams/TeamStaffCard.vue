@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Badge from '@/components/ui/Badge.vue';
+import CardTally from '@/components/ui/CardTally.vue';
+import DisciplineBadge from '@/components/squads/DisciplineBadge.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import { officialStaffLabel, staffRoleLabels } from '@/utils/format';
 import type { TeamStaffDto, TeamStaffMemberDto } from '@/types/api';
 
 // Cuerpo técnico en la ficha del equipo: el de las actas oficiales de la temporada, que es público. Quien aún no tiene
 // perfil en la app sale con el nombre del acta y se dice. A las cuentas con sesión se suman el enlace al perfil y los
-// nombrados por el club que aún no figuran en ningún acta. Lo interno (citaciones, convocatorias, entrenamientos) sigue
-// siendo de la plantilla.
+// nombrados por el club que aún no figuran en ningún acta. Con cada uno, sus tarjetas de la temporada en las actas
+// cerradas y, a quien sigue, si llega apercibido o sancionado al próximo partido. Lo interno (citaciones,
+// convocatorias, entrenamientos) sigue siendo de la plantilla.
 const props = defineProps<{ staff: TeamStaffDto | null | undefined; linked: boolean }>();
 
 const members = computed(() => props.staff?.members ?? []);
@@ -66,8 +69,17 @@ function detail(member: TeamStaffMemberDto) {
                 <Badge v-if="!member.hasProfile && !nobodyInApp" tone="slate" title="Figura en las actas oficiales, pero todavía no tiene perfil en Tercer Tiempo">
                   Sin perfil en la app aún
                 </Badge>
+                <DisciplineBadge v-if="member.current" :discipline="member.discipline?.next" staff />
               </span>
-              <span class="block text-xs text-slate-500">{{ role(member) }} · {{ detail(member) }}</span>
+              <span class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
+                <span>{{ role(member) }} · {{ detail(member) }}</span>
+                <CardTally
+                  v-if="member.discipline"
+                  :yellow-cards="member.discipline.yellowCards"
+                  :red-cards="member.discipline.redCards"
+                  title="Tarjetas de la temporada en las actas oficiales"
+                />
+              </span>
             </span>
           </li>
         </ul>

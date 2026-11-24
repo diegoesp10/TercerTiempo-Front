@@ -47,6 +47,8 @@ defineProps<{ title: string; subtitle: string }>();
 .legal :deep(a) {
   color: var(--t-brand-500);
   text-decoration: underline;
+  /* Correos y direcciones largas parten donde haga falta en lugar de salirse de la tarjeta en el móvil. */
+  overflow-wrap: anywhere;
 }
 .legal :deep(table) {
   width: 100%;

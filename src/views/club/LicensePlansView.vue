@@ -259,7 +259,7 @@ const faqs = computed(() => {
         <div class="flex flex-wrap items-center gap-3">
           <div class="min-w-0 flex-1">
             <p class="eyebrow">Licencia del club</p>
-            <h2 class="truncate text-lg font-bold text-slate-900">{{ license.clubName }}</h2>
+            <h2 class="min-w-0 break-words text-lg font-bold text-slate-900">{{ license.clubName }}</h2>
           </div>
           <Badge :tone="licenseStatusTone[license.status]">{{ licenseStatusLabels[license.status] }}</Badge>
         </div>

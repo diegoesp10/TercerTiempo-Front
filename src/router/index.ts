@@ -41,6 +41,8 @@ const router = createRouter({
     { path: '/licencias', alias: '/precios', name: 'licenses', component: () => import('@/views/club/LicensePlansView.vue'), meta: { root: true } },
     { path: '/pago/:sessionId', name: 'license-checkout', component: () => import('@/views/club/LicenseCheckoutView.vue'), props: true, meta: { requiresAuth: true, profileOnly: true } },
     { path: '/ajustes', name: 'settings', component: () => import('@/views/SettingsView.vue') },
+    // «Mi perfil» del jugador (foto, quién ve su perfil, ajustes y su plantilla); el técnico tiene el suyo en /tecnicos.
+    { path: '/mi-perfil', name: 'my-profile', component: () => import('@/views/player/MyProfileView.vue'), meta: { requiresAuth: true, profileOnly: true, root: true } },
     // Página oculta del administrador (sin enlace en el menú; pide su propio usuario y contraseña).
     { path: '/jobs', alias: '/cargatrabajo', name: 'jobs', component: () => import('@/views/admin/JobsView.vue'), meta: { root: true } },
     { path: '/equipos', name: 'teams', component: () => import('@/views/TeamsView.vue'), meta: { root: true } },
@@ -128,6 +130,10 @@ router.beforeEach((to) => {
   if (to.meta.guestOnly && auth.isAuthenticated) {
     return { name: 'home' };
   }
+
+  // Los ajustes del jugador están dentro de «Mi perfil», y «Mi perfil» es solo del jugador.
+  if (to.name === 'settings' && auth.isPlayer) return { name: 'my-profile', hash: '#ajustes', replace: true };
+  if (to.name === 'my-profile' && auth.isAuthenticated && !auth.isPlayer) return auth.profileRoute ?? { name: 'settings' };
 
   return true;
 });

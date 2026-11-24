@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue';
+import { useFit } from '@/composables/useFit';
 import type { VideoAnalysisLive, VideoAnalysisPartDto } from '@/types/api';
 
 /**
@@ -27,6 +28,9 @@ const steps = [
   { key: 'plays', label: 'Jugadas', detail: 'Sacando posesión, pases, tiros, córners y saques…' },
   { key: 'outputs', label: 'Propuesta', detail: 'Escribiendo la propuesta y los recortes de los jugadores…' },
 ] as const;
+// Los nombres de todas las etapas, solo si caben enteros; si no, solo el de la etapa en curso (nunca «…»).
+const stepsRow = ref<HTMLElement | null>(null);
+useFit(stepsRow, [['labels'], []]);
 /** El repaso con IA (cuando está activo) va dentro de las jugadas. */
 const stepIndex = computed(() => {
   const stage = live.value?.stage === 'review' ? 'plays' : live.value?.stage;
@@ -117,9 +121,9 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
     </div>
     <p v-else-if="resuming" class="text-xs text-slate-500" role="status"><Icon icon="play" class="mr-1 h-3 w-3 text-accent-400" />Reanudando…</p>
 
-    <!-- Etapas -->
-    <ol v-if="part.state === 'Running' || part.pausedMidway" class="flex items-center gap-1" aria-label="Etapas del análisis">
-      <li v-for="(step, i) in steps" :key="step.key" class="flex items-center gap-1" :class="i === stepIndex ? 'flex-auto' : 'min-w-0 flex-1'" :aria-current="i === stepIndex ? 'step' : undefined">
+    <!-- Etapas (con v-show: la fila ya existe para medirla y se vuelve a medir al aparecer) -->
+    <ol v-show="part.state === 'Running' || part.pausedMidway" ref="stepsRow" class="group/steps flex items-center gap-1" aria-label="Etapas del análisis">
+      <li v-for="(step, i) in steps" :key="step.key" class="flex items-center gap-1" :class="i === stepIndex ? 'flex-auto' : 'flex-1'" :aria-current="i === stepIndex ? 'step' : undefined">
         <span
           class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
           :class="i < stepIndex ? 'bg-accent-400 text-slate-950' : i === stepIndex ? (paused ? 'bg-amber-500 text-slate-950' : 'bg-brand-500 text-white ring-2 ring-brand-500/40') : 'bg-slate-200 text-slate-500'"
@@ -127,7 +131,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
           <Icon v-if="i < stepIndex" icon="check" class="h-2.5 w-2.5" />
           <template v-else>{{ i + 1 }}</template>
         </span>
-        <span class="text-[11px]" :class="i === stepIndex ? 'shrink-0 font-semibold text-slate-900' : 'hidden truncate text-slate-500 sm:inline'">{{ step.label }}</span>
+        <span class="whitespace-nowrap text-[11px]" :class="i === stepIndex ? 'shrink-0 font-semibold text-slate-900' : 'hidden text-slate-500 group-data-[labels]/steps:inline'">{{ step.label }}</span>
         <span v-if="i < steps.length - 1" class="h-px min-w-2 flex-1" :class="i < stepIndex ? 'bg-accent-400' : 'bg-slate-200'" aria-hidden="true" />
       </li>
     </ol>
@@ -193,8 +197,8 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
       <button type="button" class="btn-ghost px-2 py-0.5 text-xs" :aria-expanded="showLog" @click="showLog = !showLog">
         <Icon icon="chevron-down" class="h-3 w-3 transition-transform" :class="showLog ? 'rotate-180' : ''" />
         Qué ha ido haciendo ({{ log.length }})
-        <span v-if="!showLog" class="ml-1 max-w-[18rem] truncate font-normal text-slate-500 sm:max-w-md">· {{ log[0].text }}</span>
       </button>
+      <p v-if="!showLog" class="mt-0.5 break-words px-2 text-xs text-slate-500">{{ log[0].text }}</p>
       <ol v-if="showLog" class="mt-1 max-h-56 space-y-1 overflow-y-auto rounded-lg border border-line bg-surface-2 px-3 py-2 text-xs">
         <li v-for="(entry, i) in log" :key="entry.at + i" class="flex gap-2">
           <time :datetime="entry.at" class="shrink-0 font-figures tabular-nums text-slate-400">{{ time(entry.at) }}</time>

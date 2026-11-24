@@ -125,21 +125,21 @@ const shortDay = (day: string) => new Date(`${day}T00:00:00`).toLocaleDateString
         <section class="card">
           <h3 class="mb-2 font-semibold text-slate-900">Páginas más vistas</h3>
           <ol class="space-y-1 text-sm">
-            <li v-for="row in data.pages" :key="row.key" class="flex justify-between gap-2"><span class="truncate">{{ pageName(row) }}</span><span class="tabular-nums text-slate-500">{{ row.count }}</span></li>
+            <li v-for="row in data.pages" :key="row.key" class="flex justify-between gap-2"><span class="min-w-0 break-words">{{ pageName(row) }}</span><span class="shrink-0 tabular-nums text-slate-500">{{ row.count }}</span></li>
             <li v-if="data.pages.length === 0" class="text-slate-400">—</li>
           </ol>
         </section>
         <section class="card">
           <h3 class="mb-2 font-semibold text-slate-900">Lo más buscado</h3>
           <ol class="space-y-1 text-sm">
-            <li v-for="row in data.searches" :key="row.key" class="flex justify-between gap-2"><span class="truncate">«{{ row.label }}»</span><span class="tabular-nums text-slate-500">{{ row.count }}</span></li>
+            <li v-for="row in data.searches" :key="row.key" class="flex justify-between gap-2"><span class="min-w-0 break-words">«{{ row.label }}»</span><span class="shrink-0 tabular-nums text-slate-500">{{ row.count }}</span></li>
             <li v-if="data.searches.length === 0" class="text-slate-400">—</li>
           </ol>
         </section>
         <section class="card">
           <h3 class="mb-2 font-semibold text-slate-900">Lo más pulsado</h3>
           <ol class="space-y-1 text-sm">
-            <li v-for="row in data.clicks" :key="row.key" class="flex justify-between gap-2"><span class="truncate">{{ row.label }}</span><span class="tabular-nums text-slate-500">{{ row.count }}</span></li>
+            <li v-for="row in data.clicks" :key="row.key" class="flex justify-between gap-2"><span class="min-w-0 break-words">{{ row.label }}</span><span class="shrink-0 tabular-nums text-slate-500">{{ row.count }}</span></li>
             <li v-if="data.clicks.length === 0" class="text-slate-400">—</li>
           </ol>
         </section>
@@ -152,7 +152,7 @@ const shortDay = (day: string) => new Date(`${day}T00:00:00`).toLocaleDateString
             <li v-for="row in data.entities" :key="`${row.type}-${row.id}`" class="flex items-center justify-between gap-2">
               <span class="min-w-0">
                 <TeamName v-if="row.crestUrl || row.type === 'Team'" :name="row.name" :crest-url="row.crestUrl" :team-id="row.type === 'Team' ? row.id : null" />
-                <span v-else class="truncate">{{ row.name }}</span>
+                <span v-else class="break-words">{{ row.name }}</span>
                 <span class="ml-1 text-xs text-slate-400">{{ entityLabels[row.type] }}</span>
               </span>
               <span class="shrink-0 tabular-nums text-slate-500">{{ row.count }} · {{ row.visitors }} pers.</span>

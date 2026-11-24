@@ -9,8 +9,8 @@ import { toDateKey } from '@/utils/format';
 
 /**
  * Acceso destacado a la plantilla de un equipo: es donde trabajan el cuerpo técnico y el club, así que va lo primero
- * al entrar, con un botón grande, lo próximo de su agenda (entrenamientos y partidos, cada uno abre lo suyo) y accesos
- * directos a partidos y actas, estadísticas y comparador. Sin enlaces repetidos a la agenda: ya está aquí mismo.
+ * al entrar, con dos botones grandes (la plantilla y su agenda), lo próximo de la agenda (entrenamientos y partidos,
+ * cada uno abre lo suyo) y accesos directos a partidos y actas, estadísticas y comparador.
  */
 const props = defineProps<{
   squadId: string;
@@ -44,18 +44,24 @@ function openTraining(session: TrainingSummaryDto) {
       <TeamCrest :src="crestUrl" :name="teamName" :short-name="teamShortName" size="lg" />
       <div class="min-w-0 flex-1">
         <p class="eyebrow">Gestión de plantilla</p>
-        <h2 class="truncate font-display text-2xl font-extrabold text-slate-900">{{ teamName }}</h2>
+        <h2 class="min-w-0 break-words font-display text-2xl font-extrabold text-slate-900">{{ teamName }}</h2>
         <p v-if="subtitle" class="text-sm text-slate-500">{{ subtitle }}</p>
         <div v-if="$slots.badges" class="mt-2 flex flex-wrap items-center gap-2"><slot name="badges" /></div>
       </div>
     </div>
 
-    <RouterLink
-      :to="{ name: 'squad', params: { squadId } }"
-      class="btn-primary justify-center py-3 text-base"
-    >
-      <Icon icon="user-group" class="mr-2 h-4 w-4" />Gestionar plantilla
-    </RouterLink>
+    <!-- Lo que más se usa, en grande y a la par. La fila mira el ancho de la tarjeta (@container), no el de la pantalla:
+         con dos plantillas en paralelo o en el móvil, un botón encima del otro si no caben los dos. -->
+    <div class="@container">
+      <nav class="grid grid-cols-1 gap-3 @md:grid-cols-2" aria-label="Plantilla y agenda">
+        <RouterLink :to="{ name: 'squad', params: { squadId } }" class="btn-primary justify-center py-3 text-base">
+          <Icon icon="user-group" class="mr-2 h-4 w-4" />Gestionar plantilla
+        </RouterLink>
+        <RouterLink :to="{ name: 'squad-trainings', params: { squadId } }" class="btn-primary justify-center py-3 text-base">
+          <Icon icon="calendar-check" class="mr-2 h-4 w-4" />Agenda
+        </RouterLink>
+      </nav>
+    </div>
 
     <section class="rounded-xl border border-line bg-surface-2/40 p-3" aria-label="Agenda">
       <h3 class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Agenda · lo próximo</h3>

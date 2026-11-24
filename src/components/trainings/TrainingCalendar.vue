@@ -13,6 +13,7 @@ import './calendar-theme.css';
 import MatchResultPill from '@/components/matches/MatchResultPill.vue';
 import { outcomeFor, outcomeLabels, resultStyle, resultText } from '@/components/matches/matchResult';
 import Badge from '@/components/ui/Badge.vue';
+import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import TeamName from '@/components/teams/TeamName.vue';
 import { unavailableOf, unavailableSummary } from '@/components/trainings/unavailable';
 import type { MatchDto, SquadAgendaItemDto, TrainingSummaryDto } from '@/types/api';
@@ -227,23 +228,15 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
         <button type="button" class="btn-ghost px-2" aria-label="Anterior" title="Anterior" @click="api()?.prev()"><Icon icon="chevron-left" class="h-4 w-4" /></button>
         <button type="button" class="btn-ghost px-2" aria-label="Siguiente" title="Siguiente" @click="api()?.next()"><Icon icon="chevron-right" class="h-4 w-4" /></button>
         <button type="button" class="btn-ghost px-2 text-xs" :disabled="showingToday" @click="api()?.today()">Hoy</button>
-        <h2 class="ml-1 truncate text-lg font-semibold text-slate-900" aria-live="polite">{{ title }}</h2>
+        <h2 class="ml-1 min-w-0 break-words text-lg font-semibold text-slate-900" aria-live="polite">{{ title }}</h2>
       </div>
-      <div class="flex max-w-full overflow-x-auto rounded-lg border border-line text-xs" role="tablist" aria-label="Vista del calendario">
-        <button
-          v-for="v in views"
-          :key="v.key"
-          type="button"
-          role="tab"
-          class="flex shrink-0 items-center gap-1.5 px-3 py-1.5 font-medium transition first:rounded-l-lg last:rounded-r-lg"
-          :class="view === v.key ? 'bg-brand-500 text-white' : 'text-slate-600 hover:bg-surface-2'"
-          :aria-selected="view === v.key"
-          :title="v.hint"
-          @click="changeView(v.key)"
-        >
-          <Icon :icon="v.icon" class="h-3 w-3" />{{ v.label }}
-        </button>
-      </div>
+      <ResponsiveTabs
+        :items="views.map((v) => ({ key: v.key, label: v.label, icon: v.icon, title: v.hint }))"
+        :model-value="view"
+        label="Vista del calendario"
+        variant="segmented"
+        @update:model-value="(key) => changeView(key as ViewKey)"
+      />
     </div>
 
     <div class="overflow-hidden rounded-xl border border-line bg-surface text-sm" :class="`tt-calendar--${view}`">
@@ -294,7 +287,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
             <template v-else-if="itemOf(arg).kind === 'Match'">
               <span class="flex min-w-0 items-center gap-1 font-semibold">
                 J{{ itemOf(arg).match!.matchday }}
-                <TeamName class="min-w-0" :name="rival(itemOf(arg).match!).name" :crest-url="rival(itemOf(arg).match!).crestUrl" :short-name="rival(itemOf(arg).match!).shortName" />
+                <TeamName class="min-w-0" truncate :name="rival(itemOf(arg).match!).name" :crest-url="rival(itemOf(arg).match!).crestUrl" :short-name="rival(itemOf(arg).match!).shortName" />
                 <MatchResultPill v-if="result(itemOf(arg))" class="ml-auto" :match="itemOf(arg).match!" :team-id="teamId" />
                 <span v-else-if="itemOf(arg).done && score(itemOf(arg).match!)" class="ml-auto shrink-0 tabular-nums">{{ score(itemOf(arg).match!) }}</span>
               </span>
@@ -331,7 +324,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
               <MatchResultPill v-if="arg.isNarrow" size="xs" :match="itemOf(arg).match!" :team-id="teamId" />
               <template v-else>
                 <span class="shrink-0 font-semibold">J{{ itemOf(arg).match!.matchday }}</span>
-                <TeamName class="min-w-0" :name="rival(itemOf(arg).match!).name" :crest-url="rival(itemOf(arg).match!).crestUrl" :short-name="rival(itemOf(arg).match!).shortName" />
+                <TeamName class="min-w-0" truncate :name="rival(itemOf(arg).match!).name" :crest-url="rival(itemOf(arg).match!).crestUrl" :short-name="rival(itemOf(arg).match!).shortName" />
                 <MatchResultPill class="ml-auto" size="xs" :match="itemOf(arg).match!" :team-id="teamId" />
               </template>
             </template>
@@ -345,7 +338,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
               <template v-if="!arg.isNarrow">
                 <template v-if="itemOf(arg).kind === 'Match'">
                   <span class="shrink-0 font-semibold">J{{ itemOf(arg).match!.matchday }}</span>
-                  <TeamName class="min-w-0" :name="rival(itemOf(arg).match!).name" :crest-url="rival(itemOf(arg).match!).crestUrl" :short-name="rival(itemOf(arg).match!).shortName" />
+                  <TeamName class="min-w-0" truncate :name="rival(itemOf(arg).match!).name" :crest-url="rival(itemOf(arg).match!).crestUrl" :short-name="rival(itemOf(arg).match!).shortName" />
                   <span v-if="itemOf(arg).done && score(itemOf(arg).match!)" class="ml-auto shrink-0 tabular-nums">{{ score(itemOf(arg).match!) }}</span>
                   <span v-else-if="unavailableOf(itemOf(arg)).length" class="ml-auto inline-flex shrink-0 items-center gap-0.5 tabular-nums" aria-label="No disponibles"><Icon icon="ban" class="h-2.5 w-2.5" />{{ unavailableOf(itemOf(arg)).length }}</span>
                 </template>
@@ -366,7 +359,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
       <span class="inline-flex items-center gap-1.5"><span class="inline-flex h-3.5 w-5 items-center justify-center rounded border border-brand-500 bg-brand-500 text-white"><Icon icon="futbol" class="h-2 w-2" /></span>Partido (convocatoria)</span>
       <span class="inline-flex items-center gap-1.5"><span class="h-3.5 w-5 rounded border border-brand-500/40 bg-brand-500/10"></span>Entrenamiento (citación)</span>
       <span class="inline-flex items-center gap-1.5"><span class="inline-flex h-3.5 w-5 items-center justify-center rounded border border-dashed border-slate-300 bg-surface-2/70 text-slate-500"><Icon icon="check" class="h-2 w-2" /></span>Ya realizado</span>
-      <span class="inline-flex items-center gap-1.5" title="En los partidos por jugar: sancionados (5.ª amarilla o expulsión en el anterior) y lesionados"><Icon icon="ban" class="h-3 w-3 text-red-600" />No disponibles</span>
+      <span class="inline-flex items-center gap-1.5" title="En los partidos por jugar: sancionados (5.ª amarilla, expulsión o sanción del comité de competición) y lesionados"><Icon icon="ban" class="h-3 w-3 text-red-600" />No disponibles</span>
       <span class="inline-flex items-center gap-1.5" title="Partidos jugados: verde si se ganó, amarillo si se empató y rojo si se perdió, con el marcador">
         <span class="inline-flex overflow-hidden rounded text-[9px] font-bold leading-none">
           <span v-for="r in legendResults" :key="r" class="grid h-3.5 w-3.5 place-items-center" :class="resultStyle[r].solid">{{ outcomeLabels[r] }}</span>

@@ -217,13 +217,13 @@ const { sorted, sortBy, state } = useSort<PresenceSessionDto, SortKey>(
                   </span>
                 </td>
                 <td class="max-w-64 px-3 py-2">
-                  <span class="block truncate font-medium text-slate-900">{{ session.name }}</span>
-                  <span v-if="session.email" class="block truncate text-xs text-slate-500">{{ session.email }}</span>
+                  <span class="block break-words font-medium text-slate-900">{{ session.name }}</span>
+                  <span v-if="session.email" class="block text-xs text-slate-500 [overflow-wrap:anywhere]">{{ session.email }}</span>
                 </td>
                 <td class="px-3 py-2 whitespace-nowrap"><Badge :tone="typeTone[session.accountType]">{{ accountTypeLabels[session.accountType] }}</Badge></td>
-                <td class="max-w-56 px-3 py-2 text-xs text-slate-600"><span class="line-clamp-2" :title="session.teams ?? undefined">{{ session.teams ?? '—' }}</span></td>
+                <td class="max-w-56 px-3 py-2 text-xs text-slate-600"><span class="break-words">{{ session.teams ?? '—' }}</span></td>
                 <td class="max-w-56 px-3 py-2 text-xs">
-                  <RouterLink v-if="session.path" :to="session.path" class="block truncate text-accent-400 hover:underline" :title="session.path">{{ session.path }}</RouterLink>
+                  <RouterLink v-if="session.path" :to="session.path" class="block text-accent-400 [overflow-wrap:anywhere] hover:underline">{{ session.path }}</RouterLink>
                   <span v-else class="text-slate-400">—</span>
                 </td>
                 <td class="px-3 py-2 whitespace-nowrap text-xs text-slate-600">{{ session.device }}</td>

@@ -5,6 +5,7 @@ import { api } from '@/api';
 import LeaguePredictor from '@/components/league/LeaguePredictor.vue';
 import MatchdayFixtures from '@/components/matches/MatchdayFixtures.vue';
 import Alert from '@/components/ui/Alert.vue';
+import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Skeleton from '@/components/ui/Skeleton.vue';
@@ -15,7 +16,8 @@ import { useAsync } from '@/composables/useAsync';
 import { useMyClub } from '@/composables/useMyClub';
 import { useSort } from '@/composables/useSort';
 import type { StandingDto } from '@/types/api';
-import { groupByLevel, levelLabels } from '@/utils/format';
+import { groupByLevel } from '@/utils/format';
+import { competitionOptions as optionsFor } from '@/utils/territories';
 import { useSeasonStore } from '@/stores/season';
 import { rangeText, zoneRanges, zoneStyle } from '@/utils/zones';
 
@@ -29,10 +31,8 @@ const groups = computed(() => groupByLevel(competitions.data.value ?? []));
 
 const { preferredCompetition, withMyClubFirst, isMine, myTeamIds } = useMyClub();
 
-/** Opciones del desplegable: una por competición, agrupadas por nivel, con las de tu club arriba. */
-const competitionOptions = computed(() =>
-  withMyClubFirst(groups.value.flatMap((group) => group.competitions.map((c) => ({ value: c.id, label: c.name, group: levelLabels[group.level] })))),
-);
+/** Opciones del desplegable: una por competición, agrupadas por ámbito (Nacional, Asturias…), con las de tu club arriba. */
+const competitionOptions = computed(() => withMyClubFirst(optionsFor(competitions.data.value ?? [])));
 
 const selectedId = ref<string | null>(typeof route.query.competition === 'string' ? route.query.competition : null);
 
@@ -109,20 +109,14 @@ watch(selectedId, (id) => {
   </Alert>
 
   <template v-else>
-  <div class="mb-6 flex flex-wrap gap-2" role="tablist" aria-label="Vista de la liga">
-    <button
-      v-for="item in tabs"
-      :key="item.value"
-      type="button"
-      role="tab"
-      :aria-selected="tab === item.value"
-      class="flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition"
-      :class="tab === item.value ? 'bg-action text-white shadow-glow' : 'bg-surface text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100'"
-      @click="showTab(item.value)"
-    >
-      <Icon :icon="item.icon" class="h-3.5 w-3.5" />{{ item.label }}
-    </button>
-  </div>
+  <ResponsiveTabs
+    :items="tabs.map((item) => ({ key: item.value, label: item.label, icon: item.icon }))"
+    :model-value="tab"
+    label="Vista de la liga"
+    variant="pills"
+    class="mb-6"
+    @update:model-value="(key) => showTab(key as LeagueTab)"
+  />
 
   <LeaguePredictor v-if="tab === 'previsor' && selectedId" :competition-id="selectedId" :highlight-team-ids="myTeamIds" />
 

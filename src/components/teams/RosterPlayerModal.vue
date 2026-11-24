@@ -10,6 +10,7 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Modal from '@/components/ui/Modal.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
+import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
@@ -246,14 +247,17 @@ const { sorted: internalSorted, sortBy: sortInternal, state: internalState } = u
       <ShirtNumberUsage v-else :usage="detail.entry.shirtNumbers" class="mt-2 max-w-md" />
 
       <!-- Partido a partido -->
-      <div class="mt-5 flex gap-1 overflow-x-auto whitespace-nowrap border-b border-line">
-        <button type="button" class="-mb-px border-b-2 px-3 py-2 text-sm font-medium" :class="tab === 'official' ? 'border-accent-400 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'" @click="tab = 'official'">
-          Actas oficiales <span class="ml-1 text-xs text-slate-400">{{ detail.official.length }}</span>
-        </button>
-        <button type="button" class="-mb-px border-b-2 px-3 py-2 text-sm font-medium" :class="tab === 'internal' ? 'border-accent-400 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'" @click="tab = 'internal'">
-          Actas de Tercer Tiempo <span class="ml-1 text-xs text-slate-400">{{ detail.internal.length }}</span>
-        </button>
-      </div>
+      <ResponsiveTabs
+        :items="[
+          { key: 'official', label: 'Actas oficiales', count: detail.official.length },
+          { key: 'internal', label: 'Actas de Tercer Tiempo', count: detail.internal.length },
+        ]"
+        :model-value="tab"
+        label="Partido a partido"
+        tone="accent"
+        class="mt-5"
+        @update:model-value="(key) => (tab = key as 'official' | 'internal')"
+      />
 
       <div v-if="tab === 'official'" class="mt-3 overflow-x-auto">
         <p v-if="detail.official.length === 0" class="text-sm text-slate-500">Sin partidos en las actas oficiales.</p>

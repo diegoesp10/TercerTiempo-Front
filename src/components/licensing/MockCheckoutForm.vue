@@ -134,7 +134,7 @@ async function pay(outcome: SimulatedPaymentOutcome) {
           @click="useCard(card)"
         >
           <span class="whitespace-nowrap font-mono text-slate-800">{{ card.number }}</span>
-          <span class="min-w-0 truncate text-right text-slate-500">{{ card.label }}</span>
+          <span class="min-w-0 break-words text-right text-slate-500">{{ card.label }}</span>
         </button>
       </div>
       <p class="mt-2 text-[11px] text-slate-500">Cualquier fecha futura y cualquier CVC de 3 cifras.</p>

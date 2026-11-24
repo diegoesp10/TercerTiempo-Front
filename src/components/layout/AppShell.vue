@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { onClickOutside, useEventListener } from '@vueuse/core';
 import { useRoute, useRouter } from 'vue-router';
 import BrandMark from '@/components/layout/BrandMark.vue';
 import LicenseBanner from '@/components/licensing/LicenseBanner.vue';
@@ -9,6 +10,7 @@ import SeasonSwitcher from '@/components/layout/SeasonSwitcher.vue';
 import BackButton from '@/components/ui/BackButton.vue';
 import Badge from '@/components/ui/Badge.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
+import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import SearchPalette from '@/components/search/SearchPalette.vue';
 import SearchTrigger from '@/components/search/SearchTrigger.vue';
 import { confirmDialog } from '@/composables/useConfirm';
@@ -17,10 +19,10 @@ import { useAuthStore } from '@/stores/auth';
 import { useSeasonStore } from '@/stores/season';
 import { useSettingsStore } from '@/stores/settings';
 import { accountTypeLabels } from '@/utils/format';
-import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import { useConsentStore } from '@/stores/consent';
 import AlertBell from '@/components/alerts/AlertBell.vue';
 import ThemeIcon from '@/components/layout/ThemeIcon.vue';
+import { useFit } from '@/composables/useFit';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
@@ -63,6 +65,32 @@ const links = computed<NavLink[]>(() => {
   return items;
 });
 
+// Qué se ve en la cabecera: se mide lo que cabe de verdad (no por anchos fijos), así que vale con cualquier pantalla,
+// zoom, cuenta o número de enlaces. De lo más completo a lo más recogido: buscador ancho, buscador estrecho, la lupa,
+// sin el nombre de la marca y, si el menú aún no cabe entero, la hamburguesa (con la marca si hay sitio). Nada encoge
+// ni se corta con puntos suspensivos: todo lo de la fila es de ancho fijo y, si no cabe, se pasa al paso siguiente.
+const headerRow = ref<HTMLElement | null>(null);
+const header = ref<HTMLElement | null>(null);
+const burgerButton = ref<HTMLButtonElement | null>(null);
+const { step } = useFit(headerRow, [[], ['narrow'], ['compact'], ['compact', 'nobrand'], ['compact', 'burger'], ['compact', 'burger', 'nobrand']]);
+const burger = computed(() => step.value >= 4);
+
+// El menú de hamburguesa se cierra al navegar, al volver a caber todo, al pulsar fuera de la cabecera o con Escape.
+watch(() => route.fullPath, () => {
+  menuOpen.value = false;
+});
+watch(burger, (value) => {
+  if (!value) menuOpen.value = false;
+});
+onClickOutside(header, () => {
+  menuOpen.value = false;
+});
+useEventListener(document, 'keydown', (event: KeyboardEvent) => {
+  if (event.key !== 'Escape' || !menuOpen.value) return;
+  menuOpen.value = false;
+  burgerButton.value?.focus();
+});
+
 const isActive = (link: NavLink) =>
   link.exact ? route.path === link.to : route.path === link.to || route.path.startsWith(`${link.to}/`);
 
@@ -74,14 +102,20 @@ const teamLabel = computed(() => {
   return squads.length > 1 ? `${squads.length} plantillas` : null;
 });
 
-// Escudo del equipo de quien entra (jugador o técnico de una sola plantilla).
-const teamCrest = computed(() => {
-  if (auth.playerSquad) return auth.playerSquad.teamCrestUrl ?? null;
-  const squads = auth.coachSquads;
-  return !auth.isClub && squads.length === 1 ? squads[0]?.teamCrestUrl ?? null : undefined;
+// El perfil va como icono: quién es, el tipo de cuenta y su equipo, en el título.
+const profileTitle = computed(() => {
+  if (!auth.account) return '';
+  const who = [auth.displayName, accountTypeLabels[auth.account.type], teamLabel.value].filter(Boolean).join(' · ');
+  return auth.profileRoute ? `Mi perfil · ${who}` : `Ajustes · ${who}`;
+});
+// Con foto (jugador o técnico), su cara en lugar del icono; sin foto, el icono.
+const profilePhoto = computed(() => auth.player?.photoUrl ?? auth.coach?.photoUrl ?? null);
+const profileActive = computed(() => {
+  if (auth.isPlayer) return route.name === 'my-profile';
+  if (auth.isCoach) return route.name === 'coach' && route.params.coachId === auth.coach?.id;
+  return route.name === 'settings';
 });
 
-const accountTone = computed(() => (auth.isCoach ? 'blue' : auth.isClub ? 'amber' : 'green'));
 const themeLabel = computed(() => (settings.isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'));
 
 // «Salir» avisa antes de cerrar la sesión: un clic sin querer no echa a nadie.
@@ -117,77 +151,96 @@ async function logoutAdmin() {
   <div class="flex min-h-screen flex-col">
     <!-- z-45: la cabecera y sus desplegables (avisos, temporada, cuenta) quedan por encima de todo lo de la página y del aviso de
          cookies (z-40); solo los modales (z-50) la tapan. -->
-    <header class="sticky top-0 z-45 border-b border-line bg-surface/95">
-      <div class="mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
-        <RouterLink to="/" class="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3" aria-label="Tercer Tiempo: inicio">
+    <header ref="header" class="sticky top-0 z-45 border-b border-line bg-surface/95">
+      <!-- La fila se mide (useFit) y sus marcas data-* dicen qué se ve; nada de ella encoge (todo shrink-0). -->
+      <div ref="headerRow" class="group/hdr mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-6 px-4 sm:px-6 lg:px-10">
+        <RouterLink to="/" class="flex shrink-0 items-center gap-2 sm:gap-3" aria-label="Tercer Tiempo: inicio">
           <BrandMark :size="34" />
-          <!-- Entre lg y xl el menú completo no cabe con el nombre: queda el escudo. -->
-          <span class="whitespace-nowrap font-display text-xl font-bold uppercase tracking-wide text-slate-900 sm:text-2xl lg:hidden xl:inline">Tercer <span class="text-brand-500">Tiempo</span></span>
+          <span class="whitespace-nowrap font-display text-xl font-bold uppercase tracking-wide text-slate-900 group-data-[nobrand]/hdr:hidden sm:text-2xl">Tercer <span class="text-brand-500">Tiempo</span></span>
         </RouterLink>
 
-        <nav class="hidden items-center gap-1 lg:flex" aria-label="Principal">
+        <nav class="flex shrink-0 items-center gap-1 group-data-[burger]/hdr:hidden" aria-label="Principal">
           <RouterLink
             v-for="link in links"
             :key="link.to"
             :to="link.to"
-            class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-semibold transition 2xl:px-3"
+            class="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-semibold transition 2xl:px-3"
             :class="isActive(link) ? 'bg-action text-white' : 'text-slate-600 hover:bg-surface-2 hover:text-slate-900'"
+            :aria-current="isActive(link) ? 'page' : undefined"
           >
             {{ link.label }}
           </RouterLink>
         </nav>
 
-        <div class="flex min-w-0 items-center gap-2">
-          <!-- En móvil la temporada va dentro del menú, para que la cabecera no se parta. -->
-          <SearchTrigger v-if="canSearch" class="hidden w-44 xl:flex 2xl:w-60" />
-          <SearchTrigger v-if="canSearch" compact class="xl:hidden" />
-          <SeasonSwitcher class="hidden lg:block" />
-          <AlertBell v-if="auth.isAuthenticated && !admin.isActive" />
-          <!-- Con el menú de hamburguesa (por debajo de lg) fuera solo quedan la lupa, los avisos y el menú: el tema va dentro. -->
-          <button type="button" class="btn-ghost hidden px-2 lg:inline-flex" :title="themeLabel" :aria-label="themeLabel" @click="settings.toggleTheme()">
+        <div class="flex shrink-0 items-center gap-2">
+          <div v-if="canSearch" class="w-60 shrink-0 group-data-[narrow]/hdr:w-44 group-data-[compact]/hdr:hidden">
+            <SearchTrigger />
+          </div>
+          <div v-if="canSearch" class="hidden shrink-0 group-data-[compact]/hdr:block">
+            <SearchTrigger compact />
+          </div>
+          <!-- Con la hamburguesa, la temporada, el tema y la cuenta van dentro del menú: fuera quedan la lupa y los avisos. -->
+          <div class="shrink-0 group-data-[burger]/hdr:hidden">
+            <SeasonSwitcher />
+          </div>
+          <AlertBell v-if="auth.isAuthenticated && !admin.isActive" class="shrink-0" data-fit-ignore />
+          <button type="button" class="btn-ghost shrink-0 px-2 group-data-[burger]/hdr:hidden" :title="themeLabel" :aria-label="themeLabel" @click="settings.toggleTheme()">
             <ThemeIcon :dark="settings.isDark" class="h-5 w-5" />
           </button>
 
-          <div class="hidden min-w-0 items-center gap-2 lg:flex">
+          <div class="flex shrink-0 items-center gap-2 group-data-[burger]/hdr:hidden">
             <template v-if="admin.isActive">
-              <RouterLink to="/jobs" class="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" title="Administración">
+              <RouterLink to="/jobs" class="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2" title="Administración">
                 <Icon icon="lock" class="h-3.5 w-3.5 shrink-0 text-accent-400" />
-                <span class="min-w-0 max-w-40 truncate font-medium">{{ admin.session?.userName }}</span>
+                <span class="font-medium">{{ admin.session?.userName }}</span>
                 <Badge tone="red" class="shrink-0">Administrador</Badge>
               </RouterLink>
               <button type="button" class="btn-ghost shrink-0" @click="logoutAdmin">Salir</button>
             </template>
             <template v-else-if="auth.isAuthenticated && auth.account">
+              <!-- Solo el icono, que nunca se encoge: con el menú completo ningún texto cabe sin cortarse. Quién eres y tu
+                   equipo van en el título. -->
               <RouterLink
                 :to="auth.profileRoute ?? '/ajustes'"
-                class="flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-surface-2"
-                :title="auth.profileRoute ? `Mi perfil · ${auth.displayName} (${accountTypeLabels[auth.account.type]})` : `Ajustes · ${accountTypeLabels[auth.account.type]}`"
+                class="btn-ghost shrink-0 px-2"
+                :class="profileActive ? 'text-brand-500' : ''"
+                :title="profileTitle"
+                :aria-label="profileTitle"
               >
-                <TeamCrest v-if="auth.isClub" :src="auth.clubCrestUrl" :name="auth.displayName" size="sm" />
-                <PlayerAvatar v-else-if="auth.isPlayer || auth.isCoach" :src="auth.isPlayer ? auth.player?.photoUrl : auth.coach?.photoUrl" :name="auth.displayName" size="xs" />
-                <span class="min-w-[3rem] max-w-40 truncate font-medium" :class="auth.isClub || auth.isPlayer || auth.isCoach ? 'hidden xl:inline' : ''">{{ auth.profileRoute ? 'Mi perfil' : auth.displayName }}</span>
-                <span class="hidden shrink-0 2xl:inline-flex"><Badge :tone="accountTone">{{ accountTypeLabels[auth.account.type] }}</Badge></span>
-                <span v-if="teamLabel" class="hidden shrink-0 items-center gap-1 text-slate-400 2xl:flex">
-                  · <TeamCrest v-if="teamCrest !== undefined" :src="teamCrest" :name="teamLabel" size="xs" /> {{ teamLabel }}
-                </span>
+                <PlayerAvatar
+                  v-if="profilePhoto"
+                  :src="profilePhoto"
+                  :name="auth.displayName"
+                  size="xs"
+                  decorative
+                  :class="profileActive ? 'outline outline-2 outline-offset-2 outline-brand-500' : ''"
+                />
+                <Icon v-else icon="circle-user" class="h-5 w-5" />
               </RouterLink>
               <button type="button" class="btn-ghost shrink-0" @click="logout">Salir</button>
             </template>
             <template v-else>
-              <RouterLink to="/login" class="btn-ghost">Entrar</RouterLink>
-              <RouterLink to="/registro" class="btn-primary">Darme de alta</RouterLink>
+              <RouterLink to="/login" class="btn-ghost shrink-0 whitespace-nowrap">Entrar</RouterLink>
+              <RouterLink to="/registro" class="btn-primary shrink-0 whitespace-nowrap">Darme de alta</RouterLink>
             </template>
           </div>
 
-          <button type="button" class="btn-ghost px-2 lg:hidden" aria-label="Menú" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-              <path d="M4 7h16M4 12h16M4 17h16" />
-            </svg>
+          <button
+            ref="burgerButton"
+            type="button"
+            class="btn-ghost hidden shrink-0 px-2 group-data-[burger]/hdr:inline-flex"
+            :aria-label="menuOpen ? 'Cerrar el menú' : 'Abrir el menú'"
+            :aria-expanded="menuOpen"
+            aria-controls="app-menu"
+            @click="menuOpen = !menuOpen"
+          >
+            <Icon :icon="menuOpen ? 'xmark' : 'bars'" class="h-5 w-5" />
           </button>
         </div>
       </div>
 
-      <div v-if="menuOpen" class="border-t border-line bg-surface px-4 py-2 lg:hidden">
+      <!-- Con poca altura (un móvil en horizontal) el menú se desplaza por dentro en lugar de salirse de la pantalla. -->
+      <div v-if="menuOpen && burger" id="app-menu" class="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-line bg-surface px-4 py-2">
         <RouterLink
           v-for="link in links"
           :key="link.to"
@@ -199,7 +252,8 @@ async function logoutAdmin() {
           {{ link.label }}
         </RouterLink>
         <RouterLink v-if="auth.profileRoute" :to="auth.profileRoute" class="block rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-2" @click="menuOpen = false">Mi perfil</RouterLink>
-        <RouterLink to="/ajustes" class="block rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-2" @click="menuOpen = false">Ajustes</RouterLink>
+        <!-- El jugador tiene los ajustes dentro de «Mi perfil». -->
+        <RouterLink v-if="!auth.isPlayer" to="/ajustes" class="block rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-surface-2" @click="menuOpen = false">Ajustes</RouterLink>
         <!-- El menú sigue abierto al cambiar de tema: se ve el cambio y se puede deshacer. -->
         <button type="button" class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-surface-2" @click="settings.toggleTheme()">
           <ThemeIcon :dark="settings.isDark" class="h-4 w-4 shrink-0 text-slate-500" />{{ themeLabel }}
@@ -263,7 +317,7 @@ async function logoutAdmin() {
     <SearchPalette v-if="canSearch" />
     <ConfirmDialog />
 
-    <main class="mx-auto w-full max-w-[1760px] flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10" :class="consent.needsBanner ? 'pb-48 sm:pb-36 lg:pb-28' : ''">
+    <main class="mx-auto w-full max-w-[1760px] flex-1 px-4 py-6 max-[360px]:px-2 sm:px-6 sm:py-8 lg:px-10" :class="consent.needsBanner ? 'pb-48 sm:pb-36 lg:pb-28' : ''">
       <div v-if="!route.meta.root && !route.meta.error" class="mb-4">
         <BackButton />
       </div>

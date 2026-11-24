@@ -26,7 +26,8 @@ const router = useRouter();
 const canManage = computed(() => detail.value?.canManage ?? false);
 const teamId = computed(() => detail.value?.summary.teamId ?? '');
 const photos = computed<Record<string, string | null>>(() => Object.fromEntries((detail.value?.players ?? []).map((p) => [p.id, p.photoUrl])));
-const positions = computed<Record<string, Position | null>>(() => Object.fromEntries((detail.value?.players ?? []).map((p) => [p.id, p.position ?? null])));
+const positions = computed<Record<string, Position | null>>(() =>
+  Object.fromEntries([...(detail.value?.players ?? []), ...(detail.value?.leftPlayers ?? [])].map((p) => [p.id, p.position ?? null])));
 
 // Agenda (entrenamientos y partidos) de los días que enseña el calendario: la pide él al cambiar de vista o de fechas.
 const range = ref<{ from: string; to: string } | null>(null);

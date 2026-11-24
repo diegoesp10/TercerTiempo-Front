@@ -2,9 +2,11 @@
 import { computed, ref, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
+import DisciplineBadge from '@/components/squads/DisciplineBadge.vue';
 import TeamName from '@/components/teams/TeamName.vue';
 import GroundCard from '@/components/trainings/GroundCard.vue';
 import InjuryNote from '@/components/trainings/InjuryNote.vue';
+import MyAttendanceBadge from '@/components/trainings/MyAttendanceBadge.vue';
 import SuspensionNote from '@/components/trainings/SuspensionNote.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -16,7 +18,8 @@ import { useAlertsStore } from '@/stores/alerts';
 import { useAuthStore } from '@/stores/auth';
 import type { CallUpResponse, MyCallUpDto, MyTrainingDto } from '@/types/api';
 import { opponentOf } from '@/utils/crests';
-import { attendanceStatusLabels, attendanceStatusTone, callUpResponseLabels, callUpResponseTone, formatDayHeading, formatDurationMinutes, formatKickoff, formatTime } from '@/utils/format';
+import { warnedDiscipline } from '@/utils/discipline';
+import { callUpResponseLabels, callUpResponseTone, formatDayHeading, formatDurationMinutes, formatKickoff, formatTime } from '@/utils/format';
 
 /**
  * Lado del jugador: las convocatorias que tiene que firmar y los próximos entrenamientos, para avisar si falta. Los
@@ -106,8 +109,8 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
                 <SuspensionNote v-if="c.mine.suspended" :suspension="c.mine.suspension" class="mt-1" />
                 <p v-if="c.mine.injured && !c.mine.suspended" class="mt-1 text-sm text-slate-600">Estás lesionado el día del partido: no puedes ir convocado.</p>
                 <InjuryNote v-if="c.mine.injured" :injury="c.mine.injury" class="mt-1" />
-                <p v-if="!c.closed && !c.mine.suspended && c.mine.cycleYellows === 4" class="mt-1 text-xs text-amber-700">
-                  <Badge tone="amber" class="mr-1">Apercibido</Badge>Llevas 4 amarillas: con una más te pierdes el siguiente partido de liga.
+                <p v-if="!c.closed && c.mine.warned" class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-amber-700">
+                  <DisciplineBadge :discipline="warnedDiscipline(c.mine)" />Llevas {{ c.mine.cycleYellows }} amarillas: con una más te pierdes el siguiente partido de liga.
                 </p>
                 <p v-if="c.mine.called && c.meetAt" class="text-sm text-slate-600">Cita: {{ formatKickoff(c.meetAt) }}.</p>
                 <GroundCard v-if="c.mine.called && (c.meetGround || c.meetPlace)" :ground="c.meetGround" :place="c.meetPlace" compact class="mt-1.5" />
@@ -153,8 +156,8 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
                 </p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
-                <Badge v-if="item.session.mine?.injured" tone="red" title="Estás de baja por lesión: no entrenas y no tienes que avisar">Lesionado</Badge>
-                <Badge v-else-if="item.session.mine" :tone="attendanceStatusTone[item.session.mine.status]">{{ attendanceStatusLabels[item.session.mine.status] }}</Badge>
+                <Badge v-if="item.session.mine?.injured" tone="red" title="Estás lesionado: no entrenas y no tienes que avisar">Lesionado</Badge>
+                <MyAttendanceBadge v-else-if="item.session.mine" :status="item.session.mine.status" />
                 <template v-if="item.session.mine?.injured" />
                 <button v-else-if="item.session.mine?.status === 'WillMiss'" type="button" class="btn-secondary px-3 py-1 text-xs" v-busy="busy === item.session.id" :disabled="busy !== null" @click="absence(item, false)">Al final sí voy</button>
                 <button v-else-if="absenceFor !== item.session.id" type="button" class="btn-secondary px-3 py-1 text-xs" :disabled="busy !== null" @click="absenceFor = item.session.id">No podré ir</button>

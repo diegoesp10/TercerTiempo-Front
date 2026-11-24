@@ -6,7 +6,7 @@ import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useHomeCompetition } from '@/composables/useHomeCompetition';
 import { useMyClub } from '@/composables/useMyClub';
 import type { CompetitionMatchdayDto, MatchDto } from '@/types/api';
-import { formatTime, levelLabels } from '@/utils/format';
+import { formatTime, levelLabel } from '@/utils/format';
 
 /**
  * Jornada en curso para la portada, con selector de categoría: datos reales en lugar de una ilustración. Cada
@@ -52,9 +52,10 @@ const outcomeClass = (m: MatchDto, side: 'home' | 'away') => {
 <template>
   <section class="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
     <header class="border-b border-line px-5 py-4">
-      <div class="flex items-end justify-between gap-3">
-        <div class="min-w-0 flex-1">
-          <p class="eyebrow">{{ competition ? levelLabels[competition.level] : 'Jornada' }}</p>
+      <!-- Si la categoría no cabe entera junto a la jornada, la jornada baja a la línea siguiente: nunca un nombre cortado. -->
+      <div class="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+        <div class="min-w-0 flex-1 basis-60">
+          <p class="eyebrow">{{ competition ? levelLabel(competition.level, competition.territory.name) : 'Jornada' }}</p>
           <SearchSelect
             v-if="options.length"
             class="mt-1"
@@ -77,25 +78,26 @@ const outcomeClass = (m: MatchDto, side: 'home' | 'away') => {
       </p>
     </header>
 
+    <!-- En móviles estrechos, menos aire para que el nombre corto quepa entero; si aun así no cabe, baja de línea, nunca «…». -->
     <ul v-if="matches.length" class="divide-y divide-line">
       <li v-for="m in matches" :key="m.id">
         <RouterLink
           :to="{ name: 'match', params: { matchId: m.id } }"
-          class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-5 py-3 text-sm transition hover:bg-surface-2"
+          class="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-3 text-sm transition hover:bg-surface-2 sm:gap-3 sm:px-5"
           :class="isMyMatch(m) ? 'my-club-row' : ''"
           title="Acta pública y datos del partido"
         >
-          <span class="flex min-w-0 items-center justify-end gap-2 text-right" :class="outcomeClass(m, 'home')">
-            <span class="truncate">{{ m.homeTeam.shortName }}</span>
+          <span class="flex min-w-0 items-center justify-end gap-1.5 text-right sm:gap-2" :class="outcomeClass(m, 'home')">
+            <span class="min-w-0 break-words">{{ m.homeTeam.shortName }}</span>
             <TeamCrest :src="m.homeTeam.crestUrl" :name="m.homeTeam.name" :short-name="m.homeTeam.shortName" size="xs" />
           </span>
-          <span class="min-w-14 text-center">
+          <span class="min-w-12 text-center sm:min-w-14">
             <span v-if="score(m)" class="font-figures text-lg font-extrabold tabular-nums text-slate-900">{{ score(m) }}</span>
             <span v-else class="font-figures text-xs font-semibold tabular-nums text-slate-500">{{ formatTime(m.kickoffAt) }}</span>
           </span>
-          <span class="flex min-w-0 items-center gap-2" :class="outcomeClass(m, 'away')">
+          <span class="flex min-w-0 items-center gap-1.5 sm:gap-2" :class="outcomeClass(m, 'away')">
             <TeamCrest :src="m.awayTeam.crestUrl" :name="m.awayTeam.name" :short-name="m.awayTeam.shortName" size="xs" />
-            <span class="truncate">{{ m.awayTeam.shortName }}</span>
+            <span class="min-w-0 break-words">{{ m.awayTeam.shortName }}</span>
           </span>
         </RouterLink>
       </li>

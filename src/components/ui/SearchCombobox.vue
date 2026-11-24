@@ -263,7 +263,7 @@ onBeforeUnmount(() => {
           >
             <TeamCrest v-if="option.crest !== undefined" :src="option.crest" :name="option.label" size="xs" />
             <PlayerAvatar v-else-if="option.photo !== undefined" :src="option.photo" :name="option.label" size="xs" />
-            <span class="min-w-0 flex-1 truncate">
+            <span class="min-w-0 flex-1 break-words">
               <template v-for="(part, p) in segments(option.label)" :key="p"><strong v-if="part.hit" class="font-bold">{{ part.text }}</strong><template v-else>{{ part.text }}</template></template>
             </span>
             <span v-if="option.hint" class="shrink-0 text-xs text-slate-500">{{ option.hint }}</span>

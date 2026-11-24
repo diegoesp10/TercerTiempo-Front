@@ -33,7 +33,7 @@ const target = computed<RouteLocationRaw>(() => props.to ?? { name: 'match', par
     </div>
 
     <div class="min-w-0 flex-1 basis-44">
-      <p class="truncate font-medium text-slate-900">
+      <p class="font-medium text-slate-900">
         <TeamName :name="opponent.name" :team-id="opponent.id" :crest-url="opponent.crestUrl" :short-name="opponent.shortName" size="sm">
           <span class="text-slate-400">vs</span> {{ opponent.name }}
         </TeamName>

@@ -83,8 +83,8 @@ const stats = computed(() => {
         <PlayerAvatar :src="photoUrl" :name="row.name" size="md" />
         <div class="min-w-0 flex-1">
           <p class="flex flex-wrap items-center gap-2">
-            <span class="truncate text-lg font-bold leading-tight text-slate-900">{{ row.name }}</span>
-            <Badge v-if="!p.active" tone="slate">Ya no está</Badge>
+            <span class="min-w-0 break-words text-lg font-bold leading-tight text-slate-900">{{ row.name }}</span>
+            <Badge v-if="!p.active" tone="slate" title="Causó baja en la plantilla: sale con lo que entrenó mientras estuvo">De baja</Badge>
           </p>
           <RouterLink :to="{ name: 'squad-player', params: { squadId, squadPlayerId: row.id } }" class="text-xs font-medium text-brand-500 hover:underline">
             Ver su ficha <Icon icon="chevron-right" class="ml-0.5 h-2.5 w-2.5" />

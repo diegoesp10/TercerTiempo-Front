@@ -5,7 +5,8 @@ import type { SuspensionBriefDto } from '@/types/api';
 
 /**
  * Por qué un jugador no puede jugar un partido de liga: «Sancionado» y el porqué («5.ª amarilla en la jornada 7»,
- * «Roja directa en la jornada 8»…) con la tarjeta que lo causó.
+ * «Roja directa en la jornada 8», «Sanción del comité por la jornada 8: …») con la tarjeta que lo causó (lo del comité,
+ * como una roja).
  */
 withDefaults(defineProps<{ suspension: SuspensionBriefDto | null; badge?: boolean }>(), { badge: true });
 </script>

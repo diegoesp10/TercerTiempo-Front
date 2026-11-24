@@ -14,7 +14,7 @@ defineProps<{ rating: TeamRatingDto }>();
     <div class="flex flex-wrap items-center justify-between gap-2">
       <span class="flex min-w-0 items-center gap-2">
         <TeamCrest :src="rating.teamCrestUrl" :name="rating.teamName" size="sm" />
-        <span class="truncate text-sm font-semibold text-slate-900">{{ rating.teamName }}</span>
+        <span class="min-w-0 break-words text-sm font-semibold text-slate-900">{{ rating.teamName }}</span>
       </span>
       <span v-if="rating.noVote" class="rounded-full border border-dashed border-slate-400 px-2 py-0.5 text-xs font-semibold text-slate-500" title="El equipo decidió no puntuarle">No votado</span>
       <span v-else class="flex items-center gap-2">

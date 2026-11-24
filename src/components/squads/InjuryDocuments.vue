@@ -71,7 +71,7 @@ async function remove(document: InjuryDocumentDto) {
   busy.value = true;
   error.value = null;
   try {
-    emit('updated', await api.squads.deleteInjuryDocument(props.squadId, props.injury.id, document.id));
+    emit('updated', await api.squads.deleteInjuryDocument(document));
   } catch (e) {
     error.value = errorMessage(e);
   } finally {
@@ -111,11 +111,11 @@ const iconOf = (document: InjuryDocumentDto) => (document.contentType === 'appli
       <li v-for="document in documents" :key="document.id" class="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-xs">
         <Icon :icon="iconOf(document)" class="h-3.5 w-3.5 shrink-0 text-slate-500" />
         <div class="min-w-0 flex-1">
-          <button v-if="canOpen" type="button" class="block max-w-full truncate text-left font-medium text-slate-800 hover:text-accent-400" :title="`Abrir ${document.fileName}`" @click="open(document)">
+          <button v-if="canOpen" type="button" class="block max-w-full text-left font-medium text-slate-800 [overflow-wrap:anywhere] hover:text-accent-400" :title="`Abrir ${document.fileName}`" @click="open(document)">
             {{ document.fileName }}
           </button>
-          <span v-else class="block truncate font-medium text-slate-800">{{ document.fileName }}</span>
-          <span class="block truncate text-slate-500">
+          <span v-else class="block font-medium text-slate-800 [overflow-wrap:anywhere]">{{ document.fileName }}</span>
+          <span class="block break-words text-slate-500">
             {{ document.kindLabel }} · {{ formatBytes(document.sizeBytes) }} · {{ formatDate(document.uploadedAt) }}<template v-if="document.note"> · {{ document.note }}</template>
           </span>
         </div>

@@ -14,20 +14,23 @@ import Badge from '@/components/ui/Badge.vue';
 import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
 import PlayerMatchLog from '@/components/players/PlayerMatchLog.vue';
 import PlayerPhotoWizard from '@/components/players/PlayerPhotoWizard.vue';
+import PositionSummaryPicker from '@/components/players/PositionSummaryPicker.vue';
 import PlayerTrainingTallyCard from '@/components/trainings/PlayerTrainingTallyCard.vue';
 import InjuryPanel from '@/components/squads/InjuryPanel.vue';
+import DisciplineBadge from '@/components/squads/DisciplineBadge.vue';
 import { useViewer } from '@/composables/useViewer';
 import ShirtNumberUsage from '@/components/players/ShirtNumberUsage.vue';
 import { useBackFallback } from '@/composables/useBackFallback';
 import { useSquad } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
-import type { PlayerDto } from '@/types/api';
+import type { DisciplineDto, PlayerDto } from '@/types/api';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
 import { useAsync } from '@/composables/useAsync';
+import { useSummaryPosition } from '@/composables/useSummaryPosition';
 import { useSettingsStore } from '@/stores/settings';
-import { formatNumber, formatPct, positionLabels } from '@/utils/format';
+import { formatDate, formatNumber, formatPct, positionLabels } from '@/utils/format';
 import { keyStatsFor, keyTotals, matchesOfTeam } from '@/utils/keyStats';
 
 const props = defineProps<{ squadId: string; squadPlayerId: string }>();
@@ -36,6 +39,21 @@ const settings = useSettingsStore();
 const { data, loading, error, run } = useAsync(() => api.squads.playerProfile(props.squadId, props.squadPlayerId));
 useBackFallback(() => ({ to: { name: 'squad', params: { squadId: props.squadId } }, label: 'Volver a la plantilla' }));
 watch(() => props.squadPlayerId, () => void run());
+
+// Si llega apercibido o sancionado al próximo partido de liga; si no se puede saber, la ficha sale sin la marca.
+const discipline = ref<DisciplineDto | null>(null);
+watch(
+  () => [props.squadId, props.squadPlayerId] as const,
+  async ([squadId, squadPlayerId]) => {
+    discipline.value = null;
+    try {
+      discipline.value = (await api.squads.discipline(squadId)).players.find((p) => p.squadPlayerId === squadPlayerId)?.next ?? null;
+    } catch {
+      /* sin marca */
+    }
+  },
+  { immediate: true },
+);
 
 const played = computed(() => data.value?.matches.filter((m) => m.performance) ?? []);
 // Cifras de la cabecera: por partido, el acta interna si existe y, si no, la oficial (así no salen ceros cuando el
@@ -55,7 +73,9 @@ const combined = computed(() => {
   }
   return totals;
 });
-// Además de lo de todos, el dato de su puesto (paradas, despejes, pases...), que solo sale de las actas internas.
+// Además de lo de todos, el dato del puesto (paradas, despejes, pases...), que solo sale de las actas internas: el suyo
+// o el que se elija en «Resumen como».
+const summaryPosition = useSummaryPosition(() => data.value?.player);
 const heroStats = computed(() => {
   if (!data.value) return [];
   const totals = keyTotals({ ...data.value.stats, assists: combined.value.assists });
@@ -64,7 +84,7 @@ const heroStats = computed(() => {
     { label: 'Titular', value: combined.value.starts },
     { label: 'Minutos', value: combined.value.minutes },
     { label: 'Goles', value: combined.value.goals },
-    ...keyStatsFor(data.value.player.position).map((stat) => ({ label: stat.label, value: stat.value(totals), title: stat.title })),
+    ...keyStatsFor(summaryPosition.value).map((stat) => ({ label: stat.label, value: stat.value(totals), title: stat.title })),
     { label: 'Tarjetas', value: `${combined.value.yellow}/${combined.value.red}`, title: 'Amarillas / rojas' },
     { label: 'Nota media', value: data.value.stats.averageRating === null ? '—' : formatNumber(data.value.stats.averageRating, 1) },
   ];
@@ -122,9 +142,16 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
     >
       <template #actions>
         <RatingBadge :rating="data.stats.averageRating" size="lg" />
-        <Badge v-if="data.player.linked" tone="green">Cuenta vinculada</Badge>
+        <Badge v-if="data.player.status !== 'Active'" :title="'Ya no está en la plantilla: lo suyo se consulta, pero no entra en convocatorias, entrenamientos ni actas nuevas'">
+          De baja<template v-if="data.player.leftOn"> desde el {{ formatDate(data.player.leftOn) }}</template>
+        </Badge>
+        <Badge v-else-if="data.player.linked" tone="green">Cuenta vinculada</Badge>
+        <DisciplineBadge v-if="data.player.status === 'Active'" :discipline="discipline" reason />
         <button v-if="isMe" type="button" class="btn-primary" @click="photoOpen = true"><Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />{{ data.player.photoUrl ? 'Cambiar mi foto' : 'Subir mi foto' }}</button>
         <RouterLink :to="{ name: 'squad-compare', params: { squadId }, query: { ids: squadPlayerId } }" class="btn-secondary">Comparar con…</RouterLink>
+      </template>
+      <template #summary>
+        <PositionSummaryPicker v-model="summaryPosition" :own="data.player.position" :you="isMe" />
       </template>
     </PlayerHeroCard>
 
@@ -144,6 +171,7 @@ const contributions = computed(() => (data.value ? contributionsOption(data.valu
       :players="squadDetail.players"
       :can-manage="squadDetail.canManage"
       :player-id="squadPlayerId"
+      :player-left="data.player.status !== 'Active'"
     />
 
     <PlayerMatchLog class="mb-6" :matches="data.matches" :squad-id="squadId" :position="data.player.position" />

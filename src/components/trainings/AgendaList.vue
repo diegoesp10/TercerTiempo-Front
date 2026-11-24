@@ -98,7 +98,7 @@ const key = (item: SquadAgendaItemDto) => (item.kind === 'Match' ? `m:${item.mat
               <Icon icon="ban" class="mr-1 h-2.5 w-2.5" />{{ unavailableOf(item).length }} no {{ unavailableOf(item).length === 1 ? 'disponible' : 'disponibles' }}
             </Badge>
           </span>
-          <!-- Quién no puede jugarlo: sancionados (5.ª amarilla o expulsión) y lesionados -->
+          <!-- Quién no puede jugarlo: sancionados (5.ª amarilla, expulsión o lo que ponga el comité) y lesionados -->
           <span v-if="!compact && unavailableOf(item).length" class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
             <span class="inline-flex items-center font-semibold text-red-700"><Icon icon="ban" class="mr-1 h-3 w-3" />No disponibles</span>
             <span v-for="u in unavailableOf(item)" :key="u.squadPlayerId" class="text-slate-700">{{ u.playerName }} <span class="text-slate-500">({{ unavailableReason(u) }})</span></span>
@@ -121,7 +121,7 @@ const key = (item: SquadAgendaItemDto) => (item.kind === 'Match' ? `m:${item.mat
           <Icon :icon="item.done ? 'circle-check' : 'calendar-check'" class="h-3.5 w-3.5" />
         </span>
         <span class="min-w-0 flex-1">
-          <span class="block truncate font-medium" :class="item.done ? 'text-slate-500' : 'text-slate-900'">Entrenamiento · {{ item.training!.title }}</span>
+          <span class="block break-words font-medium" :class="item.done ? 'text-slate-500' : 'text-slate-900'">Entrenamiento · {{ item.training!.title }}</span>
           <span class="block text-xs text-slate-500">
             {{ day(item.startsAt) }} · {{ formatTime(item.startsAt) }} · {{ formatDurationMinutes(item.training!.durationMinutes) }}
             <template v-if="item.training!.location && !compact"> · {{ item.training!.location }}</template>

@@ -42,11 +42,13 @@ export const useAuthStore = defineStore('auth', () => {
   /** Plantillas en cuyo cuerpo técnico está el técnico. */
   const coachSquads = computed<SquadSummaryDto[]>(() => coach.value?.squads ?? []);
 
-  /** «Mi perfil»: el perfil del técnico o la ficha del jugador; null para el club o el jugador aún sin ficha. */
+  /**
+   * «Mi perfil»: el del técnico (su página pública) o el del jugador (su cuenta: foto, quién ve su perfil, ajustes y su
+   * plantilla; también sin plantilla); null para el club, que tiene los ajustes.
+   */
   const profileRoute = computed<RouteLocationRaw | null>(() => {
     if (coach.value) return { name: 'coach', params: { coachId: coach.value.id } };
-    const squad = playerSquad.value;
-    return squad?.rosterEntryId ? { name: 'player-card', params: { teamId: squad.teamId, entryId: squad.rosterEntryId } } : null;
+    return player.value ? { name: 'my-profile' } : null;
   });
 
   /** Equipos propios: los de las plantillas del técnico, el del jugador y los del club. */

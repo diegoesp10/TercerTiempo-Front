@@ -93,7 +93,7 @@ useBackFallback(() => {
                   <span class="font-medium text-slate-800">{{ row.category }}</span>
                   <span class="ml-1.5 text-xs text-slate-500">{{ officialDutyLabels[row.duty].toLowerCase() }}</span>
                 </span>
-                <span class="flex items-center gap-2 text-xs text-slate-500">
+                <span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
                   {{ row.matches === 1 ? '1 partido' : `${row.matches} partidos` }} · {{ row.ratings === 1 ? '1 nota' : `${row.ratings} notas` }}
                   <StarRating :score="row.average" size="sm" />
                   <strong class="font-figures text-slate-900">{{ formatScore(row.average) }}</strong>
@@ -138,7 +138,7 @@ useBackFallback(() => {
                   <template v-if="game.category">{{ game.category }} · </template>Jornada {{ game.match.matchday }} · {{ formatDate(game.match.kickoffAt) }} · {{ officialRoleLabels[game.role].toLowerCase() }}
                 </span>
               </RouterLink>
-              <span class="flex items-center gap-2 text-xs text-slate-500">
+              <span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
                 <StarRating :score="game.average" size="sm" />
                 <strong v-if="game.average !== null" class="font-figures text-slate-900">{{ formatScore(game.average) }}</strong>
                 {{ game.ratings === 0 ? 'sin notas' : game.ratings === 1 ? '1 nota' : `${game.ratings} notas` }}

@@ -1,18 +1,23 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
+import AddSquadPlayerModal from '@/components/squads/AddSquadPlayerModal.vue';
 import Alert from '@/components/ui/Alert.vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
+import type { ChoiceOption } from '@/components/ui/choice';
 import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
 import Badge from '@/components/ui/Badge.vue';
 import InjuryPanel from '@/components/squads/InjuryPanel.vue';
+import DisciplineBadge from '@/components/squads/DisciplineBadge.vue';
 import SquadSeasonTable from '@/components/squads/SquadSeasonTable.vue';
+import CardTally from '@/components/ui/CardTally.vue';
 import { useSquad } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
-import type { Position, SquadPlayerDto, SquadPlayerRequest, SquadVisibility } from '@/types/api';
-import { formatDate, positionLabels, positionOptions, staffRoleLabels, visibilityLabels } from '@/utils/format';
+import type { Position, SquadDisciplineDto, SquadPlayerDto, SquadPlayerRequest, SquadVisibility, TrialPlayerDto } from '@/types/api';
+import { formatDate, injuredLabel, injuryTitle, positionLabels, positionOptions, staffRoleLabels, visibilityLabels } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
 import PlayerName from '@/components/players/PlayerName.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
@@ -25,12 +30,34 @@ const auth = useAuthStore();
 
 const canManage = computed(() => detail.value?.canManage ?? false);
 const canInvitePlayers = computed(() => detail.value?.canInvitePlayers ?? false);
-const active = computed(() => (detail.value?.players ?? []).filter((p) => p.status === 'Active'));
+// Los de baja llegan aparte (leftPlayers): aquí se ven en su grupo; en el resto de la app ya no entran en nada nuevo.
+const players = computed(() => [...(detail.value?.players ?? []), ...(detail.value?.leftPlayers ?? [])]);
+const active = computed(() => players.value.filter((p) => p.status === 'Active'));
 // Las lesiones solo llegan al cuerpo técnico, a los jugadores vinculados y al administrador (que solo mira).
 const { isAdmin } = useViewer();
 const seesInjuries = computed(() => canManage.value || myEntryId.value !== null || isAdmin.value);
-const left = computed(() => (detail.value?.players ?? []).filter((p) => p.status !== 'Active'));
+// Los de baja siguen en la lista, en su último grupo «De baja»: ya no se convocan, alinean ni citan.
+const left = computed(() => players.value.filter((p) => p.status !== 'Active'));
+const isLeft = (p: SquadPlayerDto) => p.status !== 'Active';
 const myEntryId = computed(() => (auth.playerSquad?.squadId === squadId.value ? auth.playerSquad.squadPlayerId : null));
+
+// Quién llega apercibido o sancionado al próximo partido de liga y las tarjetas del cuerpo técnico. Si no llega, la
+// lista sale igual, sin las marcas.
+const discipline = ref<SquadDisciplineDto | null>(null);
+watch(
+  squadId,
+  async (id) => {
+    discipline.value = null;
+    try {
+      discipline.value = await api.squads.discipline(id);
+    } catch {
+      /* sin marcas */
+    }
+  },
+  { immediate: true },
+);
+const playerDiscipline = computed(() => new Map((discipline.value?.players ?? []).map((p) => [p.squadPlayerId, p.next])));
+const staffDiscipline = computed(() => new Map((discipline.value?.staff ?? []).map((s) => [s.coachId, s.discipline])));
 
 // Fichas: llegan por nombre. Se ordena solo por lo que no se edita en la fila (lee la ficha guardada, no el
 // formulario), así que una edición en curso no mueve su fila.
@@ -41,9 +68,9 @@ const getters: Record<SortKey, (p: SquadPlayerDto) => number | string | null> = 
   position: (p) => (p.position ? positionRank[p.position] : null),
   account: (p) => (p.linked ? 1 : 0),
 };
-const { sorted, sortBy, state } = useSort<SquadPlayerDto, SortKey>(active, getters, 'name', { desc: false, ascendingFirst: ['name', 'position'] });
+const { sorted, sortBy, state } = useSort<SquadPlayerDto, SortKey>(players, getters, 'name', { desc: false, ascendingFirst: ['name', 'position'] });
 const grouped = useGroupByPosition('squad-players');
-const groups = computed(() => groupByPosition(sorted.value, (p) => p.position, grouped.value));
+const groups = computed(() => groupByPosition(sorted.value, (p) => p.position, grouped.value, undefined, isLeft));
 const columnCount = computed(() => 3 + (canInvitePlayers.value ? 1 : 0) + (canManage.value ? 1 : 0));
 
 const busy = ref(false);
@@ -88,6 +115,7 @@ async function generateCode(player: SquadPlayerDto) {
 }
 
 // --- Visibilidad ---
+const visibilityOptions: ChoiceOption<SquadVisibility>[] = (['Private', 'Public'] as const).map((value) => ({ value, label: visibilityLabels[value] }));
 function setVisibility(visibility: SquadVisibility) {
   if (detail.value?.summary.visibility === visibility) return;
   void act(async () => {
@@ -96,6 +124,45 @@ function setVisibility(visibility: SquadVisibility) {
     return visibility === 'Public'
       ? 'La plantilla ya acepta solicitudes: quien quiera ver el acta interna o el vídeo de un partido se lo pedirá al club.'
       : 'La plantilla vuelve a ser privada: nadie puede pedir acceso (los pases que ya diste siguen valiendo).';
+  });
+}
+
+// --- Convocatorias: a cuántos se convoca ---
+const callUpMin = 7;
+const callUpMax = 30;
+const callUpMode = ref<'ask' | 'fixed'>('ask');
+const callUpModeOptions: ChoiceOption<'ask' | 'fixed'>[] = [
+  { value: 'ask', label: 'Preguntar en cada partido' },
+  { value: 'fixed', label: 'Número fijo' },
+];
+const callUpSize = ref<number | null>(null);
+watch(
+  () => detail.value?.callUpSize,
+  (size) => {
+    callUpMode.value = size ? 'fixed' : 'ask';
+    callUpSize.value = size ?? null;
+  },
+  { immediate: true },
+);
+const callUpSizeValid = computed(() => callUpSize.value !== null && Number.isInteger(callUpSize.value) && callUpSize.value >= callUpMin && callUpSize.value <= callUpMax);
+const callUpChanged = computed(() => {
+  const saved = detail.value?.callUpSize ?? null;
+  return callUpMode.value === 'ask' ? saved !== null : saved !== callUpSize.value;
+});
+const callUpBlocked = computed(() => {
+  if (busy.value) return 'Espera a que termine lo que se está guardando';
+  if (!callUpChanged.value) return 'No has cambiado nada';
+  if (callUpMode.value === 'fixed' && !callUpSizeValid.value) return `Pon un número de ${callUpMin} a ${callUpMax}`;
+  return undefined;
+});
+
+function saveCallUpSize() {
+  const size = callUpMode.value === 'fixed' ? callUpSize.value : null;
+  void act(async () => {
+    detail.value = await api.squads.setCallUpSize(squadId.value, size);
+    return size
+      ? `Las convocatorias serán siempre de ${size}: no se podrá marcar a más y, si se envía con menos, se avisará de que faltan jugadores.`
+      : 'En cada convocatoria se preguntará a cuántos convocas.';
   });
 }
 
@@ -130,17 +197,23 @@ const toRequest = (form: PlayerForm): SquadPlayerRequest => ({
   shirtNumber: typeof form.shirtNumber === 'number' ? form.shirtNumber : null,
 });
 
-const newPlayer = reactive<PlayerForm>({ fullName: '', position: '', shirtNumber: '' });
+// «Añadir jugador» abre su ventana: a mano o para uno de los que están a prueba (los apunta la agenda), que pasa con su
+// historial. Sin la lista de prueba, se añade igual a mano.
+const addOpen = ref(false);
+const trials = ref<TrialPlayerDto[]>([]);
+async function loadTrials() {
+  if (!canManage.value) return;
+  try {
+    trials.value = await api.trainings.trialPlayers(squadId.value);
+  } catch {
+    trials.value = [];
+  }
+}
+watch([canManage, squadId], () => void loadTrials(), { immediate: true });
+const waitingTrials = computed(() => trials.value.filter((t) => !t.promotedSquadPlayerId).length);
 
-function add() {
-  void act(async () => {
-    const player = await api.squads.addPlayer(squadId.value, toRequest(newPlayer));
-    newPlayer.fullName = '';
-    newPlayer.position = '';
-    newPlayer.shirtNumber = '';
-    await reload();
-    return `${player.fullName} añadido a la plantilla.`;
-  });
+async function onAdded(_player: SquadPlayerDto, fromTrial: boolean) {
+  await Promise.all([reload(), fromTrial ? loadTrials() : Promise.resolve()]);
 }
 
 // La federación no publica la posición de todos: hasta que el club se la pone, salen arriba con su selector.
@@ -176,11 +249,31 @@ function saveEdit() {
 }
 
 async function remove(player: SquadPlayerDto) {
-  if (!(await confirmDialog({ title: `Dar de baja a ${player.fullName}`, message: 'Sus actas se conservan.', confirmLabel: 'Dar de baja', danger: true }))) return;
+  const ok = await confirmDialog({
+    title: `Dar de baja a ${player.fullName}`,
+    message: 'Ya no se podrá convocar, alinear ni citar a entrenamientos, y si tiene cuenta deja de ver la plantilla. Sigue en la lista, en «De baja», con sus actas, su asistencia y sus estadísticas, y se le puede reincorporar.',
+    confirmLabel: 'Dar de baja',
+    danger: true,
+  });
+  if (!ok) return;
   void act(async () => {
     await api.squads.removePlayer(squadId.value, player.id);
     await reload();
     return `${player.fullName} ha causado baja.`;
+  });
+}
+
+async function reinstate(player: SquadPlayerDto) {
+  const ok = await confirmDialog({
+    title: `Reincorporar a ${player.fullName}`,
+    message: 'Vuelve a la plantilla con todo su historial: se le podrá convocar, alinear y citar a entrenamientos. Si tenía la cuenta vinculada, recupera el acceso.',
+    confirmLabel: 'Reincorporar',
+  });
+  if (!ok) return;
+  void act(async () => {
+    await api.squads.reinstatePlayer(squadId.value, player.id);
+    await reload();
+    return `${player.fullName} vuelve a la plantilla.`;
   });
 }
 </script>
@@ -193,28 +286,36 @@ async function remove(player: SquadPlayerDto) {
     <!-- Gestión (solo cuerpo técnico) -->
     <section v-if="canManage" class="card mb-6">
       <h2 class="font-semibold text-slate-900">Gestión de la plantilla</h2>
-      <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Visibilidad</p>
-          <div class="mt-2 inline-flex rounded-lg border border-slate-200 p-0.5" role="radiogroup" aria-label="Visibilidad">
-            <button
-              v-for="option in (['Private', 'Public'] as SquadVisibility[])"
-              :key="option"
-              type="button"
-              role="radio"
-              :aria-checked="detail.summary.visibility === option"
-              class="rounded-md px-3 py-1 text-sm font-medium transition"
-              :class="detail.summary.visibility === option ? 'bg-action text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
-              v-busy="busy" :disabled="busy"
-              @click="setVisibility(option)"
-            >
-              {{ visibilityLabels[option] }}
-            </button>
-          </div>
+          <ChoiceToggle
+            class="mt-2"
+            :model-value="detail.summary.visibility"
+            :options="visibilityOptions"
+            label="Visibilidad"
+            :busy="busy"
+            :disabled="busy"
+            @update:model-value="setVisibility"
+          />
           <p class="mt-2 text-xs text-slate-500">
             <template v-if="detail.summary.visibility === 'Private'">Solo el club, el cuerpo técnico y los jugadores vinculados ven actas, estadísticas y vídeos. Nadie de fuera puede pedir acceso; solo quien reciba un pase.</template>
             <template v-else>Lo interno sigue siendo privado, pero cualquiera puede pedirle al club el acta interna o el vídeo de un partido; solo lo ve quien canjee el pase que le des (gratis o con precio). Sus medias cuentan en la comparativa de la liga.</template>
           </p>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Convocatorias</p>
+          <ChoiceToggle v-model="callUpMode" class="mt-2" :options="callUpModeOptions" label="A cuántos se convoca" :disabled="busy" />
+          <div v-if="callUpMode === 'fixed'" class="mt-2 flex items-center gap-2">
+            <label for="callup-size" class="text-sm text-slate-600">Convocados</label>
+            <input id="callup-size" v-model.number="callUpSize" type="number" :min="callUpMin" :max="callUpMax" step="1" class="input w-20 px-2 py-1 text-sm" />
+          </div>
+          <p class="mt-2 text-xs text-slate-500">
+            El número es exacto: al convocar no se puede marcar a más y, si se envía con menos, el cuerpo técnico y el club reciben un aviso de que
+            faltan jugadores hasta completarla. <template v-if="callUpMode === 'ask'">Se pregunta al empezar cada convocatoria.</template>
+          </p>
+          <button type="button" class="btn-secondary mt-3 px-3 py-1 text-xs" v-busy="busy" :disabled="!!callUpBlocked" :title="callUpBlocked" @click="saveCallUpSize">Guardar</button>
         </div>
 
         <div>
@@ -260,7 +361,7 @@ async function remove(player: SquadPlayerDto) {
       </ul>
     </section>
 
-    <SquadSeasonTable class="mb-6" :squad-id="squadId" :highlight-id="myEntryId" />
+    <SquadSeasonTable class="mb-6" :squad-id="squadId" :highlight-id="myEntryId" :discipline="playerDiscipline" />
 
     <Alert v-if="canInvitePlayers" kind="info" class="mb-6">
       Genera el código personal junto al nombre de cada jugador y entrégaselo solo a él. Con ese código se da de alta sin escribir
@@ -271,15 +372,21 @@ async function remove(player: SquadPlayerDto) {
       <!-- Jugadores -->
       <section class="card lg:col-span-2">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 class="font-semibold text-slate-900">{{ canManage || canInvitePlayers ? 'Fichas e invitaciones' : 'Fichas' }}</h2>
+          <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+            <h2 class="font-semibold text-slate-900">{{ canManage || canInvitePlayers ? 'Fichas e invitaciones' : 'Fichas' }}</h2>
+            <button v-if="canManage" type="button" class="btn-primary px-3 py-1.5 text-xs" @click="addOpen = true">
+              <Icon icon="plus" class="mr-1.5 h-3 w-3" />Añadir jugador
+              <Badge v-if="waitingTrials > 0" tone="amber">{{ waitingTrials }} a prueba</Badge>
+            </button>
+          </div>
           <div class="flex items-center gap-3">
             <GroupByPositionToggle v-if="active.length > 0" v-model="grouped" />
-            <span class="text-xs text-slate-500">{{ active.length }} activos</span>
+            <span class="text-xs text-slate-500">{{ active.length }} activos<template v-if="left.length > 0"> · {{ left.length }} de baja</template></span>
           </div>
         </div>
 
-        <p v-if="active.length === 0" class="text-sm text-slate-500">
-          Todavía no hay fichas en la plantilla.<template v-if="canManage"> Impórtalas del proveedor o añádelas a mano.</template>
+        <p v-if="players.length === 0" class="text-sm text-slate-500">
+          Todavía no hay fichas en la plantilla.<template v-if="canManage"> Impórtalas de la federación, en «Gestión de la plantilla», o añádelas con «Añadir jugador».</template>
         </p>
 
         <div v-else class="overflow-x-auto">
@@ -297,10 +404,30 @@ async function remove(player: SquadPlayerDto) {
               <tr v-if="group.label">
                 <td :colspan="columnCount" class="bg-surface-2 px-2 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                   {{ group.label }} · {{ group.rows.length }}
+                  <span v-if="group.left" class="ml-1 font-sans font-normal normal-case tracking-normal">— estuvieron en la plantilla y ya no están: no se convocan, alinean ni citan; sus actas se conservan</span>
                 </td>
               </tr>
               <tr v-for="player in group.rows" :key="player.id" :class="player.id === myEntryId ? 'bg-brand-500/10' : ''">
-                <template v-if="editingId === player.id">
+                <template v-if="isLeft(player)">
+                  <td class="py-2 pr-3">
+                    <RouterLink
+                      :to="{ name: 'squad-player', params: { squadId, squadPlayerId: player.id } }"
+                      class="font-medium text-slate-500 hover:text-accent-400 hover:underline"
+                    ><PlayerName :name="player.fullName" :photo-url="player.photoUrl" size="sm" /></RouterLink>
+                    <p class="text-xs text-slate-400">
+                      <Badge>De baja</Badge><template v-if="player.leftOn"> desde el {{ formatDate(player.leftOn) }}</template>
+                    </p>
+                  </td>
+                  <td class="col-sm py-2 pr-3 text-slate-500">{{ player.position ? positionLabels[player.position] : '—' }}</td>
+                  <td class="col-md py-2 pr-3">
+                    <span class="text-xs text-slate-400">{{ player.linked ? 'Vinculado' : 'Sin vincular' }}</span>
+                  </td>
+                  <td v-if="canInvitePlayers" class="py-2 pr-3 text-xs text-slate-400">—</td>
+                  <td v-if="canManage" class="py-2 text-right whitespace-nowrap">
+                    <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="reinstate(player)">Reincorporar</button>
+                  </td>
+                </template>
+                <template v-else-if="editingId === player.id">
                   <td class="py-2 pr-3">
                     <input v-model="edit.fullName" type="text" required maxlength="150" class="input px-2 py-1" aria-label="Nombre" />
                   </td>
@@ -329,9 +456,10 @@ async function remove(player: SquadPlayerDto) {
                     ><PlayerName :name="player.fullName" :photo-url="player.photoUrl" size="sm" /></RouterLink>
                     <p class="text-xs text-slate-400">
                       {{ player.fromRoster ? 'futbolasturiano.es' : 'añadido a mano' }}
-                      <Badge v-if="player.injury" tone="red" class="ml-1" :title="[player.injury.typeLabel, player.injury.reason].filter(Boolean).join(': ')">
-                        <Icon icon="user-injured" class="mr-1 h-3 w-3" />Lesionado<template v-if="player.injury.expectedReturnOn"> · hasta {{ formatDate(player.injury.expectedReturnOn) }}</template>
+                      <Badge v-if="player.injury" tone="red" class="ml-1" :title="injuryTitle(player.injury)">
+                        <Icon icon="user-injured" class="mr-1 h-3 w-3" />{{ injuredLabel(player.injury) }}
                       </Badge>
+                      <DisciplineBadge :discipline="playerDiscipline.get(player.id)" class="ml-1" />
                     </p>
                   </td>
                   <td class="col-sm py-2 pr-3 text-slate-600">
@@ -364,33 +492,6 @@ async function remove(player: SquadPlayerDto) {
           </table>
         </div>
 
-        <form v-if="canManage" class="mt-4 flex flex-wrap items-end gap-2 border-t border-slate-100 pt-4" @submit.prevent="add">
-          <div class="min-w-48 flex-1">
-            <label class="label" for="new-name">Nombre y apellidos</label>
-            <input id="new-name" v-model="newPlayer.fullName" type="text" required maxlength="150" class="input" placeholder="Nuevo jugador" />
-          </div>
-          <div class="w-44">
-            <label class="label" for="new-position">Posición</label>
-            <SearchSelect
-              id="new-position"
-              placeholder="Elige su posición"
-              :model-value="newPlayer.position || null"
-              :options="positionOptions"
-              @update:model-value="newPlayer.position = ($event as Position | null) ?? ''"
-            />
-          </div>
-          <button type="submit" class="btn-primary" v-busy="busy" :disabled="busy || !newPlayer.fullName.trim() || !newPlayer.position">Añadir</button>
-        </form>
-
-        <details v-if="left.length > 0" class="mt-4 text-sm">
-          <summary class="cursor-pointer text-slate-500">Bajas ({{ left.length }})</summary>
-          <ul class="mt-2 divide-y divide-slate-100">
-            <li v-for="player in left" :key="player.id" class="flex items-center justify-between py-1 text-slate-500">
-              <PlayerName :name="player.fullName" :photo-url="player.photoUrl" />
-              <Badge>Baja</Badge>
-            </li>
-          </ul>
-        </details>
       </section>
 
       <div class="space-y-6 self-start">
@@ -404,9 +505,17 @@ async function remove(player: SquadPlayerDto) {
             <RouterLink :to="{ name: 'coach', params: { coachId: member.coachId } }" class="group flex items-center gap-3" :title="`Ver el perfil de ${member.displayName}`">
               <PlayerAvatar :src="member.photoUrl" :name="member.displayName" size="md" />
               <span class="min-w-0">
-                <span class="block truncate font-medium text-slate-800 group-hover:text-accent-400">{{ member.displayName }}</span>
+                <span class="block break-words font-medium text-slate-800 group-hover:text-accent-400">{{ member.displayName }}</span>
                 <span class="block text-xs text-slate-500">
                   {{ staffRoleLabels[member.role] }} · desde {{ formatDate(member.joinedAt) }}<template v-if="member.validUntil"> · hasta {{ formatDate(member.validUntil) }}</template>
+                </span>
+                <span v-if="staffDiscipline.get(member.coachId)" class="mt-1 flex flex-wrap items-center gap-2">
+                  <CardTally
+                    :yellow-cards="staffDiscipline.get(member.coachId)!.yellowCards"
+                    :red-cards="staffDiscipline.get(member.coachId)!.redCards"
+                    title="Tarjetas de la temporada en las actas oficiales"
+                  />
+                  <DisciplineBadge :discipline="staffDiscipline.get(member.coachId)!.next" staff />
                 </span>
               </span>
             </RouterLink>
@@ -418,5 +527,7 @@ async function remove(player: SquadPlayerDto) {
       </section>
       </div>
     </div>
+
+    <AddSquadPlayerModal v-if="canManage" :open="addOpen" :squad-id="squadId" :trials="trials" @close="addOpen = false" @added="onAdded" />
   </template>
 </template>

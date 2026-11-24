@@ -24,9 +24,9 @@ import { useSort, type SortValue } from '@/composables/useSort';
 import { groupByPosition, useGroupByPosition } from '@/composables/usePositionGrouping';
 import { useAuthStore } from '@/stores/auth';
 import { useViewer } from '@/composables/useViewer';
-import { formatKickoff, levelLabels, matchDisplayStatus, positionLabels, visibilityLabels } from '@/utils/format';
+import { levelLabel, matchDisplayStatus, nextMatchOf, positionLabels, visibilityLabels } from '@/utils/format';
 import type { MatchDto, RosterEntryDto, TeamProfileDto } from '@/types/api';
-import TeamName from '@/components/teams/TeamName.vue';
+import NextMatchCard from '@/components/matches/NextMatchCard.vue';
 import { httpUrl } from '@/utils/links';
 
 const props = defineProps<{ teamId: string }>();
@@ -50,22 +50,9 @@ const matches = useAsync(() => api.teams.matches(props.teamId));
 const isPlayed = (m: MatchDto) => ['Played', 'AwaitingResult'].includes(matchDisplayStatus(m));
 const played = computed(() => (matches.data.value ?? []).filter(isPlayed).reverse());
 const upcoming = computed(() => (matches.data.value ?? []).filter((m) => !isPlayed(m)));
-
-/** Próximo partido por fecha (no por jornada: un aplazado de una jornada anterior puede jugarse más tarde). */
-const nextMatch = computed(() => {
-  const now = Date.now() - 2 * 60 * 60 * 1000;
-  return (
-    upcoming.value
-      .filter((m) => m.status === 'Scheduled' || m.status === 'InProgress')
-      .filter((m) => new Date(m.kickoffAt).getTime() >= now)
-      .sort((a, b) => new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime())[0] ?? null
-  );
-});
-const nextOpponent = computed(() => {
-  const m = nextMatch.value;
-  if (!m) return null;
-  return m.homeTeam.id === props.teamId ? { home: true, team: m.awayTeam } : { home: false, team: m.homeTeam };
-});
+// El próximo va destacado arriba y no se repite en la lista de próximos.
+const nextMatch = computed(() => nextMatchOf(upcoming.value, (m) => m));
+const laterMatches = computed(() => upcoming.value.filter((m) => m !== nextMatch.value));
 
 /** Ficha del club según la federación: campo (con enlace a cómo llegar), sede y equipación. */
 const profile = computed(() => data.value?.profile ?? null);
@@ -164,7 +151,7 @@ async function linkToClub() {
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">
-    <PageHeader :title="data.name" :subtitle="`${levelLabels[data.season.level]} · ${data.season.competitionName} · ${data.season.label}`">
+    <PageHeader :title="data.name" :subtitle="`${levelLabel(data.season.level, data.season.region)} · ${data.season.competitionName} · ${data.season.label}`">
       <template #actions>
         <TeamCrest :src="data.crestUrl" :name="data.name" :short-name="data.shortName" size="lg" />
         <RouterLink v-if="data.squad?.canView" :to="{ name: 'squad', params: { squadId: data.squad.squadId } }" class="btn-primary">
@@ -179,11 +166,17 @@ async function linkToClub() {
 
     <Alert v-if="linkError" kind="error" class="mb-4">{{ linkError }}</Alert>
 
-    <div v-if="standingFigures.length" class="mb-6 grid grid-cols-3 gap-3 sm:grid-cols-6">
-      <div v-for="(figure, i) in standingFigures" :key="figure.label" class="relative min-w-0 rounded-xl border border-line bg-surface px-2 pb-3 pt-2.5 text-center shadow-card sm:px-3">
-        <span v-if="i === 0" class="absolute inset-x-3 top-0 h-0.5 rounded-b bg-brand-500" aria-hidden="true" />
-        <p class="truncate font-display text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-500 sm:text-[11px] sm:tracking-[0.12em]">{{ figure.label }}</p>
-        <p class="mt-1 font-figures text-xl font-extrabold leading-none tabular-nums text-slate-900 sm:text-2xl">{{ figure.value }}</p>
+    <!-- Columnas según el ancho real de la fila: de dos en dos si tres no dejan sitio a «Diferencia», de tres en tres, y
+         las seis en fila solo con holgura. Cada cifra se encoge lo justo para caber entera («15-10-9» a final de temporada). -->
+    <div v-if="standingFigures.length" class="@container mb-6">
+      <div class="grid grid-cols-2 gap-3 @2xs:grid-cols-3 @3xl:grid-cols-6">
+        <div v-for="(figure, i) in standingFigures" :key="figure.label" class="relative min-w-0 rounded-xl border border-line bg-surface px-2 pb-3 pt-2.5 text-center shadow-card sm:px-3">
+          <span v-if="i === 0" class="absolute inset-x-3 top-0 h-0.5 rounded-b bg-brand-500" aria-hidden="true" />
+          <p class="break-words font-display text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-500 sm:text-[11px] sm:tracking-[0.12em]">{{ figure.label }}</p>
+          <div class="@container mt-1">
+            <p class="fit-figure font-figures font-extrabold leading-none tabular-nums text-slate-900 [--fit-max:1.25rem] sm:[--fit-max:1.5rem]" :style="{ '--chars': String(figure.value).length }">{{ figure.value }}</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -273,26 +266,13 @@ async function linkToClub() {
       </div>
     </section>
 
-    <!-- Próximo partido -->
-    <section v-if="nextMatch && nextOpponent" class="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-accent-400/30 bg-brand-500/10 p-4">
-      <div class="w-16 shrink-0 text-center">
-        <p class="text-xs uppercase text-accent-400">Jornada</p>
-        <p class="font-display text-3xl font-bold text-slate-900">{{ nextMatch.matchday }}</p>
-      </div>
-      <div class="min-w-0 flex-1 basis-56">
-        <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Próximo partido</p>
-        <RouterLink :to="{ name: 'match', params: { matchId: nextMatch.id } }" class="block truncate text-lg font-semibold text-slate-900 hover:text-accent-400">
-          <TeamName :name="nextOpponent.team.name" :crest-url="nextOpponent.team.crestUrl" :short-name="nextOpponent.team.shortName" size="sm">
-            <span class="text-slate-400">vs</span> {{ nextOpponent.team.name }}
-          </TeamName>
-          <span class="ml-1 text-sm font-normal" :class="nextOpponent.home ? 'text-emerald-700' : 'text-slate-500'">{{ nextOpponent.home ? 'en casa' : 'fuera' }}</span>
+    <NextMatchCard v-if="nextMatch" class="mb-6" :match="nextMatch" :team-id="data.id">
+      <template #actions>
+        <RouterLink :to="{ name: 'league', query: { competition: data.season.competitionId } }" class="btn-secondary w-full sm:w-auto">
+          Ver la jornada completa
         </RouterLink>
-        <p class="text-sm text-slate-600">{{ formatKickoff(nextMatch.kickoffAt) }}<span v-if="nextMatch.venue"> · {{ nextMatch.venue }}</span></p>
-      </div>
-      <RouterLink :to="{ name: 'league', query: { competition: data.season.competitionId } }" class="btn-secondary w-full sm:w-auto">
-        Ver la jornada completa
-      </RouterLink>
-    </section>
+      </template>
+    </NextMatchCard>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
       <section class="lg:col-span-3">
@@ -306,9 +286,9 @@ async function linkToClub() {
           </div>
 
           <h2 class="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-slate-500">Próximos partidos</h2>
-          <p v-if="upcoming.length === 0" class="text-sm text-slate-500">No quedan partidos programados.</p>
+          <p v-if="laterMatches.length === 0" class="text-sm text-slate-500">{{ nextMatch ? 'Después del próximo no hay más partidos programados.' : 'No quedan partidos programados.' }}</p>
           <div v-else class="space-y-2">
-            <MatchRow v-for="match in upcoming" :key="match.id" :match="match" :team-id="data.id" />
+            <MatchRow v-for="match in laterMatches" :key="match.id" :match="match" :team-id="data.id" />
           </div>
         </template>
       </section>
@@ -327,7 +307,7 @@ async function linkToClub() {
                 title="El equipo en futbolasturiano.es, que facilita la plantilla, el calendario y los resultados"
               >futbolasturiano.es ↗</a>
             </h2>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
               <GroupByPositionToggle v-if="data.roster.length > 0" v-model="groupedRoster" />
               <span v-if="data.rosterPublished" class="text-xs text-slate-500">{{ data.roster.length }} jugadores</span>
             </div>

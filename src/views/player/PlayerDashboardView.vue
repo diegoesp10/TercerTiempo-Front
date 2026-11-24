@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { api } from '@/api';
-import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import GroundCard from '@/components/trainings/GroundCard.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import PlayerHeroCard from '@/components/players/PlayerHeroCard.vue';
-import PlayerPhotoWizard from '@/components/players/PlayerPhotoWizard.vue';
-import type { MyCallUpDto, MyTrainingDto, PerformanceWithMatchDto, PlayerDto } from '@/types/api';
+import PositionSummaryPicker from '@/components/players/PositionSummaryPicker.vue';
+import ShirtNumberUsage from '@/components/players/ShirtNumberUsage.vue';
+import type { MyCallUpDto, MyTrainingDto, PerformanceWithMatchDto } from '@/types/api';
 import PercentileBar from '@/components/ui/PercentileBar.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
@@ -19,13 +19,11 @@ import ChartCard from '@/components/charts/ChartCard.vue';
 import { profileRadarOption, ratingBreakdownOption, ratingTrendOption } from '@/charts/options';
 import { useAsync } from '@/composables/useAsync';
 import { useSort } from '@/composables/useSort';
+import { useSummaryPosition } from '@/composables/useSummaryPosition';
 import { markCallUpsSeen } from '@/composables/useCallUpSeen';
 import { useAuthStore } from '@/stores/auth';
 import { useSettingsStore } from '@/stores/settings';
-import { confirmDialog } from '@/composables/useConfirm';
 import {
-  attendanceStatusLabels,
-  attendanceStatusTone,
   callUpResponseLabels,
   callUpResponseTone,
   formatDate,
@@ -44,15 +42,16 @@ import {
 import TeamName from '@/components/teams/TeamName.vue';
 import { opponentOf } from '@/utils/crests';
 import MyTrainingTallyCard from '@/components/trainings/MyTrainingTallyCard.vue';
+import MyAttendanceBadge from '@/components/trainings/MyAttendanceBadge.vue';
+import DisciplineBadge from '@/components/squads/DisciplineBadge.vue';
 import DashboardSearch from '@/components/search/DashboardSearch.vue';
-import PublicProfileToggle from '@/components/players/PublicProfileToggle.vue';
 import { keyStatsFor, keyTotals, matchesOfTeam } from '@/utils/keyStats';
 
 const auth = useAuthStore();
 const settings = useSettingsStore();
 const squad = computed(() => auth.playerSquad);
 
-const { data, loading, error, run } = useAsync(async () => {
+const { data, loading, error } = useAsync(async () => {
   if (!auth.playerSquad) return null;
   const dashboard = await api.players.dashboard();
   auth.setPlayer(dashboard.player);
@@ -64,6 +63,9 @@ const profile = useAsync(() =>
   auth.playerSquad ? api.squads.playerProfile(auth.playerSquad.squadId, auth.playerSquad.squadPlayerId) : Promise.resolve(null),
   { redirectOnError: false },
 );
+// Si llega apercibido o sancionado al próximo partido de liga.
+const discipline = useAsync(() => (auth.playerSquad ? api.squads.discipline(auth.playerSquad.squadId) : Promise.resolve(null)), { redirectOnError: false });
+const myDiscipline = computed(() => discipline.data.value?.players.find((p) => p.squadPlayerId === auth.playerSquad?.squadPlayerId)?.next ?? null);
 const trendChart = computed(() =>
   profile.data.value ? ratingTrendOption(profile.data.value.matches, profile.data.value.squadAverage.averageRating, settings.resolvedTheme) : null,
 );
@@ -83,7 +85,8 @@ const radarChart = computed(() =>
 const breakdownChart = computed(() => (profile.data.value ? ratingBreakdownOption(profile.data.value.matches) : null));
 const hasCharts = computed(() => profile.data.value?.matches.some((m) => m.performance) ?? false);
 
-// Además de lo de todos, el dato de su puesto (paradas, despejes, pases...).
+// Además de lo de todos, el dato del puesto (paradas, despejes, pases...): el suyo o el que elija en «Resumen como».
+const summaryPosition = useSummaryPosition(() => data.value?.player);
 const heroStats = computed(() => {
   if (!data.value) return [];
   const individual = data.value.individual;
@@ -92,7 +95,7 @@ const heroStats = computed(() => {
     { label: 'Titular', value: individual.starts },
     { label: 'Minutos', value: individual.minutes },
     { label: 'Goles', value: individual.goals },
-    ...keyStatsFor(data.value.player.position).map((stat) => ({ label: stat.label, value: stat.value(keyTotals(individual)), title: stat.title })),
+    ...keyStatsFor(summaryPosition.value).map((stat) => ({ label: stat.label, value: stat.value(keyTotals(individual)), title: stat.title })),
     { label: 'Nota media', value: individual.averageRating === null ? '—' : formatNumber(individual.averageRating, 1) },
   ];
 });
@@ -131,24 +134,6 @@ const nextCallUp = computed(() => (callUps.data.value ?? []).find((c) => !c.clos
 watch(nextCallUp, (c) => { if (c) markCallUpsSeen([c]); }, { immediate: true });
 const nextTrainings = computed(() => (trainings.data.value ?? []).slice(0, 3));
 
-const photoOpen = ref(false);
-function onPhotoSaved(player: PlayerDto) {
-  auth.setPlayer(player);
-  void profile.run();
-}
-
-const leaveError = ref<string | null>(null);
-
-async function leave() {
-  if (!(await confirmDialog({ title: 'Desvincularte de la plantilla', message: 'Tus actas siguen en la plantilla; solo se rompe el vínculo con tu cuenta.', confirmLabel: 'Desvincularme', danger: true }))) return;
-  leaveError.value = null;
-  try {
-    auth.setPlayer(await api.players.leaveSquad());
-    await run();
-  } catch (e) {
-    leaveError.value = errorMessage(e);
-  }
-}
 </script>
 
 <template>
@@ -184,19 +169,16 @@ async function leave() {
     >
       <template #actions>
         <DashboardSearch />
-        <button type="button" class="btn-primary" @click="photoOpen = true"><Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />{{ auth.player?.photoUrl ? 'Cambiar mi foto' : 'Subir mi foto' }}</button>
         <RouterLink :to="{ name: 'squad', params: { squadId: squad.squadId } }" class="btn-secondary min-w-0 max-w-full">
           <TeamName :name="squad.teamName" :crest-url="squad.teamCrestUrl" :team-id="squad.teamId" />
           <Badge :tone="squad.visibility === 'Public' ? 'green' : 'slate'">{{ visibilityLabels[squad.visibility] }}</Badge>
         </RouterLink>
+        <DisciplineBadge :discipline="myDiscipline" reason />
+      </template>
+      <template #summary>
+        <PositionSummaryPicker v-model="summaryPosition" :own="data.player.position" you />
       </template>
     </PlayerHeroCard>
-
-    <section class="card mb-8">
-      <PublicProfileToggle />
-    </section>
-
-    <PlayerPhotoWizard :open="photoOpen" :has-photo="!!auth.player?.photoUrl" @close="photoOpen = false" @saved="onPhotoSaved" />
 
     <!-- Convocatorias y entrenamientos: lo que el jugador tiene que contestar esta semana -->
     <section class="mb-8 grid gap-4 lg:grid-cols-2">
@@ -233,7 +215,7 @@ async function leave() {
               {{ formatDayHeading(t.session.startsAt) }} · {{ t.session.title }}
             </RouterLink>
             <Badge v-if="t.session.mine?.injured" tone="red">Lesionado</Badge>
-            <Badge v-else-if="t.session.mine" :tone="attendanceStatusTone[t.session.mine.status]">{{ attendanceStatusLabels[t.session.mine.status] }}</Badge>
+            <MyAttendanceBadge v-else-if="t.session.mine" :status="t.session.mine.status" />
           </li>
         </ul>
       </div>
@@ -262,6 +244,14 @@ async function leave() {
         <StatCard label="Pérdidas de balón" :value="data.individual.ballLosses" :hint="`${data.individual.fouls} faltas cometidas`" />
         <StatCard label="Entradas" :value="data.individual.tackles" :hint="`${data.individual.interceptions} intercepciones · ${data.individual.clearances ?? 0} despejes`" />
       </div>
+    </section>
+
+    <!-- Dorsales: no hay uno fijo; el de cada partido sale de su acta. -->
+    <section v-if="profile.data.value" class="card mb-8">
+      <h2 class="font-semibold text-slate-900">Tus dorsales</h2>
+      <p class="text-xs text-slate-500">Los que has llevado esta temporada: en cada partido, el que apuntó tu cuerpo técnico en el acta interna y, si no, el del acta oficial.</p>
+      <p v-if="profile.data.value.shirtNumbers.length === 0" class="mt-3 text-sm text-slate-500">Todavía no apareces con dorsal en ningún acta de esta temporada.</p>
+      <ShirtNumberUsage v-else :usage="profile.data.value.shirtNumbers" class="mt-3 max-w-md" />
     </section>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -420,9 +410,5 @@ async function leave() {
       </div>
     </section>
 
-    <section class="mt-10 border-t border-slate-200 pt-4">
-      <Alert v-if="leaveError" kind="error" class="mb-3">{{ leaveError }}</Alert>
-      <button type="button" class="btn-ghost text-red-600 hover:bg-red-50" @click="leave">Desvincularme de la plantilla</button>
-    </section>
   </template>
 </template>

@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { api } from '@/api';
 import MatchRow from '@/components/matches/MatchRow.vue';
+import NextMatchCard from '@/components/matches/NextMatchCard.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Skeleton from '@/components/ui/Skeleton.vue';
@@ -9,13 +10,12 @@ import SuggestionsPanel from '@/components/suggestions/SuggestionsPanel.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useSquad } from '@/composables/useSquad';
 import { downloadPaperSheet } from '@/utils/paperSheet';
-import TeamName from '@/components/teams/TeamName.vue';
-import { opponentOf } from '@/utils/crests';
 import { useViewer } from '@/composables/useViewer';
 import { useAuthStore } from '@/stores/auth';
-import { callUpResponseLabels, isPendingMatch, matchDisplayStatus } from '@/utils/format';
+import { callUpResponseLabels, callUpResponseTone, matchDisplayStatus, nextMatchOf, opponentLabel, type Tone } from '@/utils/format';
 import type { CallUpSummaryDto, MatchDto } from '@/types/api';
 
+const auth = useAuthStore();
 const { squadId, detail } = useSquad();
 
 const { data, loading, error, run } = useAsync(() => api.squads.matches(squadId.value));
@@ -26,6 +26,8 @@ const canManage = computed(() => detail.value?.canManage ?? false);
 const canReview = computed(() => detail.value?.canInvitePlayers ?? false);
 // El administrador las ve, pero no las resuelve.
 const { isAdmin } = useViewer();
+// Cuántas líneas tiene el acta interna es cosa de quien la lleva; al jugador no le dice nada.
+const showsSheetCount = computed(() => canManage.value || canReview.value || isAdmin.value);
 
 // Los que ya pasaron de hora sin resultado van con los disputados («Sin resultado»); su acta interna se abre cuando
 // llega el resultado.
@@ -33,12 +35,46 @@ const isPlayed = (m: { match: MatchDto }) => ['Played', 'AwaitingResult'].includ
 const played = computed(() => (data.value ?? []).filter(isPlayed).reverse());
 const upcoming = computed(() => (data.value ?? []).filter((m) => !isPlayed(m)));
 const pending = computed(() => played.value.filter((m) => m.match.status === 'Played' && m.entriesRecorded === 0).length);
-const nextMatch = computed(() => upcoming.value.find((m) => isPendingMatch(m.match))?.match ?? null);
+// El próximo va destacado arriba del todo y no se repite en «Próximos».
+const next = computed(() => nextMatchOf(upcoming.value, (m) => m.match));
+const nextMatch = computed(() => next.value?.match ?? null);
+const laterMatches = computed(() => upcoming.value.filter((m) => m !== next.value));
 
 // Convocatorias de los próximos partidos (solo quien es de la plantilla las ve; a los demás la API no se las da).
-const isInsider = computed(() => canReview.value || detail.value?.summary.myRole !== null || useAuthStore().playerSquad?.squadId === squadId.value);
+const isInsider = computed(() => canReview.value || detail.value?.summary.myRole !== null || auth.playerSquad?.squadId === squadId.value);
 const callUps = useAsync(() => (isInsider.value ? api.trainings.callUps(squadId.value) : Promise.resolve([] as CallUpSummaryDto[])), { redirectOnError: false });
 const callUpOf = (matchId: string) => callUps.data.value?.find((c) => c.matchId === matchId) ?? null;
+
+/** Al jugador, cómo va en la convocatoria enviada; al club y al cuerpo técnico, cuántos van o que está en borrador. */
+function callUpBadge(matchId: string): { tone: Tone; label: string } | null {
+  const callUp = callUpOf(matchId);
+  if (!callUp) return null;
+  if (callUp.status !== 'Published') return canReview.value ? { tone: 'amber', label: 'Convocatoria en borrador' } : null;
+  if (!callUp.mine) return { tone: 'green', label: `${callUp.counts.called} convocados` };
+  return callUp.mine.called
+    ? { tone: callUpResponseTone[callUp.mine.response], label: `Convocado · ${callUpResponseLabels[callUp.mine.response]}` }
+    : { tone: 'slate', label: 'No convocado' };
+}
+
+const nextBadge = computed<{ tone: Tone; label: string } | null>(() => {
+  if (!nextMatch.value) return null;
+  const badge = callUpBadge(nextMatch.value.id);
+  if (badge) return badge;
+  return canReview.value && callUps.data.value ? { tone: 'slate', label: 'Convocatoria sin preparar' } : null;
+});
+
+// El jugador va a su convocatoria (allí la firma) en cuanto se la envían.
+const myNextCallUp = computed(() => {
+  const callUp = nextMatch.value ? callUpOf(nextMatch.value.id) : null;
+  return callUp?.status === 'Published' ? callUp.mine : null;
+});
+const myCallUpAction = computed(() => {
+  const mine = myNextCallUp.value;
+  if (!mine) return null;
+  if (mine.response === 'Pending' && nextMatch.value?.status !== 'InProgress')
+    return { label: mine.called ? 'Firmar la convocatoria' : 'Darme por enterado', primary: true };
+  return { label: 'Ver la convocatoria', primary: false };
+});
 
 /** Acta en papel para apuntar en directo: la del próximo partido sale con la cabecera rellena. */
 function downloadPaper(withNextMatch: boolean) {
@@ -61,6 +97,26 @@ function downloadPaper(withNextMatch: boolean) {
   <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
   <template v-else-if="data">
+    <!-- Al club y al cuerpo técnico, la previa y la convocatoria van en botones; a los demás el rival lleva al partido. -->
+    <NextMatchCard v-if="nextMatch" class="mb-6" :match="nextMatch" :team-id="teamId" :to="canReview ? null : undefined">
+      <template v-if="nextBadge" #badges>
+        <Badge :tone="nextBadge.tone">{{ nextBadge.label }}</Badge>
+      </template>
+      <template v-if="canReview" #actions>
+        <RouterLink :to="{ name: 'sheet', params: { squadId, matchId: nextMatch.id }, query: { tab: 'previa' } }" class="btn-secondary">
+          <Icon icon="chart-line" class="mr-1.5 h-3.5 w-3.5" />Previa
+        </RouterLink>
+        <RouterLink :to="{ name: 'squad-callup', params: { squadId, matchId: nextMatch.id } }" class="btn-primary">
+          <Icon icon="users" class="mr-1.5 h-3.5 w-3.5" />Convocatoria
+        </RouterLink>
+      </template>
+      <template v-else-if="myCallUpAction" #actions>
+        <RouterLink :to="{ name: 'squad-callup', params: { squadId, matchId: nextMatch.id } }" :class="myCallUpAction.primary ? 'btn-primary' : 'btn-secondary'">
+          {{ myCallUpAction.label }}
+        </RouterLink>
+      </template>
+    </NextMatchCard>
+
     <Alert v-if="canManage && pending > 0" kind="warning" class="mb-4">
       <strong>{{ pending }}</strong> {{ pending === 1 ? 'partido disputado sin acta' : 'partidos disputados sin acta' }}. Entra en cada uno para registrarla.
     </Alert>
@@ -71,9 +127,14 @@ function downloadPaper(withNextMatch: boolean) {
         <p class="text-xs text-slate-500">PDF para imprimir y apuntar el partido a mano (mismas columnas que el acta interna); después la pasas a la app.</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <button v-if="nextMatch" type="button" class="btn-primary min-w-0 max-w-full" @click="downloadPaper(true)">
-          Próximo partido · J{{ nextMatch.matchday }}
-          <TeamName prefix="vs" :name="opponentOf(nextMatch, teamId).name" :crest-url="opponentOf(nextMatch, teamId).crestUrl" :short-name="opponentOf(nextMatch, teamId).shortName" />
+        <button
+          v-if="nextMatch"
+          type="button"
+          class="btn-primary"
+          :title="`Con la cabecera rellena: jornada ${nextMatch.matchday}, ${opponentLabel(nextMatch, teamId)}`"
+          @click="downloadPaper(true)"
+        >
+          Del próximo partido
         </button>
         <button type="button" class="btn-secondary" @click="downloadPaper(false)">En blanco</button>
       </div>
@@ -92,7 +153,7 @@ function downloadPaper(withNextMatch: boolean) {
           :team-id="teamId"
           :to="{ name: 'sheet', params: { squadId, matchId: item.match.id } }"
         >
-          <template #badge>
+          <template v-if="showsSheetCount" #badge>
             <Badge v-if="item.entriesRecorded > 0" tone="blue">{{ item.entriesRecorded }} en el acta</Badge>
             <Badge v-else-if="canManage && item.match.status === 'Played'" tone="amber">Sin acta</Badge>
           </template>
@@ -102,23 +163,17 @@ function downloadPaper(withNextMatch: boolean) {
 
     <section>
       <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Próximos</h2>
-      <p v-if="upcoming.length === 0" class="text-sm text-slate-500">No quedan partidos programados.</p>
+      <p v-if="laterMatches.length === 0" class="text-sm text-slate-500">{{ nextMatch ? 'Después del próximo no hay más partidos programados.' : 'No quedan partidos programados.' }}</p>
       <div v-else class="space-y-2">
         <MatchRow
-          v-for="item in upcoming"
+          v-for="item in laterMatches"
           :key="item.match.id"
           :match="item.match"
           :team-id="teamId"
           :to="canReview ? { name: 'sheet', params: { squadId, matchId: item.match.id }, query: { tab: 'previa' } } : undefined"
         >
-          <template v-if="canReview || callUpOf(item.match.id)" #badge>
-            <template v-if="callUpOf(item.match.id)?.status === 'Published'">
-              <Badge v-if="callUpOf(item.match.id)!.mine" :tone="callUpOf(item.match.id)!.mine!.called ? 'green' : 'slate'">
-                {{ callUpOf(item.match.id)!.mine!.called ? `Convocado · ${callUpResponseLabels[callUpOf(item.match.id)!.mine!.response]}` : 'No convocado' }}
-              </Badge>
-              <Badge v-else tone="green">{{ callUpOf(item.match.id)!.counts.called }} convocados</Badge>
-            </template>
-            <Badge v-else-if="canReview && callUpOf(item.match.id)" tone="amber">Convocatoria en borrador</Badge>
+          <template v-if="canReview || callUpBadge(item.match.id)" #badge>
+            <Badge v-if="callUpBadge(item.match.id)" :tone="callUpBadge(item.match.id)!.tone">{{ callUpBadge(item.match.id)!.label }}</Badge>
             <span v-if="canReview" class="inline-flex items-center gap-1 text-xs font-medium text-brand-500"><Icon icon="chart-line" class="h-3 w-3" />Previa</span>
           </template>
         </MatchRow>

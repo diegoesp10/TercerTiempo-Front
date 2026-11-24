@@ -6,7 +6,9 @@ import PlayerPhotoWizard from '@/components/players/PlayerPhotoWizard.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import CardTally from '@/components/ui/CardTally.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import DisciplineBadge from '@/components/squads/DisciplineBadge.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useBackFallback } from '@/composables/useBackFallback';
 import { useAuthStore } from '@/stores/auth';
@@ -18,7 +20,9 @@ import { formatDate, formatNumber, staffRoleLabels } from '@/utils/format';
  * Perfil de un miembro del cuerpo técnico (entrenador, ayudante, fisio, delegado...), como la ficha de un jugador: su
  * foto, su balance (partidos ganados, empatados y perdidos de sus equipos mientras estuvo y la posición media en la
  * clasificación), los equipos con los que está ahora y su historial de equipos y temporadas por los nombramientos de sus
- * clubes. Lo ve cualquier cuenta con sesión; la foto solo la sube, cambia o quita él mismo.
+ * clubes. En los equipos de ahora, sus tarjetas de la temporada en las actas oficiales y si llega apercibido o
+ * sancionado al próximo partido (el del equipo principal, en la cabecera). Lo ve cualquier cuenta con sesión; la foto
+ * solo la sube, cambia o quita él mismo.
  */
 const props = defineProps<{ coachId: string }>();
 const auth = useAuthStore();
@@ -109,6 +113,7 @@ function onPhotoSaved(coach: CoachDto) {
     >
       <template #actions>
         <Badge tone="blue"><Icon icon="user-group" class="mr-1 text-[11px]" />Cuerpo técnico</Badge>
+        <DisciplineBadge v-if="main" :discipline="main.discipline?.next" staff reason />
         <button v-if="data.isMe" type="button" class="btn-primary" @click="photoOpen = true">
           <Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />{{ data.photoUrl ? 'Cambiar mi foto' : 'Subir mi foto' }}
         </button>
@@ -134,7 +139,7 @@ function onPhotoSaved(coach: CoachDto) {
       </div>
       <dl class="mt-3 grid grid-cols-3 gap-2 text-center">
         <div v-for="o in outcomes" :key="o.key" class="min-w-0 rounded-xl border border-line bg-surface-2 p-2.5">
-          <dt class="truncate text-[11px] text-slate-500">{{ o.label }}</dt>
+          <dt class="break-words text-[11px] text-slate-500">{{ o.label }}</dt>
           <dd class="text-lg font-bold tabular-nums text-slate-900">{{ o.count }}</dd>
           <dd class="text-xs font-semibold tabular-nums" :class="o.text">{{ percent(o.pct) }}</dd>
         </div>
@@ -156,14 +161,14 @@ function onPhotoSaved(coach: CoachDto) {
           <div class="flex items-center gap-3">
             <TeamCrest :src="crestFor(team.teamCrestUrl, team.teamId)" :name="team.teamName" :short-name="team.teamShortName" size="lg" />
             <div class="min-w-0 flex-1">
-              <RouterLink :to="{ name: 'team', params: { teamId: team.teamId } }" class="block truncate font-semibold text-slate-900 hover:text-accent-400">{{ team.teamName }}</RouterLink>
-              <p class="truncate text-xs text-slate-500">{{ team.competitionName }} · {{ team.seasonLabel }}</p>
+              <RouterLink :to="{ name: 'team', params: { teamId: team.teamId } }" class="block break-words font-semibold text-slate-900 hover:text-accent-400">{{ team.teamName }}</RouterLink>
+              <p class="break-words text-xs text-slate-500">{{ team.competitionName }} · {{ team.seasonLabel }}</p>
             </div>
             <Badge tone="green">Vigente</Badge>
           </div>
           <dl class="mt-3 grid grid-cols-2 gap-2 text-xs">
             <div class="min-w-0"><dt class="text-slate-500">Función</dt><dd class="font-semibold text-slate-800">{{ staffRoleLabels[team.role] }}</dd></div>
-            <div class="min-w-0"><dt class="text-slate-500">Club</dt><dd class="truncate font-semibold text-slate-800" :title="team.clubName">{{ team.clubName }}</dd></div>
+            <div class="min-w-0"><dt class="text-slate-500">Club</dt><dd class="break-words font-semibold text-slate-800">{{ team.clubName }}</dd></div>
             <div v-if="team.record && team.record.played > 0" class="min-w-0">
               <dt class="text-slate-500">Balance</dt>
               <dd class="font-semibold tabular-nums text-slate-800">
@@ -174,6 +179,15 @@ function onPhotoSaved(coach: CoachDto) {
             <div v-if="team.officialSheets" class="col-span-2 min-w-0">
               <dt class="text-slate-500">En las actas de la federación</dt>
               <dd class="font-semibold tabular-nums text-slate-800" :title="actasTitle(team)">{{ actas(team) }}</dd>
+            </div>
+            <div v-if="team.discipline" class="col-span-2 min-w-0">
+              <dt class="text-slate-500">Tarjetas esta temporada</dt>
+              <dd class="mt-0.5 flex flex-wrap items-center gap-2 font-semibold text-slate-800">
+                <CardTally :yellow-cards="team.discipline.yellowCards" :red-cards="team.discipline.redCards" title="Tarjetas de la temporada en las actas oficiales cerradas" />
+                <span v-if="!team.discipline.yellowCards && !team.discipline.redCards">Ninguna</span>
+                <!-- La del equipo principal ya va en la cabecera. -->
+                <DisciplineBadge v-if="team !== main" :discipline="team.discipline.next" staff reason />
+              </dd>
             </div>
           </dl>
           <p class="mt-2 text-xs text-slate-500">{{ period(team) }}</p>
@@ -195,8 +209,8 @@ function onPhotoSaved(coach: CoachDto) {
           <li v-for="team in group.teams" :key="`${team.teamId}-${team.role}-${team.validFrom}`" class="flex flex-wrap items-center gap-3 py-2.5">
             <TeamCrest :src="crestFor(team.teamCrestUrl, team.teamId)" :name="team.teamName" :short-name="team.teamShortName" size="sm" />
             <div class="min-w-0 flex-1">
-              <RouterLink :to="{ name: 'team', params: { teamId: team.teamId } }" class="block truncate text-sm font-medium text-slate-800 hover:text-accent-400">{{ team.teamName }}</RouterLink>
-              <p class="truncate text-xs text-slate-500">{{ staffRoleLabels[team.role] }} · {{ team.clubName }} · {{ team.competitionName }}</p>
+              <RouterLink :to="{ name: 'team', params: { teamId: team.teamId } }" class="block break-words text-sm font-medium text-slate-800 hover:text-accent-400">{{ team.teamName }}</RouterLink>
+              <p class="break-words text-xs text-slate-500">{{ staffRoleLabels[team.role] }} · {{ team.clubName }} · {{ team.competitionName }}</p>
               <p v-if="(team.record && team.record.played > 0) || ordinal(team)" class="mt-0.5 flex flex-wrap gap-x-2 text-xs tabular-nums text-slate-600">
                 <span v-if="team.record && team.record.played > 0" :title="`${team.record.goalsFor} goles a favor y ${team.record.goalsAgainst} en contra`">
                   {{ team.record.played }} PJ ·

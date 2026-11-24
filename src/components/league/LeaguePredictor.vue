@@ -8,9 +8,11 @@ import PredictionList from '@/components/league/PredictionList.vue';
 import TeamForecast from '@/components/league/TeamForecast.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import Alert from '@/components/ui/Alert.vue';
+import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import SearchSelect from '@/components/ui/SearchSelect.vue';
 import Skeleton from '@/components/ui/Skeleton.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
+import type { TabItem } from '@/components/ui/tabs';
 import { useSort } from '@/composables/useSort';
 import {
   metricColors,
@@ -114,6 +116,7 @@ const heatmapOption = computed(() =>
 // Ancho mínimo del mapa de puestos: una casilla legible por puesto más la columna de nombres; lo que no quepa se desplaza.
 const heatmapWidth = computed(() => `${(zones.value?.teams ?? 20) * 28 + (wide.value ? 170 : 104)}px`);
 const metrics = computed<PredictionMetric[]>(() => (zones.value?.relegation.length ? ['champion', 'promotion', 'relegation'] : ['champion', 'promotion']));
+const metricTabs = computed<TabItem[]>(() => metrics.value.map((option) => ({ key: option, label: labels.value[option], color: metricColors[option] })));
 const evolutionOption = computed(() =>
   evolution.value && evolution.value.teams.length && evolution.value.matchdays.length > 1
     ? predictionEvolutionOption(evolution.value, metric.value, highlighted.value, settings.resolvedTheme)
@@ -202,7 +205,7 @@ const { sorted: sortedTeams, sortBy, state } = useSort<TeamPredictionDto, TeamSo
           <div class="mt-2 flex items-center gap-3">
             <TeamCrest :src="favourite.crestUrl" :name="favourite.teamName" :short-name="favourite.shortName" size="lg" />
             <div class="min-w-0">
-              <p class="truncate font-semibold text-slate-900">{{ favourite.teamName }}</p>
+              <p class="break-words font-semibold leading-snug text-slate-900">{{ favourite.teamName }}</p>
               <p class="font-figures text-3xl font-extrabold text-slate-900">{{ pct(favourite.champion) }}</p>
             </div>
           </div>
@@ -213,7 +216,7 @@ const { sorted: sortedTeams, sortBy, state } = useSort<TeamPredictionDto, TeamSo
           <div class="mt-2 flex items-center gap-3">
             <TeamCrest :src="promotionPick.crestUrl" :name="promotionPick.teamName" :short-name="promotionPick.shortName" size="lg" />
             <div class="min-w-0">
-              <p class="truncate font-semibold text-slate-900">{{ promotionPick.teamName }}</p>
+              <p class="break-words font-semibold leading-snug text-slate-900">{{ promotionPick.teamName }}</p>
               <p class="font-figures text-3xl font-extrabold text-slate-900">{{ pct(promotionPick.promotion) }}</p>
             </div>
           </div>
@@ -224,7 +227,7 @@ const { sorted: sortedTeams, sortBy, state } = useSort<TeamPredictionDto, TeamSo
           <div class="mt-2 flex items-center gap-3">
             <TeamCrest :src="danger.crestUrl" :name="danger.teamName" :short-name="danger.shortName" size="lg" />
             <div class="min-w-0">
-              <p class="truncate font-semibold text-slate-900">{{ danger.teamName }}</p>
+              <p class="break-words font-semibold leading-snug text-slate-900">{{ danger.teamName }}</p>
               <p class="font-figures text-3xl font-extrabold text-slate-900">{{ pct(danger.relegation) }}</p>
             </div>
           </div>
@@ -260,19 +263,7 @@ const { sorted: sortedTeams, sortBy, state } = useSort<TeamPredictionDto, TeamSo
             <h3 class="font-semibold text-slate-900">Cómo ha cambiado, jornada a jornada</h3>
             <p class="text-xs text-slate-500">Cada punto es la previsión con los datos de esa jornada. Toca un equipo en la leyenda para mostrarlo u ocultarlo.</p>
           </div>
-          <div class="inline-flex rounded-full border border-line bg-surface-2 p-1" role="radiogroup" aria-label="Qué probabilidad">
-            <button
-              v-for="option in metrics"
-              :key="option"
-              type="button"
-              role="radio"
-              :aria-checked="metric === option"
-              class="rounded-full px-3 py-1 text-xs font-semibold transition"
-              :class="metric === option ? 'text-white' : 'text-slate-600 hover:text-slate-900'"
-              :style="metric === option ? { background: metricColors[option] } : undefined"
-              @click="metric = option"
-            >{{ labels[option] }}</button>
-          </div>
+          <ResponsiveTabs :model-value="metric" :items="metricTabs" label="Qué probabilidad" variant="toggle" @update:model-value="metric = $event as PredictionMetric" />
         </div>
         <AppChart v-if="evolutionOption" class="mt-3" :option="evolutionOption" :height="360" :label="`Evolución de la probabilidad de ${labels[metric].toLowerCase()} por jornada`" />
         <p v-else-if="evolution && evolution.matchdays.length <= 1" class="mt-3 text-sm text-slate-500">Hará falta más de una jornada con resultados para ver la evolución.</p>
@@ -310,7 +301,7 @@ const { sorted: sortedTeams, sortBy, state } = useSort<TeamPredictionDto, TeamSo
                 >
                   <RouterLink :to="{ name: 'team', params: { teamId: team.teamId } }" class="flex items-center gap-2 font-medium text-slate-900 hover:text-accent-400">
                     <TeamCrest :src="team.crestUrl" :name="team.teamName" :short-name="team.shortName" size="xs" />
-                    <span class="max-w-[8.5rem] truncate sm:max-w-none">{{ team.teamName }}</span>
+                    <span class="max-w-[8.5rem] break-words leading-snug sm:max-w-none">{{ team.teamName }}</span>
                   </RouterLink>
                 </td>
                 <td class="px-3 py-2 text-center font-figures">{{ team.position }}.º</td>

@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import BrandMark from '@/components/layout/BrandMark.vue';
+import PhotoEditor from '@/components/players/PhotoEditor.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Modal from '@/components/ui/Modal.vue';
 import { cutOutFigure, type CutOut } from '@/utils/figureCutout';
@@ -10,9 +11,9 @@ import type { CoachDto, PlayerDto } from '@/types/api';
 
 /**
  * Asistente para que el jugador (o el técnico, con kind="coach") suba su foto como las de los profesionales: consejos para
- * hacerla, recorte automático de la figura en el propio navegador (la foto original no sale del dispositivo), encuadre con
- * zoom y altura sobre el fondo de la ficha, y subida del resultado en PNG con fondo transparente. Cada uno sube la suya:
- * el jugador recibe su cuenta en «saved» y el técnico en «savedCoach».
+ * hacerla, recorte automático de la figura en el propio navegador (la foto original no sale del dispositivo), un editor
+ * para colocarla a mano dentro del marco de la ficha y retocar el recorte (`PhotoEditor`), y subida del resultado en PNG
+ * con fondo transparente. Cada uno sube la suya: el jugador recibe su cuenta en «saved» y el técnico en «savedCoach».
  */
 const props = withDefaults(defineProps<{ open: boolean; hasPhoto: boolean; kind?: 'player' | 'coach' }>(), { kind: 'player' });
 const emit = defineEmits<{ close: []; saved: [player: PlayerDto]; savedCoach: [coach: CoachDto] }>();
@@ -29,24 +30,17 @@ const step = ref<Step>('tips');
 const error = ref<string | null>(null);
 const busy = ref(false);
 const cut = ref<CutOut | null>(null);
-const removeBackground = ref(true);
-const zoom = ref(1);
-const lift = ref(0);
-const preview = ref<HTMLCanvasElement | null>(null);
+// Cada foto nueva abre un editor nuevo (sin los retoques ni el encuadre de la anterior).
+const photoNumber = ref(0);
+const editor = ref<InstanceType<typeof PhotoEditor> | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 const cameraInput = ref<HTMLInputElement | null>(null);
-
-const OUT_W = 800;
-const OUT_H = 1000;
 
 watch(() => props.open, (open) => {
   if (!open) return;
   step.value = 'tips';
   error.value = null;
   cut.value = null;
-  zoom.value = 1;
-  lift.value = 0;
-  removeBackground.value = true;
 });
 
 async function onFile(event: Event) {
@@ -62,61 +56,25 @@ async function onFile(event: Event) {
   step.value = 'working';
   try {
     cut.value = await cutOutFigure(file);
-    removeBackground.value = cut.value.figureFound;
+    photoNumber.value++;
     step.value = 'frame';
-    requestAnimationFrame(draw);
-    if (!cut.value.figureFound) error.value = 'No hemos encontrado bien tu figura; puedes subirla sin recortar o probar con otra foto con más luz y fondo liso.';
+    if (!cut.value.figureFound) {
+      error.value = 'No hemos encontrado bien tu figura: puedes subirla sin quitar el fondo, recortarla tú con «Recuperar» o probar con otra foto con más luz y fondo liso.';
+    }
   } catch (e) {
     step.value = 'tips';
     error.value = `No se ha podido preparar la foto: ${errorMessage(e)}`;
   }
 }
 
-// Coloca la figura recortada en un lienzo 4:5, apoyada abajo como en las fichas profesionales.
-function compose(target: HTMLCanvasElement, background: boolean) {
-  const c = cut.value;
-  if (!c) return;
-  const ctx = target.getContext('2d')!;
-  target.width = OUT_W;
-  target.height = OUT_H;
-  ctx.clearRect(0, 0, OUT_W, OUT_H);
-
-  if (background) {
-    const g = ctx.createLinearGradient(0, 0, OUT_W, OUT_H);
-    g.addColorStop(0, '#16388a');
-    g.addColorStop(1, '#0a1f4d');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, OUT_W, OUT_H);
-  }
-
-  const source = removeBackground.value ? c.figure : c.original;
-  const box = removeBackground.value ? c.box : { x: 0, y: 0, w: c.original.width, h: c.original.height };
-  const scale = (OUT_H * 0.94 * zoom.value) / box.h;
-  const w = box.w * scale;
-  const h = box.h * scale;
-  const x = (OUT_W - w) / 2;
-  const y = OUT_H - h + (removeBackground.value ? 0 : (h - OUT_H) / 2) - lift.value * OUT_H * 0.25;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(source, box.x, box.y, box.w, box.h, x, y, w, h);
-}
-
-function draw() {
-  if (preview.value) compose(preview.value, true);
-}
-watch([zoom, lift, removeBackground], () => requestAnimationFrame(draw));
-
 const canSave = computed(() => step.value === 'frame' && cut.value !== null);
 
 async function save() {
-  if (!cut.value) return;
+  if (!editor.value) return;
   busy.value = true;
   error.value = null;
   try {
-    const out = document.createElement('canvas');
-    compose(out, false);
-    let blob = await new Promise<Blob | null>((resolve) => out.toBlob(resolve, 'image/png'));
-    if (blob && blob.size > 2.8 * 1024 * 1024) blob = await new Promise<Blob | null>((resolve) => out.toBlob(resolve, 'image/webp', 0.9));
-    if (!blob) throw new Error('el navegador no ha podido generar la imagen');
+    const blob = await editor.value.exportBlob();
     await upload(new File([blob], blob.type === 'image/png' ? 'foto.png' : 'foto.webp', { type: blob.type }));
     emit('close');
   } catch (e) {
@@ -152,13 +110,15 @@ const tips = computed(() => [
 </script>
 
 <template>
-  <Modal :open="open" :title="forCoach ? 'Tu foto de técnico' : 'Tu foto de jugador'" size="lg" @close="emit('close')">
+  <Modal :open="open" :title="forCoach ? 'Tu foto de técnico' : 'Tu foto de jugador'" :size="step === 'frame' ? 'xl' : 'lg'" @close="emit('close')">
     <Alert v-if="error" kind="warning" class="mb-4">{{ error }}</Alert>
 
     <template v-if="step === 'tips'">
       <p class="text-sm text-slate-600">
         Haz la foto como en las fichas de los profesionales: recortamos tu figura automáticamente y la colocamos sobre el fondo de tu
-        ficha. El recorte se hace en tu dispositivo; solo se sube el resultado.
+        ficha. Después la mueves con el ratón o el dedo, la giras y, si el recorte se ha comido o dejado algo, lo retocas con el pincel o
+        rodeándolo con el lazo.
+        Todo se hace en tu dispositivo; solo se sube el resultado.
       </p>
       <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <li v-for="tip in tips" :key="tip.title" class="rounded-xl border border-line bg-surface-2 p-3">
@@ -183,24 +143,7 @@ const tips = computed(() => [
     </div>
 
     <template v-else-if="step === 'frame' && cut">
-      <div class="grid grid-cols-1 gap-5 sm:grid-cols-[minmax(0,15rem)_1fr]">
-        <canvas ref="preview" class="mx-auto aspect-[4/5] w-full max-w-60 rounded-xl border border-line shadow-card" />
-        <div class="space-y-4">
-          <label class="flex items-center gap-2 text-sm text-slate-700">
-            <input v-model="removeBackground" type="checkbox" class="h-4 w-4 accent-brand-500" :disabled="!cut.figureFound" />
-            Quitar el fondo
-          </label>
-          <div>
-            <label class="label" for="photo-zoom">Tamaño</label>
-            <input id="photo-zoom" v-model.number="zoom" type="range" min="0.6" max="1.5" step="0.01" class="w-full accent-brand-500" />
-          </div>
-          <div>
-            <label class="label" for="photo-lift">Altura</label>
-            <input id="photo-lift" v-model.number="lift" type="range" min="-0.6" max="0.6" step="0.01" class="w-full accent-brand-500" />
-          </div>
-          <p class="text-xs text-slate-500">Encuádrate de cintura para arriba con la cabeza cerca del borde superior, como en la vista previa de las fichas.</p>
-        </div>
-      </div>
+      <PhotoEditor ref="editor" :key="photoNumber" :cut="cut" />
       <div class="mt-5 flex flex-wrap justify-end gap-2">
         <button type="button" class="btn-ghost" @click="step = 'tips'">Elegir otra</button>
         <button type="button" class="btn-primary" v-busy="busy" :disabled="busy || !canSave" @click="save"><Icon icon="check" class="mr-1.5 h-3.5 w-3.5" />Guardar mi foto</button>

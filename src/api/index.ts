@@ -41,6 +41,8 @@ import type {
   InjuryDocumentKind,
   InjuryDto,
   InjuryRequest,
+  PlayerInjuryHistoryDto,
+  RelapseRequest,
   InjuryTypeDto,
   JoinSquadAsPlayerRequest,
   LeagueTableDto,
@@ -84,6 +86,7 @@ import type {
   SquadPlayerProfileDto,
   SquadPlayerRequest,
   SquadSeasonTableDto,
+  SquadDisciplineDto,
   SquadStatsDto,
   SquadSummaryDto,
   SquadTimelineDto,
@@ -112,6 +115,7 @@ import type {
   TrialPlayerRequest,
   TrainingTrialPlayerRequest,
   CallUpSummaryDto,
+  CallUpStampDto,
   ExerciseDto,
   ExerciseRequest,
   MatchCallUpDto,
@@ -243,9 +247,13 @@ export const api = {
       http<SquadPlayerDto>(`/api/squads/${squadId}/players/${squadPlayerId}`, { method: 'PUT', body }),
     removePlayer: (squadId: string, squadPlayerId: string) =>
       http<SquadPlayerDto>(`/api/squads/${squadId}/players/${squadPlayerId}`, { method: 'DELETE' }),
+    reinstatePlayer: (squadId: string, squadPlayerId: string) =>
+      http<SquadPlayerDto>(`/api/squads/${squadId}/players/${squadPlayerId}/reinstate`, { method: 'POST' }),
     importRoster: (squadId: string) => http<SquadDetailDto>(`/api/squads/${squadId}/players/import`, { method: 'POST' }),
     setVisibility: (squadId: string, visibility: SquadVisibility) =>
       http<SquadDetailDto>(`/api/squads/${squadId}/visibility`, { method: 'PUT', body: { visibility } }),
+    setCallUpSize: (squadId: string, size: number | null) =>
+      http<SquadDetailDto>(`/api/squads/${squadId}/call-up-size`, { method: 'PUT', body: { size } }),
     generatePlayerInviteCode: (squadId: string, squadPlayerId: string) =>
       http<SquadDetailDto>(`/api/squads/${squadId}/players/${squadPlayerId}/invite-code`, { method: 'POST' }),
     matches: (squadId: string) => http<SquadMatchDto[]>(`/api/squads/${squadId}/matches`),
@@ -275,6 +283,8 @@ export const api = {
       http<SheetComparisonDto>(`/api/squads/${squadId}/matches/${matchId}/sheet/comparison`),
     stats: (squadId: string) => http<SquadStatsDto>(`/api/squads/${squadId}/stats`, { cacheMs: SQUAD_READ_CACHE_MS }),
     seasonTable: (squadId: string) => http<SquadSeasonTableDto>(`/api/squads/${squadId}/season-table`, { cacheMs: SQUAD_READ_CACHE_MS }),
+    /** Apercibidos y sancionados para el próximo partido de liga, y las tarjetas del cuerpo técnico. */
+    discipline: (squadId: string) => http<SquadDisciplineDto>(`/api/squads/${squadId}/discipline`, { cacheMs: SQUAD_READ_CACHE_MS }),
     suggestions: (squadId: string) => http<SuggestionDto[]>(`/api/squads/${squadId}/suggestions`),
     resolveSuggestion: (squadId: string, suggestionId: string, body: ResolveSuggestionRequest) =>
       http<SuggestionDto[]>(`/api/squads/${squadId}/suggestions/${suggestionId}/resolve`, { method: 'POST', body }),
@@ -288,6 +298,9 @@ export const api = {
     closeInjury: (squadId: string, injuryId: string, returnedOn: string | null) =>
       http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/close`, { method: 'POST', body: { returnedOn } }),
     reopenInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/reopen`, { method: 'POST' }),
+    relapseInjury: (squadId: string, injuryId: string, body: RelapseRequest) =>
+      http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/relapse`, { method: 'POST', body }),
+    playerInjuryHistory: (squadId: string, squadPlayerId: string) => http<PlayerInjuryHistoryDto>(`/api/squads/${squadId}/players/${squadPlayerId}/injuries`),
     deleteInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'DELETE' }),
     /** Prueba o informe de una lesión (PDF o imagen, hasta 15 MB): solo el club y el cuerpo técnico. */
     uploadInjuryDocument: (squadId: string, injuryId: string, file: File, kind: InjuryDocumentKind, note: string | null) => {
@@ -297,8 +310,8 @@ export const api = {
       if (note) body.append('note', note);
       return http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/documents`, { method: 'POST', body });
     },
-    deleteInjuryDocument: (squadId: string, injuryId: string, documentId: string) =>
-      http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/documents/${documentId}`, { method: 'DELETE' }),
+    /** Por la dirección del propio documento: en el historial, la lesión que pasó de temporada enseña también los de entonces. */
+    deleteInjuryDocument: (document: InjuryDocumentDto) => http<InjuryDto[]>(document.url, { method: 'DELETE' }),
     /** El fichero de una prueba o un informe (con la sesión): el club, el cuerpo técnico y el propio jugador. */
     injuryDocumentFile: (document: InjuryDocumentDto) => httpBlob(document.url),
   },
@@ -381,7 +394,12 @@ export const api = {
     promoteTrialPlayer: (squadId: string, trialPlayerId: string, body: PromoteTrialPlayerRequest) =>
       http<SquadPlayerDto>(`/api/squads/${squadId}/trial-players/${trialPlayerId}/promote`, { method: 'POST', body }),
     callUps: (squadId: string) => http<CallUpSummaryDto[]>(`/api/squads/${squadId}/callups`),
-    callUp: (squadId: string, matchId: string) => http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup`),
+    /** silent: la recarga en segundo plano de la convocatoria abierta, sin barra de carga. */
+    callUp: (squadId: string, matchId: string, silent = false) =>
+      http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup`, { silent }),
+    /** Solo la huella, cada pocos segundos mientras la convocatoria está abierta: si cambia, se vuelve a pedir entera. */
+    callUpStamp: (squadId: string, matchId: string) =>
+      http<CallUpStampDto>(`/api/squads/${squadId}/matches/${matchId}/callup/stamp`, { silent: true }),
     saveCallUp: (squadId: string, matchId: string, body: CallUpRequest) =>
       http<MatchCallUpDto>(`/api/squads/${squadId}/matches/${matchId}/callup`, { method: 'PUT', body }),
     grounds: (squadId: string) => http<SquadGroundsDto>(`/api/squads/${squadId}/grounds`),

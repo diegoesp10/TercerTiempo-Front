@@ -45,7 +45,7 @@ const highlights = computed(() => [
         <p v-if="!h.items.length" class="text-xs text-slate-500">{{ h.empty }}</p>
         <ul v-else class="space-y-1">
           <li v-for="item in h.items.slice(0, 3)" :key="item.row.id" class="flex items-center justify-between gap-2 text-sm">
-            <button type="button" class="min-w-0 truncate text-left text-slate-800 hover:text-brand-500" @click="$emit('pick', item.row)">{{ item.row.name }}</button>
+            <button type="button" class="min-w-0 break-words text-left text-slate-800 hover:text-brand-500" @click="$emit('pick', item.row)">{{ item.row.name }}</button>
             <span class="shrink-0 text-xs font-semibold tabular-nums text-slate-600">{{ item.value }}</span>
           </li>
           <li v-if="h.items.length > 3" class="text-xs text-slate-500">y {{ h.items.length - 3 }} más</li>
@@ -69,8 +69,8 @@ const highlights = computed(() => [
             <tr :class="[r.player.active ? '' : 'opacity-60', filter !== 'all' ? 'border-b-0' : '']">
               <td class="px-2 py-2">
                 <button type="button" class="flex min-w-0 items-center gap-2 text-left font-medium text-slate-800 hover:text-brand-500" :title="`Ver todo lo de ${r.name}`" @click="$emit('pick', r)">
-                  <span class="truncate">{{ r.name }}</span>
-                  <Badge v-if="!r.player.active" tone="slate">Ya no está</Badge>
+                  <span class="min-w-0 break-words">{{ r.name }}</span>
+                  <Badge v-if="!r.player.active" tone="slate" title="Causó baja en la plantilla: sale con lo que entrenó mientras estuvo">De baja</Badge>
                 </button>
               </td>
               <td class="px-2 py-2">

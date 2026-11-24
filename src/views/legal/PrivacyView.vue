@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import LegalPage from '@/components/legal/LegalPage.vue';
+import MailLink from '@/components/legal/MailLink.vue';
 import { dataSources, legalEntity } from '@/legal/entity';
 </script>
 
@@ -10,7 +11,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <p>
         <strong>{{ legalEntity.name }}</strong>, NIF {{ legalEntity.nif }}, con domicilio en {{ legalEntity.address }}
         (en adelante, «Tercer Tiempo»). Contacto para cualquier cuestión sobre datos personales:
-        <a :href="`mailto:${legalEntity.email}`">{{ legalEntity.email }}</a>.
+        <MailLink :email="legalEntity.email" />.
       </p>
     </section>
 
@@ -59,25 +60,25 @@ import { dataSources, legalEntity } from '@/legal/entity';
             <td data-label="Base jurídica">Ejecución del contrato con el club y con el jugador que tiene cuenta; interés legítimo del club respecto de quien no la tiene (art. 6.1.b y f).</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Lesiones</strong> (datos de salud): tipo de lesión, fechas de baja, vuelta prevista y alta, motivo, y documentos médicos (radiografías, informes).</td>
+            <td data-label="Datos"><strong>Lesiones</strong> (datos de salud): tipo de lesión, fecha del parte y cuándo se registró, días de baja, vuelta prevista (la de entonces y la actual), alta y recaídas, motivo, y documentos médicos (radiografías, informes).</td>
             <td data-label="Origen">El club y su cuerpo técnico.</td>
-            <td data-label="Finalidad">Saber quién está disponible (un lesionado no entrena ni va convocado) y seguir su recuperación.</td>
+            <td data-label="Finalidad">Saber quién está disponible (un lesionado no entrena ni va convocado), seguir su recuperación (también cuando sigue lesionado al cambiar de temporada) y conservar en su ficha el historial de lesiones superadas (los días reales del parte al alta frente a los previstos), para que el club conozca lo que tardan en recuperarse sus jugadores.</td>
             <td data-label="Base jurídica">Consentimiento explícito del jugador (art. 9.2.a RGPD), que el club o su cuerpo técnico deben recabar antes de anotar la lesión o subir sus documentos. Se puede retirar en cualquier momento (apartado 10).</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Sanciones de liga</strong>: si un jugador está sancionado para un partido y por qué (5.ª amarilla, doble amarilla o roja directa).</td>
-            <td data-label="Origen">Se calculan con las tarjetas de las actas: la oficial cerrada y, mientras no llega, la interna.</td>
-            <td data-label="Finalidad">Que el cuerpo técnico no convoque ni alinee a un sancionado (apartado 6).</td>
+            <td data-label="Datos"><strong>Sanciones de liga</strong>: si un jugador o alguien del cuerpo técnico llega apercibido (cuatro amarillas en el ciclo) o sancionado al próximo partido y por qué (5.ª amarilla, doble amarilla, roja directa o la sanción del comité de competición, con sus partidos o, al cuerpo técnico, sus días de inhabilitación, y su motivo); las tarjetas de la temporada del cuerpo técnico; el aviso que recibe el jugador, su cuerpo técnico y su club.</td>
+            <td data-label="Origen">Se calculan con las tarjetas de las actas (la oficial cerrada y, mientras no llega, la interna) y con las resoluciones que publica el comité de competición en la web de la federación.</td>
+            <td data-label="Finalidad">Que el cuerpo técnico no convoque ni alinee a un sancionado, que la plantilla vea quién llega apercibido o sancionado al próximo partido y que el jugador, su cuerpo técnico y su club sepan cuántos partidos le han caído; del cuerpo técnico, mostrar sus tarjetas y si puede estar en el banquillo del próximo partido (apartado 6).</td>
             <td data-label="Base jurídica">Ejecución del contrato con el club e interés legítimo en cumplir las normas de la competición (art. 6.1.b y f).</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Datos deportivos de fuentes públicas</strong>: calendarios, resultados, clasificaciones, plantillas publicadas (nombre y posición) y actas oficiales (alineaciones con el dorsal de cada partido, minutos, goles, tarjetas, árbitros y cuerpo técnico).</td>
+            <td data-label="Datos"><strong>Datos deportivos de fuentes públicas</strong>: calendarios, resultados, clasificaciones, plantillas publicadas (nombre y posición), actas oficiales (alineaciones con el dorsal de cada partido, minutos, goles, tarjetas, árbitros y cuerpo técnico, también con las tarjetas que le enseña el árbitro), el árbitro designado para cada uno de los próximos partidos (de la página de la jornada de la federación) y sanciones del comité de competición a jugadores y al cuerpo técnico (nombre, equipo, motivo y partidos de suspensión o días de inhabilitación).</td>
             <td data-label="Origen">
               <span v-for="(source, index) in dataSources" :key="source.name">
                 <a :href="source.url" target="_blank" rel="noopener">{{ source.name }}</a> ({{ source.what }})<span v-if="index < dataSources.length - 1">; </span>
               </span>
             </td>
-            <td data-label="Finalidad">Mostrar la competición, el cuerpo técnico de cada equipo y los árbitros de cada categoría, localizar el acta oficial de cada partido y compararla con el acta interna.</td>
+            <td data-label="Finalidad">Mostrar la competición, el cuerpo técnico de cada equipo, los árbitros de cada categoría y el equipo arbitral de cada partido (también el designado antes de jugarse), localizar el acta oficial de cada partido y compararla con el acta interna, y saber qué jugadores y técnicos de cada equipo están sancionados.</td>
             <td data-label="Base jurídica">Interés legítimo (art. 6.1.f): son datos deportivos ya publicados por las propias entidades que organizan o informan de la competición, y su reutilización no afecta a la esfera privada de los deportistas más allá de esa publicación.</td>
           </tr>
           <tr>
@@ -93,7 +94,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
             <td data-label="Base jurídica">Interés legítimo (art. 6.1.f).</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Vídeos de partidos y su análisis</strong>: imágenes y voces de las personas que aparecen; quién lo subió y cuándo; del análisis, la posición de cada jugador en el campo, el color de su camiseta, su dorsal y las acciones propuestas.</td>
+            <td data-label="Datos"><strong>Vídeos de partidos y su análisis</strong>: imágenes y voces de las personas que aparecen; quién lo subió y cuándo (el archivo se guarda con el nombre del partido, los dos equipos y la fecha, y no con el nombre que tenía); del análisis, la posición de cada jugador en el campo, el color de su camiseta, su dorsal, las acciones propuestas y con qué versión del analizador se hizo.</td>
             <td data-label="Origen">El cuerpo técnico que lo sube; el análisis lo hace la plataforma.</td>
             <td data-label="Finalidad">Alojar el vídeo, mostrarlo a quien tiene acceso y proponer acciones para el acta interna, que el cuerpo técnico revisa antes de guardarlas.</td>
             <td data-label="Base jurídica">Ejecución del contrato con quien lo sube; respecto de las personas que aparecen, el consentimiento o la base que haya obtenido el club. El análisis no usa reconocimiento facial ni ningún dato biométrico: identifica a cada jugador por su dorsal y el acta oficial.</td>
@@ -151,7 +152,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
     <section>
       <h2>6. Sanciones y notas a los árbitros</h2>
       <ul>
-        <li>Las <strong>sanciones de liga</strong> aplican la regla de la competición (la 5.ª amarilla, la 10.ª… y cada expulsión cuestan el siguiente partido de liga) a las tarjetas de las actas. Las ve la plantilla (su club, su cuerpo técnico y sus jugadores vinculados) y no se publican fuera de ella. No sustituyen a las resoluciones del comité de competición, que prevalecen.</li>
+        <li>Las <strong>sanciones de liga</strong> aplican la regla de la competición (la 5.ª amarilla, la 10.ª… y cada expulsión cuestan el siguiente partido de liga) a las tarjetas de las actas. Las de los jugadores (también quién llega apercibido) las ve la plantilla (su club, su cuerpo técnico y sus jugadores vinculados) y no se publican fuera de ella. Las del cuerpo técnico (sus tarjetas de la temporada y si llega apercibido o sancionado al próximo partido) se calculan solo con las actas oficiales cerradas y las resoluciones del comité, que ya son públicas, y salen en la ficha pública del equipo y en el perfil del técnico. No sustituyen a las resoluciones del comité de competición, que prevalecen.</li>
         <li>Las <strong>notas a los árbitros</strong> son públicas en la ficha de cada árbitro, con el nombre del club o del técnico que las puso. Los comentarios se filtran con una lista de palabras prohibidas y la administración retira los que no respetan las normas de uso. El árbitro puede oponerse a un comentario concreto (apartado 10).</li>
       </ul>
     </section>
@@ -161,6 +162,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <ul>
         <li>Cada plantilla es <strong>privada</strong>: sus actas internas, notas, estadísticas, vídeos, entrenamientos, asistencia, convocatorias y lesiones solo los ven su club, su cuerpo técnico vigente y los jugadores vinculados a ella, cada uno en lo que le corresponde.</li>
         <li>Los <strong>datos de salud</strong> (el detalle de la lesión y sus documentos médicos) solo los ven el club, su cuerpo técnico y el propio jugador; sus compañeros solo ven que está lesionado. Los documentos médicos se guardan fuera de cualquier carpeta pública y solo se entregan, sin copias en caché, a quien puede abrirlos.</li>
+        <li>El <strong>historial de lesiones</strong> de cada jugador reúne las de todas sus temporadas en el club (por su cuenta o, si no la tenía, por su nombre en el mismo equipo, solo cuando no hay duda de que es él) y nunca sale del club: lo ven el club, el cuerpo técnico de su plantilla actual y él mismo; los documentos médicos de otras temporadas, solo el club y el propio jugador. Si una lesión sigue abierta al empezar la temporada siguiente, pasa a su plantilla de esa temporada con la misma fecha del parte (con el mismo criterio para saber que es él), para que no salga disponible; sus documentos médicos se quedan donde se subieron y en la temporada anterior queda como historial.</li>
         <li>El club o su cuerpo técnico pueden dar a una persona concreta un <strong>pase de un partido</strong> (un código de un solo uso, gratuito o de pago) que le deja ver dentro de la plataforma el acta interna o el vídeo de ese partido. El pase queda ligado a la cuenta que lo canjea; el club ve el nombre de esa cuenta, nunca su correo.</li>
         <li>Si la plantilla se abre a solicitudes, cualquier usuario puede pedir ese pase al club, que decide si lo concede. Abrirla no hace visible nada por sí mismo. El club y su cuerpo técnico son responsables de a quién dan acceso y de informar a sus jugadores.</li>
         <li>Son públicos, como lo son en sus fuentes, los calendarios, resultados, clasificaciones y actas oficiales; también el perfil de cada técnico con su cuenta (sus equipos y su balance, sacados de las actas oficiales) y las notas a los árbitros.</li>
@@ -199,7 +201,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <p>
         Puedes ejercer los derechos de <strong>acceso, rectificación, supresión, oposición, limitación del tratamiento y
         portabilidad</strong>, y retirar un consentimiento prestado, escribiendo a
-        <a :href="`mailto:${legalEntity.email}`">{{ legalEntity.email }}</a> con una copia de un documento que acredite tu
+        <MailLink :email="legalEntity.email" /> con una copia de un documento que acredite tu
         identidad. Respondemos en el plazo de un mes. También puedes reclamar ante la Agencia Española de Protección de
         Datos (<a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>).
       </p>
@@ -214,8 +216,8 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <h2>11. Conservación</h2>
       <ul>
         <li>Datos de la cuenta: mientras esté activa y, tras su baja, bloqueados durante los plazos de prescripción legales (hasta 5 años) y después eliminados.</li>
-        <li>Actas internas, notas, estadísticas, entrenamientos, asistencia y convocatorias: mientras exista la plantilla; el club y el cuerpo técnico pueden corregir o eliminar lo que anotaron.</li>
-        <li>Lesiones y documentos médicos: mientras exista la plantilla, hasta que el club o el cuerpo técnico los borren o hasta que el jugador retire su consentimiento. Borrar una lesión borra sus documentos.</li>
+        <li>Actas internas, notas, estadísticas, entrenamientos, asistencia y convocatorias: mientras exista la plantilla; el club y el cuerpo técnico pueden corregir o eliminar lo que anotaron. Lo de un jugador que causa baja se conserva como historial de la plantilla (en el grupo «De baja»), sin que se le pueda anotar nada nuevo salvo que se le reincorpore.</li>
+        <li>Lesiones y documentos médicos: mientras exista la plantilla de cada temporada (de ahí sale el historial de lesiones de cada jugador), hasta que el club o el cuerpo técnico los borren o hasta que el jugador retire su consentimiento. Borrar una lesión borra sus documentos; si tenía una recaída, esa se queda como una lesión más, y si había pasado a la temporada siguiente, la de allí se queda.</li>
         <li>Vídeos y su análisis: hasta que los elimine quien los subió o se cierre la plantilla.</li>
         <li>Notas a los árbitros: mientras la temporada esté disponible en la plataforma.</li>
         <li>Datos de compras: los exigidos por la normativa fiscal y contable (en general, 4 a 6 años).</li>

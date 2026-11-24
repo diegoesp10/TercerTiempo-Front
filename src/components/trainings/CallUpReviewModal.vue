@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import DisciplineBadge from '@/components/squads/DisciplineBadge.vue';
 import TeamName from '@/components/teams/TeamName.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
 import GroundCard from '@/components/trainings/GroundCard.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Modal from '@/components/ui/Modal.vue';
-import type { GroundDto, MatchDto } from '@/types/api';
+import type { DisciplineDto, GroundDto, MatchDto } from '@/types/api';
 import { opponentOf } from '@/utils/crests';
 import { formatKickoff } from '@/utils/format';
 
@@ -19,6 +20,8 @@ export interface ReviewPlayer {
   injured?: boolean;
   /** Sancionado para este partido: no puede ir. */
   suspended?: boolean;
+  /** Apercibido (cuatro amarillas del ciclo): puede ir, con la misma marca que en la plantilla; null si no lo está. */
+  discipline?: DisciplineDto | null;
 }
 
 export interface ReviewGroup {
@@ -32,7 +35,8 @@ export interface ReviewGroup {
 
 /**
  * Repaso de la convocatoria antes de enviarla: el partido, la cita (día, hora, campo con su mapa y notas), los
- * convocados por posición con cuántos van de cada una, quién se queda fuera y a quién no le llega por no tener cuenta.
+ * convocados por posición con cuántos van de cada una (los apercibidos, marcados), quién se queda fuera y a quién no le
+ * llega por no tener cuenta.
  * Si ya estaba enviada, además, quién entra y quién sale (los únicos a los que se avisa, salvo que cambie la cita).
  */
 const props = defineProps<{
@@ -49,12 +53,15 @@ const props = defineProps<{
   groups: ReviewGroup[];
   notCalled: ReviewPlayer[];
   changes: { entering: string[]; leaving: string[]; meetChanged: boolean } | null;
+  /** A cuántos se convoca: si no llega, se avisa antes de enviarla. */
+  size?: number | null;
 }>();
 const emit = defineEmits<{ close: []; confirm: [] }>();
 
 const opponent = computed(() => opponentOf(props.match, props.teamId));
 const calledCount = computed(() => props.groups.reduce((n, g) => n + g.players.length, 0));
 const withoutAccount = computed(() => props.groups.flatMap((g) => g.players).filter((p) => !p.linked));
+const short = computed(() => (props.size ? Math.max(0, props.size - calledCount.value) : 0));
 const meetBeforeKickoff = computed(() => {
   if (!props.meetAt) return null;
   const minutes = Math.round((new Date(props.match.kickoffAt).getTime() - new Date(props.meetAt).getTime()) / 60000);
@@ -119,7 +126,8 @@ const nobodyToWarn = computed(() => props.update && props.changes && !props.chan
           <ul class="grid gap-2 sm:grid-cols-2">
             <li v-for="p in g.players" :key="p.id" class="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5 text-sm">
               <PlayerAvatar :src="p.photoUrl" :name="p.name" size="sm" />
-              <span class="min-w-0 flex-1 truncate text-slate-900">{{ p.name }}</span>
+              <span class="min-w-0 flex-1 break-words text-slate-900">{{ p.name }}</span>
+              <DisciplineBadge :discipline="p.discipline" class="shrink-0" />
               <span v-if="changes?.entering.includes(p.id)" class="text-[10px] font-semibold uppercase text-emerald-500">Entra</span>
               <span v-if="!p.linked" class="text-[10px] text-slate-400" title="Sin cuenta en la app: no le llega el aviso">sin cuenta</span>
             </li>
@@ -135,6 +143,11 @@ const nobodyToWarn = computed(() => props.update && props.changes && !props.chan
           </template>
         </p>
       </section>
+
+      <Alert v-if="short > 0" kind="warning">
+        Faltan {{ short }} para llegar a {{ size }}. Si la {{ update ? 'guardas' : 'envías' }} así, el cuerpo técnico y el club reciben un aviso de que falta gente por
+        convocar hasta que la completes.
+      </Alert>
 
       <Alert v-if="withoutAccount.length" kind="warning">
         {{ withoutAccount.length === 1 ? `${withoutAccount[0].name} no tiene cuenta en la app` : `${withoutAccount.length} convocados no tienen cuenta en la app` }}: no les llega el aviso, díselo por otro lado.
@@ -152,7 +165,7 @@ const nobodyToWarn = computed(() => props.update && props.changes && !props.chan
       <div class="flex flex-wrap justify-end gap-2">
         <button type="button" class="btn-secondary" :disabled="busy" @click="emit('close')">Seguir editando</button>
         <button type="button" class="btn-primary" v-busy="busy" :disabled="busy" @click="emit('confirm')">
-          <Icon icon="paper-plane" class="mr-1.5 h-3.5 w-3.5" />{{ update ? 'Guardar y avisar' : 'Enviar convocatoria' }}
+          <Icon icon="paper-plane" class="mr-1.5 h-3.5 w-3.5" />{{ update ? 'Guardar y avisar' : short > 0 ? `Enviar con ${calledCount} de ${size}` : 'Enviar convocatoria' }}
         </button>
       </div>
     </template>

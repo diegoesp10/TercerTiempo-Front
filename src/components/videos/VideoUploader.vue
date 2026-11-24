@@ -38,7 +38,6 @@ const part = ref<VideoPart | null>(defaultPart());
 watch(taken, () => { if (!part.value || partOptions.value.find((o) => o.value === part.value)?.disabled) part.value = defaultPart(); });
 
 const file = ref<File | null>(null);
-const title = ref('');
 const fileError = ref<string | null>(null);
 
 const contentTypeOf = (f: File) => ALLOWED.get(f.name.split('.').pop()?.toLowerCase() ?? '') ?? (ALLOWED.has(f.type.replace('video/', '')) ? f.type : null);
@@ -121,7 +120,6 @@ async function start() {
     else {
       s = await api.videos.beginUpload(props.squadId, props.matchId, {
         part: part.value,
-        title: title.value.trim() || null,
         fileName: f.name,
         contentType: contentTypeOf(f)!,
         sizeBytes: f.size,
@@ -212,15 +210,9 @@ function reset(clearFile: boolean) {
   speed.value = 0;
   error.value = null;
   controller = null;
-  if (clearFile) {
-    file.value = null;
-    title.value = '';
-    status.value = 'idle';
-  } else {
-    file.value = null;
-    title.value = '';
-    part.value = defaultPart();
-  }
+  file.value = null;
+  if (clearFile) status.value = 'idle';
+  else part.value = defaultPart();
 }
 
 onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); });
@@ -235,7 +227,7 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
           <div class="min-w-0">
             <p class="font-semibold">Vídeo subido: <span class="font-normal">{{ uploaded.title }}</span></p>
             <p class="mt-1 text-xs">
-              {{ videoPartLabels[uploaded.part] }} · {{ formatBytes(uploaded.sizeBytes) }}. Ya lo puede ver tu plantilla. Se comprimirá en el servidor
+              {{ videoPartLabels[uploaded.part] }}<template v-if="uploaded.sizeBytes != null"> · {{ formatBytes(uploaded.sizeBytes) }}</template>. Ya lo puede ver tu plantilla. Se comprimirá en el servidor
               sin bajar de 1080p para que ocupe la mitad o menos (un partido entero tarda alrededor de una hora); mientras tanto se ve
               tal cual. ¿Quieres que lo vea alguien de fuera? Genera un pase: un código de un solo uso que da acceso a este partido,
               gratis o al precio que pongas.
@@ -254,6 +246,7 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
       <ul class="mt-1 list-disc space-y-0.5 pl-5">
         <li>Formato <strong>MP4 (H.264)</strong> o WebM; MOV y MKV no se reproducen en el navegador.</li>
         <li>Vale el partido entero tal cual sale de la cámara: <strong>1080p, hora y media, unos 6 GB</strong>. El servidor lo comprime después sin bajar de 1080p; no hace falta que lo reexportes.</li>
+        <li>Se guarda con el nombre del partido y su fecha (<strong>Local vs Visitante 01-11-2026</strong>, con la parte si va en dos), lo llames como lo llames.</li>
         <li>Máximo <strong>20 GB por archivo</strong>. Si pesa más, súbelo en dos partes (1ª y 2ª parte).</li>
         <li>La subida va por trozos y puede tardar (6 GB con 20 Mbps de subida ≈ 45 min): si se corta, vuelve a elegir el mismo archivo y continúa donde se quedó. Se guarda 24 horas desde el último trozo.</li>
         <li>Solo lo ve tu plantilla. Para que alguien de fuera lo vea o lo descargue, dale un pase del partido: se te ofrece al terminar la subida y siempre está en la pestaña <strong>Pases</strong>.</li>
@@ -290,10 +283,6 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
           </template>
         </div>
         <p v-if="fileError" class="field-error">{{ fileError }}</p>
-      </div>
-      <div class="min-w-48 flex-1">
-        <label class="label" for="video-title">Título (opcional)</label>
-        <input id="video-title" v-model="title" type="text" maxlength="150" class="input" placeholder="Cámara fija desde la grada…" />
       </div>
       <button type="submit" class="btn-primary" :disabled="!file || !part"><Icon icon="arrow-up-from-bracket" class="mr-1.5 h-3.5 w-3.5" />Subir vídeo</button>
       <Alert v-if="error" kind="error" class="w-full">{{ error }}</Alert>

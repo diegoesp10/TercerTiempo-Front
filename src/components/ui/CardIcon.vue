@@ -1,10 +1,16 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ kind?: 'yellow' | 'red'; title?: string }>(), { kind: 'yellow', title: undefined });
+withDefaults(defineProps<{ kind?: 'yellow' | 'red'; title?: string; small?: boolean }>(), { kind: 'yellow', title: undefined, small: false });
 </script>
 
 <template>
-  <!-- Tarjeta del árbitro. Colores fijos: amarilla y roja se tienen que reconocer en cualquier tema. -->
-  <svg viewBox="0 0 14 18" class="inline-block h-[18px] w-[13px] align-[-4px] drop-shadow-sm" role="img" :aria-label="title ?? (kind === 'yellow' ? 'Tarjeta amarilla' : 'Tarjeta roja')">
+  <!-- Tarjeta del árbitro. Colores fijos: amarilla y roja se tienen que reconocer en cualquier tema. La pequeña va dentro de un distintivo. -->
+  <svg
+    viewBox="0 0 14 18"
+    class="inline-block shrink-0 drop-shadow-sm"
+    :class="small ? 'h-3 w-[9px] align-[-2px]' : 'h-[18px] w-[13px] align-[-4px]'"
+    role="img"
+    :aria-label="title ?? (kind === 'yellow' ? 'Tarjeta amarilla' : 'Tarjeta roja')"
+  >
     <title>{{ title ?? (kind === 'yellow' ? 'Tarjeta amarilla' : 'Tarjeta roja') }}</title>
     <defs>
       <linearGradient id="card-icon-yellow" x1="0" y1="0" x2="1" y2="1">

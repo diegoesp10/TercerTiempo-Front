@@ -313,12 +313,12 @@ defineExpose({ load });
               <Icon v-else :icon="jobIcons[live.job.name] ?? 'clock'" class="h-3.5 w-3.5 text-slate-500" />
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-sm font-semibold text-slate-900">{{ live.job.title }}</span>
-              <span class="block truncate text-xs" :class="toneText[jobState(live.job).tone]" :title="tileText(live)">{{ tileText(live) }}</span>
+              <span class="block break-words text-sm font-semibold text-slate-900">{{ live.job.title }}</span>
+              <span class="block break-words text-xs" :class="toneText[jobState(live.job).tone]">{{ tileText(live) }}</span>
               <span v-if="live.job.running && live.job.progress?.total" class="mt-1.5 block h-1 overflow-hidden rounded-full bg-surface-3">
                 <span class="block h-full bg-brand-500 transition-[width] duration-700" :style="{ width: `${pct(live.job.progress.done, live.job.progress.total)}%` }" />
               </span>
-              <span v-else-if="live.job.lastRun" class="mt-0.5 block truncate text-[11px] text-slate-500">
+              <span v-else-if="live.job.lastRun" class="mt-0.5 block break-words text-[11px] text-slate-500">
                 Última: {{ formatKickoff(live.job.lastRun.startedAt) }} · {{ runStatusLabels[live.job.lastRun.status] }}
               </span>
             </span>
@@ -345,7 +345,7 @@ defineExpose({ load });
           </div>
           <div v-if="football.total > 0" class="mt-4">
             <div class="mb-1 flex justify-between text-xs text-slate-600">
-              <span class="truncate">{{ football.running ? football.current ?? 'Preparando…' : football.summary }}</span>
+              <span class="min-w-0 break-words">{{ football.running ? football.current ?? 'Preparando…' : football.summary }}</span>
               <span class="shrink-0 tabular-nums">{{ leaguesDone }}/{{ football.total }} ligas</span>
             </div>
             <div class="h-2 overflow-hidden rounded-full bg-surface-3">
@@ -432,7 +432,7 @@ defineExpose({ load });
             :class="league.status === 'running' ? 'border-brand-400 bg-brand-500/10 shadow-card' : league.status === 'failed' ? 'border-red-400/60' : 'border-line bg-surface-2'"
           >
             <div class="flex items-center justify-between gap-2">
-              <p class="truncate font-semibold text-slate-900">{{ league.name }}</p>
+              <p class="min-w-0 break-words font-semibold text-slate-900">{{ league.name }}</p>
               <Icon v-if="league.status === 'running'" icon="spinner" class="h-3.5 w-3.5 shrink-0 animate-spin text-brand-500" />
               <Icon v-else-if="league.status === 'done'" icon="circle-check" class="h-3.5 w-3.5 shrink-0 text-emerald-500" />
               <Icon v-else-if="league.status === 'failed'" icon="circle-xmark" class="h-3.5 w-3.5 shrink-0 text-red-500" />
@@ -488,16 +488,16 @@ defineExpose({ load });
             <template v-if="event.kind === 'match' && event.home && event.away">
               <span class="w-9 shrink-0 text-xs font-semibold text-slate-500">J{{ event.matchday }}</span>
               <div class="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
-                <span class="flex min-w-0 items-center justify-end gap-2 text-right"><span class="truncate text-slate-800">{{ event.home.name }}</span><TeamCrest :src="event.home.crestUrl" :name="event.home.name" size="xs" /></span>
+                <span class="flex min-w-0 items-center justify-end gap-2 text-right"><span class="min-w-0 break-words text-slate-800">{{ event.home.name }}</span><TeamCrest :src="event.home.crestUrl" :name="event.home.name" size="xs" /></span>
                 <RouterLink v-if="event.matchId" :to="{ name: 'match', params: { matchId: event.matchId } }" class="rounded-md bg-surface-2 px-2 py-0.5 font-figures font-bold tabular-nums text-slate-900 hover:text-accent-400">
                   {{ event.homeGoals !== null ? `${event.homeGoals} - ${event.awayGoals}` : 'vs' }}
                 </RouterLink>
-                <span class="flex min-w-0 items-center gap-2"><TeamCrest :src="event.away.crestUrl" :name="event.away.name" size="xs" /><span class="truncate text-slate-800">{{ event.away.name }}</span></span>
+                <span class="flex min-w-0 items-center gap-2"><TeamCrest :src="event.away.crestUrl" :name="event.away.name" size="xs" /><span class="min-w-0 break-words text-slate-800">{{ event.away.name }}</span></span>
               </div>
             </template>
             <template v-else>
               <TeamCrest v-if="event.home" :src="event.home.crestUrl" :name="event.home.name" size="xs" />
-              <span class="min-w-0 flex-1 truncate text-slate-800">{{ event.text }}</span>
+              <span class="min-w-0 flex-1 break-words text-slate-800">{{ event.text }}</span>
             </template>
             <span class="hidden shrink-0 text-xs text-slate-500 md:inline">{{ event.league }}</span>
             <Badge v-if="event.change === 'new'" tone="green" class="shrink-0">Nuevo</Badge>
@@ -559,25 +559,25 @@ defineExpose({ load });
         <div v-else class="mt-4 space-y-4" :class="groups.length > 5 ? 'max-h-[75vh] overflow-y-auto overscroll-contain pr-1' : ''">
           <div v-for="group in groups" :key="group.key" class="rounded-xl border border-line" :class="group.active ? 'border-brand-400 shadow-card' : ''">
             <header class="sticky top-0 z-10 flex items-center justify-between gap-2 rounded-t-xl border-b border-line bg-surface-2 px-3 py-2">
-              <p class="truncate text-sm font-semibold text-slate-900">{{ group.competition }} · Jornada {{ group.matchday }}</p>
+              <p class="min-w-0 break-words text-sm font-semibold text-slate-900">{{ group.competition }} · Jornada {{ group.matchday }}</p>
               <span class="shrink-0 text-xs tabular-nums text-slate-500">{{ group.done }}/{{ group.items.length }} guardadas</span>
             </header>
             <ul class="divide-y divide-line">
               <li v-for="item in group.items" :key="item.matchId" class="grid grid-cols-1 gap-2 px-3 py-2 text-sm sm:grid-cols-[minmax(0,1fr)_14rem] sm:items-center" :class="item.status === 'downloading' ? 'bg-brand-500/10' : ''">
                 <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
-                  <span class="flex min-w-0 items-center justify-end gap-2 text-right"><span class="truncate text-slate-800">{{ item.home.name }}</span><TeamCrest :src="item.home.crestUrl" :name="item.home.name" size="sm" /></span>
+                  <span class="flex min-w-0 items-center justify-end gap-2 text-right"><span class="min-w-0 break-words text-slate-800">{{ item.home.name }}</span><TeamCrest :src="item.home.crestUrl" :name="item.home.name" size="sm" /></span>
                   <RouterLink :to="{ name: 'match', params: { matchId: item.matchId } }" class="rounded-md bg-surface-2 px-2 py-0.5 text-center font-figures font-bold tabular-nums text-slate-900 hover:text-accent-400">
                     {{ item.homeGoals !== null ? `${item.homeGoals} - ${item.awayGoals}` : 'vs' }}
                     <span class="block text-[10px] font-normal text-slate-500">{{ formatKickoff(item.kickoffAt) }}</span>
                   </RouterLink>
-                  <span class="flex min-w-0 items-center gap-2"><TeamCrest :src="item.away.crestUrl" :name="item.away.name" size="sm" /><span class="truncate text-slate-800">{{ item.away.name }}</span></span>
+                  <span class="flex min-w-0 items-center gap-2"><TeamCrest :src="item.away.crestUrl" :name="item.away.name" size="sm" /><span class="min-w-0 break-words text-slate-800">{{ item.away.name }}</span></span>
                 </div>
                 <div class="flex min-w-0 items-center gap-2 sm:justify-end">
                   <Icon v-if="item.status === 'downloading'" icon="spinner" class="h-3.5 w-3.5 shrink-0 animate-spin text-brand-500" />
                   <Badge :tone="sheetTone[item.status]" class="shrink-0">
                     {{ sheetLabels[item.status] }}<template v-if="item.status === 'pending' && queuePosition.get(item.matchId)"> · #{{ queuePosition.get(item.matchId) }}</template>
                   </Badge>
-                  <span v-if="item.detail" class="min-w-0 truncate text-xs text-slate-500" :title="item.detail">{{ item.detail }}</span>
+                  <span v-if="item.detail" class="min-w-0 break-words text-xs text-slate-500">{{ item.detail }}</span>
                   <span v-else-if="item.status === 'downloading' && item.startedAt" class="text-xs text-slate-500">{{ elapsed(item.startedAt) }}</span>
                 </div>
               </li>
@@ -605,10 +605,10 @@ defineExpose({ load });
               <p class="font-figures text-2xl font-extrabold tabular-nums text-slate-900">{{ live.job.progress.done }}<span class="text-sm font-medium text-slate-500">/{{ live.job.progress.total }}</span></p>
             </div>
           </div>
-          <p class="mt-2 line-clamp-2 text-xs text-slate-500" :title="live.job.description">{{ live.job.description }}</p>
+          <p class="mt-2 break-words text-xs text-slate-500">{{ live.job.description }}</p>
 
           <div v-if="live.job.running" class="mt-3">
-            <p class="mb-1 truncate text-xs text-slate-600">{{ live.job.progress?.current ?? 'Preparando…' }}</p>
+            <p class="mb-1 break-words text-xs text-slate-600">{{ live.job.progress?.current ?? 'Preparando…' }}</p>
             <div class="h-2 overflow-hidden rounded-full bg-surface-3">
               <div
                 class="h-full rounded-full bg-brand-500 transition-[width] duration-700"
@@ -639,7 +639,7 @@ defineExpose({ load });
                   class="flex min-w-0 items-center gap-1.5 text-xs text-slate-500 hover:text-accent-400"
                 >
                   <TeamCrest :src="event.home.crestUrl" :name="event.home.name" size="xs" />
-                  <span class="truncate">{{ event.home.name }} – {{ event.away.name }}</span>
+                  <span class="min-w-0 break-words">{{ event.home.name }} – {{ event.away.name }}</span>
                   <TeamCrest :src="event.away.crestUrl" :name="event.away.name" size="xs" />
                 </RouterLink>
                 <p class="break-words text-slate-800">{{ event.text }}</p>

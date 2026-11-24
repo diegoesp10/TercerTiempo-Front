@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { adminApi } from '@/api/admin';
 import { ApiError, errorMessage } from '@/api/http';
 import AdminMfaStep from '@/components/admin/AdminMfaStep.vue';
+import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import ClubInvitationsPanel from '@/components/admin/ClubInvitationsPanel.vue';
 import FootballSyncPanel from '@/components/admin/FootballSyncPanel.vue';
 import LicensesPanel from '@/components/admin/LicensesPanel.vue';
@@ -24,6 +25,7 @@ import PresencePanel from '@/components/admin/PresencePanel.vue';
 import { useAdminSessionStore } from '@/stores/adminSession';
 import { useAuthStore } from '@/stores/auth';
 import CookiesAdminPanel from '@/components/admin/CookiesAdminPanel.vue';
+import InjuryTypesAdminPanel from '@/components/admin/InjuryTypesAdminPanel.vue';
 
 /**
  * Página oculta del administrador (/jobs, sin enlace en el menú): cuándo y cómo se han actualizado los datos, las
@@ -37,7 +39,7 @@ const admin = useAdminSessionStore();
 const auth = useAuthStore();
 const session = computed(() => admin.session);
 
-type AdminTab = 'jobs' | 'live' | 'presence' | 'licenses' | 'invitations' | 'moderation' | 'analytics' | 'cookies';
+type AdminTab = 'jobs' | 'live' | 'presence' | 'licenses' | 'invitations' | 'moderation' | 'analytics' | 'cookies' | 'injuries';
 const tabs: { value: AdminTab; label: string }[] = [
   { value: 'jobs', label: 'Trabajos y scrapeos' },
   { value: 'live', label: 'Descargas en directo' },
@@ -47,6 +49,7 @@ const tabs: { value: AdminTab; label: string }[] = [
   { value: 'moderation', label: 'Moderación' },
   { value: 'analytics', label: 'Uso de la web' },
   { value: 'cookies', label: 'Cookies' },
+  { value: 'injuries', label: 'Tipos de lesión' },
 ];
 const tab = ref<AdminTab>('jobs');
 // Trabajo que se acaba de lanzar: «Descargas en directo» se abre en su apartado.
@@ -310,18 +313,14 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
       </template>
     </PageHeader>
 
-    <div class="mb-6 flex flex-wrap gap-2" role="tablist">
-      <button
-        v-for="item in tabs"
-        :key="item.value"
-        type="button"
-        role="tab"
-        :aria-selected="tab === item.value"
-        class="rounded-full border px-4 py-1.5 text-sm font-medium"
-        :class="tab === item.value ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
-        @click="tab = item.value"
-      >{{ item.label }}</button>
-    </div>
+    <ResponsiveTabs
+      :items="tabs.map((item) => ({ key: item.value, label: item.label }))"
+      :model-value="tab"
+      label="Apartados de la administración"
+      variant="pills"
+      class="mb-6"
+      @update:model-value="(key) => (tab = key as AdminTab)"
+    />
 
     <div v-if="tab === 'licenses'" class="space-y-6">
       <LicensingSettingsPanel :token="session.token" @saved="licensesPanel?.load()" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
@@ -337,6 +336,7 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
     <AnalyticsPanel v-else-if="tab === 'analytics'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     <ModerationPanel v-else-if="tab === 'moderation'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     <CookiesAdminPanel v-else-if="tab === 'cookies'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    <InjuryTypesAdminPanel v-else-if="tab === 'injuries'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
 
     <template v-else>
     <Alert v-if="error" kind="error" class="mb-4">{{ error }}</Alert>
@@ -371,8 +371,8 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
 
           <div v-if="job.progress" class="mt-3">
             <div class="mb-1 flex justify-between gap-2 text-xs text-slate-600">
-              <span class="truncate">{{ job.progress.current ?? 'Preparando…' }}</span>
-              <span v-if="job.progress.total" class="tabular-nums">{{ job.progress.done }}/{{ job.progress.total }}</span>
+              <span class="min-w-0 break-words">{{ job.progress.current ?? 'Preparando…' }}</span>
+              <span v-if="job.progress.total" class="shrink-0 tabular-nums">{{ job.progress.done }}/{{ job.progress.total }}</span>
             </div>
             <div class="h-1.5 w-full overflow-hidden rounded-full bg-surface-3">
               <div class="h-full rounded-full bg-brand-500 transition-[width] duration-700" :style="{ width: `${usage(job.progress.done, job.progress.total)}%` }" />
@@ -504,9 +504,9 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
                 <td class="px-3 py-2"><Badge :tone="statusTone[run.status]">{{ statusLabels[run.status] }}</Badge></td>
                 <td class="px-3 py-2 text-right tabular-nums whitespace-nowrap">{{ duration(run) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ run.requests }}</td>
-                <td class="min-w-80 max-w-xl px-3 py-2 text-xs text-slate-600" :title="[run.scope, run.summary].filter(Boolean).join('\n')">
-                  <span v-if="run.scope" class="block truncate font-medium text-slate-700">{{ run.scope }}</span>
-                  <span class="line-clamp-2">{{ run.summary ?? '—' }}<span v-if="run.errors.length" class="text-amber-700"> · {{ run.errors.length }} {{ run.errors.length === 1 ? 'error' : 'errores' }}</span></span>
+                <td class="min-w-80 max-w-xl px-3 py-2 text-xs text-slate-600">
+                  <span v-if="run.scope" class="block break-words font-medium text-slate-700">{{ run.scope }}</span>
+                  <span class="block break-words">{{ run.summary ?? '—' }}<span v-if="run.errors.length" class="text-amber-700"> · {{ run.errors.length }} {{ run.errors.length === 1 ? 'error' : 'errores' }}</span></span>
                 </td>
               </tr>
             </tbody>
@@ -552,7 +552,7 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
                 <td class="px-3 py-1.5 text-right font-semibold tabular-nums" :class="statusClass(request.statusCode)" :title="request.error ?? undefined">{{ request.statusCode ?? 'Error' }}</td>
                 <td class="px-3 py-1.5 text-right tabular-nums text-slate-600">{{ request.durationMs }}</td>
                 <td class="px-3 py-1.5 whitespace-nowrap text-xs text-slate-600">{{ origin(request) }}</td>
-                <td class="px-3 py-1.5 text-xs text-slate-500" :title="request.url"><span class="block max-w-[28rem] truncate">{{ request.method }} {{ request.url }}</span></td>
+                <td class="px-3 py-1.5 text-xs text-slate-500"><span class="block max-w-[28rem] [overflow-wrap:anywhere]">{{ request.method }} {{ request.url }}</span></td>
               </tr>
             </tbody>
           </table>

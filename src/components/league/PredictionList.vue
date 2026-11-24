@@ -40,7 +40,7 @@ const barWidth = (value: number) => `${value > 0 ? Math.max(value * 100, 2) : 0}
         <div class="flex items-center gap-2">
           <span class="w-5 shrink-0 text-right font-figures text-xs text-slate-500" title="Puesto final esperado">{{ index + 1 }}</span>
           <TeamCrest :src="team.crestUrl" :name="team.teamName" :short-name="team.shortName" size="xs" />
-          <RouterLink :to="{ name: 'team', params: { teamId: team.teamId } }" class="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
+          <RouterLink :to="{ name: 'team', params: { teamId: team.teamId } }" class="min-w-0 flex-1 break-words text-sm font-semibold text-slate-900">
             {{ team.teamName }}
           </RouterLink>
           <span class="shrink-0 font-figures text-xs text-slate-500" title="Puntos al final de la liga, de media">≈ {{ points(team.expectedPoints) }} pts</span>

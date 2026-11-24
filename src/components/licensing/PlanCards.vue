@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
+import type { ChoiceOption } from '@/components/ui/choice';
 import type { BillingInterval, LicenseItem, LicensingCatalogDto } from '@/types/api';
 import { formatPrice } from '@/utils/format';
 import { clubFeatures, freeMonths, priceOf, staffFeatures } from './plans';
@@ -14,6 +16,11 @@ const interval = defineModel<BillingInterval>('interval', { default: 'Monthly' }
 const currency = computed(() => props.catalog.currency);
 const maxFree = computed(() => Math.max(0, freeMonths(props.catalog.club), freeMonths(props.catalog.staffSeat)));
 const monthlyEquivalent = (cents: number) => formatPrice(Math.round(cents / 12), currency.value);
+const freeText = (months: number) => `${months} ${months === 1 ? 'mes' : 'meses'} gratis`;
+const billingOptions = computed<ChoiceOption<BillingInterval>[]>(() => [
+  { value: 'Monthly', label: 'Mensual' },
+  { value: 'Yearly', label: 'Anual', badge: maxFree.value > 0 ? freeText(maxFree.value) : undefined },
+]);
 
 const cards = computed(() => [
   {
@@ -44,25 +51,7 @@ const cards = computed(() => [
 <template>
   <div>
     <div class="flex justify-center">
-      <div class="inline-flex rounded-full border border-line bg-surface-2 p-1" role="radiogroup" aria-label="Facturación">
-        <button
-          v-for="option in (['Monthly', 'Yearly'] as const)"
-          :key="option"
-          type="button"
-          role="radio"
-          :aria-checked="interval === option"
-          class="flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition"
-          :class="interval === option ? 'bg-action text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
-          @click="interval = option"
-        >
-          {{ option === 'Monthly' ? 'Mensual' : 'Anual' }}
-          <span
-            v-if="option === 'Yearly' && maxFree > 0"
-            class="rounded-full px-2 py-0.5 text-[11px] font-bold"
-            :class="interval === option ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700'"
-          >{{ maxFree }} meses gratis</span>
-        </button>
-      </div>
+      <ChoiceToggle v-model="interval" :options="billingOptions" label="Facturación" look="pill" />
     </div>
 
     <div class="mx-auto mt-6 grid max-w-4xl grid-cols-1 gap-5 md:grid-cols-2">
@@ -89,7 +78,7 @@ const cards = computed(() => [
           </p>
           <p class="mt-1 min-h-5 text-xs text-slate-500">
             <template v-if="interval === 'Yearly'">
-              Equivale a {{ monthlyEquivalent(card.price.yearlyPriceCents) }}/mes<template v-if="freeMonths(card.price) > 0"> · <strong class="text-emerald-700">{{ freeMonths(card.price) }} meses gratis</strong></template>
+              Equivale a {{ monthlyEquivalent(card.price.yearlyPriceCents) }}/mes<template v-if="freeMonths(card.price) > 0"> · <strong class="text-emerald-700">{{ freeText(freeMonths(card.price)) }}</strong></template>
             </template>
             <template v-else>O {{ formatPrice(card.price.yearlyPriceCents, currency) }}/año{{ card.unit }} pagando de una vez</template>
           </p>

@@ -128,7 +128,7 @@ const width = (value: number) => (grown.value ? `${Math.max(value * 100, value >
         <RouterLink :to="{ name: 'team', params: { teamId: favourite.teamId } }" class="group mt-4 flex items-center gap-3">
           <TeamCrest :src="favourite.crestUrl" :name="favourite.teamName" :short-name="favourite.shortName" size="lg" />
           <span class="min-w-0">
-            <span class="block truncate text-lg font-bold text-slate-900 group-hover:text-accent-400">{{ favourite.teamName }}</span>
+            <span class="block break-words text-lg font-bold leading-snug text-slate-900 group-hover:text-accent-400">{{ favourite.teamName }}</span>
             <span class="block text-xs text-slate-500">{{ favourite.position }}.º con {{ favourite.points }} puntos en {{ favourite.played }} partidos</span>
           </span>
         </RouterLink>
@@ -139,7 +139,7 @@ const width = (value: number) => (grown.value ? `${Math.max(value * 100, value >
         <dl v-if="progress" class="mt-6 space-y-4 border-t border-line pt-4">
           <div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="min-w-0 truncate text-[11px] uppercase tracking-wide text-slate-500">{{ favourite.teamName }}</dt>
+              <dt class="min-w-0 break-words text-[11px] uppercase tracking-wide text-slate-500">{{ favourite.teamName }}</dt>
               <dd class="shrink-0 font-figures text-xl font-extrabold leading-none text-slate-900">
                 {{ progress.team.played }}<span class="text-sm font-semibold text-slate-400">/{{ progress.team.total }}</span>
               </dd>
@@ -151,7 +151,7 @@ const width = (value: number) => (grown.value ? `${Math.max(value * 100, value >
           </div>
           <div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="min-w-0 truncate text-[11px] uppercase tracking-wide text-slate-500">Toda la liga</dt>
+              <dt class="min-w-0 break-words text-[11px] uppercase tracking-wide text-slate-500">Toda la liga</dt>
               <dd class="shrink-0 font-figures text-xl font-extrabold leading-none text-slate-900">
                 {{ progress.league.played.toLocaleString('es-ES') }}<span class="text-sm font-semibold text-slate-400">/{{ progress.league.total.toLocaleString('es-ES') }}</span>
               </dd>
@@ -185,7 +185,7 @@ const width = (value: number) => (grown.value ? `${Math.max(value * 100, value >
                   :style="zoneStyle(places, team.position)"
                 >{{ team.position }}</span>
                 <TeamCrest :src="team.crestUrl" :name="team.teamName" :short-name="team.shortName" size="xs" />
-                <span class="min-w-0 flex-1 truncate font-medium text-slate-700 group-hover:text-slate-900">{{ team.teamName }}</span>
+                <span class="min-w-0 flex-1 break-words font-medium text-slate-700 group-hover:text-slate-900">{{ team.teamName }}</span>
                 <span class="shrink-0 font-figures font-bold tabular-nums" :class="column.text">{{ percent(team[column.key]) }}</span>
               </span>
               <span class="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-surface-2">

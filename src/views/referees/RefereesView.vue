@@ -5,14 +5,18 @@ import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
+import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
+import SearchSelect from '@/components/ui/SearchSelect.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StarRating from '@/components/referees/StarRating.vue';
 import { useAsync } from '@/composables/useAsync';
+import { MY_CLUB_GROUP } from '@/composables/useMyClub';
 import { useSort, type SortValue } from '@/composables/useSort';
 import { useAuthStore } from '@/stores/auth';
-import type { CompetitionLevel, OfficialDuty, RefereeCategoryDto, RefereeSummaryDto } from '@/types/api';
-import { formatDate, formatScore, levelLabels } from '@/utils/format';
+import type { OfficialDuty, RefereeCategoryDto, RefereeSummaryDto } from '@/types/api';
+import { formatDate, formatScore } from '@/utils/format';
+import { territoryOptions, withinTerritory } from '@/utils/territories';
 
 /**
  * Árbitros, públicos como la liga y los equipos (las llamadas van sin token). La categoría manda: siempre hay una elegida
@@ -28,16 +32,6 @@ const { data: index, loading: loadingIndex, error: indexError } = useAsync(() =>
 // Las categorías de los equipos de la cuenta, por sus ligas: la llamada no necesita el token para saberlo.
 const mine = computed(() => (index.value ?? []).filter((c) => c.competitionIds.some((id) => auth.myCompetitionIds.includes(id))).map((c) => c.key));
 
-const levels = computed(() => {
-  const groups: { level: CompetitionLevel; categories: RefereeCategoryDto[] }[] = [];
-  for (const category of index.value ?? []) {
-    const group = groups.find((g) => g.level === category.level);
-    if (group) group.categories.push(category);
-    else groups.push({ level: category.level, categories: [category] });
-  }
-  return groups;
-});
-
 const category = computed(() => {
   const list = index.value ?? [];
   const wanted = typeof route.query.categoria === 'string' ? route.query.categoria : null;
@@ -46,6 +40,38 @@ const category = computed(() => {
     ?? [...list].sort((a, b) => b.ratings - a.ratings || b.matches - a.matches)[0]
     ?? null;
 });
+// Como las ligas: primero el ámbito (Nacional, Asturias…) y, al cambiarlo, sus categorías, con las de tus equipos arriba.
+const territoryId = ref<string | null>(null);
+watch(category, (current) => {
+  if (current) territoryId.value = current.territory.id;
+}, { immediate: true });
+const territories = computed(() => territoryOptions(index.value ?? [], ['categoría', 'categorías']));
+const categoryOptions = computed(() => {
+  const options = (index.value ?? [])
+    .filter((c) => c.territory.id === territoryId.value)
+    .map((c) => ({
+      value: c.key,
+      label: c.name,
+      hint: `${c.referees} árbitros · ${c.assistants} asistentes`,
+      group: mine.value.includes(c.key) ? MY_CLUB_GROUP : c.territory.name,
+    }));
+  return withinTerritory([...options.filter((o) => o.group === MY_CLUB_GROUP), ...options.filter((o) => o.group !== MY_CLUB_GROUP)]);
+});
+
+function chooseTerritory(id: string | number | null) {
+  if (typeof id !== 'string') return;
+  territoryId.value = id;
+  const inTerritory = (index.value ?? []).filter((c) => c.territory.id === id);
+  if (inTerritory.some((c) => c.key === category.value?.key)) return;
+  const pick = inTerritory.find((c) => mine.value.includes(c.key))
+    ?? [...inTerritory].sort((a, b) => b.ratings - a.ratings || b.matches - a.matches)[0];
+  if (pick) show(pick.key);
+}
+
+function chooseCategory(key: string | number | null) {
+  if (typeof key === 'string') show(key);
+}
+
 const duty = computed<OfficialDuty>(() => (route.query.funcion === 'asistentes' ? 'Assistant' : 'Main'));
 const duties: { value: OfficialDuty; label: string; short: string; count: (c: RefereeCategoryDto) => number }[] = [
   { value: 'Main', label: 'Árbitros principales', short: 'Principales', count: (c) => c.referees },
@@ -117,28 +143,32 @@ const { sorted, sortBy, state } = useSort<RefereeSummaryDto, RefereeSortKey>(sho
     </p>
 
     <template v-else-if="index && category">
-      <nav class="mb-5 space-y-3" aria-label="Categoría">
-        <div v-for="group in levels" :key="group.level">
-          <p class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ levelLabels[group.level] }}</p>
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="item in group.categories"
-              :key="item.key"
-              type="button"
-              class="rounded-lg border px-3 py-2 text-left text-sm transition"
-              :class="item.key === category.key
-                ? 'border-brand-400 bg-brand-500/15 text-emerald-700'
-                : 'border-slate-200 bg-surface text-slate-700 hover:border-brand-400/60'"
-              :aria-pressed="item.key === category.key"
-              @click="show(item.key)"
-            >
-              <Icon v-if="mine.includes(item.key)" icon="star" class="mr-1 h-3 w-3 text-accent-400" title="La de tus equipos" />
-              <span class="font-medium">{{ item.name }}</span>
-              <span class="ml-2 hidden text-xs text-slate-400 sm:inline">{{ item.referees }} árbitros · {{ item.assistants }} asistentes</span>
-            </button>
-          </div>
+      <div class="mb-5 grid gap-3 sm:grid-cols-[minmax(0,14rem)_minmax(0,24rem)]">
+        <div>
+          <span class="label">Ámbito</span>
+          <SearchSelect
+            id="referees-territory"
+            :model-value="territoryId"
+            :options="territories"
+            searchable
+            aria-label="Ámbito"
+            placeholder="Elige el ámbito"
+            @update:model-value="chooseTerritory"
+          />
         </div>
-      </nav>
+        <div>
+          <span class="label">Categoría</span>
+          <SearchSelect
+            id="referees-category"
+            :model-value="category.key"
+            :options="categoryOptions"
+            searchable
+            aria-label="Categoría"
+            placeholder="Elige la categoría"
+            @update:model-value="chooseCategory"
+          />
+        </div>
+      </div>
 
       <section class="card overflow-hidden p-0">
         <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-line px-4 pt-4">
@@ -149,21 +179,14 @@ const { sorted, sortBy, state } = useSort<RefereeSummaryDto, RefereeSortKey>(sho
               {{ category.ratings === 1 ? '1 nota' : `${category.ratings} notas` }}
             </p>
           </div>
-          <div class="flex max-w-full gap-1 overflow-x-auto" role="tablist" aria-label="Función">
-            <button
-              v-for="option in duties"
-              :key="option.value"
-              type="button"
-              role="tab"
-              :aria-selected="duty === option.value"
-              class="-mb-px flex shrink-0 items-center gap-1 border-b-2 px-2 pb-3 text-sm font-semibold transition sm:gap-1.5 sm:px-3"
-              :class="duty === option.value ? 'border-accent-400 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'"
-              @click="show(category.key, option.value)"
-            >
-              <span class="sm:hidden">{{ option.short }}</span><span class="hidden sm:inline">{{ option.label }}</span>
-              <span class="rounded-full bg-surface-2 px-1.5 py-0.5 font-figures text-[11px] text-slate-500">{{ option.count(category) }}</span>
-            </button>
-          </div>
+          <ResponsiveTabs
+            :items="duties.map((option) => ({ key: option.value, label: option.label, short: option.short, count: option.count(category) }))"
+            :model-value="duty"
+            label="Función"
+            tone="accent"
+            inset
+            @update:model-value="(key) => show(category.key, key as OfficialDuty)"
+          />
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">

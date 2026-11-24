@@ -7,6 +7,7 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
+import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import StatCard from '@/components/ui/StatCard.vue';
 import { confirmDialog } from '@/composables/useConfirm';
@@ -229,20 +230,13 @@ watch(tab, () => { saved.value = null; void load(); }, { immediate: true });
     <Alert v-if="!auth.isClub" kind="warning">Solo las cuentas de club gestionan los pases y sus precios.</Alert>
 
     <template v-else>
-      <nav class="mb-4 flex gap-1 border-b border-slate-200" role="tablist">
-        <button
-          v-for="item in tabs"
-          :key="item.id"
-          type="button"
-          role="tab"
-          :aria-selected="tab === item.id"
-          class="-mb-px border-b-2 px-4 py-2 text-sm font-medium transition"
-          :class="tab === item.id ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'"
-          @click="selectTab(item.id)"
-        >
-          {{ item.label }}<template v-if="item.id === 'solicitudes' && pending.length"> ({{ pending.length }})</template>
-        </button>
-      </nav>
+      <ResponsiveTabs
+        :items="tabs.map((item) => ({ key: item.id, label: item.label, count: item.id === 'solicitudes' && pending.length ? pending.length : null }))"
+        :model-value="tab"
+        label="Pases del club"
+        class="mb-4"
+        @update:model-value="(key) => selectTab(key as Tab)"
+      />
 
       <Alert v-if="error" kind="error" class="mb-4">{{ error }}</Alert>
       <Spinner v-if="loading" />

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
 import { toDateKey } from '@/utils/format';
 
 // Periodo para contar entrenamientos: toda la temporada (sin fechas), atajos habituales o dos fechas a mano.
@@ -23,9 +24,12 @@ const presets = computed(() => {
   ];
 });
 
+const presetOptions = computed(() => presets.value.map((p) => ({ value: p.key, label: p.label })));
 const active = computed(() => presets.value.find((p) => p.from === from.value && p.to === to.value)?.key ?? null);
 
-function pick(preset: { from: string | null; to: string | null }) {
+function pickKey(key: string) {
+  const preset = presets.value.find((p) => p.key === key);
+  if (!preset) return;
   from.value = preset.from;
   to.value = preset.to;
 }
@@ -34,17 +38,7 @@ function pick(preset: { from: string | null; to: string | null }) {
 <template>
   <div class="flex flex-wrap items-center gap-2 text-xs">
     <slot />
-    <div class="flex flex-wrap rounded-lg border border-line" role="group" aria-label="Periodo">
-      <button
-        v-for="p in presets"
-        :key="p.key"
-        type="button"
-        class="px-2.5 py-1 font-medium transition first:rounded-l-lg last:rounded-r-lg"
-        :class="active === p.key ? 'bg-brand-500 text-white' : 'text-slate-600 hover:bg-surface-2'"
-        :aria-pressed="active === p.key"
-        @click="pick(p)"
-      >{{ p.label }}</button>
-    </div>
+    <ChoiceToggle :model-value="active" :options="presetOptions" label="Periodo" size="xs" tone="brand" @update:model-value="pickKey" />
     <label class="flex items-center gap-1 text-slate-500">
       Del
       <input :value="from ?? ''" type="date" class="input px-2 py-1 text-xs" :min="min ?? undefined" :max="to ?? max ?? undefined" aria-label="Desde" @change="from = ($event.target as HTMLInputElement).value || null" />

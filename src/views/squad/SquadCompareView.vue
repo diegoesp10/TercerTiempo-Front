@@ -15,7 +15,10 @@ import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { groupByPosition, useGroupByPosition } from '@/composables/usePositionGrouping';
 import { useSquad } from '@/composables/useSquad';
+import { useCompareSelectionStore } from '@/stores/compareSelection';
+import { useAuthStore } from '@/stores/auth';
 import { useSettingsStore } from '@/stores/settings';
+import Badge from '@/components/ui/Badge.vue';
 import type { SquadPlayerProfileDto, SquadPlayerStatsDto } from '@/types/api';
 import { formatNumber, formatPct, positionShortLabels } from '@/utils/format';
 import PlayerName from '@/components/players/PlayerName.vue';
@@ -35,27 +38,52 @@ const candidates = computed(() =>
 );
 
 const grouped = useGroupByPosition('squad-compare');
-const candidateGroups = computed(() => groupByPosition(candidates.value, (r) => r.player.position, grouped.value));
+const candidateGroups = computed(() => groupByPosition(candidates.value, (r) => r.player.position, grouped.value, undefined, (r) => r.player.status !== 'Active'));
 
 const selected = ref<string[]>([]);
 const includeAverage = ref(true);
+const remembered = useCompareSelectionStore();
 
-// Selección inicial: la de la URL (?ids=a,b) completada con los que más minutos tienen.
-watch(candidates, (list) => {
-  if (selected.value.length > 0 || list.length === 0) return;
-  const fromQuery = String(route.query.ids ?? '').split(',').filter((id) => list.some((r) => r.player.id === id));
-  const extra = list.map((r) => r.player.id).filter((id) => !fromQuery.includes(id));
-  selected.value = [...fromQuery, ...extra].slice(0, Math.max(2, Math.min(fromQuery.length, MAX_SELECTED)));
-});
+// El comparador del jugador no es el del cuerpo técnico (Diego, 21-11): él va siempre, el primero y como «Tú», y elige
+// con quién compararse. Si aún no tiene minutos, compara como cualquiera.
+const auth = useAuthStore();
+const myId = computed(() => (auth.playerSquad?.squadId === squadId.value ? auth.playerSquad.squadPlayerId : null));
+const meIn = computed(() => (myId.value && candidates.value.some((r) => r.player.id === myId.value) ? myId.value : null));
+const withMe = (ids: string[]) => (meIn.value ? [meIn.value, ...ids.filter((id) => id !== meIn.value)].slice(0, MAX_SELECTED) : ids);
+const nameOf = (row: { player: { id: string; fullName: string } }) => (row.player.id === meIn.value ? 'Tú' : row.player.fullName);
+
+// Al entrar el cuerpo técnico no tiene a nadie marcado (Diego, 20-11: «no me preselecciones a nadie»): solo los que traiga
+// el enlace (?ids=a,b, que también conserva la selección al recargar) o, si no, los que se eligieron aquí en esta sesión.
+let restored = false;
+watch(
+  candidates,
+  (list) => {
+    if (restored || list.length === 0) return;
+    restored = true;
+    const known = (ids: string[]) => ids.filter((id) => list.some((r) => r.player.id === id)).slice(0, MAX_SELECTED);
+    const fromQuery = known(String(route.query.ids ?? '').split(','));
+    selected.value = withMe(fromQuery.length > 0 ? fromQuery : known(remembered.get(squadId.value)));
+  },
+  { immediate: true },
+);
 
 watch(selected, (ids) => {
+  remembered.set(squadId.value, ids);
   void router.replace({ query: { ...route.query, ids: ids.join(',') || undefined } });
   void loadProfiles(ids);
 });
 
 function toggle(id: string) {
+  if (id === meIn.value) return;
   if (selected.value.includes(id)) selected.value = selected.value.filter((x) => x !== id);
   else if (selected.value.length < MAX_SELECTED) selected.value = [...selected.value, id];
+}
+
+/** Por qué no se puede pulsar un jugador: el propio jugador va siempre; con el cupo lleno, hay que quitar a alguien. */
+function lockReason(id: string): string | undefined {
+  if (id === meIn.value) return 'Tú vas siempre: elige con quién compararte';
+  if (!selected.value.includes(id) && selected.value.length >= MAX_SELECTED) return `Ya hay ${MAX_SELECTED} elegidos: quita uno para añadir a otro`;
+  return undefined;
 }
 
 const rows = computed(() =>
@@ -72,7 +100,7 @@ const reference = computed(() =>
   candidates.value.filter((r) => r.stats.minutes >= MIN_MINUTES_FOR_REFERENCE).map((r) => axesFromStats(r.stats, r.impact)),
 );
 const entries = computed<RadarEntry[]>(() => [
-  ...rows.value.map((r) => ({ name: r.player.fullName, axes: axesFromStats(r.stats, r.impact) })),
+  ...rows.value.map((r) => ({ name: nameOf(r), axes: axesFromStats(r.stats, r.impact) })),
   ...(includeAverage.value ? [{ name: 'Media de la plantilla', axes: averageAxes(reference.value), reference: true }] : []),
 ]);
 const includeSaves = computed(() => rows.value.some((r) => r.player.position === 'Goalkeeper'));
@@ -99,7 +127,7 @@ const trend = computed(() => {
   const series = selected.value
     .map((id) => profiles.get(id))
     .filter((p): p is SquadPlayerProfileDto => p !== undefined)
-    .map((p) => ({ name: p.player.fullName, points: p.matches }));
+    .map((p) => ({ name: nameOf(p), points: p.matches }));
   return series.length ? ratingComparisonOption(series) : null;
 });
 
@@ -137,11 +165,17 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
     </Alert>
 
     <template v-else>
+      <Alert v-if="myId && !meIn" kind="info" class="mb-4">
+        Aún no tienes minutos en las actas: en cuanto juegues, aquí te comparas tú con tus compañeros. Mientras, puedes comparar a quien quieras.
+      </Alert>
       <section class="card mb-6">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 class="font-semibold text-slate-900">Elige hasta {{ MAX_SELECTED }} jugadores</h2>
-            <p class="text-xs text-slate-500">Todos los datos salen de las actas; las notas, calculadas con esos datos.</p>
+            <h2 v-if="meIn" class="font-semibold text-slate-900">Tú frente a tus compañeros</h2>
+            <h2 v-else class="font-semibold text-slate-900">Elige hasta {{ MAX_SELECTED }} jugadores</h2>
+            <p class="text-xs text-slate-500">
+              <template v-if="meIn">Tú vas siempre; elige hasta {{ MAX_SELECTED - 1 }} con quien compararte. </template>Todos los datos salen de las actas; las notas, calculadas con esos datos.
+            </p>
           </div>
           <div class="flex flex-wrap items-center gap-3">
             <GroupByPositionToggle v-model="grouped" />
@@ -158,17 +192,19 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
               v-for="row in group.rows"
               :key="row.player.id"
               type="button"
-              class="flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-sm transition disabled:cursor-not-allowed"
-              :class="selected.includes(row.player.id)
-                ? 'border-transparent shadow-sm'
-                : 'border-slate-200 bg-surface text-slate-700 hover:border-slate-300 disabled:opacity-50'"
+              class="flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition"
+              :class="[
+                selected.includes(row.player.id) ? 'border-transparent shadow-sm' : 'border-slate-200 bg-surface text-slate-700 hover:border-slate-300 disabled:opacity-50',
+                row.player.id === meIn ? 'cursor-default' : 'cursor-pointer disabled:cursor-not-allowed',
+              ]"
               :style="selected.includes(row.player.id) ? { backgroundColor: colorOf(row.player.id), color: textOnColor(colorOf(row.player.id)) } : undefined"
-              :disabled="!selected.includes(row.player.id) && selected.length >= MAX_SELECTED"
-              :title="!selected.includes(row.player.id) && selected.length >= MAX_SELECTED ? `Ya hay ${MAX_SELECTED} elegidos: quita uno para añadir a otro` : undefined"
+              :disabled="!!lockReason(row.player.id)"
+              :title="lockReason(row.player.id)"
               @click="toggle(row.player.id)"
             >
               <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" />
               <span v-if="row.player.position && !grouped" class="text-xs">{{ positionShortLabels[row.player.position] }}</span>
+              <Badge v-if="row.player.id === meIn" tone="slate">Tú</Badge>
             </button>
           </div>
         </div>
@@ -193,7 +229,7 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
                       class="block text-xs font-semibold hover:underline"
                       :style="{ color: textColorOf(row.player.id) }"
                     >
-                      <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" />
+                      <PlayerName :name="nameOf(row)" :photo-url="row.player.photoUrl" />
                     </RouterLink>
                   </th>
                 </tr>

@@ -7,31 +7,43 @@ export const positionOrder: (Position | null)[] = ['Goalkeeper', 'Defender', 'Mi
 
 export interface PositionGroup<T> {
   key: string;
-  /** «Porteros», «Defensas»…; vacío cuando no se agrupa. */
+  /** «Porteros», «Defensas»…, «De baja»; vacío cuando no se agrupa. */
   label: string;
   position: Position | null;
+  /** El grupo de los de baja: estuvieron en la plantilla y ya no están. */
+  left?: boolean;
   rows: T[];
 }
 
 /**
  * Las filas por posición, en el orden del campo y conservando el orden que traen dentro de cada grupo. Sin agrupar, un
- * único grupo sin título, para que la plantilla pinte igual en los dos casos.
+ * único grupo sin título, para que la plantilla pinte igual en los dos casos. Con `isLeft`, los de baja van siempre
+ * aparte, en un último grupo «De baja», se agrupe o no (Diego, 20-11: «porteros, defensas, centrocampistas, delanteros
+ * y de baja»).
  */
 export function groupByPosition<T>(
   rows: readonly T[],
   positionOf: (row: T) => Position | null | undefined,
   enabled: boolean,
   noneLabel = 'Sin posición',
+  isLeft?: (row: T) => boolean,
 ): PositionGroup<T>[] {
-  if (!enabled) return [{ key: 'all', label: '', position: null, rows: [...rows] }];
-  return positionOrder
-    .map((position) => ({
-      key: position ?? 'none',
-      label: position ? `${positionLabels[position]}s` : noneLabel,
-      position,
-      rows: rows.filter((row) => (positionOf(row) ?? null) === position),
-    }))
-    .filter((group) => group.rows.length > 0);
+  const left = isLeft ? rows.filter(isLeft) : [];
+  const current = isLeft ? rows.filter((row) => !isLeft(row)) : [...rows];
+  const groups: PositionGroup<T>[] = !enabled
+    ? current.length > 0 || left.length === 0
+      ? [{ key: 'all', label: '', position: null, rows: current }]
+      : []
+    : positionOrder
+        .map((position) => ({
+          key: position ?? 'none',
+          label: position ? `${positionLabels[position]}s` : noneLabel,
+          position,
+          rows: current.filter((row) => (positionOf(row) ?? null) === position),
+        }))
+        .filter((group) => group.rows.length > 0);
+  if (left.length > 0) groups.push({ key: 'left', label: 'De baja', position: null, left: true, rows: left });
+  return groups;
 }
 
 /**

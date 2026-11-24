@@ -3,7 +3,11 @@ import { computed, ref, toRef, watch } from 'vue';
 import { useAuthImage } from '@/composables/useAuthImage';
 
 // Foto del jugador servida por la API (con la sesión: son de menores); sin foto, sin permiso o si falla, sus iniciales.
-const props = withDefaults(defineProps<{ src: string | null | undefined; name: string; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' }>(), { size: 'md' });
+// `decorative`: va dentro de un enlace que ya dice quién es (la cabecera), así que no lleva título ni texto alternativo.
+const props = withDefaults(
+  defineProps<{ src: string | null | undefined; name: string; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'; decorative?: boolean }>(),
+  { size: 'md', decorative: false },
+);
 
 const failed = ref(false);
 watch(() => props.src, () => { failed.value = false; });
@@ -26,8 +30,8 @@ const sizeClasses: Record<NonNullable<typeof props.size>, string> = {
 </script>
 
 <template>
-  <span class="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-2 ring-1 ring-line" :class="sizeClasses[size]" :title="name">
-    <img v-if="url" :src="url" :alt="name" class="h-full w-full object-cover" loading="lazy" @error="failed = true" />
+  <span class="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-2 ring-1 ring-line" :class="sizeClasses[size]" :title="decorative ? undefined : name">
+    <img v-if="url" :src="url" :alt="decorative ? '' : name" class="h-full w-full object-cover" loading="lazy" @error="failed = true" />
     <span v-else class="font-display font-bold tracking-wide text-slate-500" aria-hidden="true">{{ initials }}</span>
   </span>
 </template>

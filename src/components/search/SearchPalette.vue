@@ -186,8 +186,8 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
             <button type="button" class="rounded-md border border-line px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:text-slate-800" @click="store.hide()">Esc</button>
           </div>
 
-          <!-- Filtros -->
-          <div class="flex gap-1.5 overflow-x-auto border-b border-line px-4 py-2" role="radiogroup" aria-label="Tipo">
+          <!-- Filtros: si no caben en una línea pasan a la siguiente, siempre enteros y a la vista. -->
+          <div class="flex flex-wrap gap-1.5 border-b border-line px-4 py-2" role="radiogroup" aria-label="Tipo">
             <button
               v-for="filter in filters"
               :key="filter.label"

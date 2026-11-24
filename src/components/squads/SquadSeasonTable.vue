@@ -10,18 +10,19 @@ import SearchSelect from '@/components/ui/SearchSelect.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
+import DisciplineBadge from '@/components/squads/DisciplineBadge.vue';
 import { useAsync } from '@/composables/useAsync';
 import { groupByPosition, useGroupByPosition } from '@/composables/usePositionGrouping';
 import { useSort } from '@/composables/useSort';
-import type { Position, SquadSeasonRowDto } from '@/types/api';
-import { formatDate, formatNumber, positionShortLabels } from '@/utils/format';
+import type { DisciplineDto, Position, SquadSeasonRowDto } from '@/types/api';
+import { formatNumber, injuredLabel, injuryTitle, positionShortLabels } from '@/utils/format';
 
 /**
  * Temporada de cada jugador de la plantilla de un vistazo: partidos, minutos, goles, asistencias, tarjetas, faltas y
  * nota. Se busca por nombre, se filtra o agrupa por posición y se ordena por cualquier columna. Cada nombre abre su
- * ficha con el detalle partido a partido.
+ * ficha con el detalle partido a partido. Junto al nombre, si llega apercibido o sancionado al próximo partido.
  */
-const props = defineProps<{ squadId: string; highlightId?: string | null }>();
+const props = defineProps<{ squadId: string; highlightId?: string | null; discipline?: ReadonlyMap<string, DisciplineDto> }>();
 
 const { data, loading, error, run } = useAsync(() => api.squads.seasonTable(props.squadId), { redirectOnError: false });
 watch(() => props.squadId, () => void run());
@@ -56,7 +57,8 @@ const rows = computed(() => {
 });
 const { sorted, sortBy, state } = useSort<SquadSeasonRowDto, SortKey>(rows, getters, 'minutes', { ascendingFirst: ['name'] });
 
-const groups = computed(() => groupByPosition(sorted.value, (r) => r.player.position, grouped.value));
+// Los que causaron baja salen con lo que jugaron mientras estuvieron, en su último grupo «De baja».
+const groups = computed(() => groupByPosition(sorted.value, (r) => r.player.position, grouped.value, undefined, (r) => r.player.status !== 'Active'));
 
 const positionFilter = [
   { value: 'Goalkeeper', label: 'Porteros' },
@@ -140,15 +142,16 @@ const columns: { key: SortKey; label: string; title: string; cls?: string }[] = 
               <RouterLink :to="{ name: 'squad-player', params: { squadId, squadPlayerId: r.player.id } }" class="group flex min-w-0 items-center gap-3">
                 <PlayerAvatar :src="r.player.photoUrl" :name="r.player.fullName" size="sm" />
                 <span class="min-w-0">
-                  <span class="block truncate font-medium group-hover:text-brand-500 group-hover:underline" :class="r.matches === 0 ? '' : 'text-slate-900'">{{ r.player.fullName }}</span>
+                  <span class="block break-words font-medium group-hover:text-brand-500 group-hover:underline" :class="r.matches === 0 ? '' : 'text-slate-900'">{{ r.player.fullName }}</span>
                   <span class="block text-xs text-slate-400">
                     {{ r.player.position ? positionShortLabels[r.player.position] : 'Sin posición' }}
                     <template v-if="r.fromOfficial > 0"> · {{ r.fromOfficial }} por acta oficial</template>
                   </span>
                 </span>
-                <Badge v-if="r.player.injury" tone="red" class="shrink-0" :title="[r.player.injury.typeLabel, r.player.injury.reason].filter(Boolean).join(': ')">
-                  <Icon icon="user-injured" class="mr-1 h-3 w-3" /><span class="hidden sm:inline">Lesionado<template v-if="r.player.injury.expectedReturnOn"> · {{ formatDate(r.player.injury.expectedReturnOn) }}</template></span>
+                <Badge v-if="r.player.injury" tone="red" class="shrink-0" :title="injuryTitle(r.player.injury)">
+                  <Icon icon="user-injured" class="mr-1 h-3 w-3" /><span class="hidden sm:inline">{{ injuredLabel(r.player.injury) }}</span>
                 </Badge>
+                <DisciplineBadge :discipline="discipline?.get(r.player.id)" compact class="shrink-0" />
               </RouterLink>
             </td>
             <td class="px-2 py-2 text-center tabular-nums" :class="{ 'font-bold text-brand-500': lead(r.matches, leaders.matches) }">{{ r.matches }}</td>

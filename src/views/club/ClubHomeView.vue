@@ -204,7 +204,7 @@ const { sorted: sortedAppointments, sortBy, state } = useSort<AppointmentDto, Ap
           <TeamCrest :src="team.teamCrestUrl" :name="team.teamName" :short-name="team.teamShortName" size="lg" />
           <div class="min-w-0 flex-1">
             <p class="eyebrow">Gestión de plantilla</p>
-            <h2 class="truncate text-lg font-semibold text-slate-900">{{ team.teamName }}</h2>
+            <h2 class="min-w-0 break-words text-lg font-semibold text-slate-900">{{ team.teamName }}</h2>
             <p class="text-sm text-slate-500">
               Todavía no tiene plantilla esta temporada. Ábrela para trabajar en ella como su cuerpo técnico (actas internas,
               vídeos, lesiones y previas); los técnicos que nombres entrarán en la misma.
@@ -229,7 +229,7 @@ const { sorted: sortedAppointments, sortBy, state } = useSort<AppointmentDto, Ap
         <li v-for="filial in club.availableFilials" :key="filial.teamId" class="flex flex-wrap items-center gap-3 py-3">
           <TeamCrest :src="filial.teamCrestUrl" :name="filial.teamName" />
           <div class="min-w-0 flex-1">
-            <p class="truncate font-medium text-slate-900">{{ filial.teamName }}</p>
+            <p class="break-words font-medium text-slate-900">{{ filial.teamName }}</p>
             <p v-if="filial.competitionName" class="text-xs text-slate-500">{{ filial.competitionName }}</p>
           </div>
           <button type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy" :disabled="busy" @click="addFilial(filial)">

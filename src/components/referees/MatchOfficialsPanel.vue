@@ -150,7 +150,7 @@ async function save(official: MatchOfficialDto) {
   <section class="card">
     <div class="flex flex-wrap items-start justify-between gap-2">
       <div>
-        <h2 class="font-semibold text-slate-900">Equipo arbitral</h2>
+        <h2 class="font-semibold text-slate-900">Notas al equipo arbitral</h2>
         <p class="mt-1 max-w-2xl text-xs text-slate-500">
           Cada equipo puntúa de 0 a 10 al árbitro, a los asistentes y al cuarto árbitro, una sola vez y con un comentario si quiere explicar la nota.
           Las notas son públicas y definitivas, con quién las puso.
