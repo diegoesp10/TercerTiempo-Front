@@ -678,13 +678,14 @@ async function apply(overwrite = false) {
                   </p>
                   <p class="mt-0.5 text-xs" :class="hasActions(player.proposal) ? 'text-slate-700' : 'text-slate-400'">{{ describe(player.proposal) }}</p>
                 </div>
-                <div v-if="canManage" class="w-full sm:w-64">
+                <div v-if="canManage" class="w-full sm:w-80">
                   <SearchSelect
                     :model-value="assigned[part.videoId]?.[player.tracklet] ?? null"
                     :options="playerOptions"
                     placeholder="— Sin asignar —"
                     clearable
                     searchable
+                    nowrap
                     size="sm"
                     :aria-label="part.identified ? `Ficha del dorsal ${player.shirtNumber}` : `Ficha del jugador seguido n.º ${player.tracklet}`"
                     @update:model-value="(value) => assign(part.videoId, player.tracklet, value)"

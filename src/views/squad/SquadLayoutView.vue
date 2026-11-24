@@ -60,7 +60,7 @@ const tabs = computed<TabItem[]>(() =>
     { name: 'squad-compare', label: 'Comparador' },
   ].map((tab) => ({ key: tab.name, label: tab.label, to: { name: tab.name, params: { squadId: props.squadId } } })),
 );
-const activeTab = computed(() => String(route.name === 'squad-callup' ? 'squad-trainings' : (route.name ?? '')));
+const activeTab = computed(() => String(route.name ?? ''));
 </script>
 
 <template>

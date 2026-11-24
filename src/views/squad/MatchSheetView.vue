@@ -12,13 +12,16 @@ import MatchPassesPanel from '@/components/passes/MatchPassesPanel.vue';
 import RequestAccessModal from '@/components/passes/RequestAccessModal.vue';
 import MatchOfficialsPanel from '@/components/referees/MatchOfficialsPanel.vue';
 import SuggestPerformanceModal from '@/components/suggestions/SuggestPerformanceModal.vue';
+import MatchCallUpPanel from '@/components/trainings/MatchCallUpPanel.vue';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import CardIcon from '@/components/ui/CardIcon.vue';
 import CardMarks from '@/components/sheet/CardMarks.vue';
 import PlayerNoteModal from '@/components/sheet/PlayerNoteModal.vue';
+import StarterMark from '@/components/sheet/StarterMark.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
+import FitBox from '@/components/ui/FitBox.vue';
 import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vue';
 import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
@@ -48,9 +51,10 @@ const { isAdmin } = useViewer();
 const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, props.matchId));
 
 /** «partido» es el acta pública (federación); «interna», la que rellena el cuerpo técnico. */
-type Tab = 'partido' | 'interna' | 'comparador' | 'video' | 'pases' | 'arbitros' | 'previa';
+type Tab = 'partido' | 'convocatoria' | 'interna' | 'comparador' | 'video' | 'pases' | 'arbitros' | 'previa';
 const tabs: { id: Tab; label: string }[] = [
   { id: 'partido', label: 'Acta del partido' },
+  { id: 'convocatoria', label: 'Convocatoria' },
   { id: 'interna', label: 'Acta interna' },
   { id: 'comparador', label: 'Comparador' },
   { id: 'video', label: 'Vídeo' },
@@ -67,6 +71,9 @@ const matchOver = computed(() =>
   !!data.value && data.value.match.status === 'Played' && new Date(data.value.match.kickoffAt).getTime() <= Date.now(),
 );
 const afterMatch: Tab[] = ['interna', 'comparador', 'video', 'pases', 'arbitros'];
+// La convocatoria, antes y después del partido, para los mismos que la agenda: la preparan el club y el cuerpo técnico,
+// la ven y la firman los jugadores de la plantilla y el administrador solo mira.
+const seesCallUp = computed(() => canPrepare.value || auth.playerSquad?.squadId === props.squadId);
 // Al equipo arbitral lo puntúan el club y su cuerpo técnico; los jugadores no lo ven.
 const canRateReferees = computed(() => canPrepare.value && (auth.isClub || auth.isCoach) && !isAdmin.value);
 // Los pases (quién de fuera ve el acta interna y el vídeo de este partido) los dan el club y su cuerpo técnico.
@@ -97,7 +104,7 @@ async function onRivalRequested() {
 const visibleTabs = computed(() =>
   tabs.filter((t) =>
     (t.id !== 'previa' || canPrepare.value) && (t.id !== 'arbitros' || canRateReferees.value) && (t.id !== 'pases' || canGivePasses.value)
-      && (matchOver.value || !afterMatch.includes(t.id))),
+      && (t.id !== 'convocatoria' || seesCallUp.value) && (matchOver.value || !afterMatch.includes(t.id))),
 );
 // Antes del partido, quien lo prepara entra directamente en la previa.
 const defaultTab = computed<Tab>(() => (!matchOver.value && canPrepare.value ? 'previa' : 'partido'));
@@ -126,6 +133,8 @@ interface Row extends MatchSheetEntryInput {
   /** Sancionado para este partido (5.ª amarilla o expulsión en uno anterior): no puede salir como que jugó. */
   suspended: boolean;
   suspension: SuspensionBriefDto | null;
+  /** Su dorsal en el acta oficial del partido (solo lectura: no se cambia a mano). */
+  officialShirt: number | null;
 }
 
 const blank = (player: SquadPlayerDto): Row => ({
@@ -157,11 +166,11 @@ const blank = (player: SquadPlayerDto): Row => ({
   suspended: false,
   suspension: null,
   notes: null,
-  shirtNumber: null,
+  officialShirt: null,
 });
 
 const fromSheet = (sheet: MatchSheetDto): Row[] =>
-  sheet.entries.map(({ player, performance, calledUp, suspended, suspension }) => ({
+  sheet.entries.map(({ player, performance, calledUp, suspended, suspension, officialShirtNumber }) => ({
     ...(performance
       ? {
           ...blank(player),
@@ -187,14 +196,20 @@ const fromSheet = (sheet: MatchSheetDto): Row[] =>
           rating: performance.rating,
           actionsFromVideo: performance.actionsFromVideo ?? false,
           notes: performance.notes,
-          shirtNumber: performance.matchShirtNumber,
         }
       : blank(player)),
     called: calledUp ?? false,
     recorded: performance !== null,
     suspended: suspended ?? false,
     suspension: suspension ?? null,
+    officialShirt: officialShirtNumber ?? performance?.matchShirtNumber ?? null,
   }));
+
+// El dorsal es el del acta oficial y no se escribe: sin ella, o si no sale en ella, no hay.
+function dorsalTitle(row: Row) {
+  if (row.officialShirt !== null) return `Dorsal ${row.officialShirt} en el acta oficial: no se cambia a mano`;
+  return data.value?.officialSheet ? 'No sale en el acta oficial: sin dorsal' : 'El dorsal sale del acta oficial, que aún no está';
+}
 
 // Un sancionado no pudo jugar el partido de su sanción: no se le puede marcar. La línea que ya tuviera se conserva (la
 // sanción pudo saberse después, con el acta oficial del partido anterior).
@@ -224,7 +239,6 @@ const toEntry = (row: Row): MatchSheetEntryInput => ({
   passesAttempted: row.passesAttempted ?? 0,
   clearances: row.clearances ?? 0,
   notes: row.notes?.trim() ? row.notes.trim() : null,
-  shirtNumber: row.shirtNumber || null,
 });
 
 const rows = ref<Row[]>([]);
@@ -391,6 +405,21 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
   { key: 'fouls', label: 'F', title: 'Faltas cometidas' },
 ];
 
+// La fila de cada jugador cabe siempre en el ancho del acta (FitBox mide de verdad): primero la tabla con aire, luego
+// apretada (tight) y, si ni así, una ficha por jugador con sus casillas en rejilla (stacked).
+const fitSteps = [[], ['tight'], ['stacked']] as const;
+const thCell = 'px-1 py-2 text-center uppercase tracking-wide group-data-[tight]/sheet:px-0.5 group-data-[tight]/sheet:text-[10px] group-data-[tight]/sheet:tracking-normal';
+const thNotes = thCell.replace('text-center', 'text-left');
+const tdCell = 'px-1 py-1 text-center group-data-[tight]/sheet:px-0.5';
+const tdRead = 'px-1 py-2 text-center group-data-[tight]/sheet:px-0.5';
+const noSpin = '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
+const numberInput = `input w-12 px-1 py-1 text-center ${noSpin} group-data-[tight]/sheet:w-9 group-data-[tight]/sheet:px-0.5 group-data-[tight]/sheet:text-xs`;
+type NumberKey = 'minutesPlayed' | (typeof numericColumns)[number]['key'];
+const cardFields: { key: NumberKey; label: string; title: string; max?: number }[] = [
+  { key: 'minutesPlayed', label: 'Min', title: 'Minutos', max: 120 },
+  ...numericColumns,
+];
+
 // Mientras se edita solo se ordena por el jugador y la nota (que no se escriben): así ninguna fila se mueve al teclear.
 // El orden se aplica dentro de cada posición cuando se agrupa.
 type SheetSortKey = 'player' | 'started' | 'minutes' | 'yellowCards' | 'redCard' | 'rating' | (typeof numericColumns)[number]['key'];
@@ -478,7 +507,12 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
     />
 
     <div v-if="tab === 'partido'" class="mt-6">
-      <OfficialSheetPanel :match-id="matchId" :highlight-team-id="teamId" />
+      <OfficialSheetPanel :match-id="matchId" :highlight-team-id="teamId" :squad-id="squadId" />
+    </div>
+
+    <!-- Montado solo con la pestaña abierta: su refresco en directo para al cambiar de pestaña -->
+    <div v-else-if="tab === 'convocatoria'" class="mt-6">
+      <MatchCallUpPanel :squad-id="squadId" :match-id="matchId" />
     </div>
 
     <div v-else-if="tab === 'comparador'" class="mt-6">
@@ -597,38 +631,38 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
 
       <p v-if="!canEdit && playedRows.length === 0" class="text-sm text-slate-500">El cuerpo técnico todavía no ha registrado el acta de este partido.</p>
 
-      <div v-else class="overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
-        <table class="min-w-full text-sm">
+      <FitBox v-else :steps="fitSteps" class="group/sheet overflow-x-auto rounded-xl border border-slate-200 bg-surface shadow-sm">
+        <table class="min-w-full text-sm group-data-[stacked]/sheet:hidden group-data-[tight]/sheet:text-xs">
           <thead class="bg-slate-50 text-xs text-slate-500">
             <tr v-if="canEdit">
-              <th class="px-2 py-2 text-center uppercase tracking-wide" title="Jugó">Jugó</th>
-              <th class="px-2 py-2 text-center uppercase tracking-wide" title="Dorsal en este partido (vacío = el de la ficha)">Dorsal</th>
-              <SortHeader class="px-3 py-2 text-left" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
-              <th class="px-2 py-2 text-center uppercase tracking-wide" title="Titular">Tit</th>
-              <th class="px-2 py-2 text-center uppercase tracking-wide" title="Minutos">Min</th>
-              <th v-for="column in numericColumns" :key="column.key" class="px-2 py-2 text-center uppercase tracking-wide" :title="column.title">{{ column.label }}</th>
-              <th class="px-2 py-2 text-center uppercase tracking-wide" title="Tarjetas amarillas">TA</th>
-              <th class="px-2 py-2 text-center uppercase tracking-wide" title="Tarjeta roja">TR</th>
-              <SortHeader class="px-2 py-2 text-center" label="Nota" title="Nota calculada con los datos al guardar" v-bind="state('rating')" @sort="sortBy('rating')" />
-              <th class="px-3 py-2 text-left uppercase tracking-wide">Notas</th>
+              <th :class="thCell" title="Jugó">Jugó</th>
+              <th :class="thCell" title="Dorsal del acta oficial del partido: no se cambia a mano">Dorsal</th>
+              <SortHeader class="px-2 py-2 text-left group-data-[tight]/sheet:px-1" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
+              <th :class="thCell" title="Titular">Tit</th>
+              <th :class="thCell" title="Minutos">Min</th>
+              <th v-for="column in numericColumns" :key="column.key" :class="thCell" :title="column.title">{{ column.label }}</th>
+              <th :class="thCell" title="Tarjetas amarillas">TA</th>
+              <th :class="thCell" title="Tarjeta roja">TR</th>
+              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="Nota" title="Nota calculada con los datos al guardar" v-bind="state('rating')" @sort="sortBy('rating')" />
+              <th :class="thNotes" title="Notas del técnico sobre su partido">Notas</th>
             </tr>
             <tr v-else>
-              <SortHeader class="px-3 py-2 text-left" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
-              <SortHeader class="px-2 py-2 text-center" label="Tit" title="Titular" v-bind="state('started')" @sort="sortBy('started')" />
-              <SortHeader class="px-2 py-2 text-center" label="Min" title="Minutos" v-bind="state('minutes')" @sort="sortBy('minutes')" />
+              <SortHeader class="px-2 py-2 text-left group-data-[tight]/sheet:px-1" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
+              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="Tit" title="Titular" v-bind="state('started')" @sort="sortBy('started')" />
+              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="Min" title="Minutos" v-bind="state('minutes')" @sort="sortBy('minutes')" />
               <SortHeader
                 v-for="column in numericColumns"
                 :key="column.key"
-                class="px-2 py-2 text-center"
+                class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5"
                 :label="column.label"
                 :title="column.title"
                 v-bind="state(column.key)"
                 @sort="sortBy(column.key)"
               />
-              <SortHeader class="px-2 py-2 text-center" label="TA" title="Tarjetas amarillas" v-bind="state('yellowCards')" @sort="sortBy('yellowCards')" />
-              <SortHeader class="px-2 py-2 text-center" label="TR" title="Tarjeta roja" v-bind="state('redCard')" @sort="sortBy('redCard')" />
-              <SortHeader class="px-2 py-2 text-center" label="Nota" title="Nota calculada con los datos al guardar" v-bind="state('rating')" @sort="sortBy('rating')" />
-              <th class="px-3 py-2 text-left uppercase tracking-wide">Notas</th>
+              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="TA" title="Tarjetas amarillas" v-bind="state('yellowCards')" @sort="sortBy('yellowCards')" />
+              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="TR" title="Tarjeta roja" v-bind="state('redCard')" @sort="sortBy('redCard')" />
+              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="Nota" title="Nota calculada con los datos al guardar" v-bind="state('rating')" @sort="sortBy('rating')" />
+              <th :class="thNotes" title="Notas del técnico sobre su partido">Notas</th>
             </tr>
           </thead>
 
@@ -642,8 +676,8 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
                 </RouterLink>
               </td>
             </tr>
-            <tr v-for="row in group.rows" :key="row.squadPlayerId" :class="row.played ? '' : 'text-slate-400'">
-              <td class="px-2 py-1 text-center">
+            <tr v-for="row in group.rows" :key="row.squadPlayerId" :class="row.played ? (row.started ? '' : 'bg-slate-500/[0.06]') : 'text-slate-400'">
+              <td :class="[tdCell, row.played && row.started ? 'shadow-[inset_3px_0_0_var(--color-emerald-500)]' : '']">
                 <input
                   v-model="row.played"
                   type="checkbox"
@@ -654,23 +688,18 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
                   @change="onPlayedChange(row)"
                 />
               </td>
-              <td class="px-2 py-1 text-center">
-                <input
-                  v-model.number="row.shirtNumber"
-                  type="number"
-                  min="1"
-                  max="99"
-                  class="input w-14 px-1 py-1 text-center"
-                  :disabled="!row.played"
-                  placeholder="—"
-                  aria-label="Dorsal en este partido"
-                />
+              <td :class="tdCell" class="tabular-nums" :title="dorsalTitle(row)">
+                <span :class="row.officialShirt !== null ? 'font-semibold text-slate-700' : 'text-slate-400'">{{ row.officialShirt ?? '—' }}</span>
               </td>
-              <td class="px-3 py-1 whitespace-nowrap">
+              <td class="min-w-[10rem] px-2 py-1 group-data-[tight]/sheet:min-w-[8rem] group-data-[tight]/sheet:px-1">
                 <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium" :class="row.played ? 'text-slate-800' : ''" />
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
-                <Badge v-if="row.suspended" tone="red" class="ml-1.5" :title="`${suspendedText(row)}: no puede salir en el acta como que jugó`"><Icon icon="ban" class="mr-1 h-2.5 w-2.5" />Sancionado</Badge>
-                <Badge v-else-if="hasCallUp && !row.called" tone="amber" class="ml-1.5" title="No iba en la convocatoria: se ha añadido al acta">Fuera de la convocatoria</Badge>
+                <Badge v-if="row.suspended" tone="red" class="ml-1.5" :title="`${suspendedText(row)}: no puede salir en el acta como que jugó`">
+                  <Icon icon="ban" class="h-2.5 w-2.5" /><span class="ml-1 group-data-[tight]/sheet:sr-only">Sancionado</span>
+                </Badge>
+                <Badge v-else-if="hasCallUp && !row.called" tone="amber" class="ml-1.5" title="No iba en la convocatoria: se ha añadido al acta">
+                  <Icon icon="plus" class="h-2.5 w-2.5" /><span class="ml-1 group-data-[tight]/sheet:sr-only">Fuera de la convocatoria</span>
+                </Badge>
                 <button
                   v-if="hasNote(row)"
                   type="button"
@@ -680,29 +709,29 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
                   @click="noteRow = row"
                 ><Icon icon="comment-dots" class="text-[12px]" /></button>
               </td>
-              <td class="px-2 py-1 text-center">
+              <td :class="tdCell">
                 <input v-model="row.started" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-accent-400" :disabled="!row.played" aria-label="Titular" />
               </td>
-              <td class="px-2 py-1 text-center">
-                <input v-model.number="row.minutesPlayed" type="number" min="0" max="120" class="input w-16 px-1 py-1 text-center" :disabled="!row.played" aria-label="Minutos" />
+              <td :class="tdCell">
+                <input v-model.number="row.minutesPlayed" type="number" min="0" max="120" :class="numberInput" :disabled="!row.played" aria-label="Minutos" />
               </td>
-              <td v-for="column in numericColumns" :key="column.key" class="px-2 py-1 text-center">
-                <input v-model.number="row[column.key]" type="number" min="0" class="input w-14 px-1 py-1 text-center" :disabled="!row.played" :aria-label="column.title" />
+              <td v-for="column in numericColumns" :key="column.key" :class="tdCell">
+                <input v-model.number="row[column.key]" type="number" min="0" :class="numberInput" :disabled="!row.played" :aria-label="column.title" />
               </td>
-              <td class="px-2 py-1 text-center">
-                <input v-model.number="row.yellowCards" type="number" min="0" max="2" class="input w-14 px-1 py-1 text-center" :disabled="!row.played" aria-label="Amarillas" />
+              <td :class="tdCell">
+                <input v-model.number="row.yellowCards" type="number" min="0" max="2" :class="numberInput" :disabled="!row.played" aria-label="Amarillas" />
               </td>
-              <td class="px-2 py-1 text-center">
+              <td :class="tdCell">
                 <input v-model="row.redCard" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600" :disabled="!row.played" aria-label="Roja" />
               </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap">
+              <td :class="tdCell" class="whitespace-nowrap">
                 <RatingBadge v-if="row.played" :rating="row.rating" size="sm" />
                 <Icon v-if="row.played && row.actionsFromVideo" icon="video" class="ml-1 text-[11px] text-amber-400" :title="videoActionsTitle" />
               </td>
-              <td class="px-3 py-1">
+              <td class="px-2 py-1 group-data-[tight]/sheet:px-1">
                 <button
                   type="button"
-                  class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-2 py-1 text-left text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
+                  class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-2 py-1 text-left text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 group-data-[tight]/sheet:px-1.5"
                   :class="hasNote(row)
                     ? 'border-accent-400/60 bg-accent-500/10 text-slate-800 hover:bg-accent-500/20'
                     : 'border-dashed border-slate-300 text-slate-500 hover:border-accent-400 hover:text-slate-800'"
@@ -712,7 +741,7 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
                   @click="noteRow = row"
                 >
                   <Icon :icon="hasNote(row) ? 'circle-check' : 'plus'" class="shrink-0 text-[12px]" :class="hasNote(row) ? 'text-accent-400' : ''" />
-                  {{ hasNote(row) ? 'Editar la nota' : 'Añadir nota' }}
+                  <span class="group-data-[tight]/sheet:sr-only">{{ hasNote(row) ? 'Editar la nota' : 'Añadir nota' }}</span>
                 </button>
               </td>
             </tr>
@@ -726,42 +755,143 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
                 {{ group.label }} · {{ group.rows.length }}
               </td>
             </tr>
-            <tr v-for="row in group.rows" :key="row.squadPlayerId">
-              <td class="px-3 py-2 whitespace-nowrap">
+            <tr v-for="row in group.rows" :key="row.squadPlayerId" :class="row.started ? '' : 'bg-slate-500/[0.06]'">
+              <td class="min-w-[10rem] px-2 py-2 group-data-[tight]/sheet:min-w-[8rem] group-data-[tight]/sheet:px-1" :class="row.started ? 'shadow-[inset_3px_0_0_var(--color-emerald-500)]' : ''">
                 <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium text-slate-800" />
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
                 <Icon v-if="hasNote(row)" icon="comment-dots" class="ml-1.5 text-[12px] text-accent-400" :title="`Tiene nota: ${row.notes}`" />
               </td>
-              <td class="px-2 py-2 text-center">{{ row.started ? '●' : '' }}</td>
-              <td class="px-2 py-2 text-center tabular-nums">{{ row.minutesPlayed }}</td>
-              <td v-for="column in numericColumns" :key="column.key" class="px-2 py-2 text-center tabular-nums">{{ row[column.key] }}</td>
-              <td class="px-2 py-2 text-center"><CardMarks :yellow-cards="row.yellowCards" :red-card="false" /></td>
-              <td class="px-2 py-2 text-center"><CardIcon v-if="row.redCard" kind="red" /></td>
-              <td class="px-2 py-2 text-center whitespace-nowrap">
+              <td :class="tdRead"><StarterMark :started="row.started" /></td>
+              <td :class="tdRead" class="tabular-nums">{{ row.minutesPlayed }}</td>
+              <td v-for="column in numericColumns" :key="column.key" :class="tdRead" class="tabular-nums">{{ row[column.key] }}</td>
+              <td :class="tdRead"><CardMarks :yellow-cards="row.yellowCards" :red-card="false" /></td>
+              <td :class="tdRead"><CardIcon v-if="row.redCard" kind="red" /></td>
+              <td :class="tdRead" class="whitespace-nowrap">
                 <RatingBadge :rating="row.rating" size="sm" />
                 <Icon v-if="row.actionsFromVideo" icon="video" class="ml-1 text-[11px] text-amber-400" :title="videoActionsTitle" />
               </td>
-              <td class="px-3 py-2">
+              <td class="px-2 py-2 group-data-[tight]/sheet:px-1">
                 <button
                   v-if="hasNote(row)"
                   type="button"
-                  class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-accent-400/60 bg-accent-500/10 px-2 py-1 text-left text-xs text-slate-800 hover:bg-accent-500/20"
+                  class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-accent-400/60 bg-accent-500/10 px-2 py-1 text-left text-xs text-slate-800 hover:bg-accent-500/20 group-data-[tight]/sheet:px-1.5"
                   :title="row.notes ?? ''"
                   :aria-label="`Leer la nota de ${row.player.fullName}`"
                   @click="noteRow = row"
                 >
                   <Icon icon="comment-dots" class="shrink-0 text-[12px] text-accent-400" />
-                  Leer la nota
+                  <span class="group-data-[tight]/sheet:sr-only">Leer la nota</span>
                 </button>
               </td>
             </tr>
           </tbody>
           </template>
         </table>
-      </div>
+
+        <!-- Si ni apretada cabe la tabla: una ficha por jugador, con sus casillas en rejilla, que se recoloca a cualquier ancho. -->
+        <div class="hidden group-data-[stacked]/sheet:block">
+          <template v-for="group in canEdit ? editGroups : playedGroups" :key="group.key">
+            <p v-if="group.label" class="bg-surface-2 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+              {{ group.label }} ·
+              <template v-if="canEdit">{{ group.rows.filter((r) => r.played).length }} de {{ group.rows.length }} en el acta</template>
+              <template v-else>{{ group.rows.length }}</template>
+            </p>
+            <div
+              v-for="row in group.rows"
+              :key="row.squadPlayerId"
+              class="border-t border-slate-100 px-3 py-2.5 first:border-t-0"
+              :class="[
+                row.played ? (row.started ? 'shadow-[inset_3px_0_0_var(--color-emerald-500)]' : 'bg-slate-500/[0.06]') : 'text-slate-400',
+              ]"
+            >
+              <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <input
+                  v-if="canEdit"
+                  v-model="row.played"
+                  type="checkbox"
+                  class="h-4 w-4 shrink-0 rounded border-slate-300 text-accent-400 disabled:cursor-not-allowed disabled:opacity-40"
+                  :disabled="cannotPlay(row)"
+                  :title="cannotPlay(row) ? `${suspendedText(row)}: no puede salir en el acta como que jugó` : 'Jugó'"
+                  :aria-label="`${row.player.fullName} jugó`"
+                  @change="onPlayedChange(row)"
+                />
+                <span v-if="canEdit" class="shrink-0 text-xs tabular-nums" :class="row.officialShirt !== null ? 'font-semibold text-slate-700' : 'text-slate-400'" :title="dorsalTitle(row)">
+                  {{ row.officialShirt !== null ? `#${row.officialShirt}` : '#—' }}
+                </span>
+                <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium" :class="row.played ? 'text-slate-800' : ''" />
+                <span v-if="row.player.position" class="text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
+                <Badge v-if="canEdit && row.suspended" tone="red" :title="`${suspendedText(row)}: no puede salir en el acta como que jugó`"><Icon icon="ban" class="mr-1 h-2.5 w-2.5" />Sancionado</Badge>
+                <Badge v-else-if="canEdit && hasCallUp && !row.called" tone="amber" title="No iba en la convocatoria: se ha añadido al acta"><Icon icon="plus" class="mr-1 h-2.5 w-2.5" />Fuera de la convocatoria</Badge>
+                <span class="ml-auto inline-flex shrink-0 items-center gap-1">
+                  <RatingBadge v-if="row.played" :rating="row.rating" size="sm" />
+                  <Icon v-if="row.played && row.actionsFromVideo" icon="video" class="text-[11px] text-amber-400" :title="videoActionsTitle" />
+                </span>
+              </div>
+              <div v-if="canEdit || row.played" class="mt-2 grid grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-1.5">
+                <label class="flex flex-col items-center gap-1 text-[11px] text-slate-500" title="Titular">
+                  Tit
+                  <input v-if="canEdit" v-model="row.started" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-accent-400" :disabled="!row.played" :aria-label="`${row.player.fullName} titular`" />
+                  <StarterMark v-else :started="row.started" />
+                </label>
+                <label v-for="field in cardFields" :key="field.key" class="flex min-w-0 flex-col items-center gap-0.5 text-[11px] text-slate-500" :title="field.title">
+                  {{ field.label }}
+                  <input
+                    v-if="canEdit"
+                    v-model.number="row[field.key]"
+                    type="number"
+                    min="0"
+                    :max="field.max"
+                    class="input w-full px-1 py-1 text-center text-sm"
+                    :class="noSpin"
+                    :disabled="!row.played"
+                    :aria-label="`${field.title} de ${row.player.fullName}`"
+                  />
+                  <span v-else class="text-sm tabular-nums text-slate-800">{{ row[field.key] }}</span>
+                </label>
+                <label class="flex min-w-0 flex-col items-center gap-0.5 text-[11px] text-slate-500" title="Tarjetas amarillas">
+                  TA
+                  <input
+                    v-if="canEdit"
+                    v-model.number="row.yellowCards"
+                    type="number"
+                    min="0"
+                    max="2"
+                    class="input w-full px-1 py-1 text-center text-sm"
+                    :class="noSpin"
+                    :disabled="!row.played"
+                    :aria-label="`Amarillas de ${row.player.fullName}`"
+                  />
+                  <CardMarks v-else :yellow-cards="row.yellowCards" :red-card="false" />
+                </label>
+                <label class="flex flex-col items-center gap-1 text-[11px] text-slate-500" title="Tarjeta roja">
+                  TR
+                  <input v-if="canEdit" v-model="row.redCard" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600" :disabled="!row.played" :aria-label="`Roja de ${row.player.fullName}`" />
+                  <CardIcon v-else-if="row.redCard" kind="red" />
+                  <span v-else class="text-sm text-slate-400">—</span>
+                </label>
+              </div>
+              <button
+                v-if="canEdit || hasNote(row)"
+                type="button"
+                class="mt-2 inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-left text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
+                :class="hasNote(row)
+                  ? 'border-accent-400/60 bg-accent-500/10 text-slate-800 hover:bg-accent-500/20'
+                  : 'border-dashed border-slate-300 text-slate-500 hover:border-accent-400 hover:text-slate-800'"
+                :disabled="canEdit && !row.played"
+                :title="hasNote(row) ? row.notes ?? '' : 'Añadir una nota a su partido'"
+                :aria-label="hasNote(row) ? `${canEdit ? 'Editar' : 'Leer'} la nota de ${row.player.fullName}` : `Añadir una nota a ${row.player.fullName}`"
+                @click="noteRow = row"
+              >
+                <Icon :icon="hasNote(row) ? (canEdit ? 'circle-check' : 'comment-dots') : 'plus'" class="shrink-0 text-[12px]" :class="hasNote(row) ? 'text-accent-400' : ''" />
+                {{ hasNote(row) ? (canEdit ? 'Editar la nota' : 'Leer la nota') : 'Añadir nota' }}
+              </button>
+            </div>
+          </template>
+        </div>
+      </FitBox>
 
       <p class="content-note mt-3">
-        Tit = titular · Min = minutos (0-120) · G goles · A asistencias de gol · T tiros · TP tiros a puerta · PasC pases
+        Tit = titular (T, con la franja verde) o suplente (S, la fila sombreada) · Min = minutos (0-120) · G goles · A asistencias de gol · T tiros · TP tiros a puerta · PasC pases
         completados · PasI pases intentados · Pér pérdidas de balón · Rec recuperaciones · Desp despejes · Ent entradas · Int intercepciones ·
         Par paradas · F faltas · TA amarillas (dos implican roja). Con «jugó» desmarcado la línea se elimina del acta al guardar.
       </p>

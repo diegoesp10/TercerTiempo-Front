@@ -234,10 +234,11 @@ export function injuredLabel(injury: { daysOut?: number; expectedReturnOn: strin
   return parts.join(' · ');
 }
 
-/** El detalle de una lesión abierta para un title: tipo y motivo, día del parte y vuelta prevista. */
-export function injuryTitle(injury: { typeLabel: string; reason: string | null; startedOn: string; expectedReturnOn: string | null }) {
+/** El detalle de una lesión abierta para un title: tipo con dónde fue y motivo, día del parte y vuelta prevista. */
+export function injuryTitle(injury: { typeLabel: string; location?: string | null; reason: string | null; startedOn: string; expectedReturnOn: string | null }) {
+  const what = injury.location ? `${injury.typeLabel} (${injury.location.charAt(0).toLocaleLowerCase('es-ES')}${injury.location.slice(1)})` : injury.typeLabel;
   return [
-    injury.reason ? `${injury.typeLabel}: ${injury.reason}` : injury.typeLabel,
+    injury.reason ? `${what}: ${injury.reason}` : what,
     `parte del ${formatDate(injury.startedOn)}`,
     injury.expectedReturnOn ? `vuelta prevista el ${formatDate(injury.expectedReturnOn)}` : 'sin fecha de vuelta',
   ].join(' · ');

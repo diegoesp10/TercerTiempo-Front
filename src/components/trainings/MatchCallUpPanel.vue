@@ -4,7 +4,6 @@ import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import PlayerName from '@/components/players/PlayerName.vue';
 import DisciplineBadge from '@/components/squads/DisciplineBadge.vue';
-import TeamName from '@/components/teams/TeamName.vue';
 import CallUpReviewModal, { type ReviewGroup, type ReviewPlayer } from '@/components/trainings/CallUpReviewModal.vue';
 import GroundCard from '@/components/trainings/GroundCard.vue';
 import GroundPicker from '@/components/trainings/GroundPicker.vue';
@@ -19,31 +18,32 @@ import { confirmDialog } from '@/composables/useConfirm';
 import { useAsync } from '@/composables/useAsync';
 import { useGroupByPosition } from '@/composables/usePositionGrouping';
 import { useLivePoll } from '@/composables/useLivePoll';
-import { useSquad } from '@/composables/useSquad';
-import { useViewer } from '@/composables/useViewer';
 import { markCallUpsSeen } from '@/composables/useCallUpSeen';
 import { useAlertsStore } from '@/stores/alerts';
 import type { CallUpEntryDto, CallUpRequest, CallUpResponse, GroundDto, MatchCallUpDto, Position, SquadGroundsDto } from '@/types/api';
-import { opponentOf } from '@/utils/crests';
 import { warnedDiscipline } from '@/utils/discipline';
 import { callUpResponseLabels, callUpResponseTone, formatKickoff, positionLabels, positionShortLabels, toDateKey } from '@/utils/format';
 
 /**
- * La convocatoria de un partido: el cuerpo técnico elige quién va (por posición, viendo cuántos lleva de cada una), pone
- * la cita (día, hora y un campo de la liga con su mapa, o un sitio alternativo escrito a mano), la repasa y la envía (se
- * avisa a toda la plantilla, al que va y al que no); cada jugador la firma desde aquí o desde «Mis convocatorias». Como
- * en un chat, el cuerpo técnico ve un check cuando le ha llegado y el doble check verde cuando el jugador la ha abierto;
- * la firma va aparte. No hay «no puedo» para los partidos: lo que cambie se habla con el cuerpo técnico. La página se
- * pone al día sola: quien la tenga abierta ve al momento quién firma o la abre, sin recargar. Enviada, la lista queda fija
- * y el cuerpo técnico la filtra (quién la ha visto, quién ha respondido, a quién le falta firmar); para cambiarla,
- * «Modificar la convocatoria».
+ * La convocatoria de un partido, en su pestaña de la página del partido (el partido, la fecha, el campo y la previa ya
+ * los da la página): el cuerpo técnico elige quién va (por posición, viendo cuántos lleva de cada una), pone la cita
+ * (día, hora y un campo de la liga con su mapa, o un sitio alternativo escrito a mano), la repasa y la envía (se avisa a
+ * toda la plantilla, al que va y al que no); cada jugador la firma desde aquí o desde «Mis convocatorias». Como en un
+ * chat, el cuerpo técnico ve un check cuando le ha llegado y el doble check verde cuando el jugador la ha abierto; la
+ * firma va aparte. No hay «no puedo» para los partidos: lo que cambie se habla con el cuerpo técnico. Se pone al día
+ * sola mientras la pestaña está abierta: quien la tenga delante ve al momento quién firma o la abre, sin recargar.
+ * Enviada, la lista queda fija y el cuerpo técnico la filtra (quién la ha visto, quién ha respondido, a quién le falta
+ * firmar); para cambiarla, «Modificar la convocatoria».
  */
-const props = defineProps<{ matchId: string }>();
+const props = defineProps<{ squadId: string; matchId: string }>();
 
-const { squadId, detail } = useSquad();
 const alerts = useAlertsStore();
 
-const { data, loading, error, run } = useAsync(() => api.trainings.callUp(squadId.value, props.matchId));
+// La plantilla (la página del partido se vuelve a montar con cada plantilla): la foto y la posición de cada jugador, y
+// el equipo, para el rival del repaso.
+const { data: detail, loading: detailLoading, error: detailError } = useAsync(() => api.squads.get(props.squadId));
+
+const { data, loading, error, run } = useAsync(() => api.trainings.callUp(props.squadId, props.matchId));
 // Sube con cada acción propia (guardar, enviar, firmar, cambiar de partido): una recarga en segundo plano que llegue
 // después no la pisa.
 let actions = 0;
@@ -63,9 +63,6 @@ const canEdit = computed(() => (data.value?.canEdit ?? false) && !(data.value?.c
 const editing = ref(false);
 const locked = computed(() => canEdit.value && data.value?.status === 'Published' && !editing.value);
 const editable = computed(() => canEdit.value && !locked.value);
-// La previa es del club y del cuerpo técnico (y del administrador, que mira); los jugadores no la tienen.
-const { isAdmin } = useViewer();
-const seesPreview = computed(() => isAdmin.value || !!detail.value?.canManage || !!detail.value?.canInvitePlayers || detail.value?.summary.myRole != null);
 
 // Los campos de la liga, para la cita (solo hacen falta a quien la prepara).
 const grounds = ref<SquadGroundsDto | null>(null);
@@ -74,7 +71,7 @@ watch(
   async (can) => {
     if (!can || grounds.value) return;
     try {
-      grounds.value = await api.trainings.grounds(squadId.value);
+      grounds.value = await api.trainings.grounds(props.squadId);
     } catch {
       grounds.value = { homeGroundId: null, grounds: [] };
     }
@@ -191,17 +188,18 @@ const sendBlocked = computed(() => {
 
 // En directo: cada pocos segundos se pregunta solo por la huella de la convocatoria y, si ha cambiado (alguien firma o la
 // abre, el cuerpo técnico cambia a quién lleva o la cita, empieza el partido), se vuelve a pedir entera, sin barra de
-// carga. Con la pestaña oculta no se pregunta; al volver a ella, en el momento.
+// carga. Con la pestaña del navegador oculta no se pregunta; al volver a ella, en el momento. Solo corre con este panel
+// montado, es decir, con la pestaña «Convocatoria» abierta.
 const LIVE_EVERY_MS = 15_000;
 const live = computed(() => !!data.value && !data.value.closed && busy.value === null);
 useLivePoll(async () => {
   const current = data.value;
   if (!current) return;
   const started = actions;
-  const { stamp } = await api.trainings.callUpStamp(squadId.value, props.matchId);
+  const { stamp } = await api.trainings.callUpStamp(props.squadId, props.matchId);
   if (stamp === current.stamp || started !== actions) return;
   const keepDraft = editable.value && dirty.value;
-  const fresh = await api.trainings.callUp(squadId.value, props.matchId, true);
+  const fresh = await api.trainings.callUp(props.squadId, props.matchId, true);
   if (started !== actions || data.value !== current) return;
   background = { keepDraft };
   data.value = fresh;
@@ -351,7 +349,7 @@ async function save(publish: boolean) {
       publish,
       size: size.value,
     };
-    data.value = await api.trainings.saveCallUp(squadId.value, props.matchId, body);
+    data.value = await api.trainings.saveCallUp(props.squadId, props.matchId, body);
     reviewOpen.value = false;
     editing.value = false;
   } catch (e) {
@@ -400,7 +398,7 @@ async function resend() {
   busy.value = 'resend';
   actionError.value = null;
   try {
-    data.value = await api.trainings.resendCallUp(squadId.value, props.matchId);
+    data.value = await api.trainings.resendCallUp(props.squadId, props.matchId);
   } catch (e) {
     actionError.value = errorMessage(e);
   } finally {
@@ -427,31 +425,17 @@ async function respond(response: CallUpResponse) {
 </script>
 
 <template>
-  <Spinner v-if="loading && !data" />
-  <Alert v-else-if="error" kind="error">{{ error }}</Alert>
+  <Spinner v-if="(loading && !data) || (detailLoading && !detail)" />
+  <Alert v-else-if="error || detailError" kind="error">{{ error || detailError }}</Alert>
 
   <template v-else-if="data">
-    <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
-      <div class="min-w-0">
-        <RouterLink :to="{ name: 'squad-trainings', params: { squadId } }" class="text-xs font-medium text-accent-400 hover:underline"><Icon icon="chevron-left" class="mr-1 inline h-3 w-3" />Agenda</RouterLink>
-        <h2 class="mt-1 flex flex-wrap items-center gap-2 text-xl font-semibold text-slate-900">
-          Convocatoria · J{{ data.match.matchday }}
-          <TeamName prefix="vs" :name="opponentOf(data.match, teamId).name" :crest-url="opponentOf(data.match, teamId).crestUrl" :short-name="opponentOf(data.match, teamId).shortName" :team-id="opponentOf(data.match, teamId).id" size="sm" />
-        </h2>
-        <p class="text-sm text-slate-500">
-          {{ formatKickoff(data.match.kickoffAt) }}
-          <template v-if="data.matchGround"> · <a :href="data.matchGround.mapsUrl" target="_blank" rel="noopener noreferrer" class="hover:text-accent-400 hover:underline"><Icon icon="location-dot" class="mr-0.5 h-3 w-3" />{{ data.matchGround.name }}</a></template>
-          <template v-else-if="data.match.venue"> · {{ data.match.venue }}</template>
-        </p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <Badge v-if="data.closed" tone="slate">Partido empezado</Badge>
-        <Badge v-else-if="data.status === 'Published'" tone="green">Enviada</Badge>
-        <Badge v-else-if="data.id" tone="amber">Borrador</Badge>
-        <Badge v-else tone="slate">Sin preparar</Badge>
-        <Badge v-if="editing && canEdit" tone="amber">Modificándola</Badge>
-        <RouterLink v-if="seesPreview" :to="{ name: 'sheet', params: { squadId, matchId }, query: { tab: 'previa' } }" class="btn-secondary px-3 py-1.5 text-xs"><Icon icon="chart-line" class="mr-1.5 h-3 w-3" />Previa del partido</RouterLink>
-      </div>
+    <!-- Cómo está la convocatoria: el partido, su fecha y su campo ya están en la cabecera de la página -->
+    <div class="mb-4 flex flex-wrap items-center gap-2">
+      <Badge v-if="data.closed" tone="slate">Partido empezado</Badge>
+      <Badge v-else-if="data.status === 'Published'" tone="green">Enviada</Badge>
+      <Badge v-else-if="data.id" tone="amber">Borrador</Badge>
+      <Badge v-else tone="slate">Sin preparar</Badge>
+      <Badge v-if="editing && canEdit" tone="amber">Modificándola</Badge>
     </div>
 
     <Alert v-if="actionError" kind="error" class="mb-4">{{ actionError }}</Alert>
@@ -600,7 +584,7 @@ async function respond(response: CallUpResponse) {
       </section>
 
       <!-- Cita y acciones -->
-      <aside class="space-y-4">
+      <aside class="min-w-0 space-y-4">
         <section v-if="editable" class="card" aria-labelledby="cu-size">
           <h3 id="cu-size" class="mb-1 font-semibold text-slate-900">Convocados</h3>
           <p class="font-display text-3xl font-semibold tabular-nums text-slate-900">
@@ -626,12 +610,12 @@ async function respond(response: CallUpResponse) {
         <section class="card">
           <h3 class="mb-2 font-semibold text-slate-900">Cita</h3>
           <template v-if="editable">
-            <div class="grid grid-cols-[1fr_5.5rem] gap-2">
-              <div>
+            <div class="grid grid-cols-[minmax(0,1fr)_5.5rem] gap-2">
+              <div class="min-w-0">
                 <label class="label" for="cu-date">Día</label>
                 <input id="cu-date" v-model="meet.date" type="date" class="input" />
               </div>
-              <div>
+              <div class="min-w-0">
                 <label class="label" for="cu-time">Hora</label>
                 <input id="cu-time" v-model="meet.time" type="time" class="input px-2" />
               </div>
@@ -673,8 +657,8 @@ async function respond(response: CallUpResponse) {
         <section v-if="data.status === 'Published' && data.canEdit" class="card text-sm">
           <h3 class="mb-2 font-semibold text-slate-900">Entrega</h3>
           <ul class="space-y-1">
-            <li class="flex justify-between"><span class="text-slate-600"><Icon icon="check" class="mr-1.5 h-3 w-3 text-slate-400" />Enviada</span><strong class="tabular-nums text-slate-700">{{ data.counts.sent }}</strong></li>
-            <li class="flex justify-between"><span class="text-slate-600"><Icon icon="check-double" class="mr-1.5 h-3 w-3 text-emerald-500" />Vista</span><strong class="tabular-nums text-emerald-600">{{ data.counts.seen }}</strong></li>
+            <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check" class="mr-1.5 h-3 w-3 text-slate-400" />Enviada</span><strong class="tabular-nums text-slate-700">{{ data.counts.sent }}</strong></li>
+            <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check-double" class="mr-1.5 h-3 w-3 text-emerald-500" />Vista</span><strong class="tabular-nums text-emerald-600">{{ data.counts.seen }}</strong></li>
           </ul>
           <button v-if="canEdit && unseen > 0" type="button" class="btn-secondary mt-3 w-full px-3 py-1.5 text-xs" v-busy="busy === 'resend'" :disabled="busy !== null" @click="resend"><Icon icon="paper-plane" class="mr-1.5 h-3 w-3" />Reenviar a quien no la ha visto ({{ unseen }})</button>
           <p class="mt-2 text-xs text-slate-500">Un check: le ha llegado el aviso. Doble check verde: la ha abierto. La firma va aparte.</p>
@@ -683,9 +667,9 @@ async function respond(response: CallUpResponse) {
         <section v-if="data.status === 'Published'" class="card text-sm">
           <h3 class="mb-2 font-semibold text-slate-900">Firmas</h3>
           <ul class="space-y-1">
-            <li class="flex justify-between"><span class="text-slate-600">Convocados que han firmado</span><strong class="tabular-nums text-emerald-600">{{ data.counts.confirmed }}</strong></li>
-            <li class="flex justify-between"><span class="text-slate-600">Sin firmar</span><strong class="tabular-nums text-amber-600">{{ data.counts.pending }}</strong></li>
-            <li class="flex justify-between"><span class="text-slate-600">No convocados enterados</span><strong class="tabular-nums text-slate-700">{{ data.counts.acknowledged }}</strong></li>
+            <li class="flex justify-between gap-2"><span class="text-slate-600">Convocados que han firmado</span><strong class="tabular-nums text-emerald-600">{{ data.counts.confirmed }}</strong></li>
+            <li class="flex justify-between gap-2"><span class="text-slate-600">Sin firmar</span><strong class="tabular-nums text-amber-600">{{ data.counts.pending }}</strong></li>
+            <li class="flex justify-between gap-2"><span class="text-slate-600">No convocados enterados</span><strong class="tabular-nums text-slate-700">{{ data.counts.acknowledged }}</strong></li>
           </ul>
           <p v-if="data.publishedAt" class="mt-2 text-xs text-slate-500">Enviada el {{ formatKickoff(data.publishedAt) }}.</p>
         </section>

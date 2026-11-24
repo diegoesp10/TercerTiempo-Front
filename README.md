@@ -167,7 +167,9 @@ src/
 │                 sesión y el día elegido debajo; TrainingPlanModal: nuevo entrenamiento o serie semanal;
 │                 TrainingSessionModal: datos, ejercicios y asistencia de una sesión, con los jugadores a prueba y
 │                 «Hacerle ficha»; TrainingItemsEditor: ejercicios de la biblioteca o sueltos, en orden;
-│                 ExerciseLibraryModal: biblioteca de la plantilla; TrialPlayersModal: los que vienen a prueba),
+│                 ExerciseLibraryModal: biblioteca de la plantilla; TrialPlayersModal: los que vienen a prueba;
+│                 MatchCallUpPanel: la convocatoria de un partido —convocados, cita, publicar y respuestas—, en su
+│                 pestaña de MatchSheetView),
 │                 alerts (AlertBell: campanita de cualquier cuenta)
 └── views/        Home (landing / panel del club / panel del técnico / panel del jugador), Login, Registro (tres tipos
                   de cuenta; el técnico con código de acceso), Invitación (jugadores), Equipos, Equipo, Partido (acta
@@ -182,9 +184,8 @@ src/
                   SquadMatchesView (partidos con estado del acta), SquadStatsView (gráficos del equipo + tabla
                   ordenable), SquadCompareView (comparador de hasta 4 jugadores), SquadPlayerProfileView (ficha y
                   gráficos de un jugador), SquadTrainingsView (calendario de entrenamientos, próximas sesiones y
-                  convocatorias), SquadCallUpView (la convocatoria de un partido: convocados, cita, publicar y respuestas)
-                  y MatchSheetView (pestañas: acta interna —con la sección «Del vídeo»—, comparador con la
-                  federación, vídeo)
+                  convocatorias) y MatchSheetView (pestañas: convocatoria, acta interna —con la sección «Del vídeo»—,
+                  comparador con la federación, vídeo); la antigua dirección de la convocatoria redirige a su pestaña
 ```
 
 Convenciones:

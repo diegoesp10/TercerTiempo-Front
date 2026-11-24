@@ -119,7 +119,7 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
               <div class="flex flex-wrap gap-2">
                 <button v-if="c.mine.called && c.mine.response !== 'Confirmed'" type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy === c.callUpId" :disabled="busy !== null" @click="respond(c, 'Confirmed')"><Icon icon="check" class="mr-1.5 h-3 w-3" />Firmar la convocatoria</button>
                 <button v-else-if="!c.mine.called && c.mine.response !== 'Acknowledged'" type="button" class="btn-secondary px-3 py-1.5 text-xs" v-busy="busy === c.callUpId" :disabled="busy !== null" @click="respond(c, 'Acknowledged')">Enterado</button>
-                <RouterLink :to="{ name: 'squad-callup', params: { squadId: c.squadId, matchId: c.match.id } }" class="btn-ghost px-3 py-1.5 text-xs">Ver la convocatoria</RouterLink>
+                <RouterLink :to="{ name: 'sheet', params: { squadId: c.squadId, matchId: c.match.id }, query: { tab: 'convocatoria' } }" class="btn-ghost px-3 py-1.5 text-xs">Ver la convocatoria</RouterLink>
               </div>
             </div>
             <p v-if="c.mine.called" class="mt-2 text-xs text-slate-500">Si no vas a poder ir, díselo a tu cuerpo técnico: la convocatoria la cambian ellos.</p>

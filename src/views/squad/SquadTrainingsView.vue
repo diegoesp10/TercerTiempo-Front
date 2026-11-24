@@ -107,8 +107,9 @@ function openSession(session: TrainingSummaryDto | { id: string }) {
   selectedId.value = session.id;
 }
 
+// El partido pulsado en el calendario: a su página, en la pestaña de la convocatoria.
 function openMatch(match: MatchDto) {
-  void router.push({ name: 'squad-callup', params: { squadId: squadId.value, matchId: match.id } });
+  void router.push({ name: 'sheet', params: { squadId: squadId.value, matchId: match.id }, query: { tab: 'convocatoria' } });
 }
 
 function closeSession() {

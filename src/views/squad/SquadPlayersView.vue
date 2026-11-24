@@ -17,7 +17,7 @@ import CardTally from '@/components/ui/CardTally.vue';
 import { useSquad } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
 import type { Position, SquadDisciplineDto, SquadPlayerDto, SquadPlayerRequest, SquadVisibility, TrialPlayerDto } from '@/types/api';
-import { formatDate, injuredLabel, injuryTitle, positionLabels, positionOptions, staffRoleLabels, visibilityLabels } from '@/utils/format';
+import { formatDate, positionLabels, positionOptions, staffRoleLabels, visibilityLabels } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
 import PlayerName from '@/components/players/PlayerName.vue';
 import PlayerAvatar from '@/components/teams/PlayerAvatar.vue';
@@ -41,8 +41,8 @@ const left = computed(() => players.value.filter((p) => p.status !== 'Active'));
 const isLeft = (p: SquadPlayerDto) => p.status !== 'Active';
 const myEntryId = computed(() => (auth.playerSquad?.squadId === squadId.value ? auth.playerSquad.squadPlayerId : null));
 
-// Quién llega apercibido o sancionado al próximo partido de liga y las tarjetas del cuerpo técnico. Si no llega, la
-// lista sale igual, sin las marcas.
+// Quién llega apercibido o sancionado al próximo partido de liga (en la tabla de la temporada, no en las fichas) y las
+// tarjetas del cuerpo técnico. Si no llega, todo sale igual, sin las marcas.
 const discipline = ref<SquadDisciplineDto | null>(null);
 watch(
   squadId,
@@ -58,6 +58,7 @@ watch(
 );
 const playerDiscipline = computed(() => new Map((discipline.value?.players ?? []).map((p) => [p.squadPlayerId, p.next])));
 const staffDiscipline = computed(() => new Map((discipline.value?.staff ?? []).map((s) => [s.coachId, s.discipline])));
+const playerCycles = computed(() => new Map((discipline.value?.cycles ?? []).map((c) => [c.squadPlayerId, c])));
 
 // Fichas: llegan por nombre. Se ordena solo por lo que no se edita en la fila (lee la ficha guardada, no el
 // formulario), así que una edición en curso no mueve su fila.
@@ -361,7 +362,7 @@ async function reinstate(player: SquadPlayerDto) {
       </ul>
     </section>
 
-    <SquadSeasonTable class="mb-6" :squad-id="squadId" :highlight-id="myEntryId" :discipline="playerDiscipline" />
+    <SquadSeasonTable class="mb-6" :squad-id="squadId" :highlight-id="myEntryId" :discipline="playerDiscipline" :cycles="playerCycles" />
 
     <Alert v-if="canInvitePlayers" kind="info" class="mb-6">
       Genera el código personal junto al nombre de cada jugador y entrégaselo solo a él. Con ese código se da de alta sin escribir
@@ -454,13 +455,7 @@ async function reinstate(player: SquadPlayerDto) {
                       :to="{ name: 'squad-player', params: { squadId, squadPlayerId: player.id } }"
                       class="font-medium text-slate-800 hover:text-accent-400 hover:underline"
                     ><PlayerName :name="player.fullName" :photo-url="player.photoUrl" size="sm" /></RouterLink>
-                    <p class="text-xs text-slate-400">
-                      {{ player.fromRoster ? 'futbolasturiano.es' : 'añadido a mano' }}
-                      <Badge v-if="player.injury" tone="red" class="ml-1" :title="injuryTitle(player.injury)">
-                        <Icon icon="user-injured" class="mr-1 h-3 w-3" />{{ injuredLabel(player.injury) }}
-                      </Badge>
-                      <DisciplineBadge :discipline="playerDiscipline.get(player.id)" class="ml-1" />
-                    </p>
+                    <p class="text-xs text-slate-400">{{ player.fromRoster ? 'futbolasturiano.es' : 'añadido a mano' }}</p>
                   </td>
                   <td class="col-sm py-2 pr-3 text-slate-600">
                     <template v-if="player.position">{{ positionLabels[player.position] }}</template>

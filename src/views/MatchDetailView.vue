@@ -22,6 +22,7 @@ import { awaitingResultHint, formatKickoff, matchDisplayLabels, matchDisplayStat
 import type { MatchSquadSheetDto, PerformanceDto } from '@/types/api';
 import TeamName from '@/components/teams/TeamName.vue';
 import PlayerName from '@/components/players/PlayerName.vue';
+import StarterMark from '@/components/sheet/StarterMark.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 
 const props = defineProps<{ matchId: string }>();
@@ -226,7 +227,7 @@ const entriesOf = (sheet: MatchSquadSheetDto) => sortedEntries.value.filter((r) 
         <table class="table-sticky min-w-full text-sm">
           <thead class="text-xs text-slate-500">
             <tr>
-              <SortHeader class="py-2 pr-3 text-left" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
+              <SortHeader class="py-2 pl-2 pr-3 text-left" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
               <SortHeader class="px-2 py-2 text-center" label="Min" title="Minutos" v-bind="state('minutes')" @sort="sortBy('minutes')" />
               <SortHeader class="px-2 py-2 text-center" label="G" title="Goles" v-bind="state('goals')" @sort="sortBy('goals')" />
               <SortHeader class="col-sm px-2 py-2 text-center" label="A" title="Asistencias" v-bind="state('assists')" @sort="sortBy('assists')" />
@@ -239,13 +240,11 @@ const entriesOf = (sheet: MatchSquadSheetDto) => sortedEntries.value.filter((r) 
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr v-for="p in entriesOf(sheet)" :key="p.id" :class="p.squadPlayerId === auth.playerSquad?.squadPlayerId ? 'bg-brand-500/10' : ''">
-              <td class="py-2 pr-3 lg:whitespace-nowrap">
+            <tr v-for="p in entriesOf(sheet)" :key="p.id" :class="p.squadPlayerId === auth.playerSquad?.squadPlayerId ? 'bg-brand-500/10' : p.started ? '' : 'bg-slate-500/[0.06]'">
+              <td class="py-2 pl-2 pr-3 lg:whitespace-nowrap" :class="p.started ? 'shadow-[inset_3px_0_0_var(--color-emerald-500)]' : ''">
                 <PlayerName :name="p.playerName" :photo-url="p.playerPhotoUrl" class="font-medium text-slate-800" />
-                <span class="ml-1 text-xs text-slate-400">
-                  <template v-if="p.position">{{ positionShortLabels[p.position] }}</template>
-                  <template v-if="p.started"> · titular</template>
-                </span>
+                <span v-if="p.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[p.position] }}</span>
+                <StarterMark :started="p.started" class="ml-1.5" />
               </td>
               <td class="px-2 py-2 text-center tabular-nums">{{ p.minutesPlayed }}</td>
               <td class="px-2 py-2 text-center"><GoalMarks :goals="p.goals" /></td>

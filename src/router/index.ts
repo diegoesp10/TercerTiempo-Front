@@ -59,7 +59,12 @@ const router = createRouter({
         { path: 'comparador', name: 'squad-compare', component: () => import('@/views/squad/SquadCompareView.vue') },
         // La agenda: entrenamientos y partidos. «entrenamientos» sigue valiendo para los avisos ya enviados.
         { path: 'agenda', alias: 'entrenamientos', name: 'squad-trainings', component: () => import('@/views/squad/SquadTrainingsView.vue') },
-        { path: 'convocatorias/:matchId', name: 'squad-callup', component: () => import('@/views/squad/SquadCallUpView.vue'), props: true },
+        // La convocatoria es una pestaña de la página del partido; esta dirección sigue valiendo para los avisos ya enviados.
+        {
+          path: 'convocatorias/:matchId',
+          name: 'squad-callup',
+          redirect: (to) => ({ name: 'sheet', params: to.params, query: { ...to.query, tab: 'convocatoria' } }),
+        },
         {
           path: 'jugadores/:squadPlayerId',
           name: 'squad-player',

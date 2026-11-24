@@ -40,10 +40,14 @@ import type {
   InjuryDocumentDto,
   InjuryDocumentKind,
   InjuryDto,
+  InjuryOccasionDto,
+  InjuryProposalDto,
   InjuryRequest,
+  MatchInjuryDto,
   PlayerInjuryHistoryDto,
   RelapseRequest,
   InjuryTypeDto,
+  BodySiteDto,
   JoinSquadAsPlayerRequest,
   LeagueTableDto,
   BillingInterval,
@@ -292,7 +296,11 @@ export const api = {
       http<SquadPlayerProfileDto>(`/api/squads/${squadId}/players/${squadPlayerId}/profile`),
     timeline: (squadId: string) => http<SquadTimelineDto>(`/api/squads/${squadId}/timeline`, { cacheMs: SQUAD_READ_CACHE_MS }),
     injuryTypes: () => http<InjuryTypeDto[]>('/api/squads/injury-types', { cacheMs: 60 * 60_000 }),
+    // El catálogo de sitios del cuerpo (también los retirados, que enseñan las lesiones que ya los tienen).
+    bodySites: () => http<BodySiteDto[]>('/api/squads/body-sites', { cacheMs: 60 * 60_000 }),
     injuries: (squadId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries`),
+    // Partidos y entrenamientos ya empezados de la plantilla, los más recientes primero: dónde se pudo lesionar.
+    injuryOccasions: (squadId: string) => http<InjuryOccasionDto[]>(`/api/squads/${squadId}/injury-occasions`),
     recordInjury: (squadId: string, body: InjuryRequest) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries`, { method: 'POST', body }),
     updateInjury: (squadId: string, injuryId: string, body: InjuryRequest) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'PUT', body }),
     closeInjury: (squadId: string, injuryId: string, returnedOn: string | null) =>
@@ -302,6 +310,12 @@ export const api = {
       http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}/relapse`, { method: 'POST', body }),
     playerInjuryHistory: (squadId: string, squadPlayerId: string) => http<PlayerInjuryHistoryDto>(`/api/squads/${squadId}/players/${squadPlayerId}/injuries`),
     deleteInjury: (squadId: string, injuryId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries/${injuryId}`, { method: 'DELETE' }),
+    /** Posibles lesiones de las crónicas de los partidos: el club, el cuerpo técnico y el administrador (solo para leer). */
+    injuryProposals: (squadId: string) => http<InjuryProposalDto[]>(`/api/squads/${squadId}/injury-proposals`, { silent: true }),
+    dismissInjuryProposal: (squadId: string, proposalId: string) =>
+      http<InjuryProposalDto[]>(`/api/squads/${squadId}/injury-proposals/${proposalId}/dismiss`, { method: 'POST' }),
+    /** Lesiones de la plantilla en un partido, para sus sucesos (las posibles sin registrar, solo al club y al cuerpo técnico). */
+    matchInjuries: (squadId: string, matchId: string) => http<MatchInjuryDto[]>(`/api/squads/${squadId}/matches/${matchId}/injuries`, { silent: true }),
     /** Prueba o informe de una lesión (PDF o imagen, hasta 15 MB): solo el club y el cuerpo técnico. */
     uploadInjuryDocument: (squadId: string, injuryId: string, file: File, kind: InjuryDocumentKind, note: string | null) => {
       const body = new FormData();

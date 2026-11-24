@@ -37,8 +37,10 @@ const props = withDefaults(
     size?: 'sm' | 'md';
     /** Con una opción vacía al principio para poder "deselegir". */
     clearable?: boolean;
+    /** El valor elegido siempre en una línea: si no cabe se recorta, y entero al pasar por encima. */
+    nowrap?: boolean;
   }>(),
-  { placeholder: '— Elige —', searchable: undefined, disabled: false, id: undefined, ariaLabel: undefined, size: 'md', clearable: false },
+  { placeholder: '— Elige —', searchable: undefined, disabled: false, id: undefined, ariaLabel: undefined, size: 'md', clearable: false, nowrap: false },
 );
 const emit = defineEmits<{ 'update:modelValue': [value: string | number | null] }>();
 
@@ -209,7 +211,11 @@ const sizeClasses = computed(() => (props.size === 'sm' ? 'px-2.5 py-1 text-sm' 
       :class="sizeClasses"
       @click="toggle"
     >
-      <span class="min-w-0 flex-1 break-words" :class="selected ? '' : 'text-slate-400'">
+      <span
+        class="min-w-0 flex-1"
+        :class="[nowrap ? 'truncate' : 'break-words', selected ? '' : 'text-slate-400']"
+        :title="nowrap && selected ? `${selected.label}${selected.hint ? ` · ${selected.hint}` : ''}` : undefined"
+      >
         <template v-if="selected">
           <TeamCrest v-if="selected.crest !== undefined" :src="selected.crest" :name="selected.label" size="xs" class="mr-1.5 align-middle" />
           <PlayerAvatar v-else-if="selected.photo !== undefined" :src="selected.photo" :name="selected.label" size="xs" class="mr-1.5 align-middle" />

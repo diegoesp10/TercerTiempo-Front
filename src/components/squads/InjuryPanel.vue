@@ -1,20 +1,23 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { api } from '@/api';
-import { ApiError, errorMessage } from '@/api/http';
+import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Modal from '@/components/ui/Modal.vue';
-import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
-import type { InjuryDto, InjuryHistoryEntryDto, InjuryRequest, InjuryType, InjuryTypeDto, PlayerInjuryHistoryDto, SquadPlayerDto } from '@/types/api';
+import type { InjuryDto, InjuryHistoryEntryDto, InjuryProposalDto, PlayerInjuryHistoryDto, SquadPlayerDto } from '@/types/api';
 import { formatDate, formatNumber } from '@/utils/format';
+import { injuryFacts, injuryWithLocation } from '@/utils/injuryAnatomy';
+import { occasionIcon, occasionPlace, proposalOccasion } from '@/utils/injuryOccasion';
 import { confirmDialog } from '@/composables/useConfirm';
 import { useSort } from '@/composables/useSort';
 import { useViewer } from '@/composables/useViewer';
 import PlayerName from '@/components/players/PlayerName.vue';
 import InjuryCounter from '@/components/squads/InjuryCounter.vue';
 import InjuryDocuments from '@/components/squads/InjuryDocuments.vue';
+import InjuryFormModal, { type InjuryFormMode, type InjuryFormPreset } from '@/components/squads/InjuryFormModal.vue';
 
 // Control de lesionados de la plantilla: cada lesión abierta con su contador de días de baja (reales, contados desde el
 // parte) y lo que falta para la vuelta prevista; el alta con su día, las recaídas, el historial y las pruebas e informes
@@ -22,7 +25,9 @@ import InjuryDocuments from '@/components/squads/InjuryDocuments.vue';
 // es el historial de un solo jugador (su perfil): todas sus lesiones en el club, también de otras temporadas, con lo que
 // tardó de verdad en recuperarse de cada una frente a lo previsto al dar el parte. Las de quien causó baja en la plantilla
 // (playerLeft) son historial: se consultan y se pueden borrar, nada más. Lo mismo la que pasó abierta a la temporada
-// siguiente (continuedOn): allí sigue, con su parte (continuesInjuryId), y en el perfil sale una sola vez.
+// siguiente (continuedOn): allí sigue, con su parte (continuesInjuryId), y en el perfil sale una sola vez. Arriba, las
+// posibles lesiones que cuentan las crónicas de los partidos, para registrarlas con un clic, enlazarlas con la lesión que
+// ya tiene abierta o descartarlas. Cada lesión dice dónde fue: el partido o el entrenamiento en que se lesionó.
 const props = defineProps<{ squadId: string; players: SquadPlayerDto[]; canManage: boolean; playerId?: string | null; playerLeft?: boolean }>();
 
 const photoOf = (squadPlayerId: string) => props.players.find((p) => p.id === squadPlayerId)?.photoUrl ?? null;
@@ -30,7 +35,6 @@ const emit = defineEmits<{ changed: [] }>();
 
 const injuries = shallowRef<InjuryDto[]>([]);
 const profile = shallowRef<PlayerInjuryHistoryDto | null>(null);
-const types = shallowRef<InjuryTypeDto[]>([]);
 const loading = ref(true);
 const loadError = ref<string | null>(null);
 
@@ -44,16 +48,25 @@ async function load() {
   loading.value = true;
   loadError.value = null;
   try {
-    const [, list] = await Promise.all([fetchList(), types.value.length ? Promise.resolve(types.value) : api.squads.injuryTypes()]);
-    types.value = list;
+    await Promise.all([fetchList(), fetchProposals()]);
   } catch (e) {
     loadError.value = errorMessage(e);
   } finally {
     loading.value = false;
   }
+  scrollToPanel();
 }
 onMounted(load);
 watch(() => [props.squadId, props.playerId], load);
+
+// El aviso de una posible lesión lleva aquí (#lesiones): el panel se carga después que la página, así que se baja a él al
+// tenerlo, y también si ya se estaba en la plantilla.
+const route = useRoute();
+function scrollToPanel() {
+  if (props.playerId || route.hash !== '#lesiones') return;
+  void nextTick(() => document.getElementById('lesiones')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+}
+watch(() => route.hash, scrollToPanel);
 
 const entries = computed<InjuryHistoryEntryDto[]>(() =>
   props.playerId
@@ -78,15 +91,74 @@ const relapseOf = (injury: InjuryDto) => (injury.relapseOfInjuryId ? (entries.va
 const { isAdmin } = useViewer();
 const canOpenDocuments = computed(() => props.canManage || !isAdmin.value);
 
+// --- Posibles lesiones: lo que cuentan las crónicas de los partidos ---
+// Son para quien registra las lesiones (el club y el cuerpo técnico; el administrador, solo para leer). Ninguna cuenta
+// como lesión hasta que se registra; si no fue así, se descarta y no se vuelve a proponer.
+const proposals = shallowRef<InjuryProposalDto[]>([]);
+async function fetchProposals() {
+  if (!props.canManage && !isAdmin.value) {
+    proposals.value = [];
+    return;
+  }
+  try {
+    proposals.value = await api.squads.injuryProposals(props.squadId);
+  } catch {
+    proposals.value = [];
+  }
+}
+const visibleProposals = computed(() => (props.playerLeft ? [] : proposals.value.filter((p) => !props.playerId || p.squadPlayerId === props.playerId)));
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+const openInjuryOf = (squadPlayerId: string) => entries.value.find((e) => isOpen(e) && e.injury.squadPlayerId === squadPlayerId)?.injury ?? null;
+
+// El formulario sale relleno con lo que cuenta la crónica (el tipo que encaja, el partido como el sitio donde se lesionó,
+// su día como parte y la vuelta prevista con la duración media del tipo); se revisa y se guarda.
+function openProposal(p: InjuryProposalDto) {
+  const reason = `${capitalize(p.phrase)} (crónica del J${p.matchday}, ${p.homeTeam} – ${p.awayTeam})`;
+  openFormWith('new', null, {
+    squadPlayerId: p.squadPlayerId,
+    type: p.suggestedType,
+    reason: reason.length <= 300 ? reason : capitalize(p.phrase).slice(0, 300),
+    startedOn: p.matchDate > today ? today : p.matchDate,
+    occasion: proposalOccasion(p),
+    lockOccasion: true,
+    lockPlayer: true,
+    proposal: p,
+  });
+}
+
+// Ya tiene una lesión abierta y no puede tener dos: si es esa misma, queda como la de ese partido y la posible lesión,
+// registrada con ella.
+function linkProposal(p: InjuryProposalDto) {
+  const open = openInjuryOf(p.squadPlayerId);
+  if (open) openFormWith('edit', open, { occasion: proposalOccasion(p), lockOccasion: true, proposal: p });
+}
+
+async function dismissProposal(p: InjuryProposalDto) {
+  const ok = await confirmDialog({
+    title: `Descartar la posible lesión de ${p.playerName}`,
+    message: 'No se volverá a proponer por este partido. Si al final resulta que sí se lesionó, regístrala como una lesión más.',
+    confirmLabel: 'Descartar',
+  });
+  if (!ok) return;
+  busy.value = true;
+  error.value = null;
+  try {
+    proposals.value = await api.squads.dismissInjuryProposal(props.squadId, p.id);
+  } catch (e) {
+    error.value = errorMessage(e);
+    void fetchProposals();
+  } finally {
+    busy.value = false;
+  }
+}
+
 const busy = ref(false);
 const error = ref<string | null>(null);
-const fieldErrors = ref<Record<string, string[]>>({});
 const busyTitle = 'Espera a que termine lo que se está guardando';
 
 async function act(fn: () => Promise<InjuryDto[]>) {
   busy.value = true;
   error.value = null;
-  fieldErrors.value = {};
   try {
     const list = await fn();
     if (props.playerId) await fetchList().catch((e) => (loadError.value = errorMessage(e)));
@@ -95,7 +167,6 @@ async function act(fn: () => Promise<InjuryDto[]>) {
     return true;
   } catch (e) {
     error.value = errorMessage(e);
-    if (e instanceof ApiError) fieldErrors.value = e.fieldErrors;
     return false;
   } finally {
     busy.value = false;
@@ -110,11 +181,6 @@ function onDocuments(list: InjuryDto[]) {
 
 // --- Fechas ---
 const localDay = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-const addDays = (day: string, days: number) => {
-  const date = new Date(`${day}T12:00:00`);
-  date.setDate(date.getDate() + days);
-  return localDay(date);
-};
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(`${to}T12:00:00`) - Date.parse(`${from}T12:00:00`)) / 86_400_000);
 const daysLabel = (n: number) => (n === 1 ? '1 día' : `${n} días`);
 const today = localDay();
@@ -130,114 +196,38 @@ function forecastNote(i: InjuryDto) {
   return `previstos ${i.initialExpectedDays} al dar el parte (${Math.abs(diff)} ${diff > 0 ? 'más' : 'menos'})`;
 }
 
-// --- Formulario: lesión nueva, corrección o recaída ---
-type FormMode = 'new' | 'edit' | 'relapse';
-const mode = ref<FormMode>('new');
-const target = ref<InjuryDto | null>(null);
+// --- Formulario: lesión nueva, corrección o recaída, con dónde se lesionó ---
+// Lo último que se abrió se queda mientras se cierra, para que el formulario no cambie al irse.
 const formOpen = ref(false);
-const form = reactive<{ squadPlayerId: string | null; type: InjuryType | null; reason: string; startedOn: string; expectedReturnOn: string }>({
-  squadPlayerId: null,
-  type: null,
-  reason: '',
-  startedOn: today,
-  expectedReturnOn: '',
-});
-
-const playerOptions = computed<SelectOption[]>(() => {
-  const injured = new Set(active.value.map((e) => e.injury.squadPlayerId));
-  return props.players
-    .filter((p) => p.status === 'Active')
-    .map((p) => ({ value: p.id, label: p.fullName, disabled: injured.has(p.id) && target.value?.squadPlayerId !== p.id, photo: p.photoUrl ?? null }));
-});
-// Solo se ofrecen los tipos que el administrador no ha retirado; al corregir una lesión que tiene uno retirado (o al
-// registrar su recaída), ese sigue disponible para ella.
-const typeOptions = computed<SelectOption[]>(() => {
-  const options = types.value.map((t) => ({ value: t.type, label: t.label, hint: t.averageDays ? `≈ ${t.averageDays} días` : 'sin referencia' }));
-  const current = target.value;
-  if (current && !types.value.some((t) => t.type === current.type))
-    options.push({ value: current.type, label: current.typeLabel, hint: 'ya no se ofrece para lesiones nuevas' });
-  return options;
-});
-const averageDays = computed(() => types.value.find((t) => t.type === form.type)?.averageDays ?? (target.value?.type === form.type ? target.value?.averageDays : null) ?? null);
-// El parte es de un día ya vivido; la recaída, además, no puede empezar antes del alta de la que viene.
-const startMin = computed(() => {
-  const t = target.value;
-  if (!t) return undefined;
-  if (mode.value === 'relapse') return t.returnedOn ?? undefined;
-  if (mode.value === 'edit' && t.relapseOfInjuryId) return relapseOf(t)?.returnedOn ?? undefined;
+const formState = shallowRef<{ mode: InjuryFormMode; target: InjuryDto | null; preset: InjuryFormPreset | null }>({ mode: 'new', target: null, preset: null });
+const formPlayers = computed(() => props.players.filter((p) => p.status === 'Active'));
+const injuredPlayerIds = computed(() => active.value.map((e) => e.injury.squadPlayerId));
+// La recaída no puede empezar antes del alta de la lesión de la que viene (tampoco al corregirla).
+const formStartMin = computed(() => {
+  const { mode, target } = formState.value;
+  if (!target) return undefined;
+  if (mode === 'relapse') return target.returnedOn ?? undefined;
+  if (mode === 'edit' && target.relapseOfInjuryId) return relapseOf(target)?.returnedOn ?? undefined;
   return undefined;
 });
 
-// Al elegir tipo o cambiar el día del parte se propone la vuelta con la duración media; el técnico puede corregirla.
-function proposeReturn() {
-  const days = averageDays.value;
-  form.expectedReturnOn = days && form.startedOn ? addDays(form.startedOn, days) : '';
-}
-
-function openForm(next: FormMode, injury: InjuryDto | null) {
-  mode.value = next;
-  target.value = injury;
+function openFormWith(mode: InjuryFormMode, target: InjuryDto | null, preset: InjuryFormPreset | null = null) {
   error.value = null;
-  fieldErrors.value = {};
+  formState.value = { mode, target, preset };
   formOpen.value = true;
 }
+const openNew = (playerId: string | null = props.playerId ?? null) => openFormWith('new', null, { squadPlayerId: playerId, lockPlayer: !!props.playerId });
+const openEdit = (injury: InjuryDto) => openFormWith('edit', injury);
+const openRelapse = (injury: InjuryDto) => openFormWith('relapse', injury);
 
-function openNew(playerId: string | null = props.playerId ?? null) {
-  form.squadPlayerId = playerId;
-  form.type = null;
-  form.reason = '';
-  form.startedOn = today;
-  form.expectedReturnOn = '';
-  openForm('new', null);
-}
-
-function openEdit(injury: InjuryDto) {
-  form.squadPlayerId = injury.squadPlayerId;
-  form.type = injury.type;
-  form.reason = injury.reason ?? '';
-  form.startedOn = injury.startedOn;
-  form.expectedReturnOn = injury.expectedReturnOn ?? '';
-  openForm('edit', injury);
-}
-
-function openRelapse(injury: InjuryDto) {
-  form.squadPlayerId = injury.squadPlayerId;
-  form.type = injury.type;
-  form.reason = '';
-  form.startedOn = today;
-  openForm('relapse', injury);
-  proposeReturn();
-}
-
-const formTitle = computed(() => (mode.value === 'edit' ? 'Corregir la lesión' : mode.value === 'relapse' ? `Recaída de ${target.value?.playerName ?? 'la lesión'}` : 'Nueva lesión'));
-const formBlocked = computed(() => {
-  if (busy.value) return busyTitle;
-  if (mode.value === 'new' && !form.squadPlayerId) return 'Elige al jugador';
-  if (!form.type) return 'Elige el tipo de lesión';
-  if (!form.startedOn) return 'Pon la fecha del parte';
-  if (form.startedOn > today) return 'La fecha del parte no puede ser posterior a hoy';
-  if (startMin.value && form.startedOn < startMin.value) return 'La recaída no puede empezar antes del alta de la lesión anterior';
-  if (form.expectedReturnOn && form.expectedReturnOn < form.startedOn) return 'La vuelta prevista no puede ser anterior al parte';
-  return undefined;
-});
-
-const request = (): InjuryRequest => ({
-  squadPlayerId: form.squadPlayerId,
-  type: form.type as InjuryType,
-  reason: form.reason.trim() || null,
-  startedOn: form.startedOn,
-  expectedReturnOn: form.expectedReturnOn || null,
-});
-
-async function save() {
-  if (formBlocked.value) return;
-  const t = target.value;
-  let ok: boolean;
-  if (mode.value === 'edit' && t) ok = await act(() => api.squads.updateInjury(props.squadId, t.id, request()));
-  else if (mode.value === 'relapse' && t)
-    ok = await act(() => api.squads.relapseInjury(props.squadId, t.id, { startedOn: form.startedOn, expectedReturnOn: form.expectedReturnOn || null, reason: form.reason.trim() || null }));
-  else ok = await act(() => api.squads.recordInjury(props.squadId, request()));
-  if (ok) formOpen.value = false;
+// Al guardar, la posible lesión de la crónica de ese partido queda registrada con ella (o descartada, si la lesión dice
+// ahora que fue en otro sitio): se vuelven a pedir.
+function onSaved(list: InjuryDto[]) {
+  formOpen.value = false;
+  if (props.playerId) void fetchList().catch((e) => (loadError.value = errorMessage(e)));
+  else injuries.value = list;
+  void fetchProposals();
+  emit('changed');
 }
 
 // --- Alta: con su día (por defecto hoy), que cierra el contador. Siempre se confirma (Diego, 20-11). ---
@@ -325,7 +315,7 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
 </script>
 
 <template>
-  <section class="card">
+  <section :id="playerId ? undefined : 'lesiones'" class="card scroll-mt-24">
     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
       <div>
         <template v-if="playerId">
@@ -344,6 +334,64 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
 
     <Alert v-if="loadError" kind="error">{{ loadError }}</Alert>
     <Alert v-else-if="error && !formOpen && !closing" kind="error" class="mb-3">{{ error }}</Alert>
+
+    <!-- Posibles lesiones: lo que cuentan las crónicas de los partidos -->
+    <div v-if="visibleProposals.length > 0" class="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+      <p class="font-semibold">
+        <Icon icon="newspaper" class="mr-1.5 h-3.5 w-3.5" />{{ visibleProposals.length === 1 ? 'Posible lesión' : 'Posibles lesiones' }}
+        <span class="font-normal">· {{ visibleProposals.length }}</span>
+      </p>
+      <p class="mt-0.5 text-xs text-amber-800">
+        Lo que cuentan las crónicas de los partidos.
+        <template v-if="canManage">No es una lesión hasta que la registras; si no fue así, descártala.</template>
+        <template v-else>No es una lesión hasta que el club o el cuerpo técnico la registran.</template>
+      </p>
+      <ul class="mt-1 divide-y divide-amber-200">
+        <li v-for="p in visibleProposals" :key="p.id" class="flex flex-wrap items-start justify-between gap-2 py-2">
+          <div class="min-w-0 flex-1">
+            <p v-if="!playerId" class="font-medium text-slate-800"><PlayerName :name="p.playerName" :photo-url="photoOf(p.squadPlayerId)" /></p>
+            <p class="text-xs text-amber-800">
+              J{{ p.matchday }} · {{ p.homeTeam }} – {{ p.awayTeam }} · {{ formatDate(p.matchDate) }}<template v-if="p.minute !== null"> · dejó el campo en el {{ p.minute }}'</template>
+            </p>
+            <blockquote class="mt-1 border-l-2 border-amber-300 pl-2 text-xs italic">«{{ p.excerpt }}»</blockquote>
+            <a :href="p.sourceUrl" target="_blank" rel="noopener noreferrer" class="mt-1 inline-block text-xs font-medium text-amber-900 underline underline-offset-2">
+              Leer la crónica<Icon icon="up-right-from-square" class="ml-1 h-2.5 w-2.5" />
+            </a>
+            <p v-if="canManage && openInjuryOf(p.squadPlayerId)" class="mt-1 text-xs text-amber-900">
+              <Icon icon="user-injured" class="mr-1 h-3 w-3" />Ya tiene una lesión abierta ({{ injuryWithLocation(openInjuryOf(p.squadPlayerId)!) }}, parte del
+              {{ formatDate(openInjuryOf(p.squadPlayerId)!.startedOn) }}). Si es esta, «Es su lesión abierta» la deja como la de este partido; si no, descártala.
+            </p>
+          </div>
+          <div v-if="canManage" class="flex shrink-0 flex-wrap justify-end gap-1">
+            <button
+              v-if="openInjuryOf(p.squadPlayerId)"
+              type="button"
+              class="btn-primary px-3 py-1 text-xs"
+              v-busy="busy"
+              :disabled="busy"
+              :title="busy ? busyTitle : 'Es la lesión que ya tiene registrada: queda como la de este partido y la posible lesión, registrada'"
+              @click="linkProposal(p)"
+            >
+              <Icon icon="link" class="mr-1 h-3 w-3" />Es su lesión abierta
+            </button>
+            <button
+              v-else
+              type="button"
+              class="btn-primary px-3 py-1 text-xs"
+              v-busy="busy"
+              :disabled="busy"
+              :title="busy ? busyTitle : 'Registrar la lesión con lo que cuenta la crónica: lo revisas antes de guardar'"
+              @click="openProposal(p)"
+            >
+              <Icon icon="user-injured" class="mr-1 h-3 w-3" />Registrar
+            </button>
+            <button type="button" class="btn-ghost px-2.5 py-1 text-xs" v-busy="busy" :disabled="busy" :title="busy ? busyTitle : 'No fue una lesión: deja de proponerse'" @click="dismissProposal(p)">
+              Descartar
+            </button>
+          </div>
+        </li>
+      </ul>
+    </div>
 
     <!-- Resumen del jugador -->
     <div v-if="playerId && totals && totals.injuries > 0" class="mb-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
@@ -391,7 +439,14 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
               <Badge tone="red" :class="playerId ? '' : 'ml-2'">{{ e.injury.typeLabel }}</Badge>
               <Badge v-if="e.injury.relapseOfInjuryId" tone="amber" class="ml-1" title="Ha vuelto a lesionarse de lo mismo después del alta">Recaída</Badge>
             </p>
+            <p v-if="e.injury.location || injuryFacts(e.injury)" class="mt-0.5 text-sm text-slate-700">
+              <template v-if="e.injury.location"><Icon icon="location-dot" class="mr-1 h-3 w-3 text-slate-400" />{{ e.injury.location }}</template>
+              <span v-if="injuryFacts(e.injury)" class="text-xs text-slate-500"><template v-if="e.injury.location"> · </template>{{ injuryFacts(e.injury) }}</span>
+            </p>
             <p v-if="e.injury.reason" class="mt-0.5 text-sm text-slate-600">{{ e.injury.reason }}</p>
+            <p v-if="e.injury.occasion" class="mt-0.5 text-xs text-slate-500">
+              <Icon :icon="occasionIcon(e.injury.occasion)" class="mr-1 h-3 w-3" />Se lesionó {{ occasionPlace(e.injury.occasion) }}
+            </p>
             <p v-if="e.injury.continuesInjuryId" class="mt-0.5 text-xs text-slate-500">
               Viene de la temporada {{ e.fromSeasonLabel ?? 'anterior' }}: es la misma lesión, que seguía abierta, y los días de baja se cuentan desde aquel parte.
             </p>
@@ -429,6 +484,7 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
                 <td class="px-3 py-2">
                   <span class="font-medium text-slate-800">{{ e.injury.typeLabel }}</span>
                   <Badge v-if="e.injury.relapseOfInjuryId" tone="amber" class="ml-1" title="Ha vuelto a lesionarse de lo mismo después de un alta">Recaída</Badge>
+                  <span v-if="e.injury.location" class="block text-xs text-slate-500">{{ e.injury.location }}</span>
                 </td>
                 <td class="col-md px-3 py-2 text-slate-600">
                   <template v-if="e.fromSeasonLabel">{{ e.fromSeasonLabel }} → </template>{{ e.seasonLabel }}<span v-if="teamNames.size > 1" class="block text-xs text-slate-500">{{ e.teamName }}</span>
@@ -457,7 +513,11 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
               </tr>
               <tr v-if="openRow === e.injury.id">
                 <td colspan="7" class="bg-surface-2 px-3 py-3 text-sm">
+                  <p v-if="injuryFacts(e.injury)" class="text-xs text-slate-600">{{ injuryFacts(e.injury) }}</p>
                   <p v-if="e.injury.reason" class="text-slate-700">{{ e.injury.reason }}</p>
+                  <p v-if="e.injury.occasion" class="mt-0.5 text-xs text-slate-600">
+                    <Icon :icon="occasionIcon(e.injury.occasion)" class="mr-1 h-3 w-3" />Se lesionó {{ occasionPlace(e.injury.occasion) }}.
+                  </p>
                   <p class="mt-0.5 text-xs text-slate-600">
                     <template v-if="e.injury.returnedOn">
                       Del parte ({{ formatDate(e.injury.startedOn) }}) al alta ({{ formatDate(e.injury.returnedOn) }}): {{ daysLabel(e.injury.daysOut) }} de baja<template v-if="forecastNote(e.injury)">; {{ forecastNote(e.injury) }}</template>.
@@ -498,7 +558,7 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
       <ul class="mt-2 divide-y divide-slate-100">
         <li v-for="e in history" :key="e.injury.id" class="flex flex-wrap items-start justify-between gap-2 py-2 text-slate-600">
           <span class="min-w-0 flex-1">
-            <PlayerName :name="e.injury.playerName" :photo-url="photoOf(e.injury.squadPlayerId)" class="font-medium text-slate-800" /> · {{ e.injury.typeLabel }}<template v-if="e.injury.reason"> · {{ e.injury.reason }}</template>
+            <PlayerName :name="e.injury.playerName" :photo-url="photoOf(e.injury.squadPlayerId)" class="font-medium text-slate-800" /> · {{ injuryWithLocation(e.injury) }}<template v-if="e.injury.reason"> · {{ e.injury.reason }}</template>
             <Badge v-if="e.injury.relapseOfInjuryId" tone="amber" class="ml-1" title="Ha vuelto a lesionarse de lo mismo después de un alta">Recaída</Badge>
             <span class="block text-xs text-slate-500">
               <template v-if="e.injury.returnedOn">{{ formatDate(e.injury.startedOn) }} → {{ formatDate(e.injury.returnedOn) }} · {{ daysLabel(e.injury.daysOut) }} de baja<template v-if="forecastNote(e.injury)"> · {{ forecastNote(e.injury) }}</template></template>
@@ -508,6 +568,9 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
               <template v-else>Desde el {{ formatDate(e.injury.startedOn) }}, sin alta · {{ daysLabel(e.injury.daysOut) }}</template>
               <template v-if="e.injury.continuesInjuryId"> · viene de la temporada anterior</template>
               <template v-if="e.injury.playerLeft"> · causó baja en la plantilla: solo se consulta</template>
+            </span>
+            <span v-if="e.injury.occasion" class="block text-xs text-slate-500">
+              <Icon :icon="occasionIcon(e.injury.occasion)" class="mr-1 h-2.5 w-2.5" />Se lesionó {{ occasionPlace(e.injury.occasion) }}
             </span>
             <InjuryDocuments :squad-id="squadId" :injury="e.injury" :can-manage="editable(e)" :can-open="canOpenDocuments" @updated="onDocuments" />
           </span>
@@ -522,50 +585,19 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
       </ul>
     </details>
 
-    <!-- Lesión nueva, corrección o recaída -->
-    <Modal :open="formOpen" :title="formTitle" size="md" @close="formOpen = false">
-      <form id="injury-form" class="space-y-4" @submit.prevent="save">
-        <Alert v-if="error" kind="error">{{ error }}</Alert>
-        <p v-if="mode === 'relapse' && target" class="text-sm text-slate-600">
-          Ha vuelto a lesionarse de lo mismo después del alta del {{ formatDate(target.returnedOn ?? target.startedOn) }}. Se registra como lesión nueva, enlazada a la
-          anterior, que conserva su alta y los {{ daysLabel(target.daysOut) }} que tardó en recuperarse.
-        </p>
-        <div v-if="mode !== 'relapse'">
-          <label class="label" for="injury-player">Jugador</label>
-          <SearchSelect id="injury-player" placeholder="Elige al jugador" :disabled="mode === 'edit' || !!playerId" :model-value="form.squadPlayerId" :options="playerOptions" @update:model-value="form.squadPlayerId = ($event as string | null)" />
-        </div>
-        <div>
-          <label class="label" for="injury-type">Tipo de lesión</label>
-          <SearchSelect id="injury-type" placeholder="Elige el tipo" :disabled="mode === 'relapse'" :model-value="form.type" :options="typeOptions" @update:model-value="form.type = ($event as InjuryType | null); proposeReturn()" />
-          <p v-if="averageDays" class="mt-1 text-xs text-slate-500">Duración media orientativa: {{ averageDays }} días. La vuelta prevista se propone con ella; cámbiala si el médico dice otra cosa.</p>
-        </div>
-        <div>
-          <label class="label" for="injury-reason">Motivo o detalle <span class="font-normal text-slate-400">(opcional)</span></label>
-          <input id="injury-reason" v-model="form.reason" type="text" maxlength="300" class="input" placeholder="Golpe en el entrenamiento del martes, isquio derecho…" />
-          <p v-if="fieldErrors.reason" class="field-error">{{ fieldErrors.reason[0] }}</p>
-        </div>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label class="label" for="injury-start">Fecha del parte</label>
-            <input id="injury-start" v-model="form.startedOn" type="date" required class="input" :min="startMin" :max="today" @change="proposeReturn()" />
-            <p class="mt-1 text-[11px] text-slate-500">Desde ese día cuentan los días de baja.</p>
-          </div>
-          <div>
-            <label class="label" for="injury-return">Vuelta prevista <span class="font-normal text-slate-400">(opcional)</span></label>
-            <input id="injury-return" v-model="form.expectedReturnOn" type="date" class="input" :min="form.startedOn" />
-            <p v-if="fieldErrors.expectedReturnOn" class="field-error">{{ fieldErrors.expectedReturnOn[0] }}</p>
-          </div>
-        </div>
-      </form>
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <button type="button" class="btn-ghost" @click="formOpen = false">Cancelar</button>
-          <button type="submit" form="injury-form" class="btn-primary" v-busy="busy" :disabled="!!formBlocked" :title="formBlocked">
-            {{ mode === 'edit' ? 'Guardar' : mode === 'relapse' ? 'Registrar la recaída' : 'Registrar lesión' }}
-          </button>
-        </div>
-      </template>
-    </Modal>
+    <!-- Lesión nueva, corrección o recaída, con dónde se lesionó -->
+    <InjuryFormModal
+      :open="formOpen"
+      :squad-id="squadId"
+      :mode="formState.mode"
+      :target="formState.target"
+      :preset="formState.preset"
+      :players="formPlayers"
+      :injured-player-ids="injuredPlayerIds"
+      :start-min="formStartMin"
+      @close="formOpen = false"
+      @saved="onSaved"
+    />
 
     <!-- Alta -->
     <Modal :open="!!closing" :title="closing ? `Dar de alta a ${closing.playerName}` : 'Dar de alta'" size="md" @close="closing = null">

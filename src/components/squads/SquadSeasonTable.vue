@@ -14,15 +14,23 @@ import DisciplineBadge from '@/components/squads/DisciplineBadge.vue';
 import { useAsync } from '@/composables/useAsync';
 import { groupByPosition, useGroupByPosition } from '@/composables/usePositionGrouping';
 import { useSort } from '@/composables/useSort';
-import type { DisciplineDto, Position, SquadSeasonRowDto } from '@/types/api';
+import type { DisciplineDto, PlayerYellowCycleDto, Position, SquadSeasonRowDto } from '@/types/api';
+import { cycleExplanation } from '@/utils/discipline';
 import { formatNumber, injuredLabel, injuryTitle, positionShortLabels } from '@/utils/format';
 
 /**
  * Temporada de cada jugador de la plantilla de un vistazo: partidos, minutos, goles, asistencias, tarjetas, faltas y
  * nota. Se busca por nombre, se filtra o agrupa por posición y se ordena por cualquier columna. Cada nombre abre su
- * ficha con el detalle partido a partido. Junto al nombre, si llega apercibido o sancionado al próximo partido.
+ * ficha con el detalle partido a partido. Junto al nombre, si está lesionado (el detalle, solo para quien puede verlo) y
+ * si llega apercibido o sancionado al próximo partido; bajo las amarillas, las que cuentan para el ciclo cuando no son
+ * todas.
  */
-const props = defineProps<{ squadId: string; highlightId?: string | null; discipline?: ReadonlyMap<string, DisciplineDto> }>();
+const props = defineProps<{
+  squadId: string;
+  highlightId?: string | null;
+  discipline?: ReadonlyMap<string, DisciplineDto>;
+  cycles?: ReadonlyMap<string, PlayerYellowCycleDto>;
+}>();
 
 const { data, loading, error, run } = useAsync(() => api.squads.seasonTable(props.squadId), { redirectOnError: false });
 watch(() => props.squadId, () => void run());
@@ -75,6 +83,17 @@ const leaders = computed(() => {
   return { minutes: max((r) => r.minutes), goals: max((r) => r.goals), assists: max((r) => r.assists), matches: max((r) => r.matches) };
 });
 const lead = (value: number, top: number) => value > 0 && value === top;
+
+// La columna cuenta todas las amarillas de las actas; el apercibimiento, solo las del ciclo. Si no coinciden (una doble
+// amarilla, un ciclo ya cumplido), debajo van las del ciclo, con el porqué al pasar por encima.
+const cycleNotes = computed(() => {
+  const notes = new Map<string, { label: string; title: string }>();
+  for (const r of data.value?.rows ?? []) {
+    const cycle = props.cycles?.get(r.player.id);
+    if (cycle && cycle.inCycle !== r.yellowCards) notes.set(r.player.id, { label: `${cycle.inCycle} de ciclo`, title: cycleExplanation(cycle) });
+  }
+  return notes;
+});
 
 const columns: { key: SortKey; label: string; title: string; cls?: string }[] = [
   { key: 'matches', label: 'PJ', title: 'Partidos jugados' },
@@ -148,8 +167,8 @@ const columns: { key: SortKey; label: string; title: string; cls?: string }[] = 
                     <template v-if="r.fromOfficial > 0"> · {{ r.fromOfficial }} por acta oficial</template>
                   </span>
                 </span>
-                <Badge v-if="r.player.injury" tone="red" class="shrink-0" :title="injuryTitle(r.player.injury)">
-                  <Icon icon="user-injured" class="mr-1 h-3 w-3" /><span class="hidden sm:inline">{{ injuredLabel(r.player.injury) }}</span>
+                <Badge v-if="r.injured" tone="red" class="shrink-0" :title="r.injury ? injuryTitle(r.injury) : 'Lesionado: no está disponible'">
+                  <Icon icon="user-injured" class="mr-1 h-3 w-3" /><span class="hidden sm:inline">{{ r.injury ? injuredLabel(r.injury) : 'Lesionado' }}</span>
                 </Badge>
                 <DisciplineBadge :discipline="discipline?.get(r.player.id)" compact class="shrink-0" />
               </RouterLink>
@@ -159,9 +178,10 @@ const columns: { key: SortKey; label: string; title: string; cls?: string }[] = 
             <td class="px-2 py-2 text-center tabular-nums" :class="{ 'font-bold text-brand-500': lead(r.minutes, leaders.minutes) }">{{ r.minutes }}</td>
             <td class="px-2 py-2 text-center tabular-nums font-semibold" :class="{ 'text-brand-500': lead(r.goals, leaders.goals) }">{{ r.goals }}</td>
             <td class="col-sm px-2 py-2 text-center tabular-nums" :class="{ 'font-bold text-brand-500': lead(r.assists, leaders.assists) }">{{ r.assists }}</td>
-            <td class="px-2 py-2 text-center tabular-nums">
+            <td class="px-2 py-2 text-center tabular-nums" :title="cycleNotes.get(r.player.id)?.title">
               <span v-if="r.yellowCards" class="inline-flex items-center gap-1"><CardIcon kind="yellow" />{{ r.yellowCards }}</span>
               <span v-else class="text-slate-400">0</span>
+              <span v-if="cycleNotes.has(r.player.id)" class="block whitespace-nowrap text-[11px] leading-tight text-slate-500">{{ cycleNotes.get(r.player.id)?.label }}</span>
             </td>
             <td class="col-sm px-2 py-2 text-center tabular-nums">
               <span v-if="r.redCards" class="inline-flex items-center gap-1"><CardIcon kind="red" />{{ r.redCards }}</span>
@@ -175,6 +195,10 @@ const columns: { key: SortKey; label: string; title: string; cls?: string }[] = 
       <p class="mt-3 text-xs text-slate-500">
         Pulsa en una columna para ordenar. En azul, el máximo de la plantilla.
         <template v-if="data.rows.some((r) => r.averageRating !== null)">Nota media: {{ formatNumber(data.rows.filter((r) => r.averageRating !== null).reduce((s, r) => s + (r.averageRating ?? 0), 0) / data.rows.filter((r) => r.averageRating !== null).length, 1) }}.</template>
+        <span v-if="cycleNotes.size > 0" class="mt-1 block">
+          «N de ciclo» bajo las amarillas: las que cuentan para la próxima sanción (con 4, apercibido; la 5.ª cuesta un partido). No
+          cuentan las dos de una doble amarilla y, tras cada 5.ª, se empieza de cero.
+        </span>
       </p>
     </div>
   </section>

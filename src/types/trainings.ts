@@ -1,4 +1,4 @@
-import type { MatchDto, Position } from './api';
+import type { InjuryOccasionDto, MatchDto, Position } from './api';
 
 // --- Entrenamientos, ejercicios, asistencia y convocatorias (preparación semanal del cuerpo técnico) ---
 
@@ -104,6 +104,10 @@ export interface TrainingAttendanceDto {
   injury: InjuryBriefDto | null;
   /** Causó baja en la plantilla después de esta sesión: su línea es historial. */
   left?: boolean;
+  /** Se lesionó en esta sesión: entrenó hasta entonces, así que se le pasa lista como a los demás. */
+  injuredHere?: boolean;
+  /** La lesión que se hizo aquí; null si no se lesionó en ella o si quien mira no puede verla. */
+  hereInjury?: InjuryBriefDto | null;
 }
 
 /** Lo justo de una lesión para explicar por qué un jugador no entrena o no va convocado. */
@@ -119,6 +123,10 @@ export interface InjuryBriefDto {
   returnedOn: string | null;
   /** Días de baja contados desde el parte: hasta hoy si sigue lesionado, hasta el alta si ya la tiene. */
   daysOut?: number;
+  /** El partido o el entrenamiento en que se lesionó; null si fue en otro sitio o no se sabe. */
+  occasion?: InjuryOccasionDto | null;
+  /** Dónde fue: «Rodilla izquierda», «Bíceps femoral derecho»; null si no lo dice. */
+  location?: string | null;
 }
 
 /** Alguien que viene a entrenar a prueba, sin ficha: se le pasa lista y, si le hacen ficha, pasa a la plantilla. */

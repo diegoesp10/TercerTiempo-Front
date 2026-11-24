@@ -13,6 +13,8 @@ import type {
   UpsertCookieRequest,
   AdminInjuryTypeDto,
   SaveInjuryTypeRequest,
+  AdminBodySiteDto,
+  SaveBodySiteRequest,
   ClubInvitationDto,
   FootballSyncSettingsDto,
   InvitationClubDto,
@@ -66,6 +68,13 @@ export const adminApi = {
     http<AdminInjuryTypeDto[]>(`/api/admin/injury-types/${encodeURIComponent(code)}`, { method: 'PUT', token, body }),
   deleteInjuryType: (token: string, code: string) =>
     http<AdminInjuryTypeDto[]>(`/api/admin/injury-types/${encodeURIComponent(code)}`, { method: 'DELETE', token }),
+  bodySites: (token: string) => http<AdminBodySiteDto[]>('/api/admin/body-sites', { token, silent: true }),
+  createBodySite: (token: string, body: SaveBodySiteRequest) =>
+    http<AdminBodySiteDto[]>('/api/admin/body-sites', { method: 'POST', token, body }),
+  updateBodySite: (token: string, code: string, body: SaveBodySiteRequest) =>
+    http<AdminBodySiteDto[]>(`/api/admin/body-sites/${encodeURIComponent(code)}`, { method: 'PUT', token, body }),
+  deleteBodySite: (token: string, code: string) =>
+    http<AdminBodySiteDto[]>(`/api/admin/body-sites/${encodeURIComponent(code)}`, { method: 'DELETE', token }),
   publishCookiePolicy: (token: string, version: string) =>
     http<AdminCookiePolicyDto>('/api/admin/cookies/policy', { method: 'POST', token, body: { version } }),
   licenses: (token: string) => http<LicensesOverviewDto>('/api/admin/licenses', { token }),

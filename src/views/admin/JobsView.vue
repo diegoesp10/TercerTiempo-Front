@@ -26,6 +26,8 @@ import { useAdminSessionStore } from '@/stores/adminSession';
 import { useAuthStore } from '@/stores/auth';
 import CookiesAdminPanel from '@/components/admin/CookiesAdminPanel.vue';
 import InjuryTypesAdminPanel from '@/components/admin/InjuryTypesAdminPanel.vue';
+import BodySitesAdminPanel from '@/components/admin/BodySitesAdminPanel.vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
 
 /**
  * Página oculta del administrador (/jobs, sin enlace en el menú): cuándo y cómo se han actualizado los datos, las
@@ -49,9 +51,15 @@ const tabs: { value: AdminTab; label: string }[] = [
   { value: 'moderation', label: 'Moderación' },
   { value: 'analytics', label: 'Uso de la web' },
   { value: 'cookies', label: 'Cookies' },
-  { value: 'injuries', label: 'Tipos de lesión' },
+  { value: 'injuries', label: 'Lesiones' },
 ];
 const tab = ref<AdminTab>('jobs');
+// En «Lesiones», los dos catálogos: los tipos y los sitios del cuerpo por los que preguntan.
+const injuryCatalog = ref<'types' | 'sites'>('types');
+const injuryCatalogOptions = [
+  { value: 'types' as const, label: 'Tipos de lesión' },
+  { value: 'sites' as const, label: 'Sitios del cuerpo' },
+];
 // Trabajo que se acaba de lanzar: «Descargas en directo» se abre en su apartado.
 const focus = ref<string | null>(null);
 const licensesPanel = ref<InstanceType<typeof LicensesPanel> | null>(null);
@@ -336,7 +344,11 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
     <AnalyticsPanel v-else-if="tab === 'analytics'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     <ModerationPanel v-else-if="tab === 'moderation'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
     <CookiesAdminPanel v-else-if="tab === 'cookies'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
-    <InjuryTypesAdminPanel v-else-if="tab === 'injuries'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    <div v-else-if="tab === 'injuries'" class="space-y-4">
+      <ChoiceToggle v-model="injuryCatalog" :options="injuryCatalogOptions" label="Qué catálogo" />
+      <InjuryTypesAdminPanel v-if="injuryCatalog === 'types'" :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+      <BodySitesAdminPanel v-else :token="session.token" @unauthorized="logout('La sesión de administrador ha caducado. Vuelve a entrar.')" />
+    </div>
 
     <template v-else>
     <Alert v-if="error" kind="error" class="mb-4">{{ error }}</Alert>

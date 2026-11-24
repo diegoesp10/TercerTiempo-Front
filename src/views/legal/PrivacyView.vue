@@ -48,7 +48,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
             <td data-label="Base jurídica">Ejecución del contrato con el club e interés legítimo del técnico y del club (art. 6.1.b y f).</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Fichas y actas internas</strong>: nombre, posición y foto de cada jugador (si la suben; el recorte de la figura se hace en el propio navegador); por partido, dorsal, minutos, titularidad, goles, asistencias, tiros, pases, entradas, intercepciones, despejes, paradas, faltas, pérdidas, recuperaciones, tarjetas y observaciones del técnico.</td>
+            <td data-label="Datos"><strong>Fichas y actas internas</strong>: nombre, posición y foto de cada jugador (si la suben; el recorte de la figura se hace en el propio navegador); por partido, dorsal (el del acta oficial), minutos, titularidad, goles, asistencias, tiros, pases, entradas, intercepciones, despejes, paradas, faltas, pérdidas, recuperaciones, tarjetas y observaciones del técnico.</td>
             <td data-label="Origen">El club y su cuerpo técnico; las fichas pueden importarse de la plantilla publicada por la fuente pública indicada abajo; el jugador puede sugerir correcciones de su línea.</td>
             <td data-label="Finalidad">Llevar el acta interna del equipo y calcular estadísticas individuales y colectivas.</td>
             <td data-label="Base jurídica">Ejecución del contrato con el club y su cuerpo técnico; respecto de los jugadores, interés legítimo del club en analizar el rendimiento deportivo de su propia plantilla (art. 6.1.f), ponderado con la privacidad por defecto del apartado 7.</td>
@@ -60,13 +60,13 @@ import { dataSources, legalEntity } from '@/legal/entity';
             <td data-label="Base jurídica">Ejecución del contrato con el club y con el jugador que tiene cuenta; interés legítimo del club respecto de quien no la tiene (art. 6.1.b y f).</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Lesiones</strong> (datos de salud): tipo de lesión, fecha del parte y cuándo se registró, días de baja, vuelta prevista (la de entonces y la actual), alta y recaídas, motivo, y documentos médicos (radiografías, informes).</td>
-            <td data-label="Origen">El club y su cuerpo técnico.</td>
-            <td data-label="Finalidad">Saber quién está disponible (un lesionado no entrena ni va convocado), seguir su recuperación (también cuando sigue lesionado al cambiar de temporada) y conservar en su ficha el historial de lesiones superadas (los días reales del parte al alta frente a los previstos), para que el club conozca lo que tardan en recuperarse sus jugadores.</td>
-            <td data-label="Base jurídica">Consentimiento explícito del jugador (art. 9.2.a RGPD), que el club o su cuerpo técnico deben recabar antes de anotar la lesión o subir sus documentos. Se puede retirar en cualquier momento (apartado 10).</td>
+            <td data-label="Datos"><strong>Lesiones</strong> (datos de salud): tipo de lesión y dónde fue en el cuerpo (el músculo, el hueso, el tendón, el ligamento, la articulación o la zona, con el lado), su grado y cómo se produjo (con contacto, sin contacto o por sobrecarga), fecha del parte y cuándo se registró, días de baja, vuelta prevista (la de entonces y la actual), alta y recaídas, motivo, dónde se lesionó (el partido o el entrenamiento de su equipo, con su día) y documentos médicos (radiografías, informes). Además, las <strong>posibles lesiones</strong> que cuenta la crónica pública de un partido: la frase que lo cuenta, el minuto en que el jugador dejó el campo según el acta oficial y el enlace a la crónica.</td>
+            <td data-label="Origen">El club y su cuerpo técnico. Las posibles lesiones, de las crónicas que publica FútbolAsturiano (futbolasturiano.es) después de cada partido, cruzadas con el acta oficial para saber de qué jugador hablan.</td>
+            <td data-label="Finalidad">Saber quién está disponible (un lesionado no entrena ni va convocado), cuándo y dónde se lesionó (en qué partido o entrenamiento), seguir su recuperación (también cuando sigue lesionado al cambiar de temporada) y conservar en su ficha el historial de lesiones superadas (los días reales del parte al alta frente a los previstos), para que el club conozca lo que tardan en recuperarse sus jugadores. Las posibles lesiones solo sirven para avisar al club y a su cuerpo técnico de que quizá tengan que registrar una: no cuentan como lesión (ni en las convocatorias ni en las estadísticas) hasta que la registran, y si no fue así, la descartan.</td>
+            <td data-label="Base jurídica">Consentimiento explícito del jugador (art. 9.2.a RGPD), que el club o su cuerpo técnico deben recabar antes de anotar la lesión o subir sus documentos. Se puede retirar en cualquier momento (apartado 10). Una posible lesión de la crónica no se registra como lesión sin ese consentimiento: hasta entonces es solo un aviso al club con lo que la crónica ya ha publicado, y se borra a los 60 días (apartado 11).</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Sanciones de liga</strong>: si un jugador o alguien del cuerpo técnico llega apercibido (cuatro amarillas en el ciclo) o sancionado al próximo partido y por qué (5.ª amarilla, doble amarilla, roja directa o la sanción del comité de competición, con sus partidos o, al cuerpo técnico, sus días de inhabilitación, y su motivo); las tarjetas de la temporada del cuerpo técnico; el aviso que recibe el jugador, su cuerpo técnico y su club.</td>
+            <td data-label="Datos"><strong>Sanciones de liga</strong>: las amarillas del ciclo que lleva cada jugador (de qué jornadas son y cuáles no cuentan); si un jugador o alguien del cuerpo técnico llega apercibido (cuatro amarillas en el ciclo) o sancionado al próximo partido y por qué (5.ª amarilla, doble amarilla, roja directa o la sanción del comité de competición, con sus partidos o, al cuerpo técnico, sus días de inhabilitación, y su motivo); las tarjetas de la temporada del cuerpo técnico; el aviso que recibe el jugador, su cuerpo técnico y su club.</td>
             <td data-label="Origen">Se calculan con las tarjetas de las actas (la oficial cerrada y, mientras no llega, la interna) y con las resoluciones que publica el comité de competición en la web de la federación.</td>
             <td data-label="Finalidad">Que el cuerpo técnico no convoque ni alinee a un sancionado, que la plantilla vea quién llega apercibido o sancionado al próximo partido y que el jugador, su cuerpo técnico y su club sepan cuántos partidos le han caído; del cuerpo técnico, mostrar sus tarjetas y si puede estar en el banquillo del próximo partido (apartado 6).</td>
             <td data-label="Base jurídica">Ejecución del contrato con el club e interés legítimo en cumplir las normas de la competición (art. 6.1.b y f).</td>
@@ -130,7 +130,8 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <h2>4. Datos que no nos ha facilitado el interesado</h2>
       <p>
         Cuando tratamos datos de una persona que no los ha introducido ella misma (jugadores de una plantilla, jugadores a
-        prueba, técnicos nombrados, personas que figuran en las actas oficiales), la información que exige el artículo 14 del
+        prueba, técnicos nombrados, personas que figuran en las actas oficiales o de las que una crónica cuenta que se
+        lesionaron), la información que exige el artículo 14 del
         RGPD se proporciona mediante esta política. Dado el número de personas y que no disponemos de sus datos de contacto,
         informar individualmente supondría un esfuerzo desproporcionado; los clubes y el cuerpo técnico se comprometen a
         informar a sus jugadores de que usan Tercer Tiempo. Cualquier persona puede ejercer en todo momento los derechos del
@@ -161,6 +162,8 @@ import { dataSources, legalEntity } from '@/legal/entity';
       <h2>7. Quién ve qué: privacidad por defecto</h2>
       <ul>
         <li>Cada plantilla es <strong>privada</strong>: sus actas internas, notas, estadísticas, vídeos, entrenamientos, asistencia, convocatorias y lesiones solo los ven su club, su cuerpo técnico vigente y los jugadores vinculados a ella, cada uno en lo que le corresponde.</li>
+        <li>Las <strong>posibles lesiones</strong> de las crónicas solo las ven el club y el cuerpo técnico de la plantilla del jugador (el administrador de la plataforma, sin poder tocarlas); ni el jugador ni sus compañeros las ven mientras nadie las registra. Registrada (o enlazada con la lesión que el jugador ya tenía abierta), es una lesión más.</li>
+        <li>Una lesión que dice <strong>dónde fue</strong> sale como registrada en los sucesos del acta de ese partido o, si fue en un entrenamiento, en esa sesión («Se lesionó aquí»), solo para quien puede ver esa lesión: el club, su cuerpo técnico y el propio jugador.</li>
         <li>Los <strong>datos de salud</strong> (el detalle de la lesión y sus documentos médicos) solo los ven el club, su cuerpo técnico y el propio jugador; sus compañeros solo ven que está lesionado. Los documentos médicos se guardan fuera de cualquier carpeta pública y solo se entregan, sin copias en caché, a quien puede abrirlos.</li>
         <li>El <strong>historial de lesiones</strong> de cada jugador reúne las de todas sus temporadas en el club (por su cuenta o, si no la tenía, por su nombre en el mismo equipo, solo cuando no hay duda de que es él) y nunca sale del club: lo ven el club, el cuerpo técnico de su plantilla actual y él mismo; los documentos médicos de otras temporadas, solo el club y el propio jugador. Si una lesión sigue abierta al empezar la temporada siguiente, pasa a su plantilla de esa temporada con la misma fecha del parte (con el mismo criterio para saber que es él), para que no salga disponible; sus documentos médicos se quedan donde se subieron y en la temporada anterior queda como historial.</li>
         <li>El club o su cuerpo técnico pueden dar a una persona concreta un <strong>pase de un partido</strong> (un código de un solo uso, gratuito o de pago) que le deja ver dentro de la plataforma el acta interna o el vídeo de ese partido. El pase queda ligado a la cuenta que lo canjea; el club ve el nombre de esa cuenta, nunca su correo.</li>
@@ -218,6 +221,7 @@ import { dataSources, legalEntity } from '@/legal/entity';
         <li>Datos de la cuenta: mientras esté activa y, tras su baja, bloqueados durante los plazos de prescripción legales (hasta 5 años) y después eliminados.</li>
         <li>Actas internas, notas, estadísticas, entrenamientos, asistencia y convocatorias: mientras exista la plantilla; el club y el cuerpo técnico pueden corregir o eliminar lo que anotaron. Lo de un jugador que causa baja se conserva como historial de la plantilla (en el grupo «De baja»), sin que se le pueda anotar nada nuevo salvo que se le reincorpore.</li>
         <li>Lesiones y documentos médicos: mientras exista la plantilla de cada temporada (de ahí sale el historial de lesiones de cada jugador), hasta que el club o el cuerpo técnico los borren o hasta que el jugador retire su consentimiento. Borrar una lesión borra sus documentos; si tenía una recaída, esa se queda como una lesión más, y si había pasado a la temporada siguiente, la de allí se queda.</li>
+        <li>Posibles lesiones de las crónicas: la frase y el enlace que se leen de la crónica se borran a los 60 días; la posible lesión que nadie registra, también a los 60 días (antes, si la crónica deja de contarlo), y la registrada se queda con su lesión mientras esta exista (si se borra la lesión, o si la lesión pasa a decir que fue en otro sitio, queda descartada y se borra con las demás).</li>
         <li>Vídeos y su análisis: hasta que los elimine quien los subió o se cierre la plantilla.</li>
         <li>Notas a los árbitros: mientras la temporada esté disponible en la plataforma.</li>
         <li>Datos de compras: los exigidos por la normativa fiscal y contable (en general, 4 a 6 años).</li>
@@ -258,7 +262,10 @@ import { dataSources, legalEntity } from '@/legal/entity';
         Los datos deportivos se obtienen de las fuentes citadas en el apartado 3, a las que se atribuyen y enlazan en la
         propia plataforma. Tercer Tiempo cuenta con los servicios de FútbolAsturiano, diario independiente digital del fútbol
         asturiano (futbolasturiano.es), que autoriza el uso de sus calendarios, resultados, clasificaciones, plantillas
-        publicadas y escudos de los equipos. Tercer Tiempo no es un servicio oficial de la Real Federación de Fútbol del
+        publicadas y escudos de los equipos. De sus crónicas de los partidos solo se lee si cuentan que un jugador se
+        lesionó, para avisar a su club (apartado 3): se guarda la frase que lo cuenta, con el enlace a la crónica, nunca la
+        crónica entera. De esa frase se propone el tipo de lesión y dónde fue en el cuerpo, sin guardarlo aparte: lo confirma
+        o lo corrige quien la registra. Tercer Tiempo no es un servicio oficial de la Real Federación de Fútbol del
         Principado de Asturias y no garantiza la exactitud de los datos que estas fuentes publican. Si detectas un error, el
         acta oficial enlazada prevalece.
       </p>

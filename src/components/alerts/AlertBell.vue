@@ -61,6 +61,7 @@ const kindInfo: Record<AlertKind, { icon: string; label: string }> = {
   TrainingAbsence: { icon: 'calendar-check', label: 'Entrenamiento · ausencia' },
   CallUpShort: { icon: 'user-group', label: 'Convocatoria · incompleta' },
   LeagueSuspension: { icon: 'ban', label: 'Sanción · comité de competición' },
+  InjuryProposal: { icon: 'user-injured', label: 'Lesión · crónica del partido' },
 };
 
 const remaining = (days: number) => (days <= 0 ? 'Acaba hoy' : days === 1 ? 'Acaba mañana' : `Quedan ${days} días`);

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
+import Badge from '@/components/ui/Badge.vue';
 import BallIcon from '@/components/ui/BallIcon.vue';
 import BrandMark from '@/components/layout/BrandMark.vue';
 import CardIcon from '@/components/ui/CardIcon.vue';
@@ -11,7 +12,7 @@ import GoalMarks from '@/components/sheet/GoalMarks.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useSort, type SortValue } from '@/composables/useSort';
-import type { OfficialLineDto, OfficialSheetDto, OfficialTeamSheetDto } from '@/types/api';
+import type { MatchInjuryDto, OfficialEventDto, OfficialLineDto, OfficialSheetDto, OfficialTeamSheetDto } from '@/types/api';
 import { officialEventLabels, sheetSourceLabel } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 import PlayerName from '@/components/players/PlayerName.vue';
@@ -24,6 +25,8 @@ const props = defineProps<{
   sheet?: OfficialSheetDto | null;
   /** Equipo que se resalta (el de la plantilla). */
   highlightTeamId?: string | null;
+  /** Plantilla del partido: con ella salen también sus lesiones (las registradas y, al club y al cuerpo técnico, las posibles). */
+  squadId?: string | null;
 }>();
 
 const emit = defineEmits<{ refreshed: [sheet: OfficialSheetDto] }>();
@@ -84,6 +87,7 @@ const withLineups = computed(() => sheet.value?.status === 'Available' || sheet.
 
 /** "90'", "48' (sale 48')" para un titular sustituido o expulsado, "32' (entra 58')" para un suplente. */
 const minutes = (line: OfficialLineDto) => (line.played ? `${line.minutesPlayed}'` : '—');
+const hasMarks = (line: OfficialLineDto) => line.goals + line.penaltyGoals + line.ownGoals > 0 || line.yellowCards > 0 || line.redCard;
 // Entrada y salida, debajo de los minutos (en una línea aparte para que la tabla quepa en el móvil).
 const substitution = (line: OfficialLineDto) => {
   if (!line.played) return [];
@@ -112,12 +116,50 @@ const lineSorts = reactive({
 });
 
 // Titulares y suplentes por separado, como en una alineación (sin una etiqueta «titular» en cada fila); se ordena
-// dentro de cada grupo.
+// dentro de cada grupo. Cada grupo abre con su franja (verde campo los titulares, gris el banquillo) y las filas del
+// banquillo van sombreadas, para que se distingan de un vistazo también en el móvil.
+// --- Lesiones de la plantilla en el partido (las de la crónica que se registraron y, a quien las registra, las posibles) ---
+const injuries = shallowRef<MatchInjuryDto[]>([]);
+async function loadInjuries() {
+  const { squadId, matchId } = props;
+  if (!squadId || sheet.value?.status !== 'Available') {
+    injuries.value = [];
+    return;
+  }
+  try {
+    const list = await api.squads.matchInjuries(squadId, matchId);
+    if (!disposed && props.squadId === squadId && props.matchId === matchId) injuries.value = list;
+  } catch {
+    injuries.value = [];
+  }
+}
+watch(() => [props.squadId, props.matchId, sheet.value?.status], loadInjuries, { immediate: true });
+
+const injuryOfLine = computed(() => new Map(injuries.value.filter((i) => i.sheetLineId).map((i) => [i.sheetLineId!, i])));
+// La registrada es una lesión con este partido como el sitio donde se lesionó; la posible, lo que cuenta la crónica.
+const injuryLabel = (i: MatchInjuryDto) => (i.confirmed ? (i.typeLabel ?? 'Lesión') : 'Posible lesión');
+const injuryTitle = (i: MatchInjuryDto) =>
+  `${injuryLabel(i)}${i.location ? ` (${i.location.charAt(0).toLocaleLowerCase('es-ES')}${i.location.slice(1)})` : ''}${i.confirmed ? ', registrada' : ''}${i.minute !== null ? ` · dejó el campo en el ${i.minute}'` : ''}${i.phrase ? `: ${i.phrase}` : ''}${i.confirmed ? '' : ' (lo cuenta la crónica; sin registrar)'}`;
+const squadTeamName = computed(() => {
+  const s = sheet.value;
+  if (!s || !props.highlightTeamId) return '';
+  return (s.home?.teamId === props.highlightTeamId ? s.home?.teamName : s.away?.teamId === props.highlightTeamId ? s.away?.teamName : '') ?? '';
+});
+
+// Los sucesos del acta y las lesiones, por minuto: la lesión, justo antes del cambio de ese minuto; la de quien acabó el
+// partido, al final.
+type EventRow = { key: string; minute: number | null; event: OfficialEventDto; injury?: undefined } | { key: string; minute: number | null; injury: MatchInjuryDto; event?: undefined };
+const eventRows = computed<EventRow[]>(() => {
+  const events = (sheet.value?.events ?? []).map((event, index) => ({ key: `e${index}`, minute: event.minute, event, order: event.minute * 100 + (event.extraMinute ?? 0) }));
+  const hurt = injuries.value.map((injury) => ({ key: `i${injury.squadPlayerId}`, minute: injury.minute, injury, order: injury.minute === null ? Number.POSITIVE_INFINITY : injury.minute * 100 - 0.5 }));
+  return [...events, ...hurt].sort((a, b) => a.order - b.order).map(({ order: _order, ...row }) => row as EventRow);
+});
+
 const groups = (team: OfficialTeamSheetDto) => {
   const rows = lineSorts[team.side].sorted;
   return [
-    { label: 'Titulares', lines: rows.filter((r) => r.starter).map((r) => r.line) },
-    { label: 'Suplentes', lines: rows.filter((r) => !r.starter).map((r) => r.line) },
+    { label: 'Titulares', starter: true, lines: rows.filter((r) => r.starter).map((r) => r.line) },
+    { label: 'Suplentes', starter: false, lines: rows.filter((r) => !r.starter).map((r) => r.line) },
   ].filter((group) => group.lines.length > 0);
 };
 
@@ -163,7 +205,7 @@ const groups = (team: OfficialTeamSheetDto) => {
           <strong>Acta sin cerrar.</strong> {{ sheet.message ?? 'La federación ya ha publicado las alineaciones, pero el árbitro aún no ha cerrado el acta: faltan los goles, los cambios y las tarjetas.' }}
         </div>
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div v-for="team in teams" :key="team.side" class="rounded-xl border p-4" :class="highlightTeamId && team.teamId === highlightTeamId ? 'border-accent-400/40 bg-brand-500/10' : 'border-slate-200'">
+          <div v-for="team in teams" :key="team.side" class="rounded-xl border p-3 sm:p-4" :class="highlightTeamId && team.teamId === highlightTeamId ? 'border-accent-400/40 bg-brand-500/10' : 'border-slate-200'">
             <div class="mb-2 flex items-center justify-between gap-2">
               <h3 class="min-w-0 font-semibold text-slate-900"><TeamName :name="team.teamName" :team-id="team.teamId" size="sm" /></h3>
               <span v-if="team.goals !== null" class="text-xl font-bold tabular-nums text-slate-900">{{ team.goals }}</span>
@@ -172,30 +214,55 @@ const groups = (team: OfficialTeamSheetDto) => {
             <table class="min-w-full text-sm">
               <thead class="text-xs text-slate-500">
                 <tr>
-                  <SortHeader class="py-1 pr-2 text-left" label="Jugador" v-bind="lineSorts[team.side].state('player')" @sort="lineSorts[team.side].sortBy('player')" />
+                  <SortHeader class="py-1 pl-1 pr-2 text-left sm:pl-2.5" label="Jugador" v-bind="lineSorts[team.side].state('player')" @sort="lineSorts[team.side].sortBy('player')" />
                   <template v-if="!provisional">
                     <SortHeader class="py-1 pr-2 text-center" label="Min" title="Minutos jugados (entrada → salida)" v-bind="lineSorts[team.side].state('minutes')" @sort="lineSorts[team.side].sortBy('minutes')" />
-                    <SortHeader class="py-1 pr-2 text-center" label="G" title="Goles" v-bind="lineSorts[team.side].state('goals')" @sort="lineSorts[team.side].sortBy('goals')" />
-                    <SortHeader class="py-1 text-center" label="TA/TR" title="Tarjetas (la roja pesa más)" v-bind="lineSorts[team.side].state('cards')" @sort="lineSorts[team.side].sortBy('cards')" />
+                    <SortHeader class="col-sm py-1 pr-2 text-center" label="G" title="Goles" v-bind="lineSorts[team.side].state('goals')" @sort="lineSorts[team.side].sortBy('goals')" />
+                    <SortHeader class="col-sm py-1 text-center" label="TA/TR" title="Tarjetas (la roja pesa más)" v-bind="lineSorts[team.side].state('cards')" @sort="lineSorts[team.side].sortBy('cards')" />
                   </template>
                 </tr>
               </thead>
               <tbody v-for="group in groups(team)" :key="group.label" class="divide-y divide-slate-100">
                 <tr>
-                  <td :colspan="provisional ? 1 : 4" class="pb-1 pt-3 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{{ group.label }}</td>
+                  <td :colspan="provisional ? 1 : 4" class="px-0 pb-1.5" :class="group.starter ? 'pt-2' : 'pt-5'">
+                    <div
+                      class="flex items-center gap-2 rounded-md px-2.5 py-1.5 font-display text-xs font-bold uppercase tracking-[0.12em]"
+                      :class="group.starter
+                        ? 'bg-emerald-500/15 text-emerald-700 shadow-[inset_3px_0_0_var(--color-emerald-500)]'
+                        : 'bg-slate-500/10 text-slate-600 shadow-[inset_3px_0_0_var(--color-slate-400)]'"
+                    >
+                      <Icon :icon="group.starter ? 'futbol' : 'user-group'" class="h-3 w-3" />
+                      {{ group.label }}
+                      <span class="ml-auto font-sans text-[11px] font-semibold normal-case tracking-normal tabular-nums opacity-75">{{ group.lines.length }}</span>
+                    </div>
+                  </td>
                 </tr>
-                <tr v-for="line in group.lines" :key="line.id" :class="line.played || provisional ? '' : 'text-slate-400'">
+                <tr v-for="line in group.lines" :key="line.id" :class="[line.played || provisional ? '' : 'text-slate-400', group.starter ? '' : 'bg-slate-500/[0.06]']">
                   <!-- w-full + max-w-0: el nombre ocupa lo que sobra y se recorta en vez de ensanchar la tabla en el móvil -->
-                  <td class="w-full max-w-0 py-1 pr-2">
-                    <PlayerName :name="line.fullName" class="font-medium" :class="line.played || provisional ? 'text-slate-800' : ''" />
+                  <td class="w-full max-w-0 py-1 pl-1 pr-2 sm:pl-2.5">
+                    <PlayerName :name="line.fullName" class="font-medium" :class="line.played || provisional ? 'text-slate-800' : ''">
+                      {{ line.fullName }}<Icon
+                        v-if="injuryOfLine.get(line.id)"
+                        icon="user-injured"
+                        class="ml-1.5 h-3 w-3"
+                        :class="injuryOfLine.get(line.id)!.confirmed ? 'text-red-500' : 'text-amber-500'"
+                        :title="injuryTitle(injuryOfLine.get(line.id)!)"
+                        :aria-label="injuryTitle(injuryOfLine.get(line.id)!)"
+                      />
+                      <!-- En el móvil no caben las columnas de goles y tarjetas: van detrás del nombre y el nombre no se parte. -->
+                      <span v-if="!provisional && hasMarks(line)" class="ml-1.5 inline-flex items-center gap-1 align-[-2px] sm:hidden">
+                        <GoalMarks :goals="line.goals" :penalty-goals="line.penaltyGoals" :own-goals="line.ownGoals" />
+                        <CardMarks :yellow-cards="line.yellowCards" :red-card="line.redCard" />
+                      </span>
+                    </PlayerName>
                   </td>
                   <template v-if="!provisional">
                     <td class="py-1 pr-2 text-center tabular-nums whitespace-nowrap">
                       {{ minutes(line) }}
                       <span v-for="change in substitution(line)" :key="change" class="block text-[11px] leading-tight text-slate-500">{{ change }}</span>
                     </td>
-                    <td class="py-1 pr-2 text-center whitespace-nowrap"><GoalMarks :goals="line.goals" :penalty-goals="line.penaltyGoals" :own-goals="line.ownGoals" /></td>
-                    <td class="py-1 text-center whitespace-nowrap"><CardMarks :yellow-cards="line.yellowCards" :red-card="line.redCard" /></td>
+                    <td class="col-sm py-1 pr-2 text-center whitespace-nowrap"><GoalMarks :goals="line.goals" :penalty-goals="line.penaltyGoals" :own-goals="line.ownGoals" /></td>
+                    <td class="col-sm py-1 text-center whitespace-nowrap"><CardMarks :yellow-cards="line.yellowCards" :red-card="line.redCard" /></td>
                   </template>
                 </tr>
               </tbody>
@@ -218,27 +285,56 @@ const groups = (team: OfficialTeamSheetDto) => {
 
         <SheetReferees v-if="sheet.referees" :referees="sheet.referees" class="mt-4" />
 
-        <details v-if="sheet.events.length > 0" class="mt-4 text-sm">
-          <summary class="cursor-pointer font-medium text-slate-700">Sucesos del partido ({{ sheet.events.length }})</summary>
+        <details v-if="eventRows.length > 0" class="mt-4 text-sm">
+          <summary class="cursor-pointer font-medium text-slate-700">
+            Sucesos del partido ({{ eventRows.length }})
+            <span v-if="injuries.length" class="ml-1.5 whitespace-nowrap text-xs font-normal text-red-600">
+              <Icon icon="user-injured" class="mr-0.5 h-3 w-3" />{{ injuries.length === 1 ? '1 lesión' : `${injuries.length} lesiones` }}
+            </span>
+          </summary>
           <ul class="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
-            <li v-for="(event, index) in sheet.events" :key="index" class="flex items-center gap-2 text-slate-700">
-              <span class="w-10 shrink-0 text-right tabular-nums text-slate-500 sm:w-12">{{ event.minute }}'<template v-if="event.extraMinute">+{{ event.extraMinute }}</template></span>
-              <span class="inline-flex w-10 shrink-0 items-center gap-0.5 sm:w-14" :title="officialEventLabels[event.type]">
-                <template v-if="event.type === 'Goal'"><BallIcon /></template>
-                <template v-else-if="event.type === 'PenaltyGoal'"><BallIcon title="Gol de penalti" /><span class="text-xs text-slate-400">(p)</span></template>
-                <template v-else-if="event.type === 'OwnGoal'"><BallIcon title="Gol en propia puerta" own-goal /><span class="text-xs text-slate-400">(pp)</span></template>
-                <template v-else-if="event.type === 'YellowCard'"><CardIcon kind="yellow" /></template>
-                <template v-else-if="event.type === 'SecondYellow'"><CardIcon kind="yellow" /><CardIcon kind="yellow" title="Segunda amarilla" /></template>
-                <template v-else-if="event.type === 'RedCard'"><CardIcon kind="red" /></template>
-                <Icon v-else icon="arrow-right-arrow-left" class="text-slate-400" />
-              </span>
-              <span class="min-w-0 flex-1">
-                <PlayerName :name="event.playerName" /><template v-if="event.relatedPlayerName"><span class="mx-2 text-slate-400">por</span><PlayerName :name="event.relatedPlayerName" /></template>
-                <span class="text-xs text-slate-400"> · <TeamName
-                  :name="(event.side === 'Home' ? sheet.home?.teamName : sheet.away?.teamName) ?? ''"
-                  :team-id="event.side === 'Home' ? sheet.home?.teamId : sheet.away?.teamId"
-                /></span>
-              </span>
+            <li v-for="row in eventRows" :key="row.key" class="flex items-center gap-2 text-slate-700">
+              <template v-if="row.event">
+                <span class="w-10 shrink-0 text-right tabular-nums text-slate-500 sm:w-12">{{ row.event.minute }}'<template v-if="row.event.extraMinute">+{{ row.event.extraMinute }}</template></span>
+                <span class="inline-flex w-10 shrink-0 items-center gap-0.5 sm:w-14" :title="officialEventLabels[row.event.type]">
+                  <template v-if="row.event.type === 'Goal'"><BallIcon /></template>
+                  <template v-else-if="row.event.type === 'PenaltyGoal'"><BallIcon title="Gol de penalti" /><span class="text-xs text-slate-400">(p)</span></template>
+                  <template v-else-if="row.event.type === 'OwnGoal'"><BallIcon title="Gol en propia puerta" own-goal /><span class="text-xs text-slate-400">(pp)</span></template>
+                  <template v-else-if="row.event.type === 'YellowCard'"><CardIcon kind="yellow" /></template>
+                  <template v-else-if="row.event.type === 'SecondYellow'"><CardIcon kind="yellow" /><CardIcon kind="yellow" title="Segunda amarilla" /></template>
+                  <template v-else-if="row.event.type === 'RedCard'"><CardIcon kind="red" /></template>
+                  <Icon v-else icon="arrow-right-arrow-left" class="text-slate-400" />
+                </span>
+                <span class="min-w-0 flex-1">
+                  <PlayerName :name="row.event.playerName" /><template v-if="row.event.relatedPlayerName"><span class="mx-2 text-slate-400">por</span><PlayerName :name="row.event.relatedPlayerName" /></template>
+                  <span class="text-xs text-slate-400"> · <TeamName
+                    :name="(row.event.side === 'Home' ? sheet.home?.teamName : sheet.away?.teamName) ?? ''"
+                    :team-id="row.event.side === 'Home' ? sheet.home?.teamId : sheet.away?.teamId"
+                  /></span>
+                </span>
+              </template>
+              <template v-else-if="row.injury">
+                <span class="w-10 shrink-0 text-right tabular-nums text-slate-500 sm:w-12">{{ row.injury.minute !== null ? `${row.injury.minute}'` : '—' }}</span>
+                <span class="inline-flex w-10 shrink-0 items-center sm:w-14" :title="injuryTitle(row.injury)">
+                  <Icon icon="user-injured" :class="row.injury.confirmed ? 'text-red-500' : 'text-amber-500'" />
+                </span>
+                <span class="min-w-0 flex-1">
+                  <PlayerName :name="row.injury.playerName" />
+                  <span class="ml-1.5 text-xs font-medium" :class="row.injury.confirmed ? 'text-red-600' : 'text-amber-700'">{{ injuryLabel(row.injury) }}</span>
+                  <Badge v-if="row.injury.confirmed" tone="green" class="ml-1.5 whitespace-nowrap" title="Registrada: es una lesión con este partido como el sitio donde se lesionó">
+                    <Icon icon="circle-check" class="mr-1 h-2.5 w-2.5" />Registrada
+                  </Badge>
+                  <span v-if="row.injury.location" class="block text-xs text-slate-600">
+                    <Icon icon="location-dot" class="mr-1 h-2.5 w-2.5 text-slate-400" />{{ row.injury.location }}
+                  </span>
+                  <span class="block text-xs text-slate-500">
+                    {{ row.injury.phrase }}<template v-if="squadTeamName">{{ row.injury.phrase ? ' · ' : '' }}<TeamName :name="squadTeamName" :team-id="highlightTeamId" /></template>
+                    <template v-if="!row.injury.confirmed && squadId">
+                      · <RouterLink :to="{ name: 'squad', params: { squadId }, hash: '#lesiones' }" class="font-medium text-accent-400 hover:underline">Registrarla o descartarla</RouterLink>
+                    </template>
+                  </span>
+                </span>
+              </template>
             </li>
           </ul>
         </details>

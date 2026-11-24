@@ -1,6 +1,6 @@
 // Tipos espejo de los DTOs de la API (TercerTiempo.Application). Los enums viajan como string.
 
-import type { SuspensionBriefDto } from './trainings';
+import type { InjuryBriefDto, SuspensionBriefDto } from './trainings';
 
 export type AccountType = 'Player' | 'Coach' | 'Club';
 export type AppointmentStatus = 'Pending' | 'Active' | 'Expired' | 'Revoked';
@@ -484,7 +484,8 @@ export interface PendingRefereeRatingDto {
 /**
  * MatchCallUp y MatchNotCalledUp son de partidos (convocatoria, que el jugador firma); TrainingCall (citación al jugador,
  * o cambio o anulación de una sesión) y TrainingAbsence (el jugador avisa de que falta), de entrenamientos. CallUpShort
- * (al cuerpo técnico y al club): la convocatoria se ha enviado sin llegar al número de convocados.
+ * (al cuerpo técnico y al club): la convocatoria se ha enviado sin llegar al número de convocados. InjuryProposal (al
+ * cuerpo técnico y al club): la crónica de un partido cuenta que un jugador se lesionó, para registrarlo o descartarlo.
  */
 export type AlertKind =
   | 'LicenseExpiring'
@@ -494,7 +495,8 @@ export type AlertKind =
   | 'TrainingCall'
   | 'TrainingAbsence'
   | 'CallUpShort'
-  | 'LeagueSuspension';
+  | 'LeagueSuspension'
+  | 'InjuryProposal';
 
 export interface AlertDto {
   id: string;
@@ -767,6 +769,80 @@ export interface InjuryTypeDto {
   label: string;
   /** Duración media orientativa en días; null si no hay referencia. */
   averageDays: number | null;
+  /** Clase de sitio que pregunta (qué músculo, qué hueso...); null si tiene un sitio fijo o no pregunta dónde fue. */
+  siteKind: BodySiteKind | null;
+  /** Sitio fijo (el tobillo en el esguince de tobillo); null si no tiene. */
+  baseSite: string | null;
+  /** Con sitio fijo, lo que lo precisa si se sabe; con clase, solo esos sitios (vacía: todos los de la clase). */
+  sites: string[];
+  /** Se pregunta el grado (I, II o III). */
+  graded: boolean;
+  /** false = retirado: no se ofrece para lesiones nuevas; sale para corregir las que ya lo tienen. */
+  active: boolean;
+}
+
+/** Lo que es cada sitio del cuerpo: se pregunta «¿Qué músculo?», «¿Qué hueso?»... Las articulaciones son también zonas. */
+export type BodySiteKind = 'Zone' | 'Muscle' | 'Bone' | 'Tendon' | 'Ligament' | 'Joint' | 'Cartilage';
+
+/** De la cabeza a los pies: agrupa los sitios al elegirlos. */
+export type BodyRegion =
+  | 'Head'
+  | 'Neck'
+  | 'Shoulder'
+  | 'Arm'
+  | 'Elbow'
+  | 'Forearm'
+  | 'Wrist'
+  | 'Hand'
+  | 'Chest'
+  | 'Abdomen'
+  | 'Back'
+  | 'Hip'
+  | 'Thigh'
+  | 'Knee'
+  | 'Leg'
+  | 'Ankle'
+  | 'Foot';
+
+/** Cómo concuerda el lado con el nombre del sitio: «rodilla izquierda», «isquiotibiales izquierdos». */
+export type BodySiteAgreement = 'Masculine' | 'Feminine' | 'MasculinePlural' | 'FemininePlural';
+
+export type BodySide = 'Left' | 'Right' | 'Both';
+
+/** Grado: I distensión, II rotura parcial, III rotura completa. */
+export type InjuryGrade = 'I' | 'II' | 'III';
+
+/** Cómo se produjo: con contacto, sin contacto o por sobrecarga. */
+export type InjuryMechanism = 'Contact' | 'NonContact' | 'Overuse';
+
+/** Un sitio del cuerpo del catálogo: músculo (con su grupo), hueso, tendón, ligamento, articulación, cartílago o zona. */
+export interface BodySiteDto {
+  code: string;
+  label: string;
+  kind: BodySiteKind;
+  region: BodyRegion;
+  /** Grupo al que pertenece (el bíceps femoral, a los isquiotibiales); null si no está en ninguno. */
+  parent: string | null;
+  /** Hay izquierdo y derecho: se pregunta el lado. */
+  paired: boolean;
+  agreement: BodySiteAgreement;
+  /** false = retirado: no se ofrece para lesiones nuevas, pero las que ya lo tienen lo enseñan. */
+  active: boolean;
+}
+
+/** Dónde se lesionó: un partido de liga del equipo (ya jugado) o un entrenamiento de la plantilla (ya empezado). */
+export type InjuryOccasionKind = 'Match' | 'Training';
+
+export interface InjuryOccasionDto {
+  kind: InjuryOccasionKind;
+  /** Id del partido o de la sesión de entrenamiento. */
+  id: string;
+  /** Día (YYYY-MM-DD) del partido o del entrenamiento. */
+  day: string;
+  /** «J11 · Local – Visitante» o el título del entrenamiento. */
+  label: string;
+  /** Hora del saque o del comienzo; solo en la lista para elegir. */
+  at?: string | null;
 }
 
 export interface InjuryDto {
@@ -805,6 +881,17 @@ export interface InjuryDto {
   continuesInjuryId?: string | null;
   /** Día en que pasó sin el alta a la temporada siguiente: aquí es historial y se lleva desde allí. */
   continuedOn?: string | null;
+  /** El partido o el entrenamiento en que se lesionó; null si fue en otro sitio o no se sabe. */
+  occasion?: InjuryOccasionDto | null;
+  /** Sitio del cuerpo (código del catálogo); null si el tipo no pregunta dónde fue. */
+  site?: string | null;
+  siteLabel?: string | null;
+  /** Lado, si el sitio tiene dos. */
+  side?: BodySide | null;
+  /** Dónde fue, para leer: «Rodilla izquierda», «Ligamento cruzado anterior (LCA), rodilla derecha». */
+  location?: string | null;
+  grade?: InjuryGrade | null;
+  mechanism?: InjuryMechanism | null;
 }
 
 /** El historial de lesiones de un jugador en el club: las de esta temporada y las de otras (y otros equipos del club). */
@@ -843,6 +930,14 @@ export interface RelapseRequest {
   startedOn: string;
   expectedReturnOn: string | null;
   reason: string | null;
+  /** Dónde volvió a lesionarse: un partido o un entrenamiento (como mucho uno de los dos). */
+  matchId?: string | null;
+  trainingSessionId?: string | null;
+  /** Sitio y lado; sin ellos, los de la lesión anterior (es la misma lesión que vuelve). */
+  site?: string | null;
+  side?: BodySide | null;
+  grade?: InjuryGrade | null;
+  mechanism?: InjuryMechanism | null;
 }
 
 export type InjuryDocumentKind = 'Imaging' | 'MedicalReport' | 'Other';
@@ -866,6 +961,61 @@ export interface InjuryRequest {
   reason: string | null;
   startedOn: string;
   expectedReturnOn: string | null;
+  /** Al registrar una posible lesión de la crónica: queda registrada y su aviso, resuelto. */
+  proposalId?: string | null;
+  /** Dónde se lesionó: un partido o un entrenamiento (como mucho uno de los dos); sin ninguno, en otro sitio o no se sabe. */
+  matchId?: string | null;
+  trainingSessionId?: string | null;
+  /** Sitio del cuerpo, el que pregunta el tipo (con sitio fijo, si no se precisa, ese). */
+  site?: string | null;
+  /** Lado, obligatorio si el sitio tiene dos. */
+  side?: BodySide | null;
+  /** Grado, si el tipo lo lleva y se sabe. */
+  grade?: InjuryGrade | null;
+  /** Cómo se produjo, si se sabe. */
+  mechanism?: InjuryMechanism | null;
+}
+
+/**
+ * Posible lesión que cuenta la crónica de un partido (futbolasturiano.es): no es una lesión hasta que el club o el cuerpo
+ * técnico la registran; también la pueden descartar. matchDate es el día del partido (el parte que se propone) y minute,
+ * el minuto en que dejó el campo según el acta oficial.
+ */
+export interface InjuryProposalDto {
+  id: string;
+  squadPlayerId: string;
+  playerName: string;
+  matchId: string;
+  matchday: number;
+  matchDate: string;
+  homeTeam: string;
+  awayTeam: string;
+  minute: number | null;
+  excerpt: string;
+  phrase: string;
+  sourceUrl: string;
+  suggestedType: InjuryType | null;
+  /** Sitio del cuerpo que nombra la crónica, entre los que pregunta el tipo sugerido; null si no lo dice. */
+  suggestedSite?: string | null;
+  /** Lado que dice la crónica, si el sitio tiene dos. */
+  suggestedSide?: BodySide | null;
+  detectedAt: string;
+}
+
+/** Lesión de la plantilla en un partido, para sus sucesos: confirmed false es una posible sin registrar (solo club y cuerpo técnico). */
+export interface MatchInjuryDto {
+  squadPlayerId: string;
+  playerName: string;
+  minute: number | null;
+  phrase: string;
+  confirmed: boolean;
+  injuryId: string | null;
+  proposalId: string | null;
+  typeLabel: string | null;
+  /** Su línea en el acta oficial, para marcarlo también en la alineación. */
+  sheetLineId?: string | null;
+  /** Dónde fue la lesión registrada («Rodilla izquierda»); null si no lo dice o es una posible lesión. */
+  location?: string | null;
 }
 
 export interface SquadDetailDto {
@@ -914,6 +1064,8 @@ export interface MatchSheetEntryDto {
   /** Estaba sancionado para este partido: no puede salir como que jugó (la línea que ya tuviera se conserva). */
   suspended?: boolean;
   suspension?: SuspensionBriefDto | null;
+  /** Su dorsal en este partido según el acta oficial; null si aún no está o no sale en ella. No se cambia a mano. */
+  officialShirtNumber?: number | null;
 }
 
 export interface MatchSheetDto {
@@ -925,6 +1077,8 @@ export interface MatchSheetDto {
   teamStats?: TeamMatchStatsDto | null;
   /** El partido tiene convocatoria con algún convocado: el acta se prepara con esos jugadores. */
   hasCallUp?: boolean;
+  /** Ya está el acta oficial del partido: de ella salen los dorsales (sin ella no hay). */
+  officialSheet?: boolean;
 }
 
 /** Datos colectivos del partido que no trae el acta pública; «for» es el equipo de la plantilla y «against» el rival. */
@@ -994,12 +1148,10 @@ export interface SquadTeamStatsDto {
   matches: { match: MatchDto; stats: TeamMatchStatsDto }[];
 }
 
-/** Línea del acta tal y como se envía: con played = false se borra la línea si existía. */
+/** Línea del acta tal y como se envía: con played = false se borra la línea si existía. El dorsal no va: es el del acta oficial. */
 export interface MatchSheetEntryInput extends PerformanceStats {
   squadPlayerId: string;
   played: boolean;
-  /** Dorsal solo para este partido (null = el de la ficha). */
-  shirtNumber: number | null;
 }
 
 export interface SquadPlayerStatsDto {
@@ -1022,6 +1174,10 @@ export interface SquadSeasonRowDto {
   averageRating: number | null;
   fromInternal: number;
   fromOfficial: number;
+  /** Sigue lesionado hoy; solo para quien es de la plantilla (club, cuerpo técnico, jugadores vinculados) y el administrador. */
+  injured?: boolean;
+  /** Su lesión abierta; null si no lo está o si quien mira no puede ver el detalle (un compañero). */
+  injury?: InjuryBriefDto | null;
 }
 
 export interface SquadSeasonTableDto {
@@ -1058,6 +1214,21 @@ export interface SquadDisciplineDto {
   players: { squadPlayerId: string; next: DisciplineDto }[];
   /** El cuerpo técnico de la plantilla que figura en las actas oficiales, con sus tarjetas. */
   staff: { coachId: string; discipline: StaffDisciplineDto }[];
+  /** Las amarillas del ciclo con que llega cada jugador a ese partido y por qué; quien no ha visto ninguna no sale. */
+  cycles: PlayerYellowCycleDto[];
+}
+
+/** Las amarillas del ciclo de un jugador antes del próximo partido, con lo que explica que no sean todas las de la temporada. */
+export interface PlayerYellowCycleDto {
+  squadPlayerId: string;
+  /** De 0 a 4: con 4 está apercibido. */
+  inCycle: number;
+  /** La jornada de cada amarilla del ciclo, en orden (una por amarilla). */
+  cycleMatchdays: number[];
+  /** Jornadas en que cumplió ciclo (la 5.ª amarilla, la 10.ª…): después se empieza de cero. */
+  completedAt: number[];
+  /** Jornadas en que le expulsaron por doble amarilla: esas dos amarillas no cuentan para el ciclo. */
+  secondYellowMatchdays: number[];
 }
 
 export interface SquadStatsDto {
@@ -1403,9 +1574,9 @@ export interface PerformanceDto extends PerformanceStats {
   squadPlayerId: string;
   playerName: string;
   position: Position | null;
-  /** Dorsal con el que jugó: el de este partido si se registró, si no el de su ficha. */
+  /** Dorsal con el que jugó: el del acta oficial del partido si ya está, si no el de su ficha. */
   shirtNumber: number | null;
-  /** Dorsal registrado solo para este partido (null = el de la ficha). */
+  /** Dorsal de este partido según el acta oficial (null si aún no está o no sale en ella). No se escribe a mano. */
   matchShirtNumber: number | null;
   teamId: string;
   updatedAt: string;
@@ -2883,10 +3054,37 @@ export interface AdminInjuryTypeDto {
   active: boolean;
   /** Lesiones guardadas con este tipo; con alguna no se puede borrar. */
   injuries: number;
+  /** Clase de sitio que pregunta; null si tiene sitio fijo o no pregunta dónde fue. */
+  siteKind: BodySiteKind | null;
+  /** Sitio fijo; null si no tiene. */
+  baseSite: string | null;
+  /** Con sitio fijo, lo que lo precisa; con clase, solo esos (vacía: todos los de la clase). */
+  sites: string[];
+  graded: boolean;
   updatedAt: string;
 }
 
-export type SaveInjuryTypeRequest = Pick<AdminInjuryTypeDto, 'label' | 'averageDays' | 'sortOrder' | 'active'>;
+export type SaveInjuryTypeRequest = Pick<
+  AdminInjuryTypeDto,
+  'label' | 'averageDays' | 'sortOrder' | 'active' | 'siteKind' | 'baseSite' | 'sites' | 'graded'
+>;
+
+/** Un sitio del catálogo del cuerpo, como lo ve el administrador. */
+export interface AdminBodySiteDto extends BodySiteDto {
+  sortOrder: number;
+  /** Lesiones guardadas en este sitio. */
+  injuries: number;
+  /** Tipos de lesión que lo tienen como sitio fijo o en su lista. */
+  types: number;
+  /** Sitios de su grupo, si es un grupo. */
+  children: number;
+  updatedAt: string;
+}
+
+export type SaveBodySiteRequest = Pick<
+  AdminBodySiteDto,
+  'label' | 'kind' | 'region' | 'parent' | 'paired' | 'agreement' | 'sortOrder' | 'active'
+>;
 
 /** El catálogo del administrador: lo mismo más el nombre técnico de cada dato. */
 export interface AdminCookieDto extends CookieDto {

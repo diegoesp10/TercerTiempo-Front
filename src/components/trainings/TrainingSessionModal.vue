@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import PlayerName from '@/components/players/PlayerName.vue';
+import InjuryFormModal, { type InjuryFormMode, type InjuryFormPlayer, type InjuryFormPreset } from '@/components/squads/InjuryFormModal.vue';
 import InjuryNote from '@/components/trainings/InjuryNote.vue';
 import MyAttendanceBadge from '@/components/trainings/MyAttendanceBadge.vue';
 import TrainingItemsEditor from '@/components/trainings/TrainingItemsEditor.vue';
@@ -21,6 +22,8 @@ import type {
   AttendanceInput,
   AttendanceStatus,
   ExerciseDto,
+  InjuryDto,
+  InjuryOccasionDto,
   Position,
   TrainingAttendanceDto,
   TrainingCatalogDto,
@@ -123,6 +126,107 @@ const rollCallGroups = computed<PositionGroup<AttendanceInput>[]>(() => {
 const lineOf = (key: string): TrainingAttendanceDto | undefined => session.value?.attendance.find((a) => keyOf(a) === key);
 // Lesionado ese día: no entrena, así que no se le pasa lista (ni entra al marcar a todos).
 const injured = (a: AttendanceInput) => lineOf(keyOf(a))?.injured ?? false;
+
+// --- Lesiones de esta sesión ---
+// El cuerpo técnico apunta quién se lesionó aquí (ya empezada) o corrige esa lesión: la sesión queda como el sitio donde
+// se lesionó; en ella entrenó hasta entonces (se le pasa lista como a los demás) y desde ahí sale de baja.
+const hereOf = (a: AttendanceInput) => lineOf(keyOf(a))?.hereInjury ?? null;
+const sessionDay = computed(() => (session.value ? toDateKey(new Date(session.value.startsAt)) : ''));
+// Lesionado con un parte de ese mismo día que no dice dónde: puede que fuera aquí.
+const maybeHere = (a: AttendanceInput) => {
+  const injury = lineOf(keyOf(a))?.injury;
+  return injured(a) && !!injury && !injury.occasion && injury.startedOn === sessionDay.value;
+};
+const canRecordInjuries = computed(() => canEdit.value && (session.value?.started ?? false));
+const sessionOccasion = (s: TrainingSessionDto): InjuryOccasionDto => ({ kind: 'Training', id: s.id, day: toDateKey(new Date(s.startsAt)), label: s.title });
+
+const injuryFormOpen = ref(false);
+const injuryForm = shallowRef<{ mode: InjuryFormMode; target: InjuryDto | null; preset: InjuryFormPreset | null; players: InjuryFormPlayer[]; injured: string[] }>({
+  mode: 'new',
+  target: null,
+  preset: null,
+  players: [],
+  injured: [],
+});
+const injuryLoading = ref(false);
+
+// Las lesiones de la plantilla: quién tiene ya una abierta (no puede tener dos) y la lesión entera para corregirla.
+async function squadInjuries() {
+  injuryLoading.value = true;
+  error.value = null;
+  try {
+    return await api.squads.injuries(props.squadId);
+  } catch (e) {
+    error.value = errorMessage(e);
+    return null;
+  } finally {
+    injuryLoading.value = false;
+  }
+}
+
+// Se elige entre los de la plantilla que estaban en la sesión: el que no vino no pudo lesionarse en ella.
+async function openInjuryNew() {
+  const s = session.value;
+  if (!s) return;
+  const list = await squadInjuries();
+  if (!list) return;
+  const players = s.attendance
+    .filter((a) => a.squadPlayerId && !a.injured && !a.left && !a.injuredHere)
+    .map((a) => ({
+      id: a.squadPlayerId!,
+      fullName: a.playerName,
+      photoUrl: props.photos[a.squadPlayerId!] ?? null,
+      unavailable: a.status === 'Missed' || a.status === 'WillMiss' ? 'no vino: si vino, cámbialo antes en la asistencia' : null,
+    }));
+  const open = list.filter((i) => i.active && !i.playerLeft).map((i) => i.squadPlayerId);
+  injuryForm.value = { mode: 'new', target: null, preset: { occasion: sessionOccasion(s), lockOccasion: true }, players, injured: open };
+  injuryFormOpen.value = true;
+}
+
+// Corregir la que se hizo aquí o, con here, enlazar a esta sesión una lesión con el parte de este día.
+async function openInjuryEdit(injuryId: string, here = false) {
+  const s = session.value;
+  if (!s) return;
+  const list = await squadInjuries();
+  if (!list) return;
+  const injury = list.find((i) => i.id === injuryId);
+  if (!injury || injury.playerLeft || injury.continuedOn) {
+    error.value = 'Esa lesión ya no se puede corregir desde aquí: es historial de la plantilla.';
+    return;
+  }
+  injuryForm.value = {
+    mode: 'edit',
+    target: injury,
+    preset: here ? { occasion: sessionOccasion(s), lockOccasion: true } : null,
+    players: [{ id: injury.squadPlayerId, fullName: injury.playerName, photoUrl: props.photos[injury.squadPlayerId] ?? null }],
+    injured: [],
+  };
+  injuryFormOpen.value = true;
+}
+
+// Se vuelve a pedir la sesión sin perder lo que se estaba cambiando (la asistencia, los ejercicios, los datos).
+async function onInjurySaved() {
+  injuryFormOpen.value = false;
+  emit('changed');
+  if (!props.sessionId) return;
+  try {
+    const fresh = await api.trainings.get(props.squadId, props.sessionId);
+    const drafts = {
+      attendance: attendanceDirty.value ? attendance.value : null,
+      items: itemsDirty.value ? items.value : null,
+      details: editingDetails.value ? details.value : null,
+    };
+    take(fresh);
+    if (drafts.attendance) {
+      const kept = new Map(drafts.attendance.map((a) => [keyOf(a), a]));
+      attendance.value = attendance.value.map((a) => kept.get(keyOf(a)) ?? a);
+    }
+    if (drafts.items) items.value = drafts.items;
+    if (drafts.details) details.value = drafts.details;
+  } catch (e) {
+    error.value = errorMessage(e);
+  }
+}
 
 const toInputs = (s: TrainingSessionDto): TrainingItemInput[] =>
   s.items.map((i) => ({ exerciseId: i.exerciseId, name: i.name, type: i.type, durationMinutes: i.durationMinutes, notes: i.notes, positions: [...i.positions] }));
@@ -407,6 +511,10 @@ async function remove() {
               <button v-else-if="!absenceOpen" type="button" class="btn-secondary px-3 py-1 text-xs" @click="absenceOpen = true">No podré ir</button>
             </div>
           </div>
+          <p v-if="!session.mine.injured && session.mine.hereInjury" class="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+            <Badge tone="red"><Icon icon="user-injured" class="mr-1 h-2.5 w-2.5" />Te lesionaste aquí</Badge>
+            <InjuryNote :injury="session.mine.hereInjury" :badge="false" :place="false" />
+          </p>
           <form v-if="absenceOpen && !session.started && !session.mine.injured" class="mt-2 flex flex-wrap gap-2" @submit.prevent="reportAbsence(true)">
             <input v-model="absenceReason" type="text" maxlength="200" class="input min-w-0 flex-1 px-2 py-1 text-sm" placeholder="Motivo (opcional): trabajo, examen, lesión…" />
             <button type="submit" class="btn-primary px-3 py-1 text-xs" v-busy="busy === 'absence'" :disabled="busy !== null">Avisar al cuerpo técnico</button>
@@ -420,6 +528,15 @@ async function remove() {
             <span class="text-slate-500">Marcar a todos:</span>
             <button v-if="session.started" type="button" class="btn-secondary px-2 py-1 text-xs" @click="markAll('Attended')">Vinieron (salvo los que avisaron)</button>
             <button v-if="!finished" type="button" class="btn-secondary px-2 py-1 text-xs" @click="markAll('Expected')">Cuentan con venir</button>
+            <button
+              v-if="canRecordInjuries"
+              type="button"
+              class="btn-secondary px-2 py-1 text-xs"
+              v-busy="injuryLoading"
+              :disabled="busy !== null || injuryLoading"
+              title="Apunta quién se lesionó en esta sesión: queda como el sitio donde se lesionó y desde ahí sale de baja"
+              @click="openInjuryNew"
+            ><Icon icon="user-injured" class="mr-1 h-3 w-3" />Se lesionó alguien</button>
             <button
               type="button"
               class="btn-primary ml-auto px-3 py-1 text-xs"
@@ -439,7 +556,18 @@ async function remove() {
                 <PlayerName :name="lineOf(keyOf(line))?.playerName ?? ''" :photo-url="line.squadPlayerId ? photos[line.squadPlayerId] ?? null : null" class="min-w-0 flex-1 basis-40" />
                 <Badge v-if="line.trialPlayerId" tone="amber" title="Viene a prueba, sin ficha en la plantilla">A prueba</Badge>
                 <Badge v-if="lineOf(keyOf(line))?.warned && !injured(line)" tone="amber" title="Avisó antes de la sesión de que no iba">Avisó</Badge>
-                <InjuryNote v-if="injured(line)" :injury="lineOf(keyOf(line))?.injury ?? null" class="basis-full sm:basis-auto" />
+                <template v-if="injured(line)">
+                  <InjuryNote :injury="lineOf(keyOf(line))?.injury ?? null" class="basis-full sm:basis-auto" />
+                  <button
+                    v-if="canRecordInjuries && maybeHere(line) && !leftLine(line)"
+                    type="button"
+                    class="btn-ghost px-2 py-1 text-xs text-brand-500"
+                    v-busy="injuryLoading"
+                    :disabled="busy !== null || injuryLoading"
+                    title="El parte es de este día y no dice dónde se lesionó: si fue en esta sesión, queda enlazada a ella"
+                    @click="openInjuryEdit(lineOf(keyOf(line))!.injury!.id, true)"
+                  ><Icon icon="link" class="mr-1 h-3 w-3" />Fue en esta sesión</button>
+                </template>
                 <template v-else-if="canEdit">
                   <ChoiceToggle
                     :model-value="line.status"
@@ -468,6 +596,19 @@ async function remove() {
                   <Badge :tone="attendanceStatusTone[line.status]">{{ attendanceStatusLabels[line.status] }}</Badge>
                   <span v-if="line.reason" class="text-xs text-slate-500">{{ line.reason }}</span>
                 </template>
+              </div>
+              <!-- Se lesionó en esta sesión: entrenó hasta entonces (se le pasa lista) y desde ahí está de baja -->
+              <div v-if="hereOf(line)" class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 sm:pl-9">
+                <Badge tone="red" title="Se lesionó en esta sesión: entrenó hasta entonces y desde ahí está de baja"><Icon icon="user-injured" class="mr-1 h-2.5 w-2.5" />Se lesionó aquí</Badge>
+                <InjuryNote :injury="hereOf(line)" :badge="false" :place="false" />
+                <button
+                  v-if="canEdit && !leftLine(line)"
+                  type="button"
+                  class="btn-ghost px-2 py-0.5 text-xs"
+                  v-busy="injuryLoading"
+                  :disabled="busy !== null || injuryLoading"
+                  @click="openInjuryEdit(hereOf(line)!.id)"
+                ><Icon icon="pen" class="mr-1 h-3 w-3" />Corregir la lesión</button>
               </div>
               <!-- Hacerle ficha: pasa a la plantilla con su nombre y sus asistencias de prueba -->
               <form v-if="canEdit && line.trialPlayerId && promoteFor === line.trialPlayerId" class="mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-brand-500/40 bg-surface-2 p-2 sm:ml-9" @submit.prevent="promote(lineOf(keyOf(line))!)">
@@ -499,6 +640,18 @@ async function remove() {
           <p class="mt-1 text-xs text-slate-500">Sin ficha ni cuenta: solo para pasarle lista. Si le hacéis ficha, pasa a la plantilla con lo que ya tenga anotado.</p>
         </div>
       </section>
+
+      <InjuryFormModal
+        :open="injuryFormOpen"
+        :squad-id="squadId"
+        :mode="injuryForm.mode"
+        :target="injuryForm.target"
+        :preset="injuryForm.preset"
+        :players="injuryForm.players"
+        :injured-player-ids="injuryForm.injured"
+        @close="injuryFormOpen = false"
+        @saved="onInjurySaved"
+      />
     </template>
 
     <template v-if="session && canEdit" #footer>

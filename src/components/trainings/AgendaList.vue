@@ -10,10 +10,10 @@ import { callUpResponseLabels, callUpResponseTone, formatDayHeading, formatDurat
 
 /**
  * La agenda de la plantilla en lista: entrenamientos y partidos juntos, por orden de fecha. El partido va con balón y
- * borde azul, y enlaza a su convocatoria; el entrenamiento, con silbato, y se abre donde diga el padre. Lo ya realizado
- * va atenuado con un check; el partido jugado, con el color de su resultado (verde, amarillo o rojo) y el marcador. El
- * partido que está por jugar dice quién no puede jugarlo (sancionados y lesionados). En el panel de inicio se usa en
- * versión compacta (una línea por elemento).
+ * borde azul, y enlaza a su convocatoria (una pestaña de la página del partido); el entrenamiento, con silbato, y se
+ * abre donde diga el padre. Lo ya realizado va atenuado con un check; el partido jugado, con el color de su resultado
+ * (verde, amarillo o rojo) y el marcador. El partido que está por jugar dice quién no puede jugarlo (sancionados y
+ * lesionados). En el panel de inicio se usa en versión compacta (una línea por elemento).
  */
 const props = withDefaults(
   defineProps<{
@@ -58,10 +58,10 @@ const key = (item: SquadAgendaItemDto) => (item.kind === 'Match' ? `m:${item.mat
 <template>
   <ul :class="compact ? 'divide-y divide-line' : 'space-y-2'">
     <li v-for="item in items" :key="key(item)">
-      <!-- Partido: a su convocatoria -->
+      <!-- Partido: a su página, en la pestaña de la convocatoria -->
       <RouterLink
         v-if="item.kind === 'Match'"
-        :to="{ name: 'squad-callup', params: { squadId, matchId: item.match!.id } }"
+        :to="{ name: 'sheet', params: { squadId, matchId: item.match!.id }, query: { tab: 'convocatoria' } }"
         class="flex items-start gap-3 transition"
         :class="[compact ? 'rounded-lg px-1 py-2 hover:bg-surface-2' : `card border-l-4 p-3 hover:border-brand-400/60 sm:p-3 ${result(item) ? '' : 'border-l-brand-500'}`, matchCard(item)]"
       >

@@ -106,12 +106,12 @@ function downloadPaper(withNextMatch: boolean) {
         <RouterLink :to="{ name: 'sheet', params: { squadId, matchId: nextMatch.id }, query: { tab: 'previa' } }" class="btn-secondary">
           <Icon icon="chart-line" class="mr-1.5 h-3.5 w-3.5" />Previa
         </RouterLink>
-        <RouterLink :to="{ name: 'squad-callup', params: { squadId, matchId: nextMatch.id } }" class="btn-primary">
+        <RouterLink :to="{ name: 'sheet', params: { squadId, matchId: nextMatch.id }, query: { tab: 'convocatoria' } }" class="btn-primary">
           <Icon icon="users" class="mr-1.5 h-3.5 w-3.5" />Convocatoria
         </RouterLink>
       </template>
       <template v-else-if="myCallUpAction" #actions>
-        <RouterLink :to="{ name: 'squad-callup', params: { squadId, matchId: nextMatch.id } }" :class="myCallUpAction.primary ? 'btn-primary' : 'btn-secondary'">
+        <RouterLink :to="{ name: 'sheet', params: { squadId, matchId: nextMatch.id }, query: { tab: 'convocatoria' } }" :class="myCallUpAction.primary ? 'btn-primary' : 'btn-secondary'">
           {{ myCallUpAction.label }}
         </RouterLink>
       </template>
