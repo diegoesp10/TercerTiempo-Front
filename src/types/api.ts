@@ -486,8 +486,8 @@ export interface PendingRefereeRatingDto {
  * o cambio o anulación de una sesión) y TrainingAbsence (el jugador avisa de que falta), de entrenamientos. CallUpShort
  * (al cuerpo técnico y al club): la convocatoria se ha enviado sin llegar al número de convocados. InjuryProposal (al
  * cuerpo técnico y al club): la crónica de un partido cuenta que un jugador se lesionó, para registrarlo o descartarlo.
- * CallUpDue (al cuerpo técnico y al club): la convocatoria del próximo partido sigue sin enviar, tres días antes y el día
- * antes; se resuelve al enviarla o al empezar el partido.
+ * CallUpDue (al cuerpo técnico y al club): el día antes del partido, su convocatoria sigue sin enviar; se resuelve al
+ * enviarla o al empezar el partido.
  */
 export type AlertKind =
   | 'LicenseExpiring'
