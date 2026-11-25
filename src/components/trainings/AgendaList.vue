@@ -72,7 +72,9 @@ const key = (item: SquadAgendaItemDto) => (item.kind === 'Match' ? `m:${item.mat
           <Icon :icon="item.done ? 'circle-check' : 'futbol'" class="h-3.5 w-3.5" />
         </span>
         <span class="min-w-0 flex-1">
-          <span class="flex min-w-0 items-center gap-1 font-medium" :class="item.done ? 'text-slate-500' : 'text-slate-900'">
+          <!-- El rival baja de línea entero si no cabe junto a «Partido · J13»: sin flex-wrap, la fila no deja estrechar la
+               tarjeta del inicio y en un móvil estrecho saca la página de la pantalla. -->
+          <span class="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 font-medium" :class="item.done ? 'text-slate-500' : 'text-slate-900'">
             <span class="shrink-0">Partido · J{{ item.match!.matchday }}</span>
             <TeamName class="min-w-0" prefix="vs" :name="rival(item).name" :crest-url="rival(item).crestUrl" :short-name="rival(item).shortName" />
           </span>

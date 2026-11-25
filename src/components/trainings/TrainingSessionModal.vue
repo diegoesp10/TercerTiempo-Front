@@ -423,32 +423,36 @@ async function remove() {
             <label class="label" for="ts-title">Título</label>
             <input id="ts-title" v-model="details.title" type="text" maxlength="120" class="input" placeholder="Si lo dejas vacío, el tipo" />
           </div>
-          <div class="grid grid-cols-[1fr_6rem_6rem] gap-2 sm:col-span-2">
-            <div>
-              <label class="label" for="ts-date">Día</label>
-              <input id="ts-date" v-model="details.date" type="date" required class="input" />
+          <!-- Día, hora y minutos en una fila solo si caben: el campo de fecha no baja de unos 150 px y en un móvil estrecho
+               el día va solo y debajo la hora y los minutos. -->
+          <div class="@container sm:col-span-2">
+            <div class="grid grid-cols-2 gap-2 @sm:grid-cols-[1fr_6rem_6rem]">
+              <div class="col-span-2 @sm:col-span-1">
+                <label class="label" for="ts-date">Día</label>
+                <input id="ts-date" v-model="details.date" type="date" required class="input" />
+              </div>
+              <div>
+                <label class="label" for="ts-time">Hora</label>
+                <input id="ts-time" v-model="details.time" type="time" required class="input px-2" />
+              </div>
+              <div>
+                <label class="label" for="ts-minutes">Minutos</label>
+                <input
+                  v-if="savedWithItems"
+                  id="ts-minutes"
+                  :value="session.plannedMinutes"
+                  type="number"
+                  readonly
+                  tabindex="-1"
+                  class="input cursor-default bg-surface-2 px-2 font-semibold tabular-nums"
+                  title="La suma de los minutos de los ejercicios guardados"
+                />
+                <input v-else id="ts-minutes" v-model.number="details.durationMinutes" type="number" :min="catalog?.minDurationMinutes ?? 15" :max="catalog?.maxDurationMinutes ?? 300" required class="input px-2" />
+              </div>
+              <p class="col-span-2 text-xs text-slate-500 @sm:col-span-3">
+                {{ savedWithItems ? 'La duración es la suma de los ejercicios: se cambia desde los minutos de cada uno.' : 'Sin ejercicios, pon tú los minutos. Al guardar ejercicios, la duración pasa a ser su suma.' }}
+              </p>
             </div>
-            <div>
-              <label class="label" for="ts-time">Hora</label>
-              <input id="ts-time" v-model="details.time" type="time" required class="input px-2" />
-            </div>
-            <div>
-              <label class="label" for="ts-minutes">Minutos</label>
-              <input
-                v-if="savedWithItems"
-                id="ts-minutes"
-                :value="session.plannedMinutes"
-                type="number"
-                readonly
-                tabindex="-1"
-                class="input cursor-default bg-surface-2 px-2 font-semibold tabular-nums"
-                title="La suma de los minutos de los ejercicios guardados"
-              />
-              <input v-else id="ts-minutes" v-model.number="details.durationMinutes" type="number" :min="catalog?.minDurationMinutes ?? 15" :max="catalog?.maxDurationMinutes ?? 300" required class="input px-2" />
-            </div>
-            <p class="col-span-3 text-xs text-slate-500">
-              {{ savedWithItems ? 'La duración es la suma de los ejercicios: se cambia desde los minutos de cada uno.' : 'Sin ejercicios, pon tú los minutos. Al guardar ejercicios, la duración pasa a ser su suma.' }}
-            </p>
           </div>
           <div>
             <label class="label" for="ts-location">Lugar</label>

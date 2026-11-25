@@ -150,9 +150,11 @@ async function submit() {
           <label class="label" for="pt-title">Título</label>
           <input id="pt-title" v-model="form.title" type="text" maxlength="120" class="input" placeholder="Si lo dejas vacío, el tipo" />
         </div>
-        <div class="sm:col-span-2">
-          <div class="grid grid-cols-[1fr_6rem_6rem] gap-2">
-            <div>
+        <!-- Día, hora y minutos en una fila solo si caben: el campo de fecha no baja de unos 150 px y en un móvil estrecho
+             el día va solo y debajo la hora y los minutos. -->
+        <div class="@container sm:col-span-2">
+          <div class="grid grid-cols-2 gap-2 @sm:grid-cols-[1fr_6rem_6rem]">
+            <div class="col-span-2 @sm:col-span-1">
               <label class="label" for="pt-date">{{ form.repeat ? 'Desde el día' : 'Día' }}</label>
               <input id="pt-date" v-model="form.date" type="date" class="input" :class="{ 'border-red-400 ring-1 ring-red-300': missing.date }" :aria-invalid="missing.date" />
             </div>
@@ -261,7 +263,7 @@ async function submit() {
           </ul>
         </div>
         <span v-else class="hidden sm:block" />
-        <div class="flex shrink-0 justify-end gap-2">
+        <div class="flex shrink-0 flex-wrap justify-end gap-2">
           <button type="button" class="btn-ghost" @click="emit('close')">Cancelar</button>
           <button
             type="submit"

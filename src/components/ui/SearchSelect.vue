@@ -16,6 +16,9 @@ export interface SelectOption {
   crest?: string | null;
   /** Jugadores: foto junto al nombre (o sus iniciales). */
   photo?: string | null;
+  /** Icono en una casilla de color delante del nombre (el tipo de ejercicio), con las clases de esa casilla. */
+  icon?: string;
+  iconClass?: string;
 }
 
 /**
@@ -39,8 +42,13 @@ const props = withDefaults(
     clearable?: boolean;
     /** El valor elegido siempre en una línea: si no cabe se recorta, y entero al pasar por encima. */
     nowrap?: boolean;
+    /**
+     * El texto secundario es una explicación: va debajo de cada opción de la lista y no en el botón, que enseña solo el
+     * nombre y nunca se ensancha (la explicación de la elegida la pone quien usa el desplegable).
+     */
+    hintAsDescription?: boolean;
   }>(),
-  { placeholder: '— Elige —', searchable: undefined, disabled: false, id: undefined, ariaLabel: undefined, size: 'md', clearable: false, nowrap: false },
+  { placeholder: '— Elige —', searchable: undefined, disabled: false, id: undefined, ariaLabel: undefined, size: 'md', clearable: false, nowrap: false, hintAsDescription: false },
 );
 const emit = defineEmits<{ 'update:modelValue': [value: string | number | null] }>();
 
@@ -219,7 +227,9 @@ const sizeClasses = computed(() => (props.size === 'sm' ? 'px-2.5 py-1 text-sm' 
         <template v-if="selected">
           <TeamCrest v-if="selected.crest !== undefined" :src="selected.crest" :name="selected.label" size="xs" class="mr-1.5 align-middle" />
           <PlayerAvatar v-else-if="selected.photo !== undefined" :src="selected.photo" :name="selected.label" size="xs" class="mr-1.5 align-middle" />
-          {{ selected.label }}<span v-if="selected.hint" class="ml-1 text-xs text-slate-500">· {{ selected.hint }}</span>
+          <!-- Con el margen negativo la casilla no ensancha la línea: el botón queda tan alto como los campos de al lado. -->
+          <span v-else-if="selected.icon" class="-my-0.5 mr-1.5 inline-grid h-5 w-5 place-items-center rounded-md align-middle" :class="selected.iconClass"><Icon :icon="selected.icon" class="h-2.5 w-2.5" /></span>
+          {{ selected.label }}<span v-if="selected.hint && !hintAsDescription" class="ml-1 text-xs text-slate-500">· {{ selected.hint }}</span>
         </template>
         <template v-else>{{ placeholder }}</template>
       </span>
@@ -271,10 +281,15 @@ const sizeClasses = computed(() => (props.size === 'sm' ? 'px-2.5 py-1 text-sm' 
               @mousemove="highlighted = flat.indexOf(option)"
               @click="choose(option)"
             >
-              <span class="flex min-w-0 items-center gap-1.5">
+              <span class="flex min-w-0 gap-1.5" :class="hintAsDescription ? 'items-start' : 'items-center'">
                 <TeamCrest v-if="option.crest !== undefined" :src="option.crest" :name="option.label" size="xs" />
                 <PlayerAvatar v-else-if="option.photo !== undefined" :src="option.photo" :name="option.label" size="xs" />
-                <span class="min-w-0 break-words">{{ option.label }}<span v-if="option.hint" class="ml-1 text-xs text-slate-500">· {{ option.hint }}</span></span>
+                <span v-else-if="option.icon" class="grid h-5 w-5 shrink-0 place-items-center rounded-md" :class="option.iconClass"><Icon :icon="option.icon" class="h-2.5 w-2.5" /></span>
+                <span v-if="hintAsDescription" class="min-w-0">
+                  <span class="block break-words font-medium">{{ option.label }}</span>
+                  <span v-if="option.hint" class="block break-words text-xs leading-snug text-slate-500">{{ option.hint }}</span>
+                </span>
+                <span v-else class="min-w-0 break-words">{{ option.label }}<span v-if="option.hint" class="ml-1 text-xs text-slate-500">· {{ option.hint }}</span></span>
               </span>
               <Icon v-if="option.value === modelValue" icon="check" class="h-3.5 w-3.5 shrink-0 text-brand-500" />
             </li>

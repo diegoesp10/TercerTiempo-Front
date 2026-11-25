@@ -2,6 +2,7 @@
 import { onMounted, ref, shallowRef } from 'vue';
 import { api } from '@/api';
 import { ApiError, errorMessage } from '@/api/http';
+import MatchResultPill from '@/components/matches/MatchResultPill.vue';
 import StarRating from '@/components/referees/StarRating.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { confirmDialog } from '@/composables/useConfirm';
@@ -47,8 +48,6 @@ onMounted(async () => {
 const keyOf = (item: PendingRefereeRatingDto) => `${item.match.id}-${item.teamId}`;
 const left = (item: PendingRefereeRatingDto) => item.officials - item.rated;
 const rival = (item: PendingRefereeRatingDto) => (item.match.homeTeam.id === item.teamId ? item.match.awayTeam : item.match.homeTeam);
-const result = (item: PendingRefereeRatingDto) =>
-  item.match.homeGoals !== null && item.match.awayGoals !== null ? `${item.match.homeGoals}-${item.match.awayGoals}` : null;
 
 async function noVote(item: PendingRefereeRatingDto) {
   const ok = await confirmDialog({
@@ -96,22 +95,30 @@ async function noVote(item: PendingRefereeRatingDto) {
       </p>
       <p v-if="actionError" class="field-error mt-2">{{ actionError }}</p>
 
+      <!-- Cada partido mira el ancho de su propia caja: los botones van a la derecha solo si caben junto al nombre; si no,
+           debajo (sangrados bajo el texto o, en un móvil estrecho, a lo ancho), y el nombre nunca se queda en una columna
+           tan estrecha que parta las palabras. -->
       <ul v-if="pending.length" class="mt-2 space-y-2">
-        <li v-for="item in pending" :key="keyOf(item)" class="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2">
-          <TeamCrest :src="rival(item).crestUrl" :name="rival(item).name" size="sm" />
-          <span class="min-w-0 flex-1">
-            <span class="block break-words text-sm font-medium text-slate-900">{{ item.match.homeTeam.name }} – {{ item.match.awayTeam.name }}</span>
-            <span class="block text-xs text-slate-500">
-              Jugado · J{{ item.match.matchday }} · {{ formatDate(item.match.kickoffAt) }}<template v-if="result(item)"> · {{ result(item) }}</template>
-              · {{ item.rated }}/{{ item.officials }} contestados<template v-if="item.noVotes"> ({{ item.noVotes }} «No votado»)</template>
-            </span>
-          </span>
-          <span class="flex shrink-0 gap-2">
-            <RouterLink :to="{ name: 'match', params: { matchId: item.match.id }, query: { tab: 'arbitros' } }" class="btn-primary px-3 py-1 text-xs">
-              <Icon icon="star" class="mr-1 h-3 w-3" />Puntuar
-            </RouterLink>
-            <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="busy === keyOf(item)" :disabled="busy !== null" @click="noVote(item)">No votar</button>
-          </span>
+        <li v-for="item in pending" :key="keyOf(item)" class="@container rounded-lg border border-line bg-surface px-3 py-2.5">
+          <div class="flex flex-col gap-2.5 @lg:flex-row @lg:items-center @lg:gap-4">
+            <div class="flex min-w-0 flex-1 items-start gap-3">
+              <TeamCrest :src="rival(item).crestUrl" :name="rival(item).name" size="sm" />
+              <div class="min-w-0">
+                <p class="break-words text-sm font-medium leading-snug text-slate-900">{{ item.match.homeTeam.name }} – {{ item.match.awayTeam.name }}</p>
+                <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                  <span>J{{ item.match.matchday }} · {{ formatDate(item.match.kickoffAt) }}</span>
+                  <MatchResultPill size="xs" :match="item.match" :team-id="item.teamId" />
+                  <span>{{ item.rated }}/{{ item.officials }} contestados<template v-if="item.noVotes"> ({{ item.noVotes }} «No votado»)</template></span>
+                </p>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 @xs:pl-11 @lg:shrink-0 @lg:pl-0">
+              <RouterLink :to="{ name: 'match', params: { matchId: item.match.id }, query: { tab: 'arbitros' } }" class="btn-primary flex-auto px-3 py-1 text-xs @xs:flex-none">
+                <Icon icon="star" class="mr-1 h-3 w-3" />Puntuar
+              </RouterLink>
+              <button type="button" class="btn-ghost flex-auto px-3 py-1 text-xs @xs:flex-none" v-busy="busy === keyOf(item)" :disabled="busy !== null" @click="noVote(item)">No votar</button>
+            </div>
+          </div>
         </li>
       </ul>
       <p v-else class="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
@@ -124,13 +131,14 @@ async function noVote(item: PendingRefereeRatingDto) {
       <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">
         <Icon icon="trophy" class="mr-1.5 h-3 w-3 text-amber-400" />Mejores árbitros de {{ category.name }}
       </h3>
+      <!-- Las estrellas bajan de línea (a la derecha) si no caben junto al nombre, que así nunca se parte a media palabra. -->
       <ol class="mt-2 space-y-2">
-        <li v-for="(referee, index) in best" :key="referee.id" class="flex items-center justify-between gap-3 text-sm">
-          <span class="flex min-w-0 items-center gap-2">
+        <li v-for="(referee, index) in best" :key="referee.id" class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+          <span class="flex min-w-0 items-baseline gap-2">
             <span class="w-4 shrink-0 text-center font-figures text-xs text-slate-500">{{ index + 1 }}</span>
             <RouterLink :to="{ name: 'referee', params: { refereeId: referee.id }, query: { categoria: referee.categoryKey } }" class="min-w-0 break-words font-medium text-slate-900 hover:text-accent-400">{{ referee.name }}</RouterLink>
           </span>
-          <span class="flex shrink-0 items-center gap-2 text-xs text-slate-500">
+          <span class="ml-auto flex shrink-0 items-center gap-2 text-xs text-slate-500">
             <StarRating :score="referee.average" size="sm" />
             <strong class="font-figures text-slate-900">{{ formatScore(referee.average) }}</strong>
             ({{ referee.ratings }})

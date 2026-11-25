@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef } from 'vue';
+import { useElementSize } from '@vueuse/core';
 import FullCalendar, { type CalendarOptions, type DateClickInfo, type DatesSetInfo, type EventClickInfo, type EventInput } from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/vue3/daygrid';
 import interactionPlugin from '@fullcalendar/vue3/interaction';
@@ -132,6 +133,14 @@ const HEADER_PX = 60;
 const MONTH_ROW_PX = 90;
 const MONTH_HEADER_PX = 36;
 
+// En la lista, la columna del día es la cuarta parte de la fila: en un calendario estrecho no caben «miércoles» ni
+// «septiembre», que se montan sobre lo de al lado, así que ahí el día y la fecha van cortos («mié» y «23 sept»).
+const LIST_SHORT_BELOW_PX = 336;
+const SHORT_LIST_DAYS = { listDayFormat: { weekday: 'short' }, listDayAltFormat: { day: 'numeric', month: 'short' } } as const;
+const box = ref<HTMLElement | null>(null);
+const { width: boxWidth } = useElementSize(box);
+const shortListDays = computed(() => boxWidth.value > 0 && boxWidth.value < LIST_SHORT_BELOW_PX);
+
 function onDatesSet(info: DatesSetInfo) {
   view.value = info.view.type as ViewKey;
   title.value = info.view.title.charAt(0).toUpperCase() + info.view.title.slice(1);
@@ -182,6 +191,7 @@ const options = computed<CalendarOptions>(() => ({
   slotMaxTime: hours.value.max,
   slotHeaderFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
   eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+  ...(shortListDays.value ? SHORT_LIST_DAYS : {}),
   noEventsText: 'Nada preparado en estos días.',
   events: events.value,
   datesSet: onDatesSet,
@@ -239,7 +249,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
       />
     </div>
 
-    <div class="overflow-hidden rounded-xl border border-line bg-surface text-sm" :class="`tt-calendar--${view}`">
+    <div ref="box" class="overflow-hidden rounded-xl border border-line bg-surface text-sm" :class="`tt-calendar--${view}`">
       <FullCalendar ref="calendar" :options="options">
         <template #eventContent="arg">
           <!-- Lista: una línea con todo lo importante -->

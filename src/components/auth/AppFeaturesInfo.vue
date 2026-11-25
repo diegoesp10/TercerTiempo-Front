@@ -57,7 +57,7 @@ const sections: { icon: string; title: string; items: string[] }[] = [
     title: 'Cuerpo técnico',
     items: [
       'Actas internas con minutos, goles, tarjetas y una nota justa: cada uno carga solo los goles encajados con él en el campo.',
-      'Vídeo con su análisis en directo (y pausa): reconoce a cada jugador por su dorsal (al portero, por la portería que defiende en cada parte) y saca faltas y fueras de juego; los minutos, del acta oficial.',
+      'Vídeo con su análisis en directo (y pausa): reconoce a cada jugador por su dorsal (al portero, solo si todo cuadra: junto a la portería que defiende en cada parte, con su equipación de portero y un dorsal del acta) y saca faltas y fueras de juego; los minutos, del acta oficial.',
       'Cada vídeo, con el nombre del partido (los dos equipos y la fecha) en cuanto se sube; lo que ocupa solo lo ve quien lo subió.',
       'Cada análisis dice con qué versión del analizador (Ojeador) se hizo, también en los datos del equipo que se vuelcan de él.',
       'Estadísticas y comparador, con el dato de cada puesto (paradas, despejes, pases, tiros) y el resumen de cada jugador como si jugase en otro, el partido a partido y tablas ordenables.',

@@ -144,8 +144,10 @@ function onCreated() {
     </div>
   </div>
 
+  <!-- min-w-0 en las dos columnas: sin él, la columna se ensancha hasta lo que piden las pestañas del calendario, que así
+       nunca pasan al menú y sacan la página de la pantalla en un móvil estrecho. -->
   <div class="grid gap-6 xl:grid-cols-[1fr_20rem]">
-    <div :class="agenda.loading.value ? 'is-refreshing' : ''">
+    <div class="min-w-0" :class="agenda.loading.value ? 'is-refreshing' : ''">
       <TrainingCalendar
         :items="agenda.data.value ?? []"
         :team-id="teamId"
@@ -163,7 +165,7 @@ function onCreated() {
       </p>
     </div>
 
-    <aside class="space-y-6">
+    <aside class="min-w-0 space-y-6">
       <section>
         <h3 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Lo próximo</h3>
         <p class="mb-2 text-xs text-slate-500">Entrenamientos y partidos por orden, con lo último ya realizado delante.</p>

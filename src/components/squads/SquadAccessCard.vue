@@ -71,16 +71,20 @@ function openTraining(session: TrainingSummaryDto) {
       <AgendaList v-else compact :items="(agenda.data.value ?? []).filter((i) => !i.done).slice(0, 4)" :squad-id="squadId" :team-id="teamId" can-manage @training="openTraining" />
     </section>
 
-    <nav class="grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="Accesos de la plantilla">
-      <RouterLink :to="{ name: 'squad-matches', params: { squadId } }" class="btn-secondary justify-center">
-        <Icon icon="clipboard-list" class="mr-1.5 h-3.5 w-3.5" />Partidos y actas
-      </RouterLink>
-      <RouterLink :to="{ name: 'squad-stats', params: { squadId } }" class="btn-secondary justify-center">
-        <Icon icon="chart-line" class="mr-1.5 h-3.5 w-3.5" />Estadísticas
-      </RouterLink>
-      <RouterLink :to="{ name: 'squad-compare', params: { squadId } }" class="btn-secondary justify-center">
-        <Icon icon="arrow-right-arrow-left" class="mr-1.5 h-3.5 w-3.5" />Comparador
-      </RouterLink>
-    </nav>
+    <!-- Los tres en fila solo si cada uno cabe en una línea («Partidos y actas» pide unos 165 px): mira el ancho de la
+         tarjeta (@container), no el de la pantalla; si no, uno debajo de otro. -->
+    <div class="@container">
+      <nav class="grid grid-cols-1 gap-2 @xl:grid-cols-3" aria-label="Accesos de la plantilla">
+        <RouterLink :to="{ name: 'squad-matches', params: { squadId } }" class="btn-secondary justify-center">
+          <Icon icon="clipboard-list" class="mr-1.5 h-3.5 w-3.5" />Partidos y actas
+        </RouterLink>
+        <RouterLink :to="{ name: 'squad-stats', params: { squadId } }" class="btn-secondary justify-center">
+          <Icon icon="chart-line" class="mr-1.5 h-3.5 w-3.5" />Estadísticas
+        </RouterLink>
+        <RouterLink :to="{ name: 'squad-compare', params: { squadId } }" class="btn-secondary justify-center">
+          <Icon icon="arrow-right-arrow-left" class="mr-1.5 h-3.5 w-3.5" />Comparador
+        </RouterLink>
+      </nav>
+    </div>
   </article>
 </template>
