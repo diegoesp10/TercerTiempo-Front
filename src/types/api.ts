@@ -1079,6 +1079,8 @@ export interface MatchSheetDto {
   hasCallUp?: boolean;
   /** Ya está el acta oficial del partido: de ella salen los dorsales (sin ella no hay). */
   officialSheet?: boolean;
+  /** Es el próximo partido del equipo y su convocatoria todavía no se ha enviado (solo para el club y el cuerpo técnico). */
+  callUpDue?: boolean;
 }
 
 /** Datos colectivos del partido que no trae el acta pública; «for» es el equipo de la plantilla y «against» el rival. */

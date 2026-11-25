@@ -16,6 +16,7 @@ import { outcomeFor, outcomeLabels, resultStyle, resultText } from '@/components
 import Badge from '@/components/ui/Badge.vue';
 import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import TeamName from '@/components/teams/TeamName.vue';
+import { callUpClosed, callUpDueLabel } from '@/components/trainings/callUpState';
 import { unavailableOf, unavailableSummary } from '@/components/trainings/unavailable';
 import type { MatchDto, SquadAgendaItemDto, TrainingSummaryDto } from '@/types/api';
 import { opponentOf } from '@/utils/crests';
@@ -92,6 +93,14 @@ const rival = (match: MatchDto) => opponentOf(match, props.teamId);
 const score = (match: MatchDto) => (match.homeGoals !== null && match.awayGoals !== null ? `${match.homeGoals}-${match.awayGoals}` : null);
 // Resultado del partido ya jugado para el equipo de la plantilla; null en lo demás (también si aún no hay marcador).
 const result = (item: SquadAgendaItemDto) => (item.kind === 'Match' && item.done ? outcomeFor(item.match!, props.teamId) : null);
+// Cómo va la convocatoria de un partido por jugar: la del próximo, mientras no esté enviada, va en ámbar para quien la
+// prepara; la de uno ya empezado que no se envió, como «Sin convocatoria» (al empezar se cierra).
+function callUpState(item: SquadAgendaItemDto): { label: string; tone: 'green' | 'amber' | 'slate'; due: boolean } {
+  if (item.callUp?.status === 'Published') return { label: 'Convocatoria publicada', tone: 'green', due: false };
+  if (props.canPlan && item.isNext) return { label: callUpDueLabel(item.callUp?.status), tone: 'amber', due: true };
+  if (item.callUp && !callUpClosed(item.match!)) return { label: 'Convocatoria en borrador', tone: 'amber', due: false };
+  return { label: 'Sin convocatoria', tone: 'slate', due: false };
+}
 const pad = (n: number) => String(n).padStart(2, '0');
 
 function plainTitle(item: SquadAgendaItemDto) {
@@ -261,9 +270,9 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
               <TeamName class="min-w-0 font-medium text-slate-900" prefix="vs" :name="rival(itemOf(arg).match!).name" :crest-url="rival(itemOf(arg).match!).crestUrl" :short-name="rival(itemOf(arg).match!).shortName" />
               <MatchResultPill v-if="result(itemOf(arg))" :match="itemOf(arg).match!" :team-id="teamId" />
               <Badge v-else-if="itemOf(arg).done" tone="slate"><Icon icon="check" class="mr-1 h-2.5 w-2.5" />Jugado<template v-if="score(itemOf(arg).match!)"> · {{ score(itemOf(arg).match!) }}</template></Badge>
-              <Badge v-else-if="itemOf(arg).callUp?.status === 'Published'" tone="green">Convocatoria publicada</Badge>
-              <Badge v-else-if="itemOf(arg).callUp" tone="amber">Convocatoria en borrador</Badge>
-              <Badge v-else tone="slate">Sin convocatoria</Badge>
+              <Badge v-else :tone="callUpState(itemOf(arg)).tone">
+                <Icon v-if="callUpState(itemOf(arg)).due" icon="triangle-exclamation" class="mr-1 h-2.5 w-2.5" />{{ callUpState(itemOf(arg)).label }}
+              </Badge>
               <Badge v-if="unavailableOf(itemOf(arg)).length" tone="red"><Icon icon="ban" class="mr-1 h-2.5 w-2.5" />{{ unavailableOf(itemOf(arg)).length }} no {{ unavailableOf(itemOf(arg)).length === 1 ? 'disponible' : 'disponibles' }}</Badge>
             </template>
             <template v-else>
@@ -303,8 +312,8 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
               </span>
               <span v-if="itemOf(arg).match!.venue" class="truncate opacity-80">{{ itemOf(arg).match!.venue }}</span>
               <span v-if="unavailableOf(itemOf(arg)).length" class="truncate font-semibold"><Icon icon="ban" class="mr-0.5 h-2.5 w-2.5" />{{ unavailableOf(itemOf(arg)).length }} no {{ unavailableOf(itemOf(arg)).length === 1 ? 'disponible' : 'disponibles' }}</span>
-              <span v-if="!itemOf(arg).done" class="mt-auto truncate opacity-90">
-                {{ itemOf(arg).callUp?.status === 'Published' ? 'Convocatoria publicada' : itemOf(arg).callUp ? 'Convocatoria en borrador' : 'Sin convocatoria' }}
+              <span v-if="!itemOf(arg).done" class="mt-auto truncate opacity-90" :class="callUpState(itemOf(arg)).due ? 'font-semibold' : ''">
+                <Icon v-if="callUpState(itemOf(arg)).due" icon="triangle-exclamation" class="mr-0.5 h-2.5 w-2.5" />{{ callUpState(itemOf(arg)).label }}
               </span>
             </template>
             <template v-else>

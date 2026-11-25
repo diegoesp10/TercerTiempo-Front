@@ -13,6 +13,7 @@ import RequestAccessModal from '@/components/passes/RequestAccessModal.vue';
 import MatchOfficialsPanel from '@/components/referees/MatchOfficialsPanel.vue';
 import SuggestPerformanceModal from '@/components/suggestions/SuggestPerformanceModal.vue';
 import MatchCallUpPanel from '@/components/trainings/MatchCallUpPanel.vue';
+import { callUpClosed } from '@/components/trainings/callUpState';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -27,6 +28,7 @@ import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vu
 import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
 import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
+import type { TabItem } from '@/components/ui/tabs';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useBackFallback } from '@/composables/useBackFallback';
@@ -106,6 +108,20 @@ const visibleTabs = computed(() =>
   tabs.filter((t) =>
     (t.id !== 'previa' || canPrepare.value) && (t.id !== 'arbitros' || canRateReferees.value) && (t.id !== 'pases' || canGivePasses.value)
       && (t.id !== 'convocatoria' || seesCallUp.value) && (matchOver.value || !afterMatch.includes(t.id))),
+);
+// La convocatoria del próximo partido sin enviar: quien la prepara lo ve en toda la página, no solo en su pestaña. La
+// pestaña lo cuenta cuando se envía (sin volver a pedir la página).
+const callUpSent = ref(false);
+const callUpDue = computed(() => !!data.value?.callUpDue && !callUpSent.value);
+// La pestaña de la convocatoria dice cómo está: con candado si el partido ya ha empezado (se ve, pero ya no se toca) y
+// con el aviso si es la del próximo partido y falta enviarla.
+const tabItems = computed<TabItem[]>(() =>
+  visibleTabs.value.map((t) => {
+    if (t.id !== 'convocatoria' || !data.value) return { key: t.id, label: t.label };
+    if (callUpClosed(data.value.match)) return { key: t.id, label: t.label, icon: 'lock', title: 'El partido ya ha empezado: la convocatoria se ve, pero ya no se cambia ni se firma' };
+    if (callUpDue.value) return { key: t.id, label: t.label, icon: 'triangle-exclamation', title: 'Es el próximo partido y la convocatoria todavía no está enviada' };
+    return { key: t.id, label: t.label };
+  }),
 );
 // Antes del partido, quien lo prepara entra directamente en la previa.
 const defaultTab = computed<Tab>(() => (!matchOver.value && canPrepare.value ? 'previa' : 'partido'));
@@ -529,8 +545,19 @@ const sortDirection = computed(() =>
       @requested="onRivalRequested"
     />
 
+    <!-- El próximo partido con la convocatoria sin enviar: el aviso, en cualquier pestaña menos la suya -->
+    <Alert v-if="callUpDue && tab !== 'convocatoria'" kind="warning" class="mt-4">
+      <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p class="flex min-w-0 items-start gap-2">
+          <Icon icon="triangle-exclamation" class="mt-1 h-3.5 w-3.5 shrink-0" />
+          <span><strong>Es el próximo partido del equipo</strong> y la convocatoria todavía no está enviada: prepárala y envíala para que cada jugador la firme.</span>
+        </p>
+        <button type="button" class="btn-primary px-3 py-1.5 text-xs" @click="selectTab('convocatoria')"><Icon icon="users" class="mr-1.5 h-3 w-3" />Ir a la convocatoria</button>
+      </div>
+    </Alert>
+
     <ResponsiveTabs
-      :items="visibleTabs.map((item) => ({ key: item.id, label: item.label }))"
+      :items="tabItems"
       :model-value="tab"
       label="Secciones del partido"
       class="mt-6"
@@ -543,7 +570,7 @@ const sortDirection = computed(() =>
 
     <!-- Montado solo con la pestaña abierta: su refresco en directo para al cambiar de pestaña -->
     <div v-else-if="tab === 'convocatoria'" class="mt-6">
-      <MatchCallUpPanel :squad-id="squadId" :match-id="matchId" />
+      <MatchCallUpPanel :squad-id="squadId" :match-id="matchId" @sent="(value) => (callUpSent = value)" />
     </div>
 
     <div v-else-if="tab === 'comparador'" class="mt-6">

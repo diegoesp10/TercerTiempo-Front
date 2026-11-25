@@ -14,6 +14,7 @@ import Badge from '@/components/ui/Badge.vue';
 import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
 import Modal from '@/components/ui/Modal.vue';
 import Spinner from '@/components/ui/Spinner.vue';
+import { closedCallUpState, daysToGo } from '@/components/trainings/callUpState';
 import { confirmDialog } from '@/composables/useConfirm';
 import { useAsync } from '@/composables/useAsync';
 import { useGroupByPosition } from '@/composables/usePositionGrouping';
@@ -36,6 +37,7 @@ import { callUpResponseLabels, callUpResponseTone, formatKickoff, positionLabels
  * firmar); para cambiarla, «Modificar la convocatoria».
  */
 const props = defineProps<{ squadId: string; matchId: string }>();
+const emit = defineEmits<{ sent: [sent: boolean] }>();
 
 const alerts = useAlertsStore();
 
@@ -63,6 +65,29 @@ const canEdit = computed(() => (data.value?.canEdit ?? false) && !(data.value?.c
 const editing = ref(false);
 const locked = computed(() => canEdit.value && data.value?.status === 'Published' && !editing.value);
 const editable = computed(() => canEdit.value && !locked.value);
+
+// Enviada (también con el partido ya empezado): la lista vale y cada jugador sabe si va.
+const sent = computed(() => data.value?.status === 'Published');
+// Con el partido empezado la convocatoria queda como estaba: se ve atenuada y sin nada que tocar. Si no se llegó a enviar,
+// no hay lista que enseñar, solo por qué ya no se puede hacer.
+const closedState = computed(() => (data.value?.closed ? closedCallUpState(data.value.match) : null));
+const closedEmpty = computed(() => !!data.value?.closed && !sent.value);
+const closedText = computed(() => {
+  const dto = data.value;
+  if (!dto) return '';
+  if (dto.match.status === 'Postponed')
+    return dto.canEdit ? 'Cuando tenga fecha nueva podrás preparar la convocatoria.' : 'Cuando tenga fecha nueva, el cuerpo técnico podrá preparar la convocatoria.';
+  if (dto.match.status === 'Cancelled') return 'No hay convocatoria que hacer.';
+  if (dto.canEdit && dto.id) return 'La convocatoria se quedó en borrador sin enviar y ya no se puede enviar ni cambiar.';
+  if (dto.canEdit) return 'No se hizo convocatoria en la app y ya no se puede hacer: se cierra al empezar el partido.';
+  return 'El cuerpo técnico no envió convocatoria en la app para este partido.';
+});
+// Antes del partido, a quien no la prepara (jugadores y quien solo mira) y sin nada enviado: tampoco hay lista.
+const nothingYet = computed(() => !!data.value && !data.value.closed && !data.value.id && !canEdit.value);
+// El próximo partido con la convocatoria sin enviar: quien la prepara tiene el aviso arriba del todo.
+const due = computed(() => canEdit.value && !!data.value?.isNext && !sent.value);
+// La página del partido avisa de la convocatoria pendiente fuera de esta pestaña: en cuanto se envía, deja de hacerlo.
+watch(sent, (value) => emit('sent', value));
 
 // Los campos de la liga, para la cita (solo hacen falta a quien la prepara).
 const grounds = ref<SquadGroundsDto | null>(null);
@@ -431,268 +456,306 @@ async function respond(response: CallUpResponse) {
   <template v-else-if="data">
     <!-- Cómo está la convocatoria: el partido, su fecha y su campo ya están en la cabecera de la página -->
     <div class="mb-4 flex flex-wrap items-center gap-2">
-      <Badge v-if="data.closed" tone="slate">Partido empezado</Badge>
-      <Badge v-else-if="data.status === 'Published'" tone="green">Enviada</Badge>
-      <Badge v-else-if="data.id" tone="amber">Borrador</Badge>
-      <Badge v-else tone="slate">Sin preparar</Badge>
+      <template v-if="closedState">
+        <Badge tone="slate"><Icon icon="lock" class="mr-1 h-2.5 w-2.5" />Cerrada · {{ closedState.label }}</Badge>
+        <Badge v-if="sent" tone="green">Enviada</Badge>
+      </template>
+      <template v-else>
+        <Badge v-if="sent" tone="green">Enviada</Badge>
+        <Badge v-else-if="data.id" tone="amber">Borrador</Badge>
+        <Badge v-else tone="slate">{{ data.canEdit ? 'Sin preparar' : 'Sin enviar' }}</Badge>
+        <Badge v-if="data.isNext" :tone="due ? 'amber' : 'blue'">Próximo partido</Badge>
+      </template>
       <Badge v-if="editing && canEdit" tone="amber">Modificándola</Badge>
     </div>
 
     <Alert v-if="actionError" kind="error" class="mb-4">{{ actionError }}</Alert>
 
-    <!-- La línea del jugador que mira -->
-    <section v-if="data.mine" class="card mb-6" :class="data.mine.called ? 'border-brand-500/50' : ''">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="min-w-0">
-          <p class="text-lg font-semibold text-slate-900">{{ data.mine.called ? 'Vas convocado' : 'No vas convocado' }}</p>
-          <p class="text-sm text-slate-600">
-            <template v-if="data.mine.called && data.meetAt">Cita: {{ formatKickoff(data.meetAt) }}.</template>
-            <template v-else-if="data.mine.called">El cuerpo técnico no ha puesto hora de cita.</template>
-            <template v-else-if="data.mine.suspended">Estás sancionado para este partido: no puedes ir convocado.</template>
-            <template v-else-if="data.mine.injured">Estás lesionado el día del partido: no puedes ir convocado.</template>
-            <template v-else>Esta vez el cuerpo técnico no cuenta contigo para el partido.</template>
-          </p>
-          <SuspensionNote v-if="data.mine.suspended" :suspension="data.mine.suspension" class="mt-1" />
-          <InjuryNote v-if="data.mine.injured" :injury="data.mine.injury" class="mt-1" />
-          <p v-if="!data.closed && data.mine.warned" class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-amber-700">
-            <DisciplineBadge :discipline="warnedDiscipline(data.mine)" />Llevas {{ data.mine.cycleYellows }} amarillas: con una más te pierdes el siguiente partido de liga.
-          </p>
-          <GroundCard v-if="data.mine.called && (data.meetGround || data.meetPlace)" :ground="data.meetGround" :place="data.meetPlace" class="mt-2" />
-          <p v-if="data.notes" class="mt-1 whitespace-pre-line text-sm text-slate-700">{{ data.notes }}</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <Badge :tone="data.mine.called ? callUpResponseTone[data.mine.response] : data.mine.response === 'Acknowledged' ? 'slate' : 'amber'">
-            {{ data.mine.called ? callUpResponseLabels[data.mine.response] : data.mine.response === 'Acknowledged' ? 'Enterado' : 'Sin firmar' }}
-          </Badge>
-          <template v-if="!data.closed">
-            <button v-if="data.mine.called && data.mine.response !== 'Confirmed'" type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy === 'respond'" :disabled="busy !== null" @click="respond('Confirmed')"><Icon icon="check" class="mr-1.5 h-3 w-3" />Firmar la convocatoria</button>
-            <button v-else-if="!data.mine.called && data.mine.response !== 'Acknowledged'" type="button" class="btn-secondary px-3 py-1.5 text-xs" v-busy="busy === 'respond'" :disabled="busy !== null" @click="respond('Acknowledged')">Enterado</button>
-          </template>
-        </div>
-      </div>
-      <p v-if="data.mine.called && !data.closed" class="mt-2 text-xs text-slate-500">Si no vas a poder ir, díselo a tu cuerpo técnico: la convocatoria la cambian ellos.</p>
+    <!-- El próximo partido, sin la convocatoria enviada: hay que hacerla -->
+    <Alert v-if="due" kind="warning" class="mb-4">
+      <p class="flex items-start gap-2">
+        <Icon icon="triangle-exclamation" class="mt-1 h-3.5 w-3.5 shrink-0" />
+        <span>
+          <strong>Es el próximo partido del equipo</strong> y se juega {{ daysToGo(data.match.kickoffAt) }}:
+          <template v-if="data.id">la convocatoria está en borrador y los jugadores no la ven hasta que la envíes.</template>
+          <template v-else>la convocatoria está sin hacer.</template>
+          Elige a quién llevas, pon la cita y envíala para que cada uno la firme.
+        </span>
+      </p>
+    </Alert>
+
+    <!-- Partido empezado con la convocatoria enviada: se queda como está -->
+    <p v-if="closedState && sent" class="mb-4 flex items-start gap-2 rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-slate-600">
+      <Icon icon="lock" class="mt-1 h-3.5 w-3.5 shrink-0 text-slate-400" />
+      <span>{{ closedState.reason }}: la convocatoria queda como se envió y ya no se cambia ni se firma.</span>
+    </p>
+
+    <!-- Partido empezado sin convocatoria enviada: ya no hay nada que hacer -->
+    <section v-if="closedEmpty && closedState" class="card flex flex-col items-center gap-2 border-dashed px-4 py-10 text-center">
+      <span class="grid h-11 w-11 place-items-center rounded-full bg-surface-2 text-slate-500"><Icon icon="lock" class="h-4 w-4" /></span>
+      <h3 class="font-semibold text-slate-900">Convocatoria cerrada</h3>
+      <p class="max-w-md text-sm text-slate-600">{{ closedState.reason }}. {{ closedText }}</p>
+      <p v-if="data.canEdit && !data.id && data.match.status === 'Played'" class="max-w-md text-xs text-slate-500">
+        El acta interna de este partido sale con toda la plantilla: márcale a cada uno si jugó.
+      </p>
     </section>
 
-    <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
-      <!-- Jugadores -->
-      <section class="min-w-0">
-        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Plantilla <span class="font-normal normal-case text-slate-400">· {{ shownCalled.size }}<template v-if="editable && size !== null"> de {{ size }}</template> convocados</span></h3>
-          <div class="flex flex-wrap items-center gap-2 text-xs">
-            <GroupByPositionToggle v-model="groupByPosition" />
-            <template v-if="editable">
-              <button type="button" class="btn-ghost px-2 py-1 text-xs" :disabled="!!allBlocked" :title="allBlocked" @click="selectAll(true)">Todos</button>
-              <button type="button" class="btn-ghost px-2 py-1 text-xs" @click="selectAll(false)">Ninguno</button>
+    <template v-else>
+      <!-- La línea del jugador que mira; antes de enviarse la convocatoria, ni va ni deja de ir -->
+      <section v-if="data.mine" class="card mb-6" :class="sent && data.mine.called ? 'border-brand-500/50' : ''">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-lg font-semibold text-slate-900">{{ !sent ? 'Convocatoria sin enviar' : data.mine.called ? 'Vas convocado' : 'No vas convocado' }}</p>
+            <p class="text-sm text-slate-600">
+              <template v-if="!sent">El cuerpo técnico todavía no la ha enviado: cuando lo haga, te llegará un aviso con si vas o no.</template>
+              <template v-else-if="data.mine.called && data.meetAt">Cita: {{ formatKickoff(data.meetAt) }}.</template>
+              <template v-else-if="data.mine.called">El cuerpo técnico no ha puesto hora de cita.</template>
+              <template v-else-if="data.mine.suspended">Estás sancionado para este partido: no puedes ir convocado.</template>
+              <template v-else-if="data.mine.injured">Estás lesionado el día del partido: no puedes ir convocado.</template>
+              <template v-else>Esta vez el cuerpo técnico no cuenta contigo para el partido.</template>
+            </p>
+            <SuspensionNote v-if="data.mine.suspended" :suspension="data.mine.suspension" class="mt-1" />
+            <InjuryNote v-if="data.mine.injured" :injury="data.mine.injury" class="mt-1" />
+            <p v-if="!data.closed && data.mine.warned" class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-amber-700">
+              <DisciplineBadge :discipline="warnedDiscipline(data.mine)" />Llevas {{ data.mine.cycleYellows }} amarillas: con una más te pierdes el siguiente partido de liga.
+            </p>
+            <GroundCard v-if="data.mine.called && (data.meetGround || data.meetPlace)" :ground="data.meetGround" :place="data.meetPlace" class="mt-2" />
+            <p v-if="data.notes" class="mt-1 whitespace-pre-line text-sm text-slate-700">{{ data.notes }}</p>
+          </div>
+          <div v-if="sent" class="flex flex-wrap items-center gap-2">
+            <Badge :tone="data.mine.called ? callUpResponseTone[data.mine.response] : data.mine.response === 'Acknowledged' ? 'slate' : 'amber'">
+              {{ data.mine.called ? callUpResponseLabels[data.mine.response] : data.mine.response === 'Acknowledged' ? 'Enterado' : 'Sin firmar' }}
+            </Badge>
+            <template v-if="!data.closed">
+              <button v-if="data.mine.called && data.mine.response !== 'Confirmed'" type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy === 'respond'" :disabled="busy !== null" @click="respond('Confirmed')"><Icon icon="check" class="mr-1.5 h-3 w-3" />Firmar la convocatoria</button>
+              <button v-else-if="!data.mine.called && data.mine.response !== 'Acknowledged'" type="button" class="btn-secondary px-3 py-1.5 text-xs" v-busy="busy === 'respond'" :disabled="busy !== null" @click="respond('Acknowledged')">Enterado</button>
             </template>
           </div>
         </div>
-
-        <Alert v-if="canEdit && calledSuspended.length" kind="warning" class="mb-3">
-          {{ calledSuspended.map((e) => e.playerName).join(', ') }} {{ calledSuspended.length === 1 ? 'está sancionado' : 'están sancionados' }} para este partido y no
-          {{ calledSuspended.length === 1 ? 'puede' : 'pueden' }} ir:
-          <template v-if="locked">{{ calledSuspended.length === 1 ? 'va' : 'van' }} en la convocatoria enviada. Pulsa «Modificar la convocatoria» para {{ calledSuspended.length === 1 ? 'quitarlo' : 'quitarlos' }}.</template>
-          <template v-else>ya {{ calledSuspended.length === 1 ? 'lo hemos quitado' : 'los hemos quitado' }} de la lista. Guarda o reenvía la convocatoria para que quede así.</template>
-        </Alert>
-        <Alert v-if="canEdit && calledInjured.length" kind="warning" class="mb-3">
-          {{ calledInjured.map((e) => e.playerName).join(', ') }} {{ calledInjured.length === 1 ? 'está lesionado' : 'están lesionados' }} el día del partido y no
-          {{ calledInjured.length === 1 ? 'puede' : 'pueden' }} ir:
-          <template v-if="locked">{{ calledInjured.length === 1 ? 'va' : 'van' }} en la convocatoria enviada. Pulsa «Modificar la convocatoria» para {{ calledInjured.length === 1 ? 'quitarlo' : 'quitarlos' }}.</template>
-          <template v-else>ya {{ calledInjured.length === 1 ? 'lo hemos quitado' : 'los hemos quitado' }} de la lista. Guarda o reenvía la convocatoria para que quede así.</template>
-        </Alert>
-        <Alert v-if="canEdit && warned.length" kind="warning" class="mb-3">
-          <template v-if="warned.length === 1">{{ warned[0].playerName }} está apercibido: lleva {{ warned[0].cycleYellows }} amarillas y, si ve otra en este partido, se pierde el siguiente de liga.</template>
-          <template v-else>Están apercibidos {{ warned.map((e) => e.playerName).join(', ') }}: llevan 4 amarillas y, si ven otra en este partido, se pierden el siguiente de liga.</template>
-          Puedes convocarlos; van marcados en la lista.
-        </Alert>
-
-        <!-- Contador por posición -->
-        <div v-if="data.id || canEdit" class="mb-3 flex flex-wrap gap-2" aria-label="Convocados por posición">
-          <span
-            v-for="g in byPosition"
-            :key="g.key"
-            class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition"
-            :class="g.called ? 'border-brand-500/40 bg-brand-500/10 text-slate-800' : 'border-line text-slate-500'"
-            :title="`${g.called} de ${g.entries.length} ${g.label.toLowerCase()} convocados`"
-          >
-            <strong class="font-display">{{ g.short }}</strong>
-            <span class="tabular-nums"><span :class="g.called ? 'font-semibold text-brand-500' : ''">{{ g.called }}</span><span class="text-slate-400">/{{ g.entries.length }}</span></span>
-          </span>
-        </div>
-
-        <!-- Vista rápida del cuerpo técnico -->
-        <div v-if="showsFilter" class="mb-3 flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtrar la lista">
-          <button
-            v-for="o in filterOptions"
-            :key="o.key"
-            type="button"
-            class="cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
-            :class="filter === o.key ? 'border-brand-500 bg-brand-500 text-white' : 'border-line text-slate-600 hover:bg-surface-2'"
-            :aria-pressed="filter === o.key"
-            :disabled="o.key !== 'all' && o.count === 0 && filter !== o.key"
-            :title="o.key !== 'all' && o.count === 0 ? o.empty : o.title"
-            @click="filter = filter === o.key ? 'all' : o.key"
-          >
-            <Icon v-if="o.icon" :icon="o.icon" class="mr-1 h-3 w-3" />{{ o.label }} <span class="tabular-nums opacity-70">{{ o.count }}</span>
-          </button>
-        </div>
-
-        <p v-if="!data.id && !canEdit" class="text-sm text-slate-500">El cuerpo técnico todavía no ha enviado la convocatoria de este partido.</p>
-        <p v-else-if="groups.length === 0" class="rounded-lg border border-dashed border-line px-3 py-6 text-center text-sm text-slate-500">
-          {{ filterEmpty }}. <button type="button" class="font-medium text-accent-400 hover:underline" @click="filter = 'all'">Ver a todos</button>
-        </p>
-        <div v-else class="overflow-hidden rounded-lg border border-line">
-          <div v-for="g in groups" :key="g.key">
-            <div v-if="g.label" class="flex items-center justify-between gap-2 border-b border-line bg-surface-2 px-3 py-1.5">
-              <span class="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                {{ g.label }} ·
-                <template v-if="activeFilter === 'all'"><span :class="g.called ? 'text-brand-500' : ''">{{ g.called }}</span>/{{ g.entries.length }}</template>
-                <template v-else>{{ g.entries.length }}</template>
-              </span>
-              <button v-if="editable" type="button" class="text-[11px] font-medium text-accent-400 hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline" :disabled="!!groupBlocked(g.entries)" :title="groupBlocked(g.entries)" @click="selectGroup(g.entries)">
-                {{ g.entries.some((e) => !called.has(e.squadPlayerId)) ? 'Todos' : 'Ninguno' }}
-              </button>
-            </div>
-            <ul class="divide-y divide-line border-b border-line last:border-b-0">
-              <li v-for="e in g.entries" :key="e.squadPlayerId" class="flex flex-wrap items-center gap-2 px-3 py-2 text-sm" :class="shownCalled.has(e.squadPlayerId) ? 'bg-brand-500/5' : ''">
-                <label v-if="editable" class="flex shrink-0 cursor-pointer items-center">
-                  <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-brand-500 focus:ring-brand-400 disabled:cursor-not-allowed disabled:opacity-40" :checked="called.has(e.squadPlayerId)" :disabled="blocked(e) || (full && !called.has(e.squadPlayerId))" :aria-label="`Convocar a ${e.playerName}`" :title="blockedTitle(e) ?? (full && !called.has(e.squadPlayerId) ? fullTitle : undefined)" @change="toggle(e.squadPlayerId)" />
-                </label>
-                <Icon v-else-if="e.called" icon="check" class="h-4 w-4 shrink-0 text-brand-500" aria-label="Convocado" />
-                <span v-else class="w-4 shrink-0"></span>
-                <span class="flex min-w-0 flex-1 basis-40 items-center gap-1.5" :class="blocked(e) ? 'opacity-60' : ''">
-                  <PlayerName :name="e.playerName" :photo-url="photos[e.squadPlayerId] ?? null" class="min-w-0" />
-                  <Badge v-if="data.mine && e.squadPlayerId === data.mine.squadPlayerId" tone="blue" class="shrink-0">Tú</Badge>
-                </span>
-                <SuspensionNote v-if="e.suspended" :suspension="e.suspension" class="basis-full pl-6 sm:basis-auto sm:pl-0" />
-                <InjuryNote v-if="e.injured" :injury="e.injury" class="basis-full pl-6 sm:basis-auto sm:pl-0" />
-                <DisciplineBadge v-if="!data.closed" :discipline="warnedDiscipline(e)" class="shrink-0" />
-                <span v-if="!groupByPosition" class="hidden text-xs text-slate-500 sm:inline">{{ positionOf[e.squadPlayerId] ? positionLabels[positionOf[e.squadPlayerId]!] : '' }}</span>
-                <template v-if="data.status === 'Published'">
-                  <Badge v-if="e.called" :tone="callUpResponseTone[e.response]">{{ callUpResponseLabels[e.response] }}</Badge>
-                  <Badge v-else-if="e.response === 'Acknowledged'" tone="slate">Enterado</Badge>
-                  <Badge v-else-if="e.linked" tone="slate">No va</Badge>
-                  <span v-if="data.canEdit && e.linked" class="inline-flex w-14 shrink-0 items-center justify-end gap-1 text-xs" :title="deliveryTitle(e)">
-                    <template v-if="delivery(e) === 'seen'"><Icon icon="check-double" class="h-3.5 w-3.5 text-emerald-500" aria-label="Vista" /><span class="text-emerald-500">Vista</span></template>
-                    <template v-else-if="delivery(e) === 'sent'"><Icon icon="check" class="h-3.5 w-3.5 text-slate-400" aria-label="Enviada" /><span class="text-slate-400">Enviada</span></template>
-                  </span>
-                </template>
-                <span v-if="!e.linked" class="text-xs text-slate-400" title="Sin cuenta en la app: no le llega el aviso">sin cuenta</span>
-              </li>
-            </ul>
-          </div>
-        </div>
+        <p v-if="sent && data.mine.called && !data.closed" class="mt-2 text-xs text-slate-500">Si no vas a poder ir, díselo a tu cuerpo técnico: la convocatoria la cambian ellos.</p>
       </section>
+      <p v-else-if="nothingYet" class="card text-sm text-slate-500">El cuerpo técnico todavía no ha enviado la convocatoria de este partido.</p>
 
-      <!-- Cita y acciones -->
-      <aside class="min-w-0 space-y-4">
-        <section v-if="editable" class="card" aria-labelledby="cu-size">
-          <h3 id="cu-size" class="mb-1 font-semibold text-slate-900">Convocados</h3>
-          <p class="font-display text-3xl font-semibold tabular-nums text-slate-900">
-            {{ called.size }}<span class="text-slate-400">/{{ size ?? '—' }}</span>
-          </p>
-          <p v-if="size === null" class="mt-1 text-sm text-amber-700">Di a cuántos convocas para este partido.</p>
-          <p v-else-if="over > 0" class="mt-1 text-sm font-medium text-red-600">Sobran {{ over }}: quita a {{ over === 1 ? 'uno' : over }} para poder guardarla.</p>
-          <p v-else-if="missing > 0" class="mt-1 text-sm text-amber-700">Faltan {{ missing }} por convocar.</p>
-          <p v-else class="mt-1 text-sm text-emerald-600"><Icon icon="check" class="mr-1 h-3 w-3" />Convocatoria completa.</p>
-          <p class="mt-2 text-xs text-slate-500">
-            <template v-if="data.sizeFixed">
-              Es el número fijo de la plantilla; se cambia en
-              <RouterLink :to="{ name: 'squad', params: { squadId } }" class="font-medium text-accent-400 hover:underline">Gestión de la plantilla</RouterLink>.
-            </template>
-            <template v-else>Lo decides en cada convocatoria.</template>
-            Si la envías con menos, el cuerpo técnico y el club reciben un aviso de que faltan jugadores hasta que la completes.
-          </p>
-          <button v-if="!data.sizeFixed" type="button" class="btn-secondary mt-3 w-full px-3 py-1.5 text-xs" :disabled="busy !== null" :title="busy !== null ? 'Espera a que termine lo que se está guardando' : undefined" @click="openSizeAsk">
-            {{ size === null ? 'Decir a cuántos convoco' : 'Cambiar el número' }}
-          </button>
-        </section>
-
-        <section class="card">
-          <h3 class="mb-2 font-semibold text-slate-900">Cita</h3>
-          <template v-if="editable">
-            <div class="grid grid-cols-[minmax(0,1fr)_5.5rem] gap-2">
-              <div class="min-w-0">
-                <label class="label" for="cu-date">Día</label>
-                <input id="cu-date" v-model="meet.date" type="date" class="input" />
-              </div>
-              <div class="min-w-0">
-                <label class="label" for="cu-time">Hora</label>
-                <input id="cu-time" v-model="meet.time" type="time" class="input px-2" />
-              </div>
+      <div v-if="!nothingYet" class="grid gap-6 lg:grid-cols-[1fr_20rem]">
+        <!-- Jugadores -->
+        <section class="min-w-0">
+          <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Plantilla <span class="font-normal normal-case text-slate-400">· {{ shownCalled.size }}<template v-if="editable && size !== null"> de {{ size }}</template> convocados</span></h3>
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <GroupByPositionToggle v-model="groupByPosition" />
+              <template v-if="editable">
+                <button type="button" class="btn-ghost px-2 py-1 text-xs" :disabled="!!allBlocked" :title="allBlocked" @click="selectAll(true)">Todos</button>
+                <button type="button" class="btn-ghost px-2 py-1 text-xs" @click="selectAll(false)">Ninguno</button>
+              </template>
             </div>
-            <label class="label mt-2" for="cu-place">Lugar</label>
-            <Spinner v-if="!grounds" class="py-2" />
-            <GroundPicker
-              v-else
-              v-model:ground-id="meet.groundId"
-              v-model:place="meet.place"
-              :grounds="groundList"
-              :home-ground-id="grounds.homeGroundId"
-              :match-ground-id="data.matchGround?.id ?? null"
-            />
-            <label class="label mt-2" for="cu-notes">Notas</label>
-            <textarea id="cu-notes" v-model="meet.notes" rows="3" maxlength="1000" class="input" placeholder="Equipación, comida, qué llevar…"></textarea>
-          </template>
-          <template v-else>
-            <p v-if="data.meetAt" class="text-sm text-slate-700">{{ formatKickoff(data.meetAt) }}</p>
-            <p v-else class="text-sm text-slate-500">Sin hora de cita.</p>
-            <GroundCard v-if="data.meetGround || data.meetPlace" :ground="data.meetGround" :place="data.meetPlace" class="mt-2" />
-            <p v-if="data.notes" class="mt-2 whitespace-pre-line text-sm text-slate-700">{{ data.notes }}</p>
-          </template>
-        </section>
+          </div>
 
-        <section class="card text-sm" aria-labelledby="cu-rules">
-          <h3 id="cu-rules" class="mb-1.5 flex items-center gap-2 font-semibold text-slate-900"><Icon icon="circle-info" class="h-3.5 w-3.5 text-accent-400" />Sanciones de liga</h3>
-          <p class="text-slate-600">
-            La 5.ª amarilla (y la 10.ª, la 15.ª…) y cada expulsión dejan al jugador sin el siguiente partido de liga: no se le puede convocar ni ponerle en el acta.
-            Con 4 amarillas en el ciclo está apercibido: puede ir, pero una más le deja fuera del siguiente.
+          <Alert v-if="canEdit && calledSuspended.length" kind="warning" class="mb-3">
+            {{ calledSuspended.map((e) => e.playerName).join(', ') }} {{ calledSuspended.length === 1 ? 'está sancionado' : 'están sancionados' }} para este partido y no
+            {{ calledSuspended.length === 1 ? 'puede' : 'pueden' }} ir:
+            <template v-if="locked">{{ calledSuspended.length === 1 ? 'va' : 'van' }} en la convocatoria enviada. Pulsa «Modificar la convocatoria» para {{ calledSuspended.length === 1 ? 'quitarlo' : 'quitarlos' }}.</template>
+            <template v-else>ya {{ calledSuspended.length === 1 ? 'lo hemos quitado' : 'los hemos quitado' }} de la lista. Guarda o reenvía la convocatoria para que quede así.</template>
+          </Alert>
+          <Alert v-if="canEdit && calledInjured.length" kind="warning" class="mb-3">
+            {{ calledInjured.map((e) => e.playerName).join(', ') }} {{ calledInjured.length === 1 ? 'está lesionado' : 'están lesionados' }} el día del partido y no
+            {{ calledInjured.length === 1 ? 'puede' : 'pueden' }} ir:
+            <template v-if="locked">{{ calledInjured.length === 1 ? 'va' : 'van' }} en la convocatoria enviada. Pulsa «Modificar la convocatoria» para {{ calledInjured.length === 1 ? 'quitarlo' : 'quitarlos' }}.</template>
+            <template v-else>ya {{ calledInjured.length === 1 ? 'lo hemos quitado' : 'los hemos quitado' }} de la lista. Guarda o reenvía la convocatoria para que quede así.</template>
+          </Alert>
+          <Alert v-if="canEdit && warned.length" kind="warning" class="mb-3">
+            <template v-if="warned.length === 1">{{ warned[0].playerName }} está apercibido: lleva {{ warned[0].cycleYellows }} amarillas y, si ve otra en este partido, se pierde el siguiente de liga.</template>
+            <template v-else>Están apercibidos {{ warned.map((e) => e.playerName).join(', ') }}: llevan 4 amarillas y, si ven otra en este partido, se pierden el siguiente de liga.</template>
+            Puedes convocarlos; van marcados en la lista.
+          </Alert>
+
+          <!-- Contador por posición (atenuado con el partido ya empezado) -->
+          <div v-if="data.id || canEdit" class="mb-3 flex flex-wrap gap-2" aria-label="Convocados por posición">
+            <span
+              v-for="g in byPosition"
+              :key="g.key"
+              class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition"
+              :class="!g.called ? 'border-line text-slate-500' : data.closed ? 'border-line bg-surface-2 text-slate-700' : 'border-brand-500/40 bg-brand-500/10 text-slate-800'"
+              :title="`${g.called} de ${g.entries.length} ${g.label.toLowerCase()} convocados`"
+            >
+              <strong class="font-display">{{ g.short }}</strong>
+              <span class="tabular-nums"><span :class="g.called ? (data.closed ? 'font-semibold' : 'font-semibold text-brand-500') : ''">{{ g.called }}</span><span class="text-slate-400">/{{ g.entries.length }}</span></span>
+            </span>
+          </div>
+
+          <!-- Vista rápida del cuerpo técnico -->
+          <div v-if="showsFilter" class="mb-3 flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtrar la lista">
+            <button
+              v-for="o in filterOptions"
+              :key="o.key"
+              type="button"
+              class="cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
+              :class="filter === o.key ? 'border-brand-500 bg-brand-500 text-white' : 'border-line text-slate-600 hover:bg-surface-2'"
+              :aria-pressed="filter === o.key"
+              :disabled="o.key !== 'all' && o.count === 0 && filter !== o.key"
+              :title="o.key !== 'all' && o.count === 0 ? o.empty : o.title"
+              @click="filter = filter === o.key ? 'all' : o.key"
+            >
+              <Icon v-if="o.icon" :icon="o.icon" class="mr-1 h-3 w-3" />{{ o.label }} <span class="tabular-nums opacity-70">{{ o.count }}</span>
+            </button>
+          </div>
+
+          <p v-if="groups.length === 0" class="rounded-lg border border-dashed border-line px-3 py-6 text-center text-sm text-slate-500">
+            {{ filterEmpty }}. <button type="button" class="font-medium text-accent-400 hover:underline" @click="filter = 'all'">Ver a todos</button>
           </p>
-          <p class="mt-1.5 text-xs text-slate-500">
-            Salen de las tarjetas de las actas: la oficial de la federación cuando está cerrada y, mientras tanto, la interna. Cuando el comité de competición publica la sanción de un jugador, cuentan los partidos que pone (una roja directa puede costar varios); hasta entonces, el mínimo.
-          </p>
-          <p v-if="suspendedCount" class="mt-1.5 text-xs font-medium text-red-700">{{ suspendedCount === 1 ? '1 jugador sancionado' : `${suspendedCount} jugadores sancionados` }} para este partido.</p>
-          <p v-if="warned.length" class="mt-1 text-xs font-medium text-amber-700">{{ warned.length === 1 ? '1 jugador apercibido' : `${warned.length} jugadores apercibidos` }}.</p>
+          <div v-else class="overflow-hidden rounded-lg border border-line">
+            <div v-for="g in groups" :key="g.key">
+              <div v-if="g.label" class="flex items-center justify-between gap-2 border-b border-line bg-surface-2 px-3 py-1.5">
+                <span class="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {{ g.label }} ·
+                  <template v-if="activeFilter === 'all'"><span :class="g.called ? 'text-brand-500' : ''">{{ g.called }}</span>/{{ g.entries.length }}</template>
+                  <template v-else>{{ g.entries.length }}</template>
+                </span>
+                <button v-if="editable" type="button" class="text-[11px] font-medium text-accent-400 hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline" :disabled="!!groupBlocked(g.entries)" :title="groupBlocked(g.entries)" @click="selectGroup(g.entries)">
+                  {{ g.entries.some((e) => !called.has(e.squadPlayerId)) ? 'Todos' : 'Ninguno' }}
+                </button>
+              </div>
+              <ul class="divide-y divide-line border-b border-line last:border-b-0">
+                <li v-for="e in g.entries" :key="e.squadPlayerId" class="flex flex-wrap items-center gap-2 px-3 py-2 text-sm" :class="shownCalled.has(e.squadPlayerId) ? (data.closed ? 'bg-surface-2/60' : 'bg-brand-500/5') : ''">
+                  <label v-if="editable" class="flex shrink-0 cursor-pointer items-center">
+                    <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-brand-500 focus:ring-brand-400 disabled:cursor-not-allowed disabled:opacity-40" :checked="called.has(e.squadPlayerId)" :disabled="blocked(e) || (full && !called.has(e.squadPlayerId))" :aria-label="`Convocar a ${e.playerName}`" :title="blockedTitle(e) ?? (full && !called.has(e.squadPlayerId) ? fullTitle : undefined)" @change="toggle(e.squadPlayerId)" />
+                  </label>
+                  <Icon v-else-if="e.called" icon="check" class="h-4 w-4 shrink-0" :class="data.closed ? 'text-slate-400' : 'text-brand-500'" aria-label="Convocado" />
+                  <span v-else class="w-4 shrink-0"></span>
+                  <span class="flex min-w-0 flex-1 basis-40 items-center gap-1.5" :class="blocked(e) ? 'opacity-60' : ''">
+                    <PlayerName :name="e.playerName" :photo-url="photos[e.squadPlayerId] ?? null" class="min-w-0" />
+                    <Badge v-if="data.mine && e.squadPlayerId === data.mine.squadPlayerId" tone="blue" class="shrink-0">Tú</Badge>
+                  </span>
+                  <SuspensionNote v-if="e.suspended" :suspension="e.suspension" class="basis-full pl-6 sm:basis-auto sm:pl-0" />
+                  <InjuryNote v-if="e.injured" :injury="e.injury" class="basis-full pl-6 sm:basis-auto sm:pl-0" />
+                  <DisciplineBadge v-if="!data.closed" :discipline="warnedDiscipline(e)" class="shrink-0" />
+                  <span v-if="!groupByPosition" class="hidden text-xs text-slate-500 sm:inline">{{ positionOf[e.squadPlayerId] ? positionLabels[positionOf[e.squadPlayerId]!] : '' }}</span>
+                  <template v-if="data.status === 'Published'">
+                    <Badge v-if="e.called" :tone="callUpResponseTone[e.response]">{{ callUpResponseLabels[e.response] }}</Badge>
+                    <Badge v-else-if="e.response === 'Acknowledged'" tone="slate">Enterado</Badge>
+                    <Badge v-else-if="e.linked" tone="slate">No va</Badge>
+                    <span v-if="data.canEdit && e.linked" class="inline-flex w-14 shrink-0 items-center justify-end gap-1 text-xs" :title="deliveryTitle(e)">
+                      <template v-if="delivery(e) === 'seen'"><Icon icon="check-double" class="h-3.5 w-3.5 text-emerald-500" aria-label="Vista" /><span class="text-emerald-500">Vista</span></template>
+                      <template v-else-if="delivery(e) === 'sent'"><Icon icon="check" class="h-3.5 w-3.5 text-slate-400" aria-label="Enviada" /><span class="text-slate-400">Enviada</span></template>
+                    </span>
+                  </template>
+                  <span v-if="!e.linked" class="text-xs text-slate-400" title="Sin cuenta en la app: no le llega el aviso">sin cuenta</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </section>
 
-        <section v-if="data.status === 'Published' && data.canEdit" class="card text-sm">
-          <h3 class="mb-2 font-semibold text-slate-900">Entrega</h3>
-          <ul class="space-y-1">
-            <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check" class="mr-1.5 h-3 w-3 text-slate-400" />Enviada</span><strong class="tabular-nums text-slate-700">{{ data.counts.sent }}</strong></li>
-            <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check-double" class="mr-1.5 h-3 w-3 text-emerald-500" />Vista</span><strong class="tabular-nums text-emerald-600">{{ data.counts.seen }}</strong></li>
-          </ul>
-          <button v-if="canEdit && unseen > 0" type="button" class="btn-secondary mt-3 w-full px-3 py-1.5 text-xs" v-busy="busy === 'resend'" :disabled="busy !== null" @click="resend"><Icon icon="paper-plane" class="mr-1.5 h-3 w-3" />Reenviar a quien no la ha visto ({{ unseen }})</button>
-          <p class="mt-2 text-xs text-slate-500">Un check: le ha llegado el aviso. Doble check verde: la ha abierto. La firma va aparte.</p>
-        </section>
+        <!-- Cita y acciones -->
+        <aside class="min-w-0 space-y-4">
+          <section v-if="editable" class="card" aria-labelledby="cu-size">
+            <h3 id="cu-size" class="mb-1 font-semibold text-slate-900">Convocados</h3>
+            <p class="font-display text-3xl font-semibold tabular-nums text-slate-900">
+              {{ called.size }}<span class="text-slate-400">/{{ size ?? '—' }}</span>
+            </p>
+            <p v-if="size === null" class="mt-1 text-sm text-amber-700">Di a cuántos convocas para este partido.</p>
+            <p v-else-if="over > 0" class="mt-1 text-sm font-medium text-red-600">Sobran {{ over }}: quita a {{ over === 1 ? 'uno' : over }} para poder guardarla.</p>
+            <p v-else-if="missing > 0" class="mt-1 text-sm text-amber-700">Faltan {{ missing }} por convocar.</p>
+            <p v-else class="mt-1 text-sm text-emerald-600"><Icon icon="check" class="mr-1 h-3 w-3" />Convocatoria completa.</p>
+            <p class="mt-2 text-xs text-slate-500">
+              <template v-if="data.sizeFixed">
+                Es el número fijo de la plantilla; se cambia en
+                <RouterLink :to="{ name: 'squad', params: { squadId } }" class="font-medium text-accent-400 hover:underline">Gestión de la plantilla</RouterLink>.
+              </template>
+              <template v-else>Lo decides en cada convocatoria.</template>
+              Si la envías con menos, el cuerpo técnico y el club reciben un aviso de que faltan jugadores hasta que la completes.
+            </p>
+            <button v-if="!data.sizeFixed" type="button" class="btn-secondary mt-3 w-full px-3 py-1.5 text-xs" :disabled="busy !== null" :title="busy !== null ? 'Espera a que termine lo que se está guardando' : undefined" @click="openSizeAsk">
+              {{ size === null ? 'Decir a cuántos convoco' : 'Cambiar el número' }}
+            </button>
+          </section>
 
-        <section v-if="data.status === 'Published'" class="card text-sm">
-          <h3 class="mb-2 font-semibold text-slate-900">Firmas</h3>
-          <ul class="space-y-1">
-            <li class="flex justify-between gap-2"><span class="text-slate-600">Convocados que han firmado</span><strong class="tabular-nums text-emerald-600">{{ data.counts.confirmed }}</strong></li>
-            <li class="flex justify-between gap-2"><span class="text-slate-600">Sin firmar</span><strong class="tabular-nums text-amber-600">{{ data.counts.pending }}</strong></li>
-            <li class="flex justify-between gap-2"><span class="text-slate-600">No convocados enterados</span><strong class="tabular-nums text-slate-700">{{ data.counts.acknowledged }}</strong></li>
-          </ul>
-          <p v-if="data.publishedAt" class="mt-2 text-xs text-slate-500">Enviada el {{ formatKickoff(data.publishedAt) }}.</p>
-        </section>
+          <section class="card">
+            <h3 class="mb-2 font-semibold text-slate-900">Cita</h3>
+            <template v-if="editable">
+              <div class="grid grid-cols-[minmax(0,1fr)_5.5rem] gap-2">
+                <div class="min-w-0">
+                  <label class="label" for="cu-date">Día</label>
+                  <input id="cu-date" v-model="meet.date" type="date" class="input" />
+                </div>
+                <div class="min-w-0">
+                  <label class="label" for="cu-time">Hora</label>
+                  <input id="cu-time" v-model="meet.time" type="time" class="input px-2" />
+                </div>
+              </div>
+              <label class="label mt-2" for="cu-place">Lugar</label>
+              <Spinner v-if="!grounds" class="py-2" />
+              <GroundPicker
+                v-else
+                v-model:ground-id="meet.groundId"
+                v-model:place="meet.place"
+                :grounds="groundList"
+                :home-ground-id="grounds.homeGroundId"
+                :match-ground-id="data.matchGround?.id ?? null"
+              />
+              <label class="label mt-2" for="cu-notes">Notas</label>
+              <textarea id="cu-notes" v-model="meet.notes" rows="3" maxlength="1000" class="input" placeholder="Equipación, comida, qué llevar…"></textarea>
+            </template>
+            <template v-else>
+              <p v-if="data.meetAt" class="text-sm text-slate-700">{{ formatKickoff(data.meetAt) }}</p>
+              <p v-else class="text-sm text-slate-500">Sin hora de cita.</p>
+              <GroundCard v-if="data.meetGround || data.meetPlace" :ground="data.meetGround" :place="data.meetPlace" class="mt-2" />
+              <p v-if="data.notes" class="mt-2 whitespace-pre-line text-sm text-slate-700">{{ data.notes }}</p>
+            </template>
+          </section>
 
-        <div v-if="locked" class="flex flex-col gap-2">
-          <button type="button" class="btn-secondary" :disabled="busy !== null" :title="busy !== null ? 'Espera a que termine lo que se está guardando' : undefined" @click="startEditing">
-            <Icon icon="pen" class="mr-1.5 h-3.5 w-3.5" />Modificar la convocatoria
-          </button>
-          <p class="text-xs text-slate-500">Ya está enviada: la lista queda fija para que nadie cambie a un jugador sin querer. Para cambiar a quién llevas o la cita, modifícala; antes de guardar verás quién entra y quién sale.</p>
-        </div>
-        <div v-else-if="editable" class="flex flex-col gap-2">
-          <button v-if="data.status !== 'Published'" type="button" class="btn-secondary" v-busy="busy === 'draft'" :disabled="!!draftBlocked" :title="draftBlocked" @click="save(false)">Guardar borrador</button>
-          <button type="button" class="btn-primary" :disabled="!!sendBlocked" :title="sendBlocked" @click="reviewOpen = true">
-            <Icon icon="paper-plane" class="mr-1.5 h-3.5 w-3.5" />{{ data.status === 'Published' ? 'Repasar y avisar a quien cambie' : 'Repasar y enviar' }}
-          </button>
-          <button v-if="editing" type="button" class="btn-ghost" :disabled="busy !== null" :title="busy !== null ? 'Espera a que termine lo que se está guardando' : undefined" @click="stopEditing">Cancelar los cambios</button>
-          <p class="text-xs text-slate-500">
-            <template v-if="data.status === 'Published'">Antes de guardar verás quién entra y quién sale: solo reciben aviso ellos (y todos los convocados si cambia la cita); a quien entra o sale se le borra la firma anterior.</template>
-            <template v-else>El borrador solo lo ve el cuerpo técnico. Antes de enviarla la repasas; al enviarla, a cada jugador con cuenta le llega el aviso de si va o no y verás quién la ha abierto (doble check verde) y quién la ha firmado.</template>
-          </p>
-        </div>
-      </aside>
-    </div>
+          <section v-if="!data.closed" class="card text-sm" aria-labelledby="cu-rules">
+            <h3 id="cu-rules" class="mb-1.5 flex items-center gap-2 font-semibold text-slate-900"><Icon icon="circle-info" class="h-3.5 w-3.5 text-accent-400" />Sanciones de liga</h3>
+            <p class="text-slate-600">
+              La 5.ª amarilla (y la 10.ª, la 15.ª…) y cada expulsión dejan al jugador sin el siguiente partido de liga: no se le puede convocar ni ponerle en el acta.
+              Con 4 amarillas en el ciclo está apercibido: puede ir, pero una más le deja fuera del siguiente.
+            </p>
+            <p class="mt-1.5 text-xs text-slate-500">
+              Salen de las tarjetas de las actas: la oficial de la federación cuando está cerrada y, mientras tanto, la interna. Cuando el comité de competición publica la sanción de un jugador, cuentan los partidos que pone (una roja directa puede costar varios); hasta entonces, el mínimo.
+            </p>
+            <p v-if="suspendedCount" class="mt-1.5 text-xs font-medium text-red-700">{{ suspendedCount === 1 ? '1 jugador sancionado' : `${suspendedCount} jugadores sancionados` }} para este partido.</p>
+            <p v-if="warned.length" class="mt-1 text-xs font-medium text-amber-700">{{ warned.length === 1 ? '1 jugador apercibido' : `${warned.length} jugadores apercibidos` }}.</p>
+          </section>
+
+          <section v-if="data.status === 'Published' && data.canEdit" class="card text-sm">
+            <h3 class="mb-2 font-semibold text-slate-900">Entrega</h3>
+            <ul class="space-y-1">
+              <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check" class="mr-1.5 h-3 w-3 text-slate-400" />Enviada</span><strong class="tabular-nums text-slate-700">{{ data.counts.sent }}</strong></li>
+              <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check-double" class="mr-1.5 h-3 w-3 text-emerald-500" />Vista</span><strong class="tabular-nums text-emerald-600">{{ data.counts.seen }}</strong></li>
+            </ul>
+            <button v-if="canEdit && unseen > 0" type="button" class="btn-secondary mt-3 w-full px-3 py-1.5 text-xs" v-busy="busy === 'resend'" :disabled="busy !== null" @click="resend"><Icon icon="paper-plane" class="mr-1.5 h-3 w-3" />Reenviar a quien no la ha visto ({{ unseen }})</button>
+            <p class="mt-2 text-xs text-slate-500">Un check: le ha llegado el aviso. Doble check verde: la ha abierto. La firma va aparte.</p>
+          </section>
+
+          <section v-if="data.status === 'Published'" class="card text-sm">
+            <h3 class="mb-2 font-semibold text-slate-900">Firmas</h3>
+            <ul class="space-y-1">
+              <li class="flex justify-between gap-2"><span class="text-slate-600">Convocados que han firmado</span><strong class="tabular-nums text-emerald-600">{{ data.counts.confirmed }}</strong></li>
+              <li class="flex justify-between gap-2"><span class="text-slate-600">Sin firmar</span><strong class="tabular-nums text-amber-600">{{ data.counts.pending }}</strong></li>
+              <li class="flex justify-between gap-2"><span class="text-slate-600">No convocados enterados</span><strong class="tabular-nums text-slate-700">{{ data.counts.acknowledged }}</strong></li>
+            </ul>
+            <p v-if="data.publishedAt" class="mt-2 text-xs text-slate-500">Enviada el {{ formatKickoff(data.publishedAt) }}.</p>
+          </section>
+
+          <div v-if="locked" class="flex flex-col gap-2">
+            <button type="button" class="btn-secondary" :disabled="busy !== null" :title="busy !== null ? 'Espera a que termine lo que se está guardando' : undefined" @click="startEditing">
+              <Icon icon="pen" class="mr-1.5 h-3.5 w-3.5" />Modificar la convocatoria
+            </button>
+            <p class="text-xs text-slate-500">Ya está enviada: la lista queda fija para que nadie cambie a un jugador sin querer. Para cambiar a quién llevas o la cita, modifícala; antes de guardar verás quién entra y quién sale.</p>
+          </div>
+          <div v-else-if="editable" class="flex flex-col gap-2">
+            <button v-if="data.status !== 'Published'" type="button" class="btn-secondary" v-busy="busy === 'draft'" :disabled="!!draftBlocked" :title="draftBlocked" @click="save(false)">Guardar borrador</button>
+            <button type="button" class="btn-primary" :disabled="!!sendBlocked" :title="sendBlocked" @click="reviewOpen = true">
+              <Icon icon="paper-plane" class="mr-1.5 h-3.5 w-3.5" />{{ data.status === 'Published' ? 'Repasar y avisar a quien cambie' : 'Repasar y enviar' }}
+            </button>
+            <button v-if="editing" type="button" class="btn-ghost" :disabled="busy !== null" :title="busy !== null ? 'Espera a que termine lo que se está guardando' : undefined" @click="stopEditing">Cancelar los cambios</button>
+            <p class="text-xs text-slate-500">
+              <template v-if="data.status === 'Published'">Antes de guardar verás quién entra y quién sale: solo reciben aviso ellos (y todos los convocados si cambia la cita); a quien entra o sale se le borra la firma anterior.</template>
+              <template v-else>El borrador solo lo ve el cuerpo técnico. Antes de enviarla la repasas; al enviarla, a cada jugador con cuenta le llega el aviso de si va o no y verás quién la ha abierto (doble check verde) y quién la ha firmado.</template>
+            </p>
+          </div>
+        </aside>
+      </div>
+    </template>
 
     <CallUpReviewModal
       :open="reviewOpen"

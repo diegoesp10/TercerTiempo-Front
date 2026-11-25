@@ -7,6 +7,7 @@ import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Skeleton from '@/components/ui/Skeleton.vue';
 import SuggestionsPanel from '@/components/suggestions/SuggestionsPanel.vue';
+import { callUpClosed, callUpDueLabel, nextCallUpOf } from '@/components/trainings/callUpState';
 import { useAsync } from '@/composables/useAsync';
 import { useSquad } from '@/composables/useSquad';
 import { downloadPaperSheet } from '@/utils/paperSheet';
@@ -45,8 +46,10 @@ const isInsider = computed(() => canReview.value || detail.value?.summary.myRole
 const callUps = useAsync(() => (isInsider.value ? api.trainings.callUps(squadId.value) : Promise.resolve([] as CallUpSummaryDto[])), { redirectOnError: false });
 const callUpOf = (matchId: string) => callUps.data.value?.find((c) => c.matchId === matchId) ?? null;
 
+type CallUpBadge = { tone: Tone; label: string; icon?: string };
+
 /** Al jugador, cómo va en la convocatoria enviada; al club y al cuerpo técnico, cuántos van o que está en borrador. */
-function callUpBadge(matchId: string): { tone: Tone; label: string } | null {
+function callUpBadge(matchId: string): CallUpBadge | null {
   const callUp = callUpOf(matchId);
   if (!callUp) return null;
   if (callUp.status !== 'Published') return canReview.value ? { tone: 'amber', label: 'Convocatoria en borrador' } : null;
@@ -56,12 +59,31 @@ function callUpBadge(matchId: string): { tone: Tone; label: string } | null {
     : { tone: 'slate', label: 'No convocado' };
 }
 
-const nextBadge = computed<{ tone: Tone; label: string } | null>(() => {
+// La convocatoria que toca preparar es la del primer partido que aún no ha empezado (al empezar, se cierra): mientras no
+// se envíe, el club y el cuerpo técnico la ven en ámbar con el aviso, esté ese partido arriba o en «Próximos».
+const callUpTarget = computed(() => nextCallUpOf(upcoming.value, (m) => m.match));
+function dueBadge(matchId: string): CallUpBadge | null {
+  if (!canReview.value || !callUps.data.value || callUpTarget.value?.match.id !== matchId) return null;
+  const callUp = callUpOf(matchId);
+  return callUp?.status === 'Published' ? null : { tone: 'amber', label: callUpDueLabel(callUp?.status), icon: 'triangle-exclamation' };
+}
+
+const nextBadge = computed<CallUpBadge | null>(() => {
   if (!nextMatch.value) return null;
+  const due = dueBadge(nextMatch.value.id);
+  if (due) return due;
+  // Ya empezado: lo enviado se queda y lo que no se llegó a enviar ya no cuenta.
+  if (callUpClosed(nextMatch.value)) return callUpOf(nextMatch.value.id)?.status === 'Published' ? callUpBadge(nextMatch.value.id) : null;
   const badge = callUpBadge(nextMatch.value.id);
   if (badge) return badge;
   return canReview.value && callUps.data.value ? { tone: 'slate', label: 'Convocatoria sin preparar' } : null;
 });
+// El botón dice lo que falta: hacerla o enviarla; con ella enviada (o ya sin tiempo), solo verla.
+const nextCallUpLabel = computed(() => {
+  if (!nextMatch.value || !dueBadge(nextMatch.value.id)) return 'Convocatoria';
+  return callUpOf(nextMatch.value.id) ? 'Enviar la convocatoria' : 'Hacer la convocatoria';
+});
+const laterBadges = computed(() => new Map(laterMatches.value.map((m) => [m.match.id, dueBadge(m.match.id) ?? callUpBadge(m.match.id)])));
 
 // El jugador va a su convocatoria (allí la firma) en cuanto se la envían.
 const myNextCallUp = computed(() => {
@@ -100,14 +122,14 @@ function downloadPaper(withNextMatch: boolean) {
     <!-- Al club y al cuerpo técnico, la previa y la convocatoria van en botones; a los demás el rival lleva al partido. -->
     <NextMatchCard v-if="nextMatch" class="mb-6" :match="nextMatch" :team-id="teamId" :to="canReview ? null : undefined">
       <template v-if="nextBadge" #badges>
-        <Badge :tone="nextBadge.tone">{{ nextBadge.label }}</Badge>
+        <Badge :tone="nextBadge.tone"><Icon v-if="nextBadge.icon" :icon="nextBadge.icon" class="mr-1 h-2.5 w-2.5" />{{ nextBadge.label }}</Badge>
       </template>
       <template v-if="canReview" #actions>
         <RouterLink :to="{ name: 'sheet', params: { squadId, matchId: nextMatch.id }, query: { tab: 'previa' } }" class="btn-secondary">
           <Icon icon="chart-line" class="mr-1.5 h-3.5 w-3.5" />Previa
         </RouterLink>
         <RouterLink :to="{ name: 'sheet', params: { squadId, matchId: nextMatch.id }, query: { tab: 'convocatoria' } }" class="btn-primary">
-          <Icon icon="users" class="mr-1.5 h-3.5 w-3.5" />Convocatoria
+          <Icon icon="users" class="mr-1.5 h-3.5 w-3.5" />{{ nextCallUpLabel }}
         </RouterLink>
       </template>
       <template v-else-if="myCallUpAction" #actions>
@@ -172,8 +194,10 @@ function downloadPaper(withNextMatch: boolean) {
           :team-id="teamId"
           :to="canReview ? { name: 'sheet', params: { squadId, matchId: item.match.id }, query: { tab: 'previa' } } : undefined"
         >
-          <template v-if="canReview || callUpBadge(item.match.id)" #badge>
-            <Badge v-if="callUpBadge(item.match.id)" :tone="callUpBadge(item.match.id)!.tone">{{ callUpBadge(item.match.id)!.label }}</Badge>
+          <template v-if="canReview || laterBadges.get(item.match.id)" #badge>
+            <Badge v-if="laterBadges.get(item.match.id)" :tone="laterBadges.get(item.match.id)!.tone">
+              <Icon v-if="laterBadges.get(item.match.id)!.icon" :icon="laterBadges.get(item.match.id)!.icon!" class="mr-1 h-2.5 w-2.5" />{{ laterBadges.get(item.match.id)!.label }}
+            </Badge>
             <span v-if="canReview" class="inline-flex items-center gap-1 text-xs font-medium text-brand-500"><Icon icon="chart-line" class="h-3 w-3" />Previa</span>
           </template>
         </MatchRow>

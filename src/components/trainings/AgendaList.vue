@@ -3,6 +3,7 @@ import MatchResultPill from '@/components/matches/MatchResultPill.vue';
 import { outcomeFor, resultStyle } from '@/components/matches/matchResult';
 import Badge from '@/components/ui/Badge.vue';
 import TeamName from '@/components/teams/TeamName.vue';
+import { callUpClosed, callUpDueLabel } from '@/components/trainings/callUpState';
 import { unavailableOf, unavailableReason, unavailableSummary } from '@/components/trainings/unavailable';
 import type { SquadAgendaItemDto, TrainingSummaryDto } from '@/types/api';
 import { opponentOf } from '@/utils/crests';
@@ -53,6 +54,10 @@ function matchCard(item: SquadAgendaItemDto) {
   return props.compact ? 'opacity-60' : 'border-dashed border-l-slate-500 bg-surface-2/60 opacity-70';
 }
 const key = (item: SquadAgendaItemDto) => (item.kind === 'Match' ? `m:${item.match!.id}` : `t:${item.training!.id}`);
+// La convocatoria se cierra al empezar el partido: si no se llegó a enviar, ya no la habrá.
+const closedWithout = (item: SquadAgendaItemDto) => callUpClosed(item.match!) && item.callUp?.status !== 'Published';
+// La del próximo partido, mientras no esté enviada, es la que hay que hacer: en ámbar para quien la prepara.
+const due = (item: SquadAgendaItemDto) => props.canManage && !!item.isNext && item.callUp?.status !== 'Published';
 </script>
 
 <template>
@@ -84,6 +89,10 @@ const key = (item: SquadAgendaItemDto) => (item.kind === 'Match' ? `m:${item.mat
             <template v-else-if="item.done">
               <Badge tone="slate">Ya realizado<template v-if="score(item)"> · {{ score(item) }}</template></Badge>
             </template>
+            <Badge v-else-if="closedWithout(item)" tone="slate"><Icon icon="lock" class="mr-1 h-2.5 w-2.5" />Sin convocatoria</Badge>
+            <Badge v-else-if="due(item)" tone="amber" title="Es el próximo partido: prepara la convocatoria y envíala">
+              <Icon icon="triangle-exclamation" class="mr-1 h-2.5 w-2.5" />{{ callUpDueLabel(item.callUp?.status) }}
+            </Badge>
             <Badge v-else-if="!item.callUp" tone="slate">{{ canManage ? 'Convocatoria sin preparar' : 'Convocatoria sin enviar' }}</Badge>
             <Badge v-else-if="item.callUp.status === 'Draft'" tone="amber">Convocatoria en borrador</Badge>
             <template v-else>

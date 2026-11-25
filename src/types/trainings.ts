@@ -353,6 +353,8 @@ export interface MatchCallUpDto {
   suggestedSize?: number | null;
   /** Huella de lo que se ve: si la de `callUpStamp` no coincide, alguien ha firmado o algo ha cambiado. */
   stamp: string;
+  /** Es el próximo partido del equipo que aún no ha empezado: el de la convocatoria que toca preparar. */
+  isNext?: boolean;
 }
 
 export interface CallUpStampDto {
@@ -395,6 +397,8 @@ export interface SquadAgendaItemDto {
   callUp: CallUpSummaryDto | null;
   /** Solo en Match y mientras no se ha jugado: quién no puede jugar (sancionados y lesionados), haya convocatoria o no. */
   unavailable?: UnavailablePlayerDto[] | null;
+  /** Solo en Match: es el próximo partido del equipo que aún no ha empezado, el de la convocatoria que toca preparar. */
+  isNext?: boolean;
 }
 
 export type UnavailabilityKind = 'Suspended' | 'Injured';
