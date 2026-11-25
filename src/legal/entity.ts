@@ -16,7 +16,7 @@ export const legalEntity = {
 };
 
 /** Fecha de la última versión de los textos legales. */
-export const legalVersion = '24 de noviembre de 2026';
+export const legalVersion = '25 de noviembre de 2026';
 
 /** Fuentes públicas de datos deportivos que usa la plataforma, con atribución. */
 export const dataSources = [

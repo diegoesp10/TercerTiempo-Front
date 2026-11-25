@@ -2213,6 +2213,8 @@ export interface VideoAnalysisTeamDto {
   fouls: number;
   /** Fueras de juego que le pitan. */
   offsides: number;
+  /** Cuándo pasó cada uno en el vídeo; null en análisis anteriores a Ojeador 2.1.2. */
+  moments: VideoTeamMoments | null;
 }
 
 export interface VideoPlayerActions {
@@ -2230,6 +2232,38 @@ export interface VideoPlayerActions {
   /** Faltas que recibe y fueras de juego: solo se enseñan. */
   foulsReceived: number;
   offsides: number;
+}
+
+/**
+ * Segundo del vídeo (desde el principio del archivo, con una décima) de cada acción del jugador, en orden: los mismos
+ * filtros que sus contadores, uno por acción. Llega desde Ojeador 2.1.2; null en análisis anteriores.
+ */
+export interface VideoPlayerMoments {
+  shots: number[];
+  /** Los tiros de shots que fueron a puerta. */
+  shotsOnTarget: number[];
+  goals: number[];
+  saves: number[];
+  recoveries: number[];
+  /** Todas las pérdidas; las que fueron un pase al rival están también en passesFailed, con el mismo segundo. */
+  ballLosses: number[];
+  passesCompleted: number[];
+  passesFailed: number[];
+  fouls: number[];
+  foulsReceived: number[];
+  offsides: number[];
+}
+
+/** Lo mismo para un equipo: el segundo del vídeo de cada tiro, gol, córner, saque, falta y fuera de juego (Ojeador 2.1.2). */
+export interface VideoTeamMoments {
+  shots: number[];
+  shotsOnTarget: number[];
+  goals: number[];
+  corners: number[];
+  throwIns: number[];
+  goalKicks: number[];
+  fouls: number[];
+  offsides: number[];
 }
 
 /** Jugador seguido por el analizador («tracklet»): se corta al perderlo de vista, así que un jugador puede tener varios. */
@@ -2255,6 +2289,8 @@ export interface VideoAnalysisPlayerDto {
   suggestedSquadPlayerId: string | null;
   /** Minutos que jugó según el acta oficial cerrada (por descarte: sin cambio, el partido entero); null sin acta cerrada o sin identificar. */
   sheetMinutes: number | null;
+  /** Cuándo pasó cada acción en el vídeo; null en análisis anteriores a Ojeador 2.1.2. */
+  moments: VideoPlayerMoments | null;
 }
 
 export interface VideoAnalysisPartDto {
@@ -2298,6 +2334,8 @@ export interface VideoAnalysisPartDto {
   suggestedOurTeam: number | null;
   /** Segundos con jugadores a la vista sin identificar, por equipo. */
   unidentifiedSeconds: Record<string, number> | null;
+  /** Formato del archivo que se reproduce (para ver cada acción en su momento). */
+  contentType: string | null;
 }
 
 export interface MatchVideoAnalysisDto {

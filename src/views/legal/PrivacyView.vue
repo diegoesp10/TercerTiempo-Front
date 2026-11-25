@@ -94,9 +94,9 @@ import { dataSources, legalEntity } from '@/legal/entity';
             <td data-label="Base jurídica">Interés legítimo (art. 6.1.f).</td>
           </tr>
           <tr>
-            <td data-label="Datos"><strong>Vídeos de partidos y su análisis</strong>: imágenes y voces de las personas que aparecen; quién lo subió y cuándo (el archivo se guarda con el nombre del partido, los dos equipos y la fecha, y no con el nombre que tenía); del análisis, la posición de cada jugador en el campo, el color de su camiseta, su dorsal, las acciones propuestas y con qué versión del analizador se hizo.</td>
+            <td data-label="Datos"><strong>Vídeos de partidos y su análisis</strong>: imágenes y voces de las personas que aparecen; quién lo subió y cuándo (el archivo se guarda con el nombre del partido, los dos equipos y la fecha, y no con el nombre que tenía); del análisis, la posición de cada jugador en el campo, el color de su camiseta, su dorsal, las acciones propuestas con el segundo del vídeo en que pasó cada una y con qué versión del analizador se hizo.</td>
             <td data-label="Origen">El cuerpo técnico que lo sube; el análisis lo hace la plataforma.</td>
-            <td data-label="Finalidad">Alojar el vídeo, mostrarlo a quien tiene acceso y proponer acciones para el acta interna, que el cuerpo técnico revisa antes de guardarlas.</td>
+            <td data-label="Finalidad">Alojar el vídeo, mostrarlo a quien tiene acceso (también en el momento de cada acción propuesta) y proponer acciones para el acta interna, que el cuerpo técnico revisa antes de guardarlas.</td>
             <td data-label="Base jurídica">Ejecución del contrato con quien lo sube; respecto de las personas que aparecen, el consentimiento o la base que haya obtenido el club. El análisis no usa reconocimiento facial ni ningún dato biométrico: identifica a cada jugador por su dorsal y el acta oficial.</td>
           </tr>
           <tr>

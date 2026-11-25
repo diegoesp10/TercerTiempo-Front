@@ -16,8 +16,10 @@ const props = withDefaults(
     tone?: 'action' | 'brand';
     disabled?: boolean;
     busy?: boolean;
+    /** Ancho mínimo de cada casilla en rejilla; más ancho cuando algún nombre lleva una palabra larga («Recuperaciones»), para no partirla. */
+    minItem?: string;
   }>(),
-  { look: 'box', size: 'sm', tone: 'action', disabled: false, busy: false },
+  { look: 'box', size: 'sm', tone: 'action', disabled: false, busy: false, minItem: '5rem' },
 );
 const emit = defineEmits<{ 'update:modelValue': [value: T] }>();
 
@@ -44,8 +46,9 @@ function choose(value: T) {
 <template>
   <div
     ref="root"
-    class="group/choice grid w-full min-w-0 max-w-full grid-cols-[repeat(auto-fit,minmax(min(100%,5rem),1fr))] gap-0.5 border border-line data-[row]:inline-flex data-[row]:w-auto"
+    class="group/choice grid w-full min-w-0 max-w-full grid-cols-[repeat(auto-fit,minmax(min(100%,var(--choice-min)),1fr))] gap-0.5 border border-line data-[row]:inline-flex data-[row]:w-auto"
     :class="pill ? 'rounded-2xl bg-surface-2 p-1 data-[row]:rounded-full' : 'rounded-lg p-0.5'"
+    :style="{ '--choice-min': minItem }"
     role="radiogroup"
     :aria-label="label"
   >

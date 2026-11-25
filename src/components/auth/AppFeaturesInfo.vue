@@ -60,6 +60,7 @@ const sections: { icon: string; title: string; items: string[] }[] = [
       'Vídeo con su análisis en directo (y pausa): reconoce a cada jugador por su dorsal (al portero, solo si todo cuadra: junto a la portería que defiende en cada parte, con su equipación de portero y un dorsal del acta) y saca faltas y fueras de juego; los minutos, del acta oficial.',
       'Cada vídeo, con el nombre del partido (los dos equipos y la fecha) en cuanto se sube; lo que ocupa solo lo ve quien lo subió.',
       'Cada análisis dice con qué versión del analizador (Ojeador) se hizo, también en los datos del equipo que se vuelcan de él.',
+      'Cada acción del análisis, a un clic de verla en el vídeo: los pases, las recuperaciones, las pérdidas, los tiros, los goles, las faltas, los córners y los saques de cada jugador y de los dos equipos, en el segundo en que pasaron, de una en una o seguidas.',
       'Estadísticas y comparador, con el dato de cada puesto (paradas, despejes, pases, tiros) y el resumen de cada jugador como si jugase en otro, el partido a partido y tablas ordenables.',
       'La plantilla con fichas, fotos y jugadores a prueba que pasan a ficha desde «Añadir jugador», con lo que se les anotó a prueba; todas las listas de jugadores, agrupables por posición.',
       'Los jugadores que causan baja pasan al grupo «De baja» con su historial, sin contar para nada más, y se pueden reincorporar.',

@@ -5,19 +5,48 @@ import 'plyr/dist/plyr.css';
 import BrandMark from '@/components/layout/BrandMark.vue';
 
 // Visor del partido sobre Plyr: el navegador pide el archivo por rangos (la API responde 206), así que se puede saltar
-// en la línea de tiempo sin descargarlo entero. Mientras el navegador espera datos se muestra el logo animado.
-const props = defineProps<{ src: string; type: string; title?: string }>();
+// en la línea de tiempo sin descargarlo entero. Mientras el navegador espera datos se muestra el logo animado. Con start
+// (segundos) empieza ahí y en marcha; seek() salta a otro momento sin volver a cargar el vídeo.
+const props = defineProps<{ src: string; type: string; title?: string; start?: number | null }>();
 
 const video = ref<HTMLVideoElement | null>(null);
 const buffering = ref(false);
 const failed = ref(false);
 let player: Plyr | null = null;
 
+// Hasta que el navegador conoce la duración no se puede saltar: se guarda el último salto pedido y se hace entonces.
+let pendingSeek: number | null = null;
+function jump(element: HTMLVideoElement, seconds: number) {
+  const end = Number.isFinite(element.duration) ? element.duration : seconds;
+  element.currentTime = Math.min(Math.max(0, seconds), end);
+  // Sin un clic reciente el navegador puede no dejar arrancar solo: se queda parado en su sitio, listo para darle al play.
+  void element.play()?.catch(() => undefined);
+}
+function seek(seconds: number) {
+  const element = video.value;
+  if (!element) return;
+  if (element.readyState >= HTMLMediaElement.HAVE_METADATA) {
+    jump(element, seconds);
+    return;
+  }
+  if (pendingSeek === null) {
+    element.addEventListener('loadedmetadata', () => {
+      const target = pendingSeek;
+      pendingSeek = null;
+      if (target !== null) jump(element, target);
+    }, { once: true });
+  }
+  pendingSeek = seconds;
+}
+defineExpose({ seek });
+
 function attach() {
   if (!video.value) return;
   player = new Plyr(video.value, {
-    // Iconos servidos por la propia web (por defecto Plyr los pide a cdn.plyr.io).
+    // Iconos y vídeo en blanco servidos por la propia web: por defecto Plyr los pide a cdn.plyr.io, que la política de
+    // seguridad no deja cargar. El vídeo en blanco es el que pone al cerrar o cambiar de vídeo para cortar la descarga.
     iconUrl: '/vendor/plyr/plyr.svg',
+    blankVideo: '/vendor/plyr/blank.mp4',
     controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'settings', 'pip', 'fullscreen'],
     settings: ['speed'],
     speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
@@ -39,7 +68,10 @@ function attach() {
   element.addEventListener('error', () => { failed.value = true; buffering.value = false; });
 }
 
-onMounted(attach);
+onMounted(() => {
+  attach();
+  if (props.start != null) seek(props.start);
+});
 watch(() => props.src, () => { failed.value = false; buffering.value = false; player?.source && (player.source = { type: 'video', title: props.title, sources: [{ src: props.src, type: props.type }] }); });
 onBeforeUnmount(() => { player?.destroy(); player = null; });
 </script>

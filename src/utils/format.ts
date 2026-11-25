@@ -388,6 +388,15 @@ export const videoStatusLabels: Record<VideoStatus, string> = {
 
 export const formatMinutes = (seconds: number) => `${Math.round(seconds / 60)} min`;
 
+/** Momento del vídeo como lo escribe el analizador: «03:26» y, pasada la hora, «1:01:35». */
+export function formatVideoClock(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+  const rest = String(total % 60).padStart(2, '0');
+  return hours ? `${hours}:${minutes}:${rest}` : `${minutes}:${rest}`;
+}
+
 export const formatBytes = (bytes: number) =>
   bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : bytes >= 1024 ** 2 ? `${(bytes / 1024 ** 2).toFixed(0)} MB` : `${Math.ceil(bytes / 1024)} KB`;
 

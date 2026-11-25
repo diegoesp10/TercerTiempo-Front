@@ -4,6 +4,17 @@ import { api } from '@/api';
 import { ApiError, errorMessage } from '@/api/http';
 import VideoAnalysisProgress from '@/components/sheet/VideoAnalysisProgress.vue';
 import VideoCrop from '@/components/sheet/VideoCrop.vue';
+import VideoMomentsModal from '@/components/sheet/VideoMomentsModal.vue';
+import {
+  hasMoments,
+  momentKindLabels,
+  playerMoments,
+  teamMoments,
+  type MomentKind,
+  type MomentSide,
+  type MomentVideo,
+  type VideoMoment,
+} from '@/components/sheet/videoMoments';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vue';
@@ -15,7 +26,6 @@ import type {
   VideoAnalysisPartDto,
   VideoAnalysisPlayerDto,
   VideoAnalysisState,
-  VideoPlayerActions,
   VideoPossessionConfidence,
   VideoTeamField,
 } from '@/types/api';
@@ -28,7 +38,8 @@ import { formatKickoff, positionShortLabels, videoPartLabels } from '@/utils/for
  * equipos es el nuestro y cada jugador llega ya con su ficha (el técnico solo corrige si hace falta). Sin acta, cada línea
  * es un tramo seguido que el técnico asigna a mano. Con el acta oficial cerrada, al volcar los minutos (por descarte: sin
  * cambio, el partido entero), la titularidad, los goles y las tarjetas salen de ella, también para los que no salen en el
- * vídeo. Nada se escribe hasta «Volcar al acta».
+ * vídeo. Nada se escribe hasta «Volcar al acta». Desde Ojeador 2.1.2 cada acción (de un jugador o del equipo) se puede
+ * ver en el vídeo, en el segundo en que pasó.
  */
 const props = defineProps<{
   squadId: string;
@@ -243,6 +254,8 @@ interface TeamRow {
   current: [number | null, number | null];
   /** Por qué no se propone, cuando el vídeo sí tiene el dato pero no se vuelca (la posesión de confianza baja). */
   note?: string;
+  /** Con qué filtro se ve en el vídeo (la posesión no es una acción). */
+  kind?: MomentKind;
 }
 
 const stats = computed<TeamMatchStatsDto | null>(() => props.sheet.teamStats ?? null);
@@ -272,7 +285,7 @@ const teamRows = computed<TeamRow[]>(() => {
 
   const s = stats.value;
   const counter = (field: VideoTeamField, label: string, key: Counter, mineNow: number | undefined, theirsNow: number | undefined): TeamRow =>
-    ({ field, label, video: [sum(mine, key), sum(theirs, key)], current: [mineNow ?? null, theirsNow ?? null] });
+    ({ field, label, video: [sum(mine, key), sum(theirs, key)], current: [mineNow ?? null, theirsNow ?? null], kind: key });
 
   return [
     {
@@ -322,7 +335,7 @@ const playerOptions = computed<SelectOption[]>(() =>
   })),
 );
 
-const hasActions = (a: VideoPlayerActions) =>
+const hasActions = (a: VideoAnalysisPlayerDto['proposal']) =>
   a.shots > 0 || a.goals > 0 || a.saves > 0 || a.recoveries > 0 || a.ballLosses > 0 || a.passesAttempted > 0 || (a.fouls ?? 0) > 0;
 
 /** Los del equipo elegido: identificados, por dorsal; si no, primero los que traen algo para el acta y los que más se ha visto. */
@@ -334,19 +347,88 @@ function playersOf(part: VideoAnalysisPartDto): VideoAnalysisPlayerDto[] {
 const samplesOf = (part: VideoAnalysisPartDto, team: number) =>
   part.players.filter((p) => p.team === team && p.cropUrl).sort((a, b) => b.minutesVisible - a.minutesVisible).slice(0, 4);
 
-function describe(a: VideoPlayerActions): string {
-  const bits = [
-    a.shots > 0 && `${a.shots} ${a.shots === 1 ? 'tiro' : 'tiros'}${a.shotsOnTarget > 0 ? ` (${a.shotsOnTarget} a puerta)` : ''}`,
-    a.goals > 0 && `${a.goals} ${a.goals === 1 ? 'gol' : 'goles'}`,
-    a.passesAttempted > 0 && `${a.passesCompleted}/${a.passesAttempted} pases`,
-    a.recoveries > 0 && `${a.recoveries} ${a.recoveries === 1 ? 'recuperación' : 'recuperaciones'}`,
-    a.ballLosses > 0 && `${a.ballLosses} ${a.ballLosses === 1 ? 'pérdida' : 'pérdidas'}`,
-    a.saves > 0 && `${a.saves} ${a.saves === 1 ? 'parada' : 'paradas'}`,
-    (a.fouls ?? 0) > 0 && `${a.fouls} ${a.fouls === 1 ? 'falta cometida' : 'faltas cometidas'}`,
-    (a.foulsReceived ?? 0) > 0 && `${a.foulsReceived} ${a.foulsReceived === 1 ? 'falta recibida' : 'faltas recibidas'}`,
-    (a.offsides ?? 0) > 0 && `${a.offsides} ${a.offsides === 1 ? 'fuera de juego' : 'fueras de juego'}`,
-  ].filter(Boolean);
-  return bits.length ? bits.join(' · ') : 'Sin acciones con balón que llevar al acta';
+interface ActionBit {
+  kind: MomentKind;
+  text: string;
+  /** Cuántas tienen su segundo en el vídeo (0: no se pueden ver; p. ej., un análisis anterior a Ojeador 2.1.2). */
+  moments: number;
+}
+
+/** Las acciones del jugador en palabras («3/4 pases»), cada una con el filtro con el que se ve en el vídeo. */
+function actionBits(player: VideoAnalysisPlayerDto): ActionBit[] {
+  const a = player.proposal;
+  const m = player.moments;
+  const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+  const bits: (ActionBit | false)[] = [
+    a.shots > 0 && {
+      kind: 'shots',
+      text: `${plural(a.shots, 'tiro', 'tiros')}${a.shotsOnTarget > 0 ? ` (${a.shotsOnTarget} a puerta)` : ''}`,
+      moments: m?.shots.length ?? 0,
+    },
+    a.goals > 0 && { kind: 'goals', text: plural(a.goals, 'gol', 'goles'), moments: m?.goals.length ?? 0 },
+    a.passesAttempted > 0 && {
+      kind: 'passes',
+      text: `${a.passesCompleted}/${a.passesAttempted} pases`,
+      moments: (m?.passesCompleted.length ?? 0) + (m?.passesFailed.length ?? 0),
+    },
+    a.recoveries > 0 && { kind: 'recoveries', text: plural(a.recoveries, 'recuperación', 'recuperaciones'), moments: m?.recoveries.length ?? 0 },
+    a.ballLosses > 0 && { kind: 'ballLosses', text: plural(a.ballLosses, 'pérdida', 'pérdidas'), moments: m?.ballLosses.length ?? 0 },
+    a.saves > 0 && { kind: 'saves', text: plural(a.saves, 'parada', 'paradas'), moments: m?.saves.length ?? 0 },
+    (a.fouls ?? 0) > 0 && { kind: 'fouls', text: plural(a.fouls, 'falta cometida', 'faltas cometidas'), moments: m?.fouls.length ?? 0 },
+    (a.foulsReceived ?? 0) > 0 && {
+      kind: 'foulsReceived',
+      text: plural(a.foulsReceived, 'falta recibida', 'faltas recibidas'),
+      moments: m?.foulsReceived.length ?? 0,
+    },
+    (a.offsides ?? 0) > 0 && { kind: 'offsides', text: plural(a.offsides, 'fuera de juego', 'fueras de juego'), moments: m?.offsides.length ?? 0 },
+  ];
+  return bits.filter((bit): bit is ActionBit => !!bit);
+}
+
+const playerTitle = (part: VideoAnalysisPartDto, player: VideoAnalysisPlayerDto) =>
+  part.identified ? `Dorsal ${player.shirtNumber}${player.sheetName ? ` · ${player.sheetName}` : ''}` : `Seguido n.º ${player.tracklet}`;
+
+// --- Ver en el vídeo: cada acción en el segundo en que pasó ---
+
+interface MomentsView {
+  title: string;
+  subtitle: string;
+  moments: VideoMoment[];
+  kind: MomentKind | null;
+  sides: Record<MomentSide, string> | null;
+}
+// Lo último que se abrió se queda mientras la ventana se cierra (si no, se vaciaría durante el fundido).
+const momentsView = ref<MomentsView | null>(null);
+const momentsOpen = ref(false);
+const momentVideos = computed<MomentVideo[]>(() =>
+  parts.value.map((p) => ({ videoId: p.videoId, contentType: p.contentType, label: videoPartLabels[p.part], title: p.title })));
+const sideNames = computed<Record<MomentSide, string>>(() => ({ ours: props.sheet.squad.teamName, rival: rivalName.value }));
+
+function watchPlayer(part: VideoAnalysisPartDto, player: VideoAnalysisPlayerDto, kind: MomentKind) {
+  momentsView.value = {
+    title: playerTitle(part, player),
+    subtitle: `${momentKindLabels[kind]} en el vídeo · ${videoPartLabels[part.part]} · ${part.title}`,
+    moments: playerMoments(part, player),
+    kind,
+    sides: null,
+  };
+  momentsOpen.value = true;
+}
+
+/** Las de los dos equipos, sumadas las partes elegidas (como la tabla). */
+const teamMomentList = computed<VideoMoment[]>(() =>
+  chosenParts.value.flatMap((part) => teamMoments(part, ourTeam[part.videoId] as number, sideNames.value)));
+const teamMomentCount = (kind: MomentKind) => teamMomentList.value.filter((m) => m.kinds.includes(kind)).length;
+
+function watchTeam(kind: MomentKind | null) {
+  momentsView.value = {
+    title: kind ? `${momentKindLabels[kind]} en el vídeo` : 'Las jugadas del partido en el vídeo',
+    subtitle: `${sideNames.value.ours} y ${sideNames.value.rival} · ${chosenParts.value.map((p) => videoPartLabels[p.part]).join(' y ')}`,
+    moments: teamMomentList.value,
+    kind,
+    sides: sideNames.value,
+  };
+  momentsOpen.value = true;
 }
 
 function assign(videoId: string, tracklet: number, value: string | number | null) {
@@ -593,6 +675,11 @@ async function apply(overwrite = false) {
             El campo se ha calibrado con medidas genéricas (120 × 70 m). No hacen falta para la posesión ni para los tiros; las reales, que el club del equipo local
             puede apuntar en la ficha de su equipo, afinan las distancias y los tercios del campo.
           </p>
+          <p v-if="!hasMoments(part)" class="mt-2 text-xs text-slate-500">
+            <Icon icon="circle-info" class="mr-1 h-3 w-3 text-slate-400" />Este análisis es de antes de poder ver cada acción en el vídeo.
+            <template v-if="canManage && analysis.enabled">Si lo vuelves a analizar, cada pase, recuperación, tiro, falta, córner o saque tendrá su botón para verlo en el momento en que pasó.</template>
+            <template v-else>Con un análisis nuevo, cada acción tendrá su botón para verla en el momento en que pasó.</template>
+          </p>
 
           <!-- Cuál de los dos equipos es el nuestro -->
           <fieldset class="mt-4">
@@ -676,7 +763,25 @@ async function apply(overwrite = false) {
                     Del {{ player.from }} al {{ player.to }} · {{ player.minutesVisible }} min a la vista<template v-if="player.sheetMinutes !== null"> · <span class="text-slate-700" title="Por descarte: sin cambio, el partido entero, aunque el vídeo no lo vea todo el rato">{{ player.sheetMinutes }} min jugados según el acta</span></template>
                     · {{ player.distanceM.toLocaleString('es-ES') }} m
                   </p>
-                  <p class="mt-0.5 text-xs" :class="hasActions(player.proposal) ? 'text-slate-700' : 'text-slate-400'">{{ describe(player.proposal) }}</p>
+                  <p v-if="actionBits(player).length === 0" class="mt-0.5 text-xs text-slate-400">Sin acciones con balón que llevar al acta</p>
+                  <p v-else-if="!player.moments" class="mt-0.5 text-xs" :class="hasActions(player.proposal) ? 'text-slate-700' : 'text-slate-400'">
+                    {{ actionBits(player).map((bit) => bit.text).join(' · ') }}
+                  </p>
+                  <!-- Cada acción, a un clic de verla en el vídeo -->
+                  <ul v-else class="mt-1 flex flex-wrap gap-1.5" :aria-label="`Acciones de ${playerTitle(part, player)}`">
+                    <li v-for="bit in actionBits(player)" :key="bit.kind" class="min-w-0 max-w-full">
+                      <button
+                        v-if="bit.moments > 0"
+                        type="button"
+                        class="inline-flex max-w-full items-center gap-1 rounded-full border border-line bg-surface-2 px-2 py-0.5 text-left text-xs font-medium text-slate-700 transition hover:border-brand-400 hover:text-slate-900"
+                        :title="`Ver en el vídeo: ${bit.text}`"
+                        @click="watchPlayer(part, player, bit.kind)"
+                      >
+                        <Icon icon="play" class="h-2.5 w-2.5 shrink-0 text-accent-400" /><span class="break-words">{{ bit.text }}</span>
+                      </button>
+                      <span v-else class="inline-flex px-1 py-0.5 text-xs text-slate-500" title="Esta acción no tiene momento en el vídeo">{{ bit.text }}</span>
+                    </li>
+                  </ul>
                 </div>
                 <div v-if="canManage" class="w-full sm:w-80">
                   <SearchSelect
@@ -718,7 +823,12 @@ async function apply(overwrite = false) {
 
       <!-- Datos de equipo: vídeo frente a acta -->
       <div v-if="teamRows.length > 0" class="mt-5 border-t border-slate-100 pt-4">
-        <h3 class="text-sm font-semibold text-slate-900">Datos del equipo</h3>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="text-sm font-semibold text-slate-900">Datos del equipo</h3>
+          <button v-if="teamMomentList.length > 0" type="button" class="btn-secondary px-3 py-1 text-xs" @click="watchTeam(null)">
+            <Icon icon="video" class="h-3 w-3" />Ver las jugadas en el vídeo
+          </button>
+        </div>
         <p class="text-xs text-slate-500">
           <template v-if="chosenParts.length > 1">Sumadas las {{ chosenParts.length }} partes. </template>
           Marca los que quieras llevar al acta. Una falta sale cuando el juego se para con el balón en el campo y el rival tenía a alguien a menos de 5 m
@@ -726,7 +836,7 @@ async function apply(overwrite = false) {
           estaba el atacante adelantado: salen de menos, nunca de más. Las tarjetas no salen del vídeo.
         </p>
         <div class="mt-3 overflow-x-auto">
-          <table class="w-full min-w-[32rem] text-sm">
+          <table class="w-full min-w-[36rem] text-sm">
             <thead class="text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th v-if="canManage" class="w-10 px-2 py-2 text-center" scope="col"><span class="sr-only">Aceptar</span></th>
@@ -734,6 +844,7 @@ async function apply(overwrite = false) {
                 <th class="px-2 py-2 text-center" scope="col">Vídeo<span class="block text-[10px] font-normal normal-case tracking-normal text-slate-400">{{ sheet.squad.teamName }} · rival</span></th>
                 <th class="px-2 py-2 text-center" scope="col">Acta ahora<span class="block text-[10px] font-normal normal-case tracking-normal text-slate-400">{{ sheet.squad.teamName }} · rival</span></th>
                 <th class="px-2 py-2 text-left" scope="col"><span class="sr-only">Qué pasa al volcar</span></th>
+                <th class="px-2 py-2 text-right" scope="col"><span class="sr-only">Ver en el vídeo</span></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -759,6 +870,17 @@ async function apply(overwrite = false) {
                   <span v-else-if="sameAsSheet(row)" class="text-slate-500">Ya coincide con el acta</span>
                   <Badge v-else-if="overwrites(row)" tone="amber">Cambia lo apuntado</Badge>
                   <span v-else class="text-emerald-700">Rellena lo que falta</span>
+                </td>
+                <td class="px-2 py-1.5 text-right">
+                  <button
+                    v-if="row.kind && teamMomentCount(row.kind) > 0"
+                    type="button"
+                    class="btn-ghost whitespace-nowrap px-2 py-0.5 text-xs"
+                    :title="`Ver en el vídeo: ${row.label.toLowerCase()} de los dos equipos`"
+                    @click="watchTeam(row.kind)"
+                  >
+                    <Icon icon="play" class="h-2.5 w-2.5" />Ver
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -815,5 +937,16 @@ async function apply(overwrite = false) {
         </p>
       </div>
     </div>
+
+    <VideoMomentsModal
+      :open="momentsOpen"
+      :title="momentsView?.title ?? ''"
+      :subtitle="momentsView?.subtitle"
+      :moments="momentsView?.moments ?? []"
+      :videos="momentVideos"
+      :kind="momentsView?.kind ?? null"
+      :sides="momentsView?.sides ?? null"
+      @close="momentsOpen = false"
+    />
   </section>
 </template>
