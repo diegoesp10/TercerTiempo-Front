@@ -37,6 +37,7 @@ export const jobIcons: Record<string, string> = {
   'match-officials': 'flag',
   'league-zones': 'list-ol',
   'license-alerts': 'bell',
+  'callup-reminders': 'user-group',
   'injury-carry-over': 'user-injured',
   'license-renewals': 'credit-card',
 };

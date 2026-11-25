@@ -8,7 +8,8 @@ import { formatDate, formatKickoff } from '@/utils/format';
 
 /**
  * Campanita de la cabecera: avisos de la app (licencia y solicitudes del club; convocatorias de partido y citaciones a
- * entrenar del jugador; ausencias a entrenamientos para el cuerpo técnico). Cada aviso dice de qué es: partido o entrenamiento no se mezclan.
+ * entrenar del jugador; ausencias a entrenamientos y convocatorias por enviar para el cuerpo técnico). Cada aviso dice de
+ * qué es: partido o entrenamiento no se mezclan.
  *
  * Como en las redes sociales: al abrirla, los nuevos quedan vistos (el número se va) y, la próxima vez, pasan a
  * «Anteriores», plegados para que no hagan ruido. Mientras está abierta se siguen enseñando arriba.
@@ -60,6 +61,7 @@ const kindInfo: Record<AlertKind, { icon: string; label: string }> = {
   TrainingCall: { icon: 'calendar-check', label: 'Entrenamiento · citación' },
   TrainingAbsence: { icon: 'calendar-check', label: 'Entrenamiento · ausencia' },
   CallUpShort: { icon: 'user-group', label: 'Convocatoria · incompleta' },
+  CallUpDue: { icon: 'triangle-exclamation', label: 'Convocatoria · sin enviar' },
   LeagueSuspension: { icon: 'ban', label: 'Sanción · comité de competición' },
   InjuryProposal: { icon: 'user-injured', label: 'Lesión · crónica del partido' },
 };
