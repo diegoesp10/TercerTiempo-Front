@@ -2237,6 +2237,8 @@ export interface VideoPlayerActions {
   /** Faltas que recibe y fueras de juego: solo se enseñan. */
   foulsReceived: number;
   offsides: number;
+  /** Del portero (Ojeador 2.2.0): balones que pone en juego desde su área. No son pases y no tienen casilla en el acta. */
+  distributions: number;
 }
 
 /**
@@ -2257,6 +2259,8 @@ export interface VideoPlayerMoments {
   fouls: number[];
   foulsReceived: number[];
   offsides: number[];
+  /** Los saques del portero; vacío antes de Ojeador 2.2.0. */
+  distributions: number[];
 }
 
 /** Lo mismo para un equipo: el segundo del vídeo de cada tiro, gol, córner, saque, falta y fuera de juego (Ojeador 2.1.2). */

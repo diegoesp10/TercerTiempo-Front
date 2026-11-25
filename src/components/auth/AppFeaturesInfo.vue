@@ -58,6 +58,7 @@ const sections: { icon: string; title: string; items: string[] }[] = [
     items: [
       'Actas internas con minutos, goles, tarjetas y una nota justa: cada uno carga solo los goles encajados con él en el campo.',
       'Vídeo con su análisis en directo (y pausa): reconoce a cada jugador por su dorsal (al portero, solo si todo cuadra: junto a la portería que defiende en cada parte, con su equipación de portero y un dorsal del acta) y saca faltas y fueras de juego; los minutos, del acta oficial.',
+      'Del vídeo, solo las acciones que se ven: pases con el balón golpeado, pérdidas y recuperaciones con el balón controlado, y del portero, paradas y saques desde su área (nunca pases ni pérdidas).',
       'Cada vídeo, con el nombre del partido (los dos equipos y la fecha) en cuanto se sube; lo que ocupa solo lo ve quien lo subió.',
       'Cada análisis dice con qué versión del analizador (Ojeador) se hizo, también en los datos del equipo que se vuelcan de él.',
       'Cada acción del análisis, a un clic de verla en el vídeo: los pases, las recuperaciones, las pérdidas, los tiros, los goles, las faltas, los córners y los saques de cada jugador y de los dos equipos, en el segundo en que pasaron, de una en una o seguidas.',

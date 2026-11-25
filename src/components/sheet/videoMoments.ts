@@ -13,6 +13,7 @@ export type MomentKind =
   | 'recoveries'
   | 'ballLosses'
   | 'saves'
+  | 'distributions'
   | 'corners'
   | 'throwIns'
   | 'goalKicks'
@@ -51,6 +52,7 @@ export const momentKindLabels: Record<MomentKind, string> = {
   recoveries: 'Recuperaciones',
   ballLosses: 'Pérdidas',
   saves: 'Paradas',
+  distributions: 'Saques del portero',
   corners: 'Córners',
   throwIns: 'Saques de banda',
   goalKicks: 'Saques de puerta',
@@ -112,6 +114,7 @@ export function playerMoments(part: VideoAnalysisPartDto, player: VideoAnalysisP
     ...drafts(losses.outside, 'Pérdida', ['ballLosses']),
     ...drafts(m.recoveries, 'Recuperación', ['recoveries']),
     ...drafts(m.saves, 'Parada', ['saves']),
+    ...drafts(m.distributions ?? [], 'Saque del portero', ['distributions']),
     ...drafts(m.fouls, 'Falta cometida', ['fouls']),
     ...drafts(m.foulsReceived, 'Falta recibida', ['foulsReceived']),
     ...drafts(m.offsides, 'Fuera de juego', ['offsides']),

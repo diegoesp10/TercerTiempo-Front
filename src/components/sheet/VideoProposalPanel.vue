@@ -374,6 +374,7 @@ function actionBits(player: VideoAnalysisPlayerDto): ActionBit[] {
     a.recoveries > 0 && { kind: 'recoveries', text: plural(a.recoveries, 'recuperación', 'recuperaciones'), moments: m?.recoveries.length ?? 0 },
     a.ballLosses > 0 && { kind: 'ballLosses', text: plural(a.ballLosses, 'pérdida', 'pérdidas'), moments: m?.ballLosses.length ?? 0 },
     a.saves > 0 && { kind: 'saves', text: plural(a.saves, 'parada', 'paradas'), moments: m?.saves.length ?? 0 },
+    (a.distributions ?? 0) > 0 && { kind: 'distributions', text: plural(a.distributions, 'saque', 'saques'), moments: m?.distributions?.length ?? 0 },
     (a.fouls ?? 0) > 0 && { kind: 'fouls', text: plural(a.fouls, 'falta cometida', 'faltas cometidas'), moments: m?.fouls.length ?? 0 },
     (a.foulsReceived ?? 0) > 0 && {
       kind: 'foulsReceived',
@@ -742,6 +743,10 @@ async function apply(overwrite = false) {
                 tramos de un jugador y sus acciones se suman.
               </p>
             </template>
+            <p class="mt-1 text-xs text-slate-500">
+              Pases, pérdidas y recuperaciones salen solo de lo que se ve claro (el balón con el jugador y el campo a la vista): son un mínimo, no todos.
+              El portero no pasa ni pierde: lo suyo son paradas (se queda con un balón del rival en su área) y saques (pone el balón en juego desde ella).
+            </p>
             <p v-if="playersOf(part).length === 0" class="mt-2 text-sm text-slate-500">
               {{ part.identified ? 'No se ha podido leer el dorsal de ningún jugador de este equipo.' : 'El analizador no ha seguido a ningún jugador de este equipo durante medio minuto.' }}
             </p>
