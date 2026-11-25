@@ -74,6 +74,7 @@ const sections: { icon: string; title: string; items: string[] }[] = [
       'Asistencia resumida, ampliada, por semana o por día, agrupada por posición, con un filtro de quién faltó (avisando o sin avisar), el motivo de cada falta y un buscador que lista las coincidencias y abre la ficha de cada jugador.',
       'Convocatorias por posición, en la pestaña «Convocatoria» de cada partido, con repaso, el visto y la firma de cada jugador al momento, sin recargar, y la cita en el campo con su mapa; el acta interna sale ya con los convocados.',
       'El acta interna con el dorsal del acta oficial, que no se cambia a mano, y la línea de cada jugador siempre dentro de la pantalla: si no cabe en una fila, sus casillas se recolocan.',
+      'El acta interna se ordena por cualquier columna, también mientras la rellenas (ninguna fila salta al escribir), y «¿De dónde sale la nota?» cuenta con palabras sencillas cómo se calcula la de cada jugador.',
       'Enviada la convocatoria, la lista queda fija (se modifica a propósito) y se filtra al momento: quién la ha visto, quién ha respondido y a quién le falta firmar.',
       'El número de convocados, fijo o el que digas en cada partido: no deja pasarse y avisa si faltan por convocar.',
       'Sanciones de liga: la 5.ª amarilla y cada expulsión dejan al jugador sin el siguiente partido, sin poder convocarle ni ponerle en el acta; la agenda dice quién no está disponible.',

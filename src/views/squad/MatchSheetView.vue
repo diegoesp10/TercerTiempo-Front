@@ -19,6 +19,7 @@ import Badge from '@/components/ui/Badge.vue';
 import CardIcon from '@/components/ui/CardIcon.vue';
 import CardMarks from '@/components/sheet/CardMarks.vue';
 import PlayerNoteModal from '@/components/sheet/PlayerNoteModal.vue';
+import RatingInfo from '@/components/sheet/RatingInfo.vue';
 import StarterMark from '@/components/sheet/StarterMark.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
 import FitBox from '@/components/ui/FitBox.vue';
@@ -420,11 +421,14 @@ const cardFields: { key: NumberKey; label: string; title: string; max?: number }
   ...numericColumns,
 ];
 
-// Mientras se edita solo se ordena por el jugador y la nota (que no se escriben): así ninguna fila se mueve al teclear.
-// El orden se aplica dentro de cada posición cuando se agrupa.
-type SheetSortKey = 'player' | 'started' | 'minutes' | 'yellowCards' | 'redCard' | 'rating' | (typeof numericColumns)[number]['key'];
+// Se ordena por cualquier columna, también mientras se edita: el orden se fija al pulsar la cabecera y cada vez que
+// llegan filas nuevas (al cargar, guardar o deshacer), así que lo que se escribe no mueve ninguna fila hasta el
+// siguiente clic. Cuando se agrupa, el orden se aplica dentro de cada posición.
+type SheetSortKey = 'player' | 'played' | 'dorsal' | 'started' | 'minutes' | 'yellowCards' | 'redCard' | 'rating' | (typeof numericColumns)[number]['key'];
 const sheetGetters = {
   player: (r: Row) => r.player.fullName,
+  played: (r: Row) => Number(r.played),
+  dorsal: (r: Row) => r.officialShirt,
   started: (r: Row) => Number(r.started),
   minutes: (r: Row) => r.minutesPlayed,
   yellowCards: (r: Row) => r.yellowCards,
@@ -432,7 +436,34 @@ const sheetGetters = {
   rating: (r: Row) => r.rating,
   ...Object.fromEntries(numericColumns.map((column) => [column.key, (r: Row) => r[column.key] ?? null])),
 } as Record<SheetSortKey, (r: Row) => SortValue>;
-const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, sheetGetters, 'player', { desc: false, ascendingFirst: ['player'] });
+const { sorted, sortKey, sortDesc, sortBy, state } = useSort<Row, SheetSortKey>(rows, sheetGetters, 'player', { desc: false, ascendingFirst: ['player', 'dorsal'] });
+const frozenOrder = ref<string[]>([]);
+const freezeOrder = () => { frozenOrder.value = sorted.value.map((r) => r.squadPlayerId); };
+watch(rows, freezeOrder, { immediate: true });
+function sortSheet(key: SheetSortKey) {
+  sortBy(key);
+  freezeOrder();
+}
+const sortedRows = computed(() => {
+  const rank = new Map(frozenOrder.value.map((id, index) => [id, index]));
+  return rows.value
+    .map((row, index) => ({ row, at: rank.get(row.squadPlayerId) ?? frozenOrder.value.length + index }))
+    .sort((a, b) => a.at - b.at)
+    .map(({ row }) => row);
+});
+// En fichas (cuando ni apretada cabe la tabla) no hay cabeceras que pulsar: se elige la columna en un desplegable.
+const sortOptions = computed<SelectOption[]>(() => [
+  { value: 'player', label: 'Jugador' },
+  ...(canEdit.value ? [{ value: 'played', label: 'Jugó' }, { value: 'dorsal', label: 'Dorsal' }] : []),
+  { value: 'started', label: 'Titular' },
+  { value: 'minutes', label: 'Minutos' },
+  ...numericColumns.map((column) => ({ value: column.key, label: column.title })),
+  { value: 'yellowCards', label: 'Tarjetas amarillas' },
+  { value: 'redCard', label: 'Tarjeta roja' },
+  { value: 'rating', label: 'Nota' },
+]);
+const sortDirection = computed(() =>
+  (sortKey.value === 'player' ? (sortDesc.value ? 'De la Z a la A' : 'De la A a la Z') : sortDesc.value ? 'De mayor a menor' : 'De menor a mayor'));
 </script>
 
 <template>
@@ -574,7 +605,10 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
 
       <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 class="font-semibold text-slate-900">Acta interna del partido</h2>
+          <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            <h2 class="font-semibold text-slate-900">Acta interna del partido</h2>
+            <RatingInfo />
+          </div>
           <p class="text-xs text-slate-500">
             <template v-if="canEdit && hasCallUp">
               Salen los {{ calledCount }} convocados del partido: marca quién jugó y rellena su línea. {{ playedRows.length }} de {{ sheetRows.length }} en el acta.
@@ -603,7 +637,7 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
           />
           <template v-if="canEdit">
             <button type="button" class="btn-ghost" title="PDF para imprimir y apuntar el partido a mano" @click="downloadPaper"><Icon icon="file-pdf" class="mr-1.5 h-3.5 w-3.5" />Acta en papel</button>
-            <button type="button" class="btn-secondary" v-busy="saving" :disabled="saving" @click="reset">Deshacer cambios</button>
+            <button v-if="unsaved" type="button" class="btn-secondary" v-busy="saving" :disabled="saving" title="Vuelve a lo último que se guardó" @click="reset">Deshacer cambios</button>
             <button type="button" class="btn-primary" v-busy="saving" :disabled="saving" @click="save">{{ saving ? 'Guardando…' : 'Guardar acta' }}</button>
           </template>
         </div>
@@ -635,21 +669,29 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
         <table class="min-w-full text-sm group-data-[stacked]/sheet:hidden group-data-[tight]/sheet:text-xs">
           <thead class="bg-slate-50 text-xs text-slate-500">
             <tr v-if="canEdit">
-              <th :class="thCell" title="Jugó">Jugó</th>
-              <th :class="thCell" title="Dorsal del acta oficial del partido: no se cambia a mano">Dorsal</th>
-              <SortHeader class="px-2 py-2 text-left group-data-[tight]/sheet:px-1" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
-              <th :class="thCell" title="Titular">Tit</th>
-              <th :class="thCell" title="Minutos">Min</th>
-              <th v-for="column in numericColumns" :key="column.key" :class="thCell" :title="column.title">{{ column.label }}</th>
-              <th :class="thCell" title="Tarjetas amarillas">TA</th>
-              <th :class="thCell" title="Tarjeta roja">TR</th>
-              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="Nota" title="Nota calculada con los datos al guardar" v-bind="state('rating')" @sort="sortBy('rating')" />
+              <SortHeader :class="thCell" label="Jugó" title="Jugó" v-bind="state('played')" @sort="sortSheet('played')" />
+              <SortHeader :class="thCell" label="Dorsal" title="Dorsal del acta oficial del partido (no se cambia a mano)" v-bind="state('dorsal')" @sort="sortSheet('dorsal')" />
+              <SortHeader class="px-2 py-2 text-left group-data-[tight]/sheet:px-1" label="Jugador" v-bind="state('player')" @sort="sortSheet('player')" />
+              <SortHeader :class="thCell" label="Tit" title="Titular" v-bind="state('started')" @sort="sortSheet('started')" />
+              <SortHeader :class="thCell" label="Min" title="Minutos" v-bind="state('minutes')" @sort="sortSheet('minutes')" />
+              <SortHeader
+                v-for="column in numericColumns"
+                :key="column.key"
+                :class="thCell"
+                :label="column.label"
+                :title="column.title"
+                v-bind="state(column.key)"
+                @sort="sortSheet(column.key)"
+              />
+              <SortHeader :class="thCell" label="TA" title="Tarjetas amarillas" v-bind="state('yellowCards')" @sort="sortSheet('yellowCards')" />
+              <SortHeader :class="thCell" label="TR" title="Tarjeta roja" v-bind="state('redCard')" @sort="sortSheet('redCard')" />
+              <SortHeader :class="thCell" label="Nota" title="Nota calculada con los datos al guardar" v-bind="state('rating')" @sort="sortSheet('rating')" />
               <th :class="thNotes" title="Notas del técnico sobre su partido">Notas</th>
             </tr>
             <tr v-else>
-              <SortHeader class="px-2 py-2 text-left group-data-[tight]/sheet:px-1" label="Jugador" v-bind="state('player')" @sort="sortBy('player')" />
-              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="Tit" title="Titular" v-bind="state('started')" @sort="sortBy('started')" />
-              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="Min" title="Minutos" v-bind="state('minutes')" @sort="sortBy('minutes')" />
+              <SortHeader class="px-2 py-2 text-left group-data-[tight]/sheet:px-1" label="Jugador" v-bind="state('player')" @sort="sortSheet('player')" />
+              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="Tit" title="Titular" v-bind="state('started')" @sort="sortSheet('started')" />
+              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="Min" title="Minutos" v-bind="state('minutes')" @sort="sortSheet('minutes')" />
               <SortHeader
                 v-for="column in numericColumns"
                 :key="column.key"
@@ -657,11 +699,11 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
                 :label="column.label"
                 :title="column.title"
                 v-bind="state(column.key)"
-                @sort="sortBy(column.key)"
+                @sort="sortSheet(column.key)"
               />
-              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="TA" title="Tarjetas amarillas" v-bind="state('yellowCards')" @sort="sortBy('yellowCards')" />
-              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="TR" title="Tarjeta roja" v-bind="state('redCard')" @sort="sortBy('redCard')" />
-              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="Nota" title="Nota calculada con los datos al guardar" v-bind="state('rating')" @sort="sortBy('rating')" />
+              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="TA" title="Tarjetas amarillas" v-bind="state('yellowCards')" @sort="sortSheet('yellowCards')" />
+              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="TR" title="Tarjeta roja" v-bind="state('redCard')" @sort="sortSheet('redCard')" />
+              <SortHeader class="px-1 py-2 text-center group-data-[tight]/sheet:px-0.5" label="Nota" title="Nota calculada con los datos al guardar" v-bind="state('rating')" @sort="sortSheet('rating')" />
               <th :class="thNotes" title="Notas del técnico sobre su partido">Notas</th>
             </tr>
           </thead>
@@ -790,6 +832,28 @@ const { sorted: sortedRows, sortBy, state } = useSort<Row, SheetSortKey>(rows, s
 
         <!-- Si ni apretada cabe la tabla: una ficha por jugador, con sus casillas en rejilla, que se recoloca a cualquier ancho. -->
         <div class="hidden group-data-[stacked]/sheet:block">
+          <div class="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
+            <span class="shrink-0 text-xs text-slate-500">Ordenar por</span>
+            <SearchSelect
+              class="min-w-0 flex-1"
+              size="sm"
+              nowrap
+              :searchable="false"
+              :model-value="sortKey"
+              :options="sortOptions"
+              aria-label="Columna por la que se ordena el acta"
+              @update:model-value="(key) => { if (key !== sortKey) sortSheet(key as SheetSortKey); }"
+            />
+            <button
+              type="button"
+              class="btn-ghost shrink-0 px-2 py-1"
+              :title="`${sortDirection}: pulsa para darle la vuelta`"
+              :aria-label="`${sortDirection}: darle la vuelta al orden`"
+              @click="sortSheet(sortKey)"
+            >
+              <Icon :icon="sortDesc ? 'arrow-down-wide-short' : 'arrow-up-short-wide'" class="h-3.5 w-3.5" />
+            </button>
+          </div>
           <template v-for="group in canEdit ? editGroups : playedGroups" :key="group.key">
             <p v-if="group.label" class="bg-surface-2 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
               {{ group.label }} ·
