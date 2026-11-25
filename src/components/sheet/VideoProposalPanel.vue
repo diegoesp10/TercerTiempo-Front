@@ -643,7 +643,14 @@ async function apply(overwrite = false) {
         <!-- Propuesta lista -->
         <template v-else-if="part.state === 'Ready' && part.quality">
           <dl class="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2">
+            <!-- Desde Ojeador 2.3.0, sobre el tiempo en juego: con el balón parado, no verlo no es un fallo -->
+            <div v-if="part.quality.ballSeenInPlayPct != null" class="rounded-lg border border-line bg-surface-2 px-3 py-2">
+              <dt class="eyebrow">Balón visto en juego</dt>
+              <dd class="mt-0.5 font-figures text-xl font-extrabold tabular-nums" :class="part.quality.lowBall ? 'text-amber-600' : 'text-slate-900'">{{ percent(part.quality.ballSeenInPlayPct) }} %</dd>
+              <dd v-if="part.quality.ballTrackedInPlayPct != null" class="text-[11px] text-slate-500">con la trayectoria: {{ percent(part.quality.ballTrackedInPlayPct) }} %</dd>
+              <dd v-if="part.quality.inPlayPct != null" class="text-[11px] text-slate-500" title="Sin fueras, faltas, saques ni cambios: el resto del tiempo el balón está parado">en juego el {{ percent(part.quality.inPlayPct) }} % del tramo</dd>
+            </div>
+            <div v-else class="rounded-lg border border-line bg-surface-2 px-3 py-2">
               <dt class="eyebrow">Fotogramas con balón</dt>
               <dd class="mt-0.5 font-figures text-xl font-extrabold tabular-nums" :class="part.quality.lowBall ? 'text-amber-600' : 'text-slate-900'">{{ percent(part.quality.ballFramesPct) }} %</dd>
               <dd v-if="ballKnownPct(part) !== null" class="text-[11px] text-slate-500">con la trayectoria: {{ percent(ballKnownPct(part)!) }} %</dd>
@@ -668,7 +675,7 @@ async function apply(overwrite = false) {
           <Alert v-if="part.quality.lowBall || part.quality.lowCalibration || part.quality.lowRead" kind="warning" class="mt-3">
             <strong>Calidad baja: tómalo como orientación.</strong>
             <template v-if="part.quality.lowRead && part.quality.readFramesPct !== null"> Solo se pudo leer el {{ percent(part.quality.readFramesPct) }} % de los fotogramas del vídeo (el archivo parece dañado o cortado): todo sale de menos; prueba a volver a subirlo.</template>
-            <template v-if="part.quality.lowBall"> El balón solo se ve en el {{ percent(part.quality.ballFramesPct) }} % de los fotogramas: la posesión se mide solo sobre el tiempo con balón y, si su confianza es baja, no se vuelca al acta; los pases y las recuperaciones salen de menos.</template>
+            <template v-if="part.quality.lowBall"> El balón solo se ve en el {{ percent(part.quality.ballSeenInPlayPct ?? part.quality.ballFramesPct) }} % {{ part.quality.ballSeenInPlayPct != null ? 'del tiempo en juego' : 'de los fotogramas' }}: la posesión se mide solo sobre el tiempo con balón y, si su confianza es baja, no se vuelca al acta; los pases y las recuperaciones salen de menos.</template>
             <template v-if="part.quality.lowCalibration"> El campo solo se ha podido calibrar en el {{ percent(part.quality.calibratedFramesPct) }} %: fueras, córners y tiros salen de menos.</template>
             Mejora con una cámara fija y alta y el juego lo más cerca posible.
           </Alert>
@@ -766,7 +773,7 @@ async function apply(overwrite = false) {
                   </p>
                   <p class="text-xs text-slate-500">
                     Del {{ player.from }} al {{ player.to }} · {{ player.minutesVisible }} min a la vista<template v-if="player.sheetMinutes !== null"> · <span class="text-slate-700" title="Por descarte: sin cambio, el partido entero, aunque el vídeo no lo vea todo el rato">{{ player.sheetMinutes }} min jugados según el acta</span></template>
-                    · {{ player.distanceM.toLocaleString('es-ES') }} m
+                    · <span title="Solo lo que recorre mientras el vídeo lo tiene a la vista: no es la distancia de todo el partido">{{ player.distanceM.toLocaleString('es-ES') }} m mientras se le ve</span>
                   </p>
                   <p v-if="actionBits(player).length === 0" class="mt-0.5 text-xs text-slate-400">Sin acciones con balón que llevar al acta</p>
                   <p v-else-if="!player.moments" class="mt-0.5 text-xs" :class="hasActions(player.proposal) ? 'text-slate-700' : 'text-slate-400'">

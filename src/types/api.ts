@@ -2189,6 +2189,12 @@ export interface VideoAnalysisQualityDto {
   readFramesPct: number | null;
   /** No se leyó al menos el 95 %: archivo dañado o cortado, la propuesta sale de menos. */
   lowRead: boolean;
+  /** % del tramo con el balón en juego (sin fueras, faltas, saques ni cambios); null antes de Ojeador 2.3.0. */
+  inPlayPct?: number | null;
+  /** % del tiempo en juego con el balón visto; con él se decide lowBall cuando lo hay. */
+  ballSeenInPlayPct?: number | null;
+  /** % del tiempo en juego con la trayectoria del balón (visto o en un hueco corto seguido con la cámara). */
+  ballTrackedInPlayPct?: number | null;
 }
 
 /** Uno de los dos equipos que separa el analizador por su equipación: él no sabe cuál es el del club. */

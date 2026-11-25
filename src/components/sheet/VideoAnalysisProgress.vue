@@ -85,7 +85,7 @@ const tiles = computed(() => {
   if (!l) return [];
   const list: { label: string; value: string; hint?: string; tone?: 'warn' }[] = [];
   if (l.playersOnScreen != null) list.push({ label: 'Jugadores en imagen', value: String(l.playersOnScreen), hint: 'en el último fotograma' });
-  if (l.playersTracked != null) list.push({ label: 'Jugadores seguidos', value: String(l.playersTracked), hint: 'cada vez que pierde a uno, cuenta otro' });
+  if (l.playersTracked != null) list.push({ label: 'Tramos seguidos', value: String(l.playersTracked), hint: 'trozos de jugador: al final se juntan por el dorsal' });
   if (l.ballSeenPct != null) list.push({ label: 'Balón visto', value: `${number(l.ballSeenPct)} %`, hint: 'de los fotogramas', tone: l.ballSeenPct < 35 ? 'warn' : undefined });
   if (l.calibratedPct != null) list.push({ label: 'Campo calibrado', value: `${number(l.calibratedPct)} %`, hint: 'de los fotogramas', tone: l.calibratedPct < 50 ? 'warn' : undefined });
   if (l.speed != null) list.push({ label: 'Velocidad', value: `× ${number(l.speed, 2)}`, hint: l.fps != null ? `del tiempo real · ${number(l.fps)} fotogramas/s` : 'del tiempo real' });
