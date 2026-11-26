@@ -12,7 +12,7 @@ defineEmits<{ toggle: [] }>();
     <td :colspan="colspan" class="border-b border-line bg-surface-2 p-0">
       <button
         type="button"
-        class="sticky left-0 flex items-center gap-2 px-3 py-1.5 text-left font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:text-slate-800"
+        class="sticky left-0 flex items-center gap-2 px-3 py-1.5 text-left font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:text-slate-800"
         :aria-expanded="group.open"
         :title="group.open ? `Plegar ${group.label.toLowerCase()}` : `Desplegar ${group.label.toLowerCase()}`"
         @click="$emit('toggle')"

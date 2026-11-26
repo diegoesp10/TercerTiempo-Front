@@ -43,7 +43,7 @@ async function cancel(request: MyPassRequestDto) {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl">
+  <div class="mx-auto max-w-narrow">
     <PageHeader title="Mis pases" subtitle="Los partidos de otros equipos cuyo acta interna o vídeo puedes ver, y tus solicitudes de acceso." />
 
     <div class="mb-4 flex justify-end">

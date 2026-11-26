@@ -345,8 +345,9 @@ async function reinstate(player: SquadPlayerDto) {
         La federación no publica la posición de todos sus jugadores: pónsela tú. La convocatoria y el acta los agrupan por posición y la
         nota de cada partido depende de ella. Si la federación la publica más adelante, se pone sola.
       </p>
-      <ul class="mt-3 divide-y divide-slate-100">
-        <li v-for="player in withoutPosition" :key="player.id" class="flex flex-wrap items-center justify-between gap-2 py-2">
+      <!-- En rejilla: en una pantalla ancha cada selector queda junto a su jugador, no al otro lado de la página. -->
+      <ul class="mt-3 grid grid-cols-1 gap-x-8 lg:grid-cols-2 2xl:grid-cols-3">
+        <li v-for="player in withoutPosition" :key="player.id" class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 py-2">
           <PlayerName :name="player.fullName" :photo-url="player.photoUrl" size="sm" class="font-medium text-slate-800" />
           <SearchSelect
             class="w-48"
@@ -403,7 +404,7 @@ async function reinstate(player: SquadPlayerDto) {
             </thead>
             <tbody v-for="group in groups" :key="group.key" class="divide-y divide-slate-100">
               <tr v-if="group.label">
-                <td :colspan="columnCount" class="bg-surface-2 px-2 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <td :colspan="columnCount" class="bg-surface-2 px-2 py-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                   {{ group.label }} · {{ group.rows.length }}
                   <span v-if="group.left" class="ml-1 font-sans font-normal normal-case tracking-normal">— estuvieron en la plantilla y ya no están: no se convocan, alinean ni citan; sus actas se conservan</span>
                 </td>

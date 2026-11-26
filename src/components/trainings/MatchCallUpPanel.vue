@@ -596,12 +596,12 @@ async function respond(response: CallUpResponse) {
           <div v-else class="overflow-hidden rounded-lg border border-line">
             <div v-for="g in groups" :key="g.key">
               <div v-if="g.label" class="flex items-center justify-between gap-2 border-b border-line bg-surface-2 px-3 py-1.5">
-                <span class="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <span class="font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                   {{ g.label }} ·
                   <template v-if="activeFilter === 'all'"><span :class="g.called ? 'text-brand-500' : ''">{{ g.called }}</span>/{{ g.entries.length }}</template>
                   <template v-else>{{ g.entries.length }}</template>
                 </span>
-                <button v-if="editable" type="button" class="text-[11px] font-medium text-accent-400 hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline" :disabled="!!groupBlocked(g.entries)" :title="groupBlocked(g.entries)" @click="selectGroup(g.entries)">
+                <button v-if="editable" type="button" class="text-2xs font-medium text-accent-400 hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline" :disabled="!!groupBlocked(g.entries)" :title="groupBlocked(g.entries)" @click="selectGroup(g.entries)">
                   {{ g.entries.some((e) => !called.has(e.squadPlayerId)) ? 'Todos' : 'Ninguno' }}
                 </button>
               </div>
@@ -775,8 +775,8 @@ async function respond(response: CallUpResponse) {
         <label class="block">
           <span class="label">Convocados</span>
           <input v-model.number="sizeDraft" type="number" :min="sizeMin" :max="sizeMax" step="1" required class="input w-24" />
-          <span v-if="data.suggestedSize" class="mt-1 block text-[11px] text-slate-500">Te proponemos {{ data.suggestedSize }}, el de tu última convocatoria.</span>
-          <span v-else class="mt-1 block text-[11px] text-slate-500">De {{ sizeMin }} a {{ sizeMax }}.</span>
+          <span v-if="data.suggestedSize" class="mt-1 block text-2xs text-slate-500">Te proponemos {{ data.suggestedSize }}, el de tu última convocatoria.</span>
+          <span v-else class="mt-1 block text-2xs text-slate-500">De {{ sizeMin }} a {{ sizeMax }}.</span>
         </label>
         <p class="text-xs text-slate-500">Si siempre convocas a los mismos, ponlo fijo en «Gestión de la plantilla» y no se te volverá a preguntar.</p>
         <div class="flex justify-end gap-2">

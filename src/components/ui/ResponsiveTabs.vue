@@ -155,7 +155,7 @@ const look = computed(() => {
           <span v-if="item.short" class="hidden group-data-[short]/tabs:inline">{{ item.short }}</span>
           <span
             v-if="hasCount(item)"
-            class="rounded-full px-1.5 py-0.5 font-figures text-[11px] leading-none"
+            class="rounded-full px-1.5 py-0.5 font-figures text-2xs leading-none"
             :class="item.key === modelValue && variant !== 'underline' ? look.count : 'bg-surface-2 text-slate-500'"
           >{{ item.count }}</span>
         </component>
@@ -175,7 +175,7 @@ const look = computed(() => {
         <Icon :icon="open ? 'xmark' : 'bars'" class="h-3.5 w-3.5 shrink-0" />
         <span v-if="active?.color" class="h-2 w-2 shrink-0 rounded-full" :style="{ background: active.color }" aria-hidden="true" />
         <span><span class="sr-only">{{ label }}: </span>{{ active?.label ?? label }}</span>
-        <span v-if="active && hasCount(active)" class="rounded-full px-1.5 py-0.5 font-figures text-[11px] leading-none" :class="look.count">{{ active.count }}</span>
+        <span v-if="active && hasCount(active)" class="rounded-full px-1.5 py-0.5 font-figures text-2xs leading-none" :class="look.count">{{ active.count }}</span>
         <Icon icon="chevron-down" class="h-3 w-3 shrink-0 transition-transform" :class="open ? 'rotate-180' : ''" />
       </button>
     </component>
@@ -198,7 +198,7 @@ const look = computed(() => {
           <Icon v-if="item.icon" :icon="item.icon" class="h-3.5 w-3.5 shrink-0 text-slate-500" />
           <span v-else-if="item.color" class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ background: item.color }" aria-hidden="true" />
           <span class="min-w-0 flex-1">{{ item.label }}</span>
-          <span v-if="hasCount(item)" class="rounded-full bg-surface-2 px-1.5 py-0.5 font-figures text-[11px] leading-none text-slate-500">{{ item.count }}</span>
+          <span v-if="hasCount(item)" class="rounded-full bg-surface-2 px-1.5 py-0.5 font-figures text-2xs leading-none text-slate-500">{{ item.count }}</span>
           <Icon v-if="item.key === modelValue" icon="check" class="h-3 w-3 shrink-0 text-brand-500" />
         </component>
       </li>

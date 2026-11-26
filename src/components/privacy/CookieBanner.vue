@@ -52,7 +52,7 @@ async function choose(action: ConsentAction) {
     aria-label="Cookies"
     data-no-track
   >
-    <div class="mx-auto flex max-w-[1760px] flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div class="mx-auto flex max-w-page flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
       <p class="text-sm leading-relaxed text-slate-700">
         Usamos lo necesario para que la web funcione y recordar tus preferencias. Con tu permiso, también medimos qué páginas,
         búsquedas y botones se usan más, con datos que se quedan en Tercer Tiempo.
@@ -64,7 +64,7 @@ async function choose(action: ConsentAction) {
         <button type="button" class="btn-primary" :disabled="saving" @click="choose('AcceptAll')">Aceptar</button>
       </div>
     </div>
-    <p v-if="error" class="mx-auto mt-2 max-w-[1760px] text-sm text-red-600">{{ error }}</p>
+    <p v-if="error" class="mx-auto mt-2 max-w-page text-sm text-red-600">{{ error }}</p>
   </div>
 
   <Modal :open="consent.settingsOpen" title="Configurar cookies" size="lg" @close="consent.settingsOpen = false">

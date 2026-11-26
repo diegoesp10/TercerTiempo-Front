@@ -112,7 +112,7 @@ function onPhotoSaved(coach: CoachDto) {
       :stats="heroStats"
     >
       <template #actions>
-        <Badge tone="blue"><Icon icon="user-group" class="mr-1 text-[11px]" />Cuerpo técnico</Badge>
+        <Badge tone="blue"><Icon icon="user-group" class="mr-1 text-2xs" />Cuerpo técnico</Badge>
         <DisciplineBadge v-if="main" :discipline="main.discipline?.next" staff reason />
         <button v-if="data.isMe" type="button" class="btn-primary" @click="photoOpen = true">
           <Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />{{ data.photoUrl ? 'Cambiar mi foto' : 'Subir mi foto' }}
@@ -139,7 +139,7 @@ function onPhotoSaved(coach: CoachDto) {
       </div>
       <dl class="mt-3 grid grid-cols-3 gap-2 text-center">
         <div v-for="o in outcomes" :key="o.key" class="min-w-0 rounded-xl border border-line bg-surface-2 p-2.5">
-          <dt class="break-words text-[11px] text-slate-500">{{ o.label }}</dt>
+          <dt class="break-words text-2xs text-slate-500">{{ o.label }}</dt>
           <dd class="text-lg font-bold tabular-nums text-slate-900">{{ o.count }}</dd>
           <dd class="text-xs font-semibold tabular-nums" :class="o.text">{{ percent(o.pct) }}</dd>
         </div>

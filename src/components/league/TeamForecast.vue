@@ -62,6 +62,9 @@ const headline = computed(() => [
 
 const zoneColor = (position: number) => outcomes.value.find((o) => position >= o.from && position <= o.to)?.color ?? NEUTRAL;
 const mostLikely = computed(() => odds.value.reduce((best, value, index) => (value > odds.value[best]! ? index : best), 0) + 1);
+// En el móvil cada casilla mide unos 10 px y el número de 11 px no cabe en todas: se ven los puestos impares y el más
+// probable, sin que dos se pisen. Desde sm, todos.
+const labelled = (position: number) => position === mostLikely.value || (position % 2 === 1 && Math.abs(position - mostLikely.value) !== 1);
 const highestOdds = computed(() => Math.max(...odds.value, 0.0001));
 
 /** Puestos entre los que acaba 8 de cada 10 veces (sin el 10 % de arriba ni el 10 % de abajo). */
@@ -131,7 +134,7 @@ const num = (value: number) => value.toLocaleString('es-ES', { maximumFractionDi
         <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-3">
           <div class="h-full rounded-full" :style="{ width: `${item.value > 0 ? Math.max(item.value * 100, 2) : 0}%`, background: item.color }" />
         </div>
-        <p class="mt-1.5 text-[11px] text-slate-500">{{ frequency(item.value) }}</p>
+        <p class="mt-1.5 text-2xs text-slate-500">{{ frequency(item.value) }}</p>
       </div>
     </div>
 
@@ -171,8 +174,13 @@ const num = (value: number) => value.toLocaleString('es-ES', { maximumFractionDi
             :title="`${index + 1}.º: ${percent(value)}`"
           />
         </div>
-        <div class="mt-1 flex gap-[2px] text-center font-figures text-[9px] leading-none text-slate-500">
-          <span v-for="(_, index) in odds" :key="index" class="flex-1" :class="{ 'font-bold text-slate-900': index + 1 === mostLikely }">{{ index + 1 }}</span>
+        <div class="mt-1 flex gap-[2px] text-center font-figures text-2xs leading-none text-slate-500">
+          <span
+            v-for="(_, index) in odds"
+            :key="index"
+            class="flex-1"
+            :class="[index + 1 === mostLikely ? 'font-bold text-slate-900' : '', labelled(index + 1) ? '' : 'max-sm:invisible']"
+          >{{ index + 1 }}</span>
         </div>
         <p class="mt-2 text-xs text-slate-500">
           En 8 de cada 10 simulaciones acaba entre el <b class="text-slate-700">{{ likelyRange.low }}.º</b> y el <b class="text-slate-700">{{ likelyRange.high }}.º</b>.

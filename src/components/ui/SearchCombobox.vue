@@ -270,7 +270,7 @@ onBeforeUnmount(() => {
           </li>
         </ul>
         <p v-if="visible.length === 0" class="px-3 py-2 text-sm text-slate-500">{{ emptyLabel }} «{{ query.trim() }}».</p>
-        <p v-else-if="more > 0" class="mt-1 border-t border-line px-3 pt-1.5 text-[11px] text-slate-500">
+        <p v-else-if="more > 0" class="mt-1 border-t border-line px-3 pt-1.5 text-2xs text-slate-500">
           Y {{ more }} más: sigue escribiendo para afinar.
         </p>
       </div>

@@ -109,6 +109,8 @@ const entriesOf = (sheet: MatchSquadSheetDto) => sortedEntries.value.filter((r) 
       <RouterLink :to="{ name: 'sheet', params: { squadId: data.managedSquadId, matchId: data.match.id } }" class="font-medium underline">Volver a la vista de tu equipo</RouterLink>
     </Alert>
     <div class="card">
+      <!-- El título de la página para lectores de pantalla y buscadores: el marcador ya lo dice a la vista. -->
+      <h1 class="sr-only">{{ data.match.homeTeam.name }} {{ data.match.status === 'Played' ? `${data.match.homeGoals}-${data.match.awayGoals}` : 'contra' }} {{ data.match.awayTeam.name }}</h1>
       <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
         <span>
           <strong v-if="data.competitionName" class="text-slate-700">{{ data.competitionName }}</strong>
@@ -134,7 +136,7 @@ const entriesOf = (sheet: MatchSquadSheetDto) => sortedEntries.value.filter((r) 
     </div>
 
     <div class="mt-6">
-      <OfficialSheetPanel :match-id="data.match.id" :highlight-team-id="data.managedTeamId" />
+      <OfficialSheetPanel :match-id="data.match.id" :match="data.match" :highlight-team-id="data.managedTeamId" />
     </div>
 
     <!-- El equipo arbitral y las notas de los dos equipos son públicos; se puntúa desde la vista del cuerpo técnico. -->

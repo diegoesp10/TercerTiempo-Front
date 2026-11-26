@@ -278,7 +278,7 @@ const names = (rows: AttendanceRow[]) => rows.map((r) => r.name).join(', ');
       <!-- Filtro de faltas a la izquierda; la leyenda de las casillas a la derecha -->
       <div class="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <ChoiceToggle v-model="missFilter" :options="missChoices" label="Filtrar por faltas" size="xs" min-item="6.5rem" />
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs text-slate-500">
           <span v-for="o in legend" :key="o" class="flex items-center gap-1.5">
             <span class="grid h-4 w-4 place-items-center rounded ring-1 ring-inset" :class="outcomeCell[o]"><Icon :icon="outcomeIcons[o]" class="h-2.5 w-2.5" /></span>
             {{ outcomeLabels[o] }}

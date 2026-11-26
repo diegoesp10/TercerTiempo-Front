@@ -14,9 +14,11 @@ const hint = computed(() => `${props.title ?? props.label}: ${props.active ? (pr
 
 <template>
   <th scope="col" :aria-sort="ariaSort">
+    <!-- La letra de la cabecera es pequeña: un borde invisible alrededor del botón lo deja en unos 28 px de alto para el
+         dedo, sin cambiar la fila (no llega a la primera fila de la tabla). -->
     <button
       type="button"
-      class="inline-flex items-center gap-1 whitespace-nowrap uppercase tracking-wide transition hover:text-slate-800"
+      class="relative inline-flex items-center gap-1 whitespace-nowrap uppercase tracking-wide transition after:absolute after:-inset-x-1 after:-inset-y-1.5 after:content-[''] hover:text-slate-800"
       :class="active ? 'text-brand-500' : ''"
       :title="hint"
       @click="$emit('sort')"

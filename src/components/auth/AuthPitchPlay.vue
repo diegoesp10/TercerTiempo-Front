@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, useId } from 'vue';
+import { onBeforeUnmount, onMounted, ref, useId } from 'vue';
 
 // Pizarra táctica de las pantallas de acceso: una jugada que se dibuja sola en bucle (desmarques punteados, pases
 // discontinuos, tiro y gol) y vuelve a empezar. Los nuestros van rellenos y los rivales en hueco, como en una pizarra.
@@ -136,10 +136,34 @@ const uid = useId();
 const ids = { pass: `${uid}-pass`, shot: `${uid}-shot`, net: `${uid}-net` };
 
 const svg = ref<SVGSVGElement | null>(null);
+// Con movimiento reducido se queda quieta en el gol. Si no, solo se mueve mientras se ve: fuera de la pantalla o con la
+// pestaña oculta se para (son 16 animaciones en bucle) y sigue donde iba al volver.
+let observer: IntersectionObserver | null = null;
+let onScreen = true;
+function sync() {
+  if (!svg.value) return;
+  if (onScreen && document.visibilityState === 'visible') svg.value.unpauseAnimations();
+  else svg.value.pauseAnimations();
+}
 onMounted(() => {
-  if (!svg.value || !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-  svg.value.pauseAnimations();
-  svg.value.setCurrentTime(6.5);
+  if (!svg.value) return;
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    svg.value.pauseAnimations();
+    svg.value.setCurrentTime(6.5);
+    return;
+  }
+  if (typeof IntersectionObserver !== 'undefined') {
+    observer = new IntersectionObserver(([entry]) => {
+      onScreen = entry?.isIntersecting ?? true;
+      sync();
+    });
+    observer.observe(svg.value);
+  }
+  document.addEventListener('visibilitychange', sync);
+});
+onBeforeUnmount(() => {
+  observer?.disconnect();
+  document.removeEventListener('visibilitychange', sync);
 });
 </script>
 

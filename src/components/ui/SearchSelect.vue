@@ -266,7 +266,7 @@ const sizeClasses = computed(() => (props.size === 'sm' ? 'px-2.5 py-1 text-sm' 
           </li>
           <li v-if="flat.length === 0" class="px-3 py-2 text-sm text-slate-500">Nada coincide con «{{ query }}».</li>
           <template v-for="group in groups" :key="group.name">
-            <li v-if="group.name" class="px-3 pb-0.5 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ group.name }}</li>
+            <li v-if="group.name" class="px-3 pb-0.5 pt-2 text-2xs font-semibold uppercase tracking-wide text-slate-500">{{ group.name }}</li>
             <li
               v-for="option in group.options"
               :key="option.value"

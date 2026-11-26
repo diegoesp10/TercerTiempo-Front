@@ -459,7 +459,7 @@ const numericColumns: { key: keyof Pick<Row, 'goals' | 'assists' | 'shots' | 'sh
 // La fila de cada jugador cabe siempre en el ancho del acta (FitBox mide de verdad): primero la tabla con aire, luego
 // apretada (tight) y, si ni así, una ficha por jugador con sus casillas en rejilla (stacked).
 const fitSteps = [[], ['tight'], ['stacked']] as const;
-const thCell = 'px-1 py-2 text-center uppercase tracking-wide group-data-[tight]/sheet:px-0.5 group-data-[tight]/sheet:text-[10px] group-data-[tight]/sheet:tracking-normal';
+const thCell = 'px-1 py-2 text-center uppercase tracking-wide group-data-[tight]/sheet:px-0.5 group-data-[tight]/sheet:text-2xs group-data-[tight]/sheet:tracking-normal';
 const thNotes = thCell.replace('text-center', 'text-left');
 const tdCell = 'px-1 py-1 text-center group-data-[tight]/sheet:px-0.5';
 const tdRead = 'px-1 py-2 text-center group-data-[tight]/sheet:px-0.5';
@@ -526,6 +526,8 @@ const suggestMounted = useLazyMount(suggesting);
 
   <template v-else-if="data">
     <div class="card">
+      <!-- El título de la página para lectores de pantalla y buscadores: el marcador ya lo dice a la vista. -->
+      <h1 class="sr-only">{{ data.match.homeTeam.name }} {{ data.match.status === 'Played' ? `${data.match.homeGoals}-${data.match.awayGoals}` : 'contra' }} {{ data.match.awayTeam.name }}</h1>
       <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
         <span>Jornada {{ data.match.matchday }} · {{ formatKickoff(data.match.kickoffAt) }}<span v-if="data.match.venue"> · {{ data.match.venue }}</span></span>
         <span class="flex items-center gap-2">
@@ -603,7 +605,7 @@ const suggestMounted = useLazyMount(suggesting);
     />
 
     <div v-if="tab === 'partido'" class="mt-6">
-      <OfficialSheetPanel :match-id="matchId" :highlight-team-id="teamId" :squad-id="squadId" />
+      <OfficialSheetPanel :match-id="matchId" :match="data.match" :highlight-team-id="teamId" :squad-id="squadId" />
     </div>
 
     <!-- Montado solo con la pestaña abierta: su refresco en directo para al cambiar de pestaña -->
@@ -776,7 +778,7 @@ const suggestMounted = useLazyMount(suggesting);
           <template v-if="canEdit">
           <tbody v-for="group in editGroups" :key="group.key" class="divide-y divide-slate-100">
             <tr v-if="group.label">
-              <td :colspan="numericColumns.length + 9" class="bg-surface-2 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+              <td :colspan="numericColumns.length + 9" class="bg-surface-2 px-3 py-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                 {{ group.label }} · {{ group.rows.filter((r) => r.played).length }} de {{ group.rows.length }} en el acta
                 <RouterLink v-if="group.key === 'none'" :to="{ name: 'squad', params: { squadId } }" class="ml-2 normal-case tracking-normal text-amber-400 hover:underline">
                   La federación no la publica: pónsela en Jugadores
@@ -833,7 +835,7 @@ const suggestMounted = useLazyMount(suggesting);
               </td>
               <td :class="tdCell" class="whitespace-nowrap">
                 <RatingBadge v-if="row.played" :rating="row.rating" size="sm" />
-                <Icon v-if="row.played && row.actionsFromVideo" icon="video" class="ml-1 text-[11px] text-amber-400" :title="videoActionsTitle" />
+                <Icon v-if="row.played && row.actionsFromVideo" icon="video" class="ml-1 text-2xs text-amber-400" :title="videoActionsTitle" />
               </td>
               <td class="px-2 py-1 group-data-[tight]/sheet:px-1">
                 <button
@@ -858,7 +860,7 @@ const suggestMounted = useLazyMount(suggesting);
           <template v-else>
           <tbody v-for="group in playedGroups" :key="group.key" class="divide-y divide-slate-100">
             <tr v-if="group.label">
-              <td :colspan="numericColumns.length + 7" class="bg-surface-2 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+              <td :colspan="numericColumns.length + 7" class="bg-surface-2 px-3 py-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                 {{ group.label }} · {{ group.rows.length }}
               </td>
             </tr>
@@ -875,7 +877,7 @@ const suggestMounted = useLazyMount(suggesting);
               <td :class="tdRead"><CardIcon v-if="row.redCard" kind="red" /></td>
               <td :class="tdRead" class="whitespace-nowrap">
                 <RatingBadge :rating="row.rating" size="sm" />
-                <Icon v-if="row.actionsFromVideo" icon="video" class="ml-1 text-[11px] text-amber-400" :title="videoActionsTitle" />
+                <Icon v-if="row.actionsFromVideo" icon="video" class="ml-1 text-2xs text-amber-400" :title="videoActionsTitle" />
               </td>
               <td class="px-2 py-2 group-data-[tight]/sheet:px-1">
                 <button
@@ -920,7 +922,7 @@ const suggestMounted = useLazyMount(suggesting);
             </button>
           </div>
           <template v-for="group in canEdit ? editGroups : playedGroups" :key="group.key">
-            <p v-if="group.label" class="bg-surface-2 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <p v-if="group.label" class="bg-surface-2 px-3 py-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">
               {{ group.label }} ·
               <template v-if="canEdit">{{ group.rows.filter((r) => r.played).length }} de {{ group.rows.length }} en el acta</template>
               <template v-else>{{ group.rows.length }}</template>
@@ -953,16 +955,16 @@ const suggestMounted = useLazyMount(suggesting);
                 <Badge v-else-if="canEdit && hasCallUp && !row.called" tone="amber" title="No iba en la convocatoria: se ha añadido al acta"><Icon icon="plus" class="mr-1 h-2.5 w-2.5" />Fuera de la convocatoria</Badge>
                 <span class="ml-auto inline-flex shrink-0 items-center gap-1">
                   <RatingBadge v-if="row.played" :rating="row.rating" size="sm" />
-                  <Icon v-if="row.played && row.actionsFromVideo" icon="video" class="text-[11px] text-amber-400" :title="videoActionsTitle" />
+                  <Icon v-if="row.played && row.actionsFromVideo" icon="video" class="text-2xs text-amber-400" :title="videoActionsTitle" />
                 </span>
               </div>
               <div v-if="canEdit || row.played" class="mt-2 grid grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-1.5">
-                <label class="flex flex-col items-center gap-1 text-[11px] text-slate-500" title="Titular">
+                <label class="flex flex-col items-center gap-1 text-2xs text-slate-500" title="Titular">
                   Tit
                   <input v-if="canEdit" v-model="row.started" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-accent-400" :disabled="!row.played" :aria-label="`${row.player.fullName} titular`" />
                   <StarterMark v-else :started="row.started" />
                 </label>
-                <label v-for="field in cardFields" :key="field.key" class="flex min-w-0 flex-col items-center gap-0.5 text-[11px] text-slate-500" :title="field.title">
+                <label v-for="field in cardFields" :key="field.key" class="flex min-w-0 flex-col items-center gap-0.5 text-2xs text-slate-500" :title="field.title">
                   {{ field.label }}
                   <input
                     v-if="canEdit"
@@ -977,7 +979,7 @@ const suggestMounted = useLazyMount(suggesting);
                   />
                   <span v-else class="text-sm tabular-nums text-slate-800">{{ row[field.key] }}</span>
                 </label>
-                <label class="flex min-w-0 flex-col items-center gap-0.5 text-[11px] text-slate-500" title="Tarjetas amarillas">
+                <label class="flex min-w-0 flex-col items-center gap-0.5 text-2xs text-slate-500" title="Tarjetas amarillas">
                   TA
                   <input
                     v-if="canEdit"
@@ -992,7 +994,7 @@ const suggestMounted = useLazyMount(suggesting);
                   />
                   <CardMarks v-else :yellow-cards="row.yellowCards" :red-card="false" />
                 </label>
-                <label class="flex flex-col items-center gap-1 text-[11px] text-slate-500" title="Tarjeta roja">
+                <label class="flex flex-col items-center gap-1 text-2xs text-slate-500" title="Tarjeta roja">
                   TR
                   <input v-if="canEdit" v-model="row.redCard" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600" :disabled="!row.played" :aria-label="`Roja de ${row.player.fullName}`" />
                   <CardIcon v-else-if="row.redCard" kind="red" />
@@ -1031,7 +1033,7 @@ const suggestMounted = useLazyMount(suggesting);
         goles encajados para defensas), portería (paradas), disciplina (tarjetas) y
         resultado (según los minutos jugados). Escala de 3,0 a 10,0. Con el acta oficial cerrada, la portería a cero y los goles
         encajados son los de mientras el jugador estaba en el campo; sin ella, la parte de los del partido que le toca por sus
-        minutos. Las acciones que vuelca el vídeo (<Icon icon="video" class="text-[10px] text-amber-400" />) no cuentan hasta
+        minutos. Las acciones que vuelca el vídeo (<Icon icon="video" class="text-2xs text-amber-400" />) no cuentan hasta
         que se guarda el acta: el vídeo solo las ve mientras identifica a cada jugador.
       </p>
     </section>

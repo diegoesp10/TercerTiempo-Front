@@ -76,7 +76,7 @@ const tiles = computed(() =>
       <div class="grid grid-cols-1 gap-3 @[15rem]:grid-cols-2 @lg:grid-cols-3 @4xl:grid-cols-[repeat(auto-fit,minmax(9rem,1fr))]">
         <div v-for="tile in tiles" :key="tile.key" class="relative min-w-0 rounded-xl border border-line bg-surface px-3 pb-3 pt-2.5 shadow-card">
           <span v-if="tile.rank === 1" class="absolute inset-x-3 top-0 h-0.5 rounded-b bg-brand-500" aria-hidden="true" />
-          <p class="break-words font-display text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-500 @lg:text-[11px] @lg:tracking-[0.1em]">{{ tile.label }}</p>
+          <p class="break-words font-display text-2xs font-semibold uppercase tracking-[0.06em] text-slate-500 @lg:text-2xs @lg:tracking-[0.1em]">{{ tile.label }}</p>
           <p class="mt-1 font-figures text-2xl font-extrabold leading-none tabular-nums text-slate-900">{{ tile.value }}</p>
           <p v-if="tile.rank !== null" class="mt-1.5 text-xs font-semibold" :class="tile.rank <= 3 ? 'text-brand-500' : 'text-slate-700'">{{ tile.rank }}.º de {{ tile.of }}</p>
           <p v-else-if="tile.outOfRanking" class="mt-1.5 text-xs text-slate-500">{{ tile.outOfRanking }}</p>

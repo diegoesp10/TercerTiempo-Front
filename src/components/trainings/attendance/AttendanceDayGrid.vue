@@ -98,7 +98,7 @@ function cellTitle(row: AttendanceRow, d: AttendanceDay) {
             :class="weekStarts.has(d.index) ? 'border-l border-l-line' : ''"
             :title="dayTitle(d)"
           >
-            <span class="block text-[10px] uppercase text-slate-400">{{ weekdayShort(d.date).slice(0, 2) }}</span>
+            <span class="block text-2xs uppercase text-slate-400">{{ weekdayShort(d.date).slice(0, 2) }}</span>
             <span class="block font-semibold tabular-nums text-slate-700">{{ d.date.getDate() }}</span>
           </th>
         </tr>

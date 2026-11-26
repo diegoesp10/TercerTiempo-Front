@@ -152,7 +152,7 @@ const columns: { key: SortKey; label: string; title: string; cls?: string }[] = 
         </thead>
         <tbody v-for="group in groups" :key="group.key" class="divide-y divide-line">
           <tr v-if="group.label">
-            <td :colspan="columns.length + 1" class="bg-surface-2 px-2 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <td :colspan="columns.length + 1" class="bg-surface-2 px-2 py-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">
               {{ group.label }} · {{ group.rows.length }}
             </td>
           </tr>
@@ -181,7 +181,7 @@ const columns: { key: SortKey; label: string; title: string; cls?: string }[] = 
             <td class="px-2 py-2 text-center tabular-nums" :title="cycleNotes.get(r.player.id)?.title">
               <span v-if="r.yellowCards" class="inline-flex items-center gap-1"><CardIcon kind="yellow" />{{ r.yellowCards }}</span>
               <span v-else class="text-slate-400">0</span>
-              <span v-if="cycleNotes.has(r.player.id)" class="block whitespace-nowrap text-[11px] leading-tight text-slate-500">{{ cycleNotes.get(r.player.id)?.label }}</span>
+              <span v-if="cycleNotes.has(r.player.id)" class="block whitespace-nowrap text-2xs leading-tight text-slate-500">{{ cycleNotes.get(r.player.id)?.label }}</span>
             </td>
             <td class="col-sm px-2 py-2 text-center tabular-nums">
               <span v-if="r.redCards" class="inline-flex items-center gap-1"><CardIcon kind="red" />{{ r.redCards }}</span>

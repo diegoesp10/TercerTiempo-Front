@@ -22,7 +22,7 @@ const detail = () => props.ground?.address ?? props.ground?.locality ?? null;
     <div class="min-w-0 flex-1">
       <p class="font-medium text-slate-900" :class="compact ? 'text-sm' : ''">
         {{ ground.name }}
-        <span v-if="home" class="ml-1 rounded bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-500">En casa</span>
+        <span v-if="home" class="ml-1 rounded bg-brand-500/15 px-1.5 py-0.5 text-2xs font-semibold uppercase tracking-wide text-brand-500">En casa</span>
       </p>
       <p v-if="detail()" class="text-xs text-slate-500">{{ detail() }}</p>
       <p v-else class="text-xs text-slate-400">Sin dirección exacta: el mapa lo busca por su nombre.</p>

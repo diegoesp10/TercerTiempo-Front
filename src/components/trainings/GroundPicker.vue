@@ -106,7 +106,7 @@ function onBlur() {
     <div v-if="selected" class="rounded-lg border border-line bg-surface-2 p-3">
       <GroundCard :ground="selected" :home="selected.id === homeGroundId" />
       <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span v-if="selected.id === matchGroundId" class="text-[11px] text-slate-500">Es el campo del partido.</span>
+        <span v-if="selected.id === matchGroundId" class="text-2xs text-slate-500">Es el campo del partido.</span>
         <button v-if="!disabled" type="button" class="text-xs font-medium text-accent-400 hover:underline" @click="change"><Icon icon="pen" class="mr-1 h-3 w-3" />Cambiar de sitio</button>
       </div>
     </div>
@@ -150,8 +150,8 @@ function onBlur() {
         >
           <p class="flex items-center gap-1.5 font-medium text-slate-900">
             {{ g.name }}
-            <span v-if="g.id === homeGroundId" class="rounded bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-500">En casa</span>
-            <span v-else-if="g.id === matchGroundId" class="rounded bg-accent-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-400">Del partido</span>
+            <span v-if="g.id === homeGroundId" class="rounded bg-brand-500/15 px-1.5 py-0.5 text-2xs font-semibold uppercase tracking-wide text-brand-500">En casa</span>
+            <span v-else-if="g.id === matchGroundId" class="rounded bg-accent-500/15 px-1.5 py-0.5 text-2xs font-semibold uppercase tracking-wide text-accent-400">Del partido</span>
           </p>
           <p class="break-words text-xs text-slate-500">{{ g.address ?? g.locality ?? 'Sin dirección exacta' }}<template v-if="g.homeTeams.length"> · {{ g.homeTeams.join(', ') }}</template></p>
         </li>

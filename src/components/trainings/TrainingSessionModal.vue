@@ -554,7 +554,7 @@ async function remove() {
 
         <ul class="divide-y divide-line rounded-lg border border-line">
           <template v-for="group in rollCallGroups" :key="group.key">
-            <li v-if="group.label" class="bg-surface-2 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{{ group.label }} · {{ group.rows.length }}</li>
+            <li v-if="group.label" class="bg-surface-2 px-3 py-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ group.label }} · {{ group.rows.length }}</li>
             <li v-for="line in group.rows" :key="keyOf(line)" class="px-3 py-2 text-sm" :class="line.trialPlayerId ? 'bg-amber-50/40' : ''">
               <div class="flex flex-wrap items-center gap-2">
                 <PlayerName :name="lineOf(keyOf(line))?.playerName ?? ''" :photo-url="line.squadPlayerId ? photos[line.squadPlayerId] ?? null : null" class="min-w-0 flex-1 basis-40" />

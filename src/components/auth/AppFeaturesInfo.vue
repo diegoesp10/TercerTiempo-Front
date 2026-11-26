@@ -117,7 +117,7 @@ const sections: { icon: string; title: string; items: string[] }[] = [
          es lo más largo, al otro. -->
     <div class="gap-8 sm:columns-2">
       <section v-for="s in sections" :key="s.title" class="mb-5 break-inside-avoid">
-        <h3 class="mb-2 flex items-center gap-2 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+        <h3 class="mb-2 flex items-center gap-2 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           <span class="grid h-6 w-6 place-items-center rounded-md bg-surface-2 text-slate-600"><Icon :icon="s.icon" class="h-3 w-3" /></span>
           {{ s.title }}
         </h3>

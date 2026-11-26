@@ -120,7 +120,7 @@ const shortDay = (day: string) => new Date(`${day}T00:00:00`).toLocaleDateString
         <div v-else class="flex h-40 items-end gap-1 overflow-x-auto">
           <div v-for="(day, i) in allDays" :key="day.day" class="flex min-w-3 flex-1 flex-col items-center justify-end gap-1" :title="`${shortDay(day.day)}: ${day.pageViews} páginas, ${day.visitors} visitantes`">
             <div class="w-full max-w-8 rounded-t bg-brand-500" :style="{ height: `${Math.max(day.pageViews ? 3 : 1, (day.pageViews / maxDay) * 120)}px`, opacity: day.pageViews ? 1 : 0.25 }" />
-            <span class="h-3 text-[10px] text-slate-500">{{ i % Math.ceil(allDays.length / 10) === 0 ? shortDay(day.day) : '' }}</span>
+            <span class="h-3 text-2xs text-slate-500">{{ i % Math.ceil(allDays.length / 10) === 0 ? shortDay(day.day) : '' }}</span>
           </div>
         </div>
       </section>

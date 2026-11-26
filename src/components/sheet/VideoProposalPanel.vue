@@ -647,7 +647,7 @@ async function apply(overwrite = false) {
         </p>
         <div v-else-if="part.state === 'Running' || part.state === 'Paused'">
           <VideoAnalysisProgress :part="part" />
-          <p v-if="part.state === 'Running'" class="mt-2 text-[11px] text-slate-400">Se analiza en segundo plano: puedes cerrar esta página y volver luego.</p>
+          <p v-if="part.state === 'Running'" class="mt-2 text-2xs text-slate-400">Se analiza en segundo plano: puedes cerrar esta página y volver luego.</p>
         </div>
         <Alert v-else-if="part.state === 'Failed'" kind="error" class="mt-3">
           No se ha podido analizar el vídeo: {{ part.error ?? 'error desconocido' }}
@@ -660,13 +660,13 @@ async function apply(overwrite = false) {
             <div v-if="part.quality.ballSeenInPlayPct != null" class="rounded-lg border border-line bg-surface-2 px-3 py-2">
               <dt class="eyebrow">Balón visto en juego</dt>
               <dd class="mt-0.5 font-figures text-xl font-extrabold tabular-nums" :class="part.quality.lowBall ? 'text-warning' : 'text-slate-900'">{{ percent(part.quality.ballSeenInPlayPct) }} %</dd>
-              <dd v-if="part.quality.ballTrackedInPlayPct != null" class="text-[11px] text-slate-500">con la trayectoria: {{ percent(part.quality.ballTrackedInPlayPct) }} %</dd>
-              <dd v-if="part.quality.inPlayPct != null" class="text-[11px] text-slate-500" title="Sin fueras, faltas, saques ni cambios: el resto del tiempo el balón está parado">en juego el {{ percent(part.quality.inPlayPct) }} % del tramo</dd>
+              <dd v-if="part.quality.ballTrackedInPlayPct != null" class="text-2xs text-slate-500">con la trayectoria: {{ percent(part.quality.ballTrackedInPlayPct) }} %</dd>
+              <dd v-if="part.quality.inPlayPct != null" class="text-2xs text-slate-500" title="Sin fueras, faltas, saques ni cambios: el resto del tiempo el balón está parado">en juego el {{ percent(part.quality.inPlayPct) }} % del tramo</dd>
             </div>
             <div v-else class="rounded-lg border border-line bg-surface-2 px-3 py-2">
               <dt class="eyebrow">Fotogramas con balón</dt>
               <dd class="mt-0.5 font-figures text-xl font-extrabold tabular-nums" :class="part.quality.lowBall ? 'text-warning' : 'text-slate-900'">{{ percent(part.quality.ballFramesPct) }} %</dd>
-              <dd v-if="ballKnownPct(part) !== null" class="text-[11px] text-slate-500">con la trayectoria: {{ percent(ballKnownPct(part)!) }} %</dd>
+              <dd v-if="ballKnownPct(part) !== null" class="text-2xs text-slate-500">con la trayectoria: {{ percent(ballKnownPct(part)!) }} %</dd>
             </div>
             <div class="rounded-lg border border-line bg-surface-2 px-3 py-2">
               <dt class="eyebrow">Campo calibrado</dt>
@@ -682,7 +682,7 @@ async function apply(overwrite = false) {
                 <template v-if="part.quality.pitchLengthM && part.quality.pitchWidthM">{{ metres(part.quality.pitchLengthM) }} × {{ metres(part.quality.pitchWidthM) }} m</template>
                 <template v-else>—</template>
               </dd>
-              <dd v-if="part.quality.genericPitch" class="text-[11px] text-slate-500">medidas genéricas</dd>
+              <dd v-if="part.quality.genericPitch" class="text-2xs text-slate-500">medidas genéricas</dd>
             </div>
           </dl>
           <Alert v-if="part.quality.lowBall || part.quality.lowCalibration || part.quality.lowRead" kind="warning" class="mt-3">
@@ -834,7 +834,7 @@ async function apply(overwrite = false) {
           </div>
 
           <!-- Con qué modelos se analizó: solo llega para el administrador -->
-          <div v-if="part.weights" class="mt-3 rounded-lg border border-dashed border-line px-3 py-2 text-[11px] text-slate-500">
+          <div v-if="part.weights" class="mt-3 rounded-lg border border-dashed border-line px-3 py-2 text-2xs text-slate-500">
             <p class="font-semibold text-slate-600">
               Modelos de {{ part.analyzerName }} {{ part.analyzerVersion }}
               <span class="font-normal text-slate-400">· solo lo ves tú, como administrador</span>
@@ -866,8 +866,8 @@ async function apply(overwrite = false) {
               <tr>
                 <th v-if="canManage" class="w-10 px-2 py-2 text-center" scope="col"><span class="sr-only">Aceptar</span></th>
                 <th class="px-2 py-2 text-left" scope="col">Dato</th>
-                <th class="px-2 py-2 text-center" scope="col">Vídeo<span class="block text-[10px] font-normal normal-case tracking-normal text-slate-400">{{ sheet.squad.teamName }} · rival</span></th>
-                <th class="px-2 py-2 text-center" scope="col">Acta ahora<span class="block text-[10px] font-normal normal-case tracking-normal text-slate-400">{{ sheet.squad.teamName }} · rival</span></th>
+                <th class="px-2 py-2 text-center" scope="col">Vídeo<span class="block text-2xs font-normal normal-case tracking-normal text-slate-400">{{ sheet.squad.teamName }} · rival</span></th>
+                <th class="px-2 py-2 text-center" scope="col">Acta ahora<span class="block text-2xs font-normal normal-case tracking-normal text-slate-400">{{ sheet.squad.teamName }} · rival</span></th>
                 <th class="px-2 py-2 text-left" scope="col"><span class="sr-only">Qué pasa al volcar</span></th>
                 <th class="px-2 py-2 text-right" scope="col"><span class="sr-only">Ver en el vídeo</span></th>
               </tr>

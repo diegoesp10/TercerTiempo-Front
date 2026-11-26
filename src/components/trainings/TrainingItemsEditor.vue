@@ -111,7 +111,7 @@ function remove(index: number) {
           <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface text-xs font-bold tabular-nums text-slate-500 ring-1 ring-line">{{ index + 1 }}</span>
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="typeStyle(item.type).chip" :title="typeDescription(item.type)">
+              <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-2xs font-semibold" :class="typeStyle(item.type).chip" :title="typeDescription(item.type)">
                 <Icon :icon="typeStyle(item.type).icon" class="h-2.5 w-2.5" />{{ exerciseTypeLabels[item.type] }}
               </span>
               <span class="inline-flex items-center gap-1 text-xs font-semibold tabular-nums text-slate-700">

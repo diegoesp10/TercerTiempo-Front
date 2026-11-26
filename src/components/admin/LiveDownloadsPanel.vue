@@ -319,7 +319,7 @@ defineExpose({ load });
               <span v-if="live.job.running && live.job.progress?.total" class="mt-1.5 block h-1 overflow-hidden rounded-full bg-surface-3">
                 <span class="block h-full bg-brand-500 transition-[width] duration-700" :style="{ width: `${pct(live.job.progress.done, live.job.progress.total)}%` }" />
               </span>
-              <span v-else-if="live.job.lastRun" class="mt-0.5 block break-words text-[11px] text-slate-500">
+              <span v-else-if="live.job.lastRun" class="mt-0.5 block break-words text-2xs text-slate-500">
                 Última: {{ formatKickoff(live.job.lastRun.startedAt) }} · {{ runStatusLabels[live.job.lastRun.status] }}
               </span>
             </span>
@@ -403,19 +403,19 @@ defineExpose({ load });
               </template>
               <template v-else>
                 <dd class="mt-1 font-semibold text-slate-900">{{ sheets.dayRequests }}</dd>
-                <p class="mt-0.5 text-[11px] text-slate-500">Sin tope diario</p>
+                <p class="mt-0.5 text-2xs text-slate-500">Sin tope diario</p>
               </template>
             </div>
             <div v-if="sheets.maxPerBurst" class="rounded-lg bg-surface-2 px-3 py-2">
               <dt class="text-slate-500">Tanda en curso</dt>
               <dd class="mt-1 font-semibold text-slate-900">{{ sheets.burstRequests }} / {{ sheets.maxPerBurst }}</dd>
               <div class="mt-1 h-1 overflow-hidden rounded-full bg-surface-3"><div class="h-full bg-brand-500" :style="{ width: `${pct(sheets.burstRequests, sheets.maxPerBurst)}%` }" /></div>
-              <p class="mt-0.5 text-[11px] text-slate-500">Luego descansa y sigue con sesión nueva</p>
+              <p class="mt-0.5 text-2xs text-slate-500">Luego descansa y sigue con sesión nueva</p>
             </div>
             <div class="rounded-lg bg-surface-2 px-3 py-2" :class="{ 'col-span-2': !sheets.maxPerBurst }">
               <dt class="text-slate-500">Terminaría hacia</dt>
               <dd class="mt-1 font-semibold text-slate-900">{{ sheets.estimatedFinishAt ? formatKickoff(sheets.estimatedFinishAt) : '—' }}</dd>
-              <p v-if="sheets.requestsNeeded" class="mt-0.5 text-[11px] text-slate-500">≈ {{ sheets.requestsNeeded }} peticiones</p>
+              <p v-if="sheets.requestsNeeded" class="mt-0.5 text-2xs text-slate-500">≈ {{ sheets.requestsNeeded }} peticiones</p>
             </div>
           </dl>
         </section>
@@ -448,17 +448,17 @@ defineExpose({ load });
                 :title="stage"
               />
             </ol>
-            <p class="mt-1 text-[11px] text-slate-500">
+            <p class="mt-1 text-2xs text-slate-500">
               <template v-if="league.status === 'running'">{{ league.stage }}</template>
               <template v-else-if="league.status === 'failed'">{{ league.error ?? 'Falló' }}</template>
               <template v-else-if="league.status === 'pending'">En espera</template>
               <template v-else>Terminada</template>
             </p>
             <dl class="mt-2 grid grid-cols-4 gap-1 text-center">
-              <div><dt class="text-[10px] uppercase tracking-wide text-slate-500">Equipos</dt><dd class="font-figures font-bold tabular-nums text-slate-900">{{ league.teams }}</dd></div>
-              <div><dt class="text-[10px] uppercase tracking-wide text-slate-500">Partidos</dt><dd class="font-figures font-bold tabular-nums text-slate-900">{{ league.matches }}</dd></div>
-              <div><dt class="text-[10px] uppercase tracking-wide text-slate-500">Jugados</dt><dd class="font-figures font-bold tabular-nums text-slate-900">{{ league.played }}</dd></div>
-              <div><dt class="text-[10px] uppercase tracking-wide text-slate-500">Fichas</dt><dd class="font-figures font-bold tabular-nums text-slate-900">{{ league.roster }}</dd></div>
+              <div><dt class="text-2xs uppercase tracking-wide text-slate-500">Equipos</dt><dd class="font-figures font-bold tabular-nums text-slate-900">{{ league.teams }}</dd></div>
+              <div><dt class="text-2xs uppercase tracking-wide text-slate-500">Partidos</dt><dd class="font-figures font-bold tabular-nums text-slate-900">{{ league.matches }}</dd></div>
+              <div><dt class="text-2xs uppercase tracking-wide text-slate-500">Jugados</dt><dd class="font-figures font-bold tabular-nums text-slate-900">{{ league.played }}</dd></div>
+              <div><dt class="text-2xs uppercase tracking-wide text-slate-500">Fichas</dt><dd class="font-figures font-bold tabular-nums text-slate-900">{{ league.roster }}</dd></div>
             </dl>
           </article>
         </div>
@@ -503,7 +503,7 @@ defineExpose({ load });
             <span class="hidden shrink-0 text-xs text-slate-500 md:inline">{{ event.league }}</span>
             <Badge v-if="event.change === 'new'" tone="green" class="shrink-0">Nuevo</Badge>
             <Badge v-else-if="event.change === 'updated'" tone="blue" class="shrink-0">Actualizado</Badge>
-            <span class="w-14 shrink-0 text-right text-[11px] tabular-nums text-slate-500">{{ formatTime(event.at) }}</span>
+            <span class="w-14 shrink-0 text-right text-2xs tabular-nums text-slate-500">{{ formatTime(event.at) }}</span>
           </li>
         </TransitionGroup>
       </section>
@@ -568,7 +568,7 @@ defineExpose({ load });
                   <span class="flex min-w-0 items-center justify-end gap-2 text-right"><span class="min-w-0 break-words text-slate-800">{{ item.home.name }}</span><TeamCrest :src="item.home.crestUrl" :name="item.home.name" size="sm" /></span>
                   <RouterLink :to="{ name: 'match', params: { matchId: item.matchId } }" class="rounded-md bg-surface-2 px-2 py-0.5 text-center font-figures font-bold tabular-nums text-slate-900 hover:text-accent-400">
                     {{ item.homeGoals !== null ? `${item.homeGoals} - ${item.awayGoals}` : 'vs' }}
-                    <span class="block text-[10px] font-normal text-slate-500">{{ formatKickoff(item.kickoffAt) }}</span>
+                    <span class="block text-2xs font-normal text-slate-500">{{ formatKickoff(item.kickoffAt) }}</span>
                   </RouterLink>
                   <span class="flex min-w-0 items-center gap-2"><TeamCrest :src="item.away.crestUrl" :name="item.away.name" size="sm" /><span class="min-w-0 break-words text-slate-800">{{ item.away.name }}</span></span>
                 </div>
@@ -644,7 +644,7 @@ defineExpose({ load });
                 </RouterLink>
                 <p class="break-words text-slate-800">{{ event.text }}</p>
               </div>
-              <span class="w-12 shrink-0 text-right text-[11px] tabular-nums text-slate-500">{{ formatTime(event.at) }}</span>
+              <span class="w-12 shrink-0 text-right text-2xs tabular-nums text-slate-500">{{ formatTime(event.at) }}</span>
             </li>
           </TransitionGroup>
           <p v-else-if="!live.job.running" class="mt-3 text-xs text-slate-500">

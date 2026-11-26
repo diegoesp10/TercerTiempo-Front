@@ -49,6 +49,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   >
     <Icon icon="magnifying-glass" class="h-3.5 w-3.5 shrink-0" />
     <span class="min-w-0 flex-1 truncate text-left">Buscar…</span>
-    <kbd class="hidden shrink-0 rounded border border-line px-1.5 font-sans text-[10px] xl:inline">{{ isMac ? '⌘' : 'Ctrl' }} F</kbd>
+    <kbd class="hidden shrink-0 rounded border border-line px-1.5 font-sans text-2xs xl:inline">{{ isMac ? '⌘' : 'Ctrl' }} F</kbd>
   </button>
 </template>

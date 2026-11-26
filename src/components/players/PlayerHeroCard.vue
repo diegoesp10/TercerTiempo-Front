@@ -85,7 +85,7 @@ const nameParts = computed(() => {
     <!-- En el móvil, tres cifras por fila (la letra de las etiquetas se aprieta un poco para que «Asistencias» quepa). -->
     <dl class="hero-strip relative z-20 mx-4 -mb-px grid grid-cols-[repeat(auto-fit,minmax(5rem,1fr))] gap-x-3 gap-y-4 rounded-t-xl px-4 py-4 text-white sm:mx-6 sm:grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] sm:gap-x-6 sm:px-7 sm:py-5">
       <div v-for="stat in stats" :key="stat.label" class="min-w-0" :title="stat.title">
-        <dt class="font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-white/65 sm:tracking-[0.16em]">{{ stat.label }}</dt>
+        <dt class="font-display text-2xs font-semibold uppercase tracking-[0.08em] text-white/65 sm:tracking-[0.16em]">{{ stat.label }}</dt>
         <dd class="mt-0.5 font-display text-3xl font-extrabold leading-none tabular-nums tracking-tight sm:text-4xl">{{ stat.value ?? '—' }}</dd>
       </div>
     </dl>

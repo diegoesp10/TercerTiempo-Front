@@ -92,7 +92,7 @@ async function add() {
         </thead>
         <tbody v-for="group in groups" :key="group.key" class="divide-y divide-slate-100">
           <tr v-if="group.label">
-            <td colspan="3" class="bg-surface-2 px-2 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{{ group.label }} · {{ group.rows.length }}</td>
+            <td colspan="3" class="bg-surface-2 px-2 py-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ group.label }} · {{ group.rows.length }}</td>
           </tr>
           <tr v-for="entry in group.rows" :key="entry.id" class="cursor-pointer hover:bg-surface-2/60" @click="openId = entry.id">
             <td class="py-2 pr-3">

@@ -27,7 +27,7 @@ const barWidth = (value: number) => `${value > 0 ? Math.max(value * 100, 2) : 0}
   <div>
     <ul class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
       <li v-for="metric in metrics" :key="metric" class="flex items-center gap-1.5">
-        <Icon :icon="icons[metric]" class="text-[11px]" :style="{ color: metricColors[metric] }" />{{ labels[metric] }}
+        <Icon :icon="icons[metric]" class="text-2xs" :style="{ color: metricColors[metric] }" />{{ labels[metric] }}
       </li>
     </ul>
     <ol class="mt-2 divide-y divide-line">
@@ -49,7 +49,7 @@ const barWidth = (value: number) => `${value > 0 ? Math.max(value * 100, 2) : 0}
           <div v-for="metric in metrics" :key="metric" class="min-w-0" :aria-label="`${labels[metric]}: ${percent(team[metric])}`">
             <div class="flex items-center justify-between gap-1">
               <!-- Font Awesome fija el ancho en em: el tamaño del icono va con el de la letra. -->
-              <Icon :icon="icons[metric]" class="shrink-0 text-[10px]" :style="{ color: metricColors[metric] }" />
+              <Icon :icon="icons[metric]" class="shrink-0 text-2xs" :style="{ color: metricColors[metric] }" />
               <span class="whitespace-nowrap font-figures text-xs font-semibold text-slate-800">{{ percent(team[metric]) }}</span>
             </div>
             <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">

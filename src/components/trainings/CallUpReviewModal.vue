@@ -77,7 +77,7 @@ const nobodyToWarn = computed(() => props.update && props.changes && !props.chan
       <!-- Partido -->
       <section class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface-2 px-4 py-3">
         <div class="min-w-0">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Jornada {{ match.matchday }}</p>
+          <p class="text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">Jornada {{ match.matchday }}</p>
           <TeamName prefix="vs" :name="opponent.name" :crest-url="opponent.crestUrl" :short-name="opponent.shortName" :team-id="opponent.id" size="sm" />
         </div>
         <p class="text-sm text-slate-600"><Icon icon="calendar-check" class="mr-1.5 h-3 w-3" />{{ formatKickoff(match.kickoffAt) }}</p>
@@ -86,25 +86,25 @@ const nobodyToWarn = computed(() => props.update && props.changes && !props.chan
       <!-- Cita -->
       <section class="grid gap-4 sm:grid-cols-2">
         <div>
-          <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Cita</h3>
+          <h3 class="mb-1 text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">Cita</h3>
           <p v-if="meetAt" class="font-medium text-slate-900">{{ formatKickoff(meetAt) }}</p>
           <p v-else class="text-sm text-warning">Sin hora de cita</p>
           <p v-if="meetBeforeKickoff" class="text-xs text-slate-500">{{ meetBeforeKickoff }}</p>
         </div>
         <div>
-          <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Lugar</h3>
+          <h3 class="mb-1 text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">Lugar</h3>
           <GroundCard v-if="ground || place" :ground="ground" :place="place" compact />
           <p v-else class="text-sm text-warning">Sin lugar</p>
         </div>
         <div v-if="notes" class="sm:col-span-2">
-          <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Notas</h3>
+          <h3 class="mb-1 text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">Notas</h3>
           <p class="whitespace-pre-line text-sm text-slate-700">{{ notes }}</p>
         </div>
       </section>
 
       <!-- Contador por posición -->
       <section>
-        <h3 class="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{{ calledCount }} convocados</h3>
+        <h3 class="mb-2 text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ calledCount }} convocados</h3>
         <div class="flex flex-wrap gap-2">
           <span
             v-for="g in groups"
@@ -122,21 +122,21 @@ const nobodyToWarn = computed(() => props.update && props.changes && !props.chan
       <!-- Convocados por posición -->
       <section class="space-y-3">
         <div v-for="g in groups.filter((x) => x.players.length)" :key="g.key">
-          <p class="mb-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{{ g.label }} · {{ g.players.length }}</p>
+          <p class="mb-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ g.label }} · {{ g.players.length }}</p>
           <ul class="grid gap-2 sm:grid-cols-2">
             <li v-for="p in g.players" :key="p.id" class="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5 text-sm">
               <PlayerAvatar :src="p.photoUrl" :name="p.name" size="sm" />
               <span class="min-w-0 flex-1 break-words text-slate-900">{{ p.name }}</span>
               <DisciplineBadge :discipline="p.discipline" class="shrink-0" />
-              <span v-if="changes?.entering.includes(p.id)" class="text-[10px] font-semibold uppercase text-success">Entra</span>
-              <span v-if="!p.linked" class="text-[10px] text-slate-400" title="Sin cuenta en la app: no le llega el aviso">sin cuenta</span>
+              <span v-if="changes?.entering.includes(p.id)" class="text-2xs font-semibold uppercase text-success">Entra</span>
+              <span v-if="!p.linked" class="text-2xs text-slate-400" title="Sin cuenta en la app: no le llega el aviso">sin cuenta</span>
             </li>
           </ul>
         </div>
       </section>
 
       <section v-if="notCalled.length">
-        <p class="mb-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">No convocados · {{ notCalled.length }}</p>
+        <p class="mb-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">No convocados · {{ notCalled.length }}</p>
         <p class="text-sm text-slate-600">
           <template v-for="(p, i) in notCalled" :key="p.id">
             <span :class="changes?.leaving.includes(p.id) ? 'font-medium text-danger' : ''">{{ p.name }}<template v-if="changes?.leaving.includes(p.id)"> (sale)</template><template v-if="p.suspended"> (sancionado)</template><template v-else-if="p.injured"> (lesionado)</template></span><template v-if="i < notCalled.length - 1">, </template>

@@ -169,7 +169,7 @@ async function remove() {
         <EmptyState v-else-if="groups.length === 0" compact>Ningún ejercicio coincide con la búsqueda.</EmptyState>
 
         <div v-for="g in groups" :key="g.type" class="mb-4 last:mb-0">
-          <h3 class="mb-2 flex items-center gap-2 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500" :title="g.description">
+          <h3 class="mb-2 flex items-center gap-2 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500" :title="g.description">
             <span class="grid h-5 w-5 place-items-center rounded-md" :class="exerciseTypeStyle[g.type].chip"><Icon :icon="exerciseTypeStyle[g.type].icon" class="h-2.5 w-2.5" /></span>
             {{ g.label }}
             <span class="font-sans font-medium normal-case tracking-normal text-slate-400">· {{ g.items.length }}</span>
@@ -194,12 +194,12 @@ async function remove() {
                 <span class="min-w-0 flex-1">
                   <span class="flex items-start justify-between gap-2">
                     <span class="min-w-0 font-semibold text-slate-900">{{ e.name }}</span>
-                    <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium tabular-nums text-slate-600 group-hover:bg-surface">
+                    <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-2xs font-medium tabular-nums text-slate-600 group-hover:bg-surface">
                       <Icon icon="stopwatch" class="h-2.5 w-2.5" />{{ formatDurationMinutes(e.durationMinutes) }}
                     </span>
                   </span>
                   <span v-if="e.description" class="mt-0.5 block whitespace-pre-line break-words text-xs text-slate-600">{{ e.description }}</span>
-                  <span v-if="e.material" class="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500"><Icon icon="toolbox" class="h-2.5 w-2.5 shrink-0" />{{ e.material }}</span>
+                  <span v-if="e.material" class="mt-1 flex items-center gap-1.5 text-2xs text-slate-500"><Icon icon="toolbox" class="h-2.5 w-2.5 shrink-0" />{{ e.material }}</span>
                 </span>
                 <Icon
                   v-if="!readonly"
@@ -243,7 +243,7 @@ async function remove() {
                     v-for="t in exerciseTypes"
                     :key="t.type"
                     type="button"
-                    class="flex cursor-pointer flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[11px] font-medium leading-tight transition"
+                    class="flex cursor-pointer flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-2xs font-medium leading-tight transition"
                     :class="form.type === t.type ? 'border-brand-500 bg-brand-500/10 text-slate-900 ring-1 ring-brand-500' : 'border-line text-slate-600 hover:bg-surface-2'"
                     :aria-pressed="form.type === t.type"
                     :title="t.description"
@@ -254,7 +254,7 @@ async function remove() {
                   </button>
                 </div>
               </div>
-              <p v-if="typeDescription" class="mt-1.5 text-[11px] text-slate-500">{{ typeDescription }}</p>
+              <p v-if="typeDescription" class="mt-1.5 text-2xs text-slate-500">{{ typeDescription }}</p>
             </fieldset>
 
             <div>

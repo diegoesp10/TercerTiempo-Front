@@ -116,18 +116,19 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
   <section class="card">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <!-- Navegación de jornadas: anterior · jornada con fechas y estado · siguiente -->
-      <div class="inline-flex items-stretch overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+      <!-- En el móvil, a todo el ancho y con las flechas fijas (44 px): el nombre de la jornada es el que se estrecha. -->
+      <div class="flex w-full items-stretch overflow-hidden rounded-xl border border-line bg-surface shadow-sm sm:inline-flex sm:w-auto">
         <button
           type="button"
-          class="flex w-11 items-center justify-center text-slate-500 transition hover:bg-brand-500/10 hover:text-brand-500 disabled:cursor-not-allowed disabled:opacity-30"
+          class="flex w-11 shrink-0 items-center justify-center text-slate-500 transition hover:bg-brand-500/10 hover:text-brand-500 disabled:cursor-not-allowed disabled:opacity-30"
           :disabled="previous === null || loading"
           aria-label="Jornada anterior"
           @click="go(previous)"
         >
           <Icon icon="chevron-left" class="h-4 w-4" />
         </button>
-        <div class="min-w-44 border-x border-line px-4 py-1.5 text-center">
-          <p class="font-display text-xl font-bold uppercase leading-tight text-slate-900">
+        <div class="min-w-0 flex-1 border-x border-line px-2 py-1.5 text-center sm:min-w-44 sm:px-4">
+          <p class="font-display text-lg font-bold uppercase leading-tight text-slate-900 sm:text-xl">
             {{ selected !== null ? `Jornada ${selected}` : 'Jornadas' }}
           </p>
           <p class="text-xs text-slate-500">
@@ -137,7 +138,7 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
         </div>
         <button
           type="button"
-          class="flex w-11 items-center justify-center text-slate-500 transition hover:bg-brand-500/10 hover:text-brand-500 disabled:cursor-not-allowed disabled:opacity-30"
+          class="flex w-11 shrink-0 items-center justify-center text-slate-500 transition hover:bg-brand-500/10 hover:text-brand-500 disabled:cursor-not-allowed disabled:opacity-30"
           :disabled="next === null || loading"
           aria-label="Jornada siguiente"
           @click="go(next)"

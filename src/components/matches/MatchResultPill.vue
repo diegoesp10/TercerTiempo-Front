@@ -15,7 +15,7 @@ const score = computed(() => scoreOf(props.match));
   <span
     v-if="outcome && score"
     class="inline-flex shrink-0 items-stretch overflow-hidden rounded-md font-bold leading-none tabular-nums ring-1 ring-inset"
-    :class="[resultStyle[outcome].ring, size === 'xs' ? 'text-[10px]' : 'text-[11px]']"
+    :class="[resultStyle[outcome].ring, size === 'xs' ? 'text-2xs' : 'text-2xs']"
     :title="resultText(match, teamId) ?? undefined"
   >
     <span class="grid place-items-center" :class="[resultStyle[outcome].solid, size === 'xs' ? 'px-1' : 'px-1.5']" aria-hidden="true">{{ outcomeLabels[outcome] }}</span>

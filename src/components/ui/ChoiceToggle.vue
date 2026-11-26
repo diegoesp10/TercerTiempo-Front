@@ -74,7 +74,7 @@ function choose(value: T) {
       <span v-if="option.count !== undefined" class="tabular-nums opacity-70">{{ option.count }}</span>
       <span
         v-if="option.badge"
-        class="rounded-full px-2 py-0.5 text-[11px] font-bold"
+        class="rounded-full px-2 py-0.5 text-2xs font-bold"
         :class="option.value === modelValue ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700'"
       >{{ option.badge }}</span>
     </button>

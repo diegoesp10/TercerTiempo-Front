@@ -125,13 +125,13 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
     <ol v-show="part.state === 'Running' || part.pausedMidway" ref="stepsRow" class="group/steps flex items-center gap-1" aria-label="Etapas del análisis">
       <li v-for="(step, i) in steps" :key="step.key" class="flex items-center gap-1" :class="i === stepIndex ? 'flex-auto' : 'flex-1'" :aria-current="i === stepIndex ? 'step' : undefined">
         <span
-          class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+          class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-2xs font-bold"
           :class="i < stepIndex ? 'bg-accent-400 text-slate-950' : i === stepIndex ? (paused ? 'bg-amber-500 text-slate-950' : 'bg-action text-white ring-2 ring-brand-500/40') : 'bg-slate-200 text-slate-500'"
         >
           <Icon v-if="i < stepIndex" icon="check" class="h-2.5 w-2.5" />
           <template v-else>{{ i + 1 }}</template>
         </span>
-        <span class="whitespace-nowrap text-[11px]" :class="i === stepIndex ? 'shrink-0 font-semibold text-slate-900' : 'hidden text-slate-500 group-data-[labels]/steps:inline'">{{ step.label }}</span>
+        <span class="whitespace-nowrap text-2xs" :class="i === stepIndex ? 'shrink-0 font-semibold text-slate-900' : 'hidden text-slate-500 group-data-[labels]/steps:inline'">{{ step.label }}</span>
         <span v-if="i < steps.length - 1" class="h-px min-w-2 flex-1" :class="i < stepIndex ? 'bg-accent-400' : 'bg-slate-200'" aria-hidden="true" />
       </li>
     </ol>
@@ -154,10 +154,10 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
       </div>
 
       <!-- Detalle de la etapa -->
-      <p v-if="live?.stage === 'teams' && teamSamples !== null" class="mt-1.5 text-[11px] text-slate-500">
+      <p v-if="live?.stage === 'teams' && teamSamples !== null" class="mt-1.5 text-2xs text-slate-500">
         {{ live.teamSamples }} de {{ live.teamSamplesTarget }} muestras de camisetas
       </p>
-      <div v-else-if="live?.stage === 'tracking' && live.videoSecond != null" class="mt-1.5 text-[11px] text-slate-500">
+      <div v-else-if="live?.stage === 'tracking' && live.videoSecond != null" class="mt-1.5 text-2xs text-slate-500">
         Minuto <span class="font-figures font-semibold text-slate-700 tabular-nums">{{ clock(live.videoSecond) }}</span> del vídeo
         <template v-if="live.fromSecond != null && live.toSecond != null"> (tramo {{ clock(live.fromSecond) }}–{{ clock(live.toSecond) }}<template v-if="tramo !== null">, {{ number(tramo, 0) }} %</template>)</template>
         <template v-if="live.frames != null && live.framesTotal"> · fotograma {{ live.frames.toLocaleString('es-ES') }} de {{ live.framesTotal.toLocaleString('es-ES') }}</template>
@@ -167,9 +167,9 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
     <!-- Datos en directo -->
     <dl v-if="tiles.length > 0" class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
       <div v-for="tile in tiles" :key="tile.label" class="rounded-lg border border-line bg-surface-2 px-2.5 py-1.5">
-        <dt class="eyebrow text-[10px]">{{ tile.label }}</dt>
+        <dt class="eyebrow text-2xs">{{ tile.label }}</dt>
         <dd class="font-figures text-lg font-extrabold tabular-nums" :class="tile.tone === 'warn' ? 'text-warning' : 'text-slate-900'">{{ tile.value }}</dd>
-        <dd v-if="tile.hint" class="text-[10px] leading-tight text-slate-500">{{ tile.hint }}</dd>
+        <dd v-if="tile.hint" class="text-2xs leading-tight text-slate-500">{{ tile.hint }}</dd>
       </div>
     </dl>
 

@@ -159,7 +159,7 @@ onMounted(load);
         <label class="w-56">
           <span class="label">Avisos de caducidad (días antes)</span>
           <input v-model="alertDays" type="text" inputmode="numeric" placeholder="15, 5" class="input" />
-          <span class="mt-1 block text-[11px] text-slate-500">Campanita del club si su licencia acaba sin renovarse. Vacío = sin avisos; hasta 5 valores de 1 a 90.</span>
+          <span class="mt-1 block text-2xs text-slate-500">Campanita del club si su licencia acaba sin renovarse. Vacío = sin avisos; hasta 5 valores de 1 a 90.</span>
         </label>
       </div>
 

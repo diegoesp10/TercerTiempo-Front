@@ -183,7 +183,7 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
             <button v-if="query" type="button" class="rounded-md p-1 text-slate-400 hover:text-slate-700" aria-label="Borrar" @click="query = ''; input?.focus()">
               <Icon icon="xmark" class="h-3.5 w-3.5" />
             </button>
-            <button type="button" class="rounded-md border border-line px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:text-slate-800" @click="store.hide()">Esc</button>
+            <button type="button" class="rounded-md border border-line px-2 py-0.5 text-2xs font-semibold text-slate-500 hover:text-slate-800" @click="store.hide()">Esc</button>
           </div>
 
           <!-- Filtros: si no caben en una línea pasan a la siguiente, siempre enteros y a la vista. -->
@@ -267,11 +267,11 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
           </div>
 
           <!-- Pie -->
-          <footer class="hidden items-center justify-between gap-3 border-t border-line px-4 py-2 text-[11px] text-slate-500 sm:flex">
+          <footer class="hidden items-center justify-between gap-3 border-t border-line px-4 py-2 text-2xs text-slate-500 sm:flex">
             <span class="flex items-center gap-3">
-              <span><kbd class="rounded border border-line px-1 font-sans text-[10px]">↑</kbd> <kbd class="rounded border border-line px-1 font-sans text-[10px]">↓</kbd> moverse</span>
-              <span><kbd class="rounded border border-line px-1 font-sans text-[10px]">Enter</kbd> abrir</span>
-              <span><kbd class="rounded border border-line px-1 font-sans text-[10px]">Ctrl</kbd> + <kbd class="rounded border border-line px-1 font-sans text-[10px]">Enter</kbd> todos los resultados</span>
+              <span><kbd class="rounded border border-line px-1 font-sans text-2xs">↑</kbd> <kbd class="rounded border border-line px-1 font-sans text-2xs">↓</kbd> moverse</span>
+              <span><kbd class="rounded border border-line px-1 font-sans text-2xs">Enter</kbd> abrir</span>
+              <span><kbd class="rounded border border-line px-1 font-sans text-2xs">Ctrl</kbd> + <kbd class="rounded border border-line px-1 font-sans text-2xs">Enter</kbd> todos los resultados</span>
             </span>
             <span v-if="results">{{ results.total }} resultados · {{ results.elapsedMs }} ms</span>
             <button v-if="searched" type="button" class="font-medium text-brand-500 hover:underline sm:hidden" @click="seeAll()">Ver todos</button>

@@ -43,7 +43,7 @@ function apply() {
       <div class="flex min-w-0 items-center gap-3">
         <PlayerAvatar :src="photoUrl" :name="playerName" size="lg" />
         <div class="min-w-0">
-          <p class="eyebrow flex items-center gap-1.5"><Icon icon="comment-dots" class="text-[11px]" />Notas del partido</p>
+          <p class="eyebrow flex items-center gap-1.5"><Icon icon="comment-dots" class="text-2xs" />Notas del partido</p>
           <h2 class="min-w-0 break-words text-lg font-bold text-slate-900">{{ playerName }}</h2>
           <p v-if="context" class="text-xs text-slate-500">{{ context }}</p>
         </div>

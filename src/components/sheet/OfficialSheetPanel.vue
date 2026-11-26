@@ -12,8 +12,8 @@ import GoalMarks from '@/components/sheet/GoalMarks.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useSort, type SortValue } from '@/composables/useSort';
-import type { MatchInjuryDto, OfficialEventDto, OfficialLineDto, OfficialSheetDto, OfficialTeamSheetDto } from '@/types/api';
-import { officialEventLabels, sheetSourceLabel } from '@/utils/format';
+import type { MatchDto, MatchInjuryDto, MatchSide, OfficialEventDto, OfficialLineDto, OfficialSheetDto, OfficialTeamSheetDto } from '@/types/api';
+import { officialEventLabels, sheetPersonName, sheetSourceLabel } from '@/utils/format';
 import TeamName from '@/components/teams/TeamName.vue';
 import PlayerName from '@/components/players/PlayerName.vue';
 import SheetReferees from '@/components/sheet/SheetReferees.vue';
@@ -27,6 +27,8 @@ const props = defineProps<{
   highlightTeamId?: string | null;
   /** Plantilla del partido: con ella salen también sus lesiones (las registradas y, al club y al cuerpo técnico, las posibles). */
   squadId?: string | null;
+  /** Partido del acta: sus equipos se nombran como en el marcador, no como la federación («C.D. Tineo A»). */
+  match?: Pick<MatchDto, 'homeTeam' | 'awayTeam'> | null;
 }>();
 
 const emit = defineEmits<{ refreshed: [sheet: OfficialSheetDto] }>();
@@ -80,6 +82,21 @@ watch(() => props.matchId, () => { fetchingPolls = 0; own.value = null; if (prop
 
 const teams = computed(() => (sheet.value ? [sheet.value.home, sheet.value.away].filter((t): t is OfficialTeamSheetDto => t !== null) : []));
 
+// Cada lado con el nombre y el escudo del equipo en la app; el de la federación, al pasar el ratón cuando es otro.
+interface SideTeam { id: string | null; name: string; shortName: string | null; crestUrl: string | null; title?: string }
+const sideTeam = (official: OfficialTeamSheetDto | null | undefined, app: MatchDto['homeTeam'] | undefined): SideTeam => ({
+  id: official?.teamId ?? app?.id ?? null,
+  name: app?.name ?? official?.teamName ?? '',
+  shortName: app?.shortName ?? null,
+  crestUrl: app?.crestUrl ?? null,
+  title: official && app && official.teamName !== app.name ? `En el acta: ${official.teamName}` : undefined,
+});
+const sideTeams = computed<Record<MatchSide, SideTeam>>(() => ({
+  Home: sideTeam(sheet.value?.home, props.match?.homeTeam),
+  Away: sideTeam(sheet.value?.away, props.match?.awayTeam),
+}));
+const literalTitle = (literal: string, shown: string) => (literal !== shown ? `En el acta: ${literal}` : undefined);
+
 /** Acta sin cerrar: solo valen las alineaciones; los minutos, goles y tarjetas todavía no están en la federación. */
 const provisional = computed(() => sheet.value?.status === 'Provisional');
 /** Con alineaciones: el equipo arbitral va junto a ellas; si no, debajo del aviso del estado del acta. */
@@ -95,15 +112,15 @@ const substitution = (line: OfficialLineDto) => {
   if (line.minuteOut !== null) changes.push(`sale ${line.minuteOut}'`);
   return changes;
 };
-interface LineRow { line: OfficialLineDto; starter: boolean; order: number }
+interface LineRow { line: OfficialLineDto; name: string; starter: boolean; order: number }
 const lineRows = (team: OfficialTeamSheetDto | null | undefined): LineRow[] =>
-  team ? [...team.starters, ...team.bench].map((line, order) => ({ line, starter: order < team.starters.length, order })) : [];
+  team ? [...team.starters, ...team.bench].map((line, order) => ({ line, name: sheetPersonName(line.fullName), starter: order < team.starters.length, order })) : [];
 
 // `lineup` no tiene columna: es el orden del acta (por dorsal, que no se muestra) y el de partida.
 type LineSortKey = 'lineup' | 'player' | 'minutes' | 'goals' | 'cards';
 const lineGetters: Record<LineSortKey, (r: LineRow) => SortValue> = {
   lineup: (r) => r.order,
-  player: (r) => r.line.fullName,
+  player: (r) => r.name,
   minutes: (r) => (r.line.played ? r.line.minutesPlayed : null),
   goals: (r) => r.line.goals + r.line.penaltyGoals,
   cards: (r) => (r.line.redCard ? 10 : 0) + r.line.yellowCards,
@@ -140,10 +157,9 @@ const injuryOfLine = computed(() => new Map(injuries.value.filter((i) => i.sheet
 const injuryLabel = (i: MatchInjuryDto) => (i.confirmed ? (i.typeLabel ?? 'Lesión') : 'Posible lesión');
 const injuryTitle = (i: MatchInjuryDto) =>
   `${injuryLabel(i)}${i.location ? ` (${i.location.charAt(0).toLocaleLowerCase('es-ES')}${i.location.slice(1)})` : ''}${i.confirmed ? ', registrada' : ''}${i.minute !== null ? ` · dejó el campo en el ${i.minute}'` : ''}${i.phrase ? `: ${i.phrase}` : ''}${i.confirmed ? '' : ' (lo cuenta la crónica; sin registrar)'}`;
-const squadTeamName = computed(() => {
-  const s = sheet.value;
-  if (!s || !props.highlightTeamId) return '';
-  return (s.home?.teamId === props.highlightTeamId ? s.home?.teamName : s.away?.teamId === props.highlightTeamId ? s.away?.teamName : '') ?? '';
+const squadTeam = computed(() => {
+  if (!props.highlightTeamId) return null;
+  return Object.values(sideTeams.value).find((t) => t.id === props.highlightTeamId) ?? null;
 });
 
 // Los sucesos del acta y las lesiones, por minuto: la lesión, justo antes del cambio de ese minuto; la de quien acabó el
@@ -158,9 +174,9 @@ const eventRows = computed<EventRow[]>(() => {
 const groups = (team: OfficialTeamSheetDto) => {
   const rows = lineSorts[team.side].sorted;
   return [
-    { label: 'Titulares', starter: true, lines: rows.filter((r) => r.starter).map((r) => r.line) },
-    { label: 'Suplentes', starter: false, lines: rows.filter((r) => !r.starter).map((r) => r.line) },
-  ].filter((group) => group.lines.length > 0);
+    { label: 'Titulares', starter: true, rows: rows.filter((r) => r.starter) },
+    { label: 'Suplentes', starter: false, rows: rows.filter((r) => !r.starter) },
+  ].filter((group) => group.rows.length > 0);
 };
 
 </script>
@@ -207,7 +223,16 @@ const groups = (team: OfficialTeamSheetDto) => {
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div v-for="team in teams" :key="team.side" class="rounded-xl border p-3 sm:p-4" :class="highlightTeamId && team.teamId === highlightTeamId ? 'border-accent-400/40 bg-brand-500/10' : 'border-slate-200'">
             <div class="mb-2 flex items-center justify-between gap-2">
-              <h3 class="min-w-0 font-semibold text-slate-900"><TeamName :name="team.teamName" :team-id="team.teamId" size="sm" /></h3>
+              <h3 class="min-w-0 font-semibold text-slate-900">
+                <TeamName
+                  :name="sideTeams[team.side].name"
+                  :team-id="sideTeams[team.side].id"
+                  :short-name="sideTeams[team.side].shortName"
+                  :crest-url="sideTeams[team.side].crestUrl"
+                  :title="sideTeams[team.side].title"
+                  size="sm"
+                />
+              </h3>
               <span v-if="team.goals !== null" class="text-xl font-bold tabular-nums text-slate-900">{{ team.goals }}</span>
             </div>
             <div class="overflow-x-auto">
@@ -233,15 +258,15 @@ const groups = (team: OfficialTeamSheetDto) => {
                     >
                       <Icon :icon="group.starter ? 'futbol' : 'user-group'" class="h-3 w-3" />
                       {{ group.label }}
-                      <span class="ml-auto font-sans text-[11px] font-semibold normal-case tracking-normal tabular-nums opacity-75">{{ group.lines.length }}</span>
+                      <span class="ml-auto font-sans text-2xs font-semibold normal-case tracking-normal tabular-nums opacity-75">{{ group.rows.length }}</span>
                     </div>
                   </td>
                 </tr>
-                <tr v-for="line in group.lines" :key="line.id" :class="[line.played || provisional ? '' : 'text-slate-400', group.starter ? '' : 'bg-slate-500/[0.06]']">
+                <tr v-for="{ line, name } in group.rows" :key="line.id" :class="[line.played || provisional ? '' : 'text-slate-400', group.starter ? '' : 'bg-slate-500/[0.06]']">
                   <!-- w-full + max-w-0: el nombre ocupa lo que sobra y se recorta en vez de ensanchar la tabla en el móvil -->
                   <td class="w-full max-w-0 py-1 pl-1 pr-2 sm:pl-2.5">
-                    <PlayerName :name="line.fullName" class="font-medium" :class="line.played || provisional ? 'text-slate-800' : ''">
-                      {{ line.fullName }}<Icon
+                    <PlayerName :name="name" :title="literalTitle(line.fullName, name)" class="font-medium" :class="line.played || provisional ? 'text-slate-800' : ''">
+                      {{ name }}<Icon
                         v-if="injuryOfLine.get(line.id)"
                         icon="user-injured"
                         class="ml-1.5 h-3 w-3"
@@ -259,7 +284,7 @@ const groups = (team: OfficialTeamSheetDto) => {
                   <template v-if="!provisional">
                     <td class="py-1 pr-2 text-center tabular-nums whitespace-nowrap">
                       {{ minutes(line) }}
-                      <span v-for="change in substitution(line)" :key="change" class="block text-[11px] leading-tight text-slate-500">{{ change }}</span>
+                      <span v-for="change in substitution(line)" :key="change" class="block text-2xs leading-tight text-slate-500">{{ change }}</span>
                     </td>
                     <td class="col-sm py-1 pr-2 text-center whitespace-nowrap"><GoalMarks :goals="line.goals" :penalty-goals="line.penaltyGoals" :own-goals="line.ownGoals" /></td>
                     <td class="col-sm py-1 text-center whitespace-nowrap"><CardMarks :yellow-cards="line.yellowCards" :red-card="line.redCard" /></td>
@@ -269,12 +294,12 @@ const groups = (team: OfficialTeamSheetDto) => {
             </table>
             </div>
             <div v-if="team.staff?.length" class="mt-3 border-t border-line pt-2">
-              <p class="pb-1 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Cuerpo técnico</p>
+              <p class="pb-1 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">Cuerpo técnico</p>
               <ul class="space-y-1 text-sm">
                 <li v-for="person in team.staff" :key="person.fullName" class="flex flex-wrap items-baseline gap-x-2">
                   <span class="w-28 shrink-0 text-xs text-slate-500">{{ person.roleLabel }}</span>
-                  <RouterLink v-if="person.coachId" :to="{ name: 'coach', params: { coachId: person.coachId } }" class="min-w-0 break-words font-medium text-slate-800 hover:text-accent-400" title="Ver su perfil">{{ person.fullName }}</RouterLink>
-                  <span v-else class="min-w-0 break-words font-medium text-slate-800">{{ person.fullName }}</span>
+                  <RouterLink v-if="person.coachId" :to="{ name: 'coach', params: { coachId: person.coachId } }" class="min-w-0 break-words font-medium text-slate-800 hover:text-accent-400" title="Ver su perfil">{{ sheetPersonName(person.fullName) }}</RouterLink>
+                  <span v-else class="min-w-0 break-words font-medium text-slate-800" :title="literalTitle(person.fullName, sheetPersonName(person.fullName))">{{ sheetPersonName(person.fullName) }}</span>
                   <!-- Al cuerpo técnico también le enseña tarjetas el árbitro: van en la misma lista que las de los jugadores. -->
                   <CardMarks class="self-center" :yellow-cards="person.yellowCards ?? 0" :red-card="person.redCard ?? false" />
                 </li>
@@ -306,10 +331,16 @@ const groups = (team: OfficialTeamSheetDto) => {
                   <Icon v-else icon="arrow-right-arrow-left" class="text-slate-400" />
                 </span>
                 <span class="min-w-0 flex-1">
-                  <PlayerName :name="row.event.playerName" /><template v-if="row.event.relatedPlayerName"><span class="mx-2 text-slate-400">por</span><PlayerName :name="row.event.relatedPlayerName" /></template>
+                  <PlayerName :name="sheetPersonName(row.event.playerName)" :title="literalTitle(row.event.playerName, sheetPersonName(row.event.playerName))" /><template v-if="row.event.relatedPlayerName"><span class="mx-2 text-slate-400">por</span><PlayerName
+                    :name="sheetPersonName(row.event.relatedPlayerName)"
+                    :title="literalTitle(row.event.relatedPlayerName, sheetPersonName(row.event.relatedPlayerName))"
+                  /></template>
                   <span class="text-xs text-slate-400"> · <TeamName
-                    :name="(row.event.side === 'Home' ? sheet.home?.teamName : sheet.away?.teamName) ?? ''"
-                    :team-id="row.event.side === 'Home' ? sheet.home?.teamId : sheet.away?.teamId"
+                    :name="sideTeams[row.event.side].name"
+                    :team-id="sideTeams[row.event.side].id"
+                    :short-name="sideTeams[row.event.side].shortName"
+                    :crest-url="sideTeams[row.event.side].crestUrl"
+                    :title="sideTeams[row.event.side].title"
                   /></span>
                 </span>
               </template>
@@ -328,7 +359,7 @@ const groups = (team: OfficialTeamSheetDto) => {
                     <Icon icon="location-dot" class="mr-1 h-2.5 w-2.5 text-slate-400" />{{ row.injury.location }}
                   </span>
                   <span class="block text-xs text-slate-500">
-                    {{ row.injury.phrase }}<template v-if="squadTeamName">{{ row.injury.phrase ? ' · ' : '' }}<TeamName :name="squadTeamName" :team-id="highlightTeamId" /></template>
+                    {{ row.injury.phrase }}<template v-if="squadTeam">{{ row.injury.phrase ? ' · ' : '' }}<TeamName :name="squadTeam.name" :team-id="squadTeam.id" :short-name="squadTeam.shortName" :crest-url="squadTeam.crestUrl" /></template>
                     <template v-if="!row.injury.confirmed && squadId">
                       · <RouterLink :to="{ name: 'squad', params: { squadId }, hash: '#lesiones' }" class="font-medium text-accent-400 hover:underline">Registrarla o descartarla</RouterLink>
                     </template>

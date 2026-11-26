@@ -122,7 +122,7 @@ const width = (value: number) => (grown.value ? `${Math.max(value * 100, value >
 
     <div v-else class="grid grid-cols-1 divide-y divide-line transition-opacity lg:grid-cols-3 lg:divide-x lg:divide-y-0" :class="fetching ? 'opacity-60' : ''">
       <div class="flex flex-col p-5 sm:p-6">
-        <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+        <p class="flex items-center gap-2 text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           <Icon icon="trophy" class="h-3 w-3 text-amber-700" />Favorito al título
         </p>
         <RouterLink :to="{ name: 'team', params: { teamId: favourite.teamId } }" class="group mt-4 flex items-center gap-3">
@@ -139,7 +139,7 @@ const width = (value: number) => (grown.value ? `${Math.max(value * 100, value >
         <dl v-if="progress" class="mt-6 space-y-4 border-t border-line pt-4">
           <div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="min-w-0 break-words text-[11px] uppercase tracking-wide text-slate-500">{{ favourite.teamName }}</dt>
+              <dt class="min-w-0 break-words text-2xs uppercase tracking-wide text-slate-500">{{ favourite.teamName }}</dt>
               <dd class="shrink-0 font-figures text-xl font-extrabold leading-none text-slate-900">
                 {{ progress.team.played }}<span class="text-sm font-semibold text-slate-400">/{{ progress.team.total }}</span>
               </dd>
@@ -151,7 +151,7 @@ const width = (value: number) => (grown.value ? `${Math.max(value * 100, value >
           </div>
           <div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="min-w-0 break-words text-[11px] uppercase tracking-wide text-slate-500">Toda la liga</dt>
+              <dt class="min-w-0 break-words text-2xs uppercase tracking-wide text-slate-500">Toda la liga</dt>
               <dd class="shrink-0 font-figures text-xl font-extrabold leading-none text-slate-900">
                 {{ progress.league.played.toLocaleString('es-ES') }}<span class="text-sm font-semibold text-slate-400">/{{ progress.league.total.toLocaleString('es-ES') }}</span>
               </dd>

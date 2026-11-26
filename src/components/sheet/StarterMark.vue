@@ -7,13 +7,13 @@ const props = withDefaults(defineProps<{ started: boolean; played?: boolean }>()
 <template>
   <span
     v-if="props.started"
-    class="inline-flex h-5 min-w-5 items-center justify-center rounded bg-emerald-500/15 px-1 font-display text-[11px] font-bold text-emerald-700"
+    class="inline-flex h-5 min-w-5 items-center justify-center rounded bg-emerald-500/15 px-1 font-display text-2xs font-bold text-emerald-700"
     title="Titular"
     aria-label="Titular"
   >T</span>
   <span
     v-else-if="props.played"
-    class="inline-flex h-5 min-w-5 items-center justify-center rounded bg-slate-500/10 px-1 font-display text-[11px] font-bold text-slate-600"
+    class="inline-flex h-5 min-w-5 items-center justify-center rounded bg-slate-500/10 px-1 font-display text-2xs font-bold text-slate-600"
     title="Suplente: entró desde el banquillo"
     aria-label="Suplente"
   >S</span>

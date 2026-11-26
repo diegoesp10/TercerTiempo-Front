@@ -124,7 +124,7 @@ async function pay(outcome: SimulatedPaymentOutcome) {
         <h2 class="font-semibold text-slate-900">Pagar con tarjeta</h2>
         <p class="mt-1 text-xs text-slate-500">Pasarela simulada con el mismo recorrido que Stripe Checkout. No se cobra nada y los datos de la tarjeta no salen de tu navegador.</p>
       </div>
-      <span class="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-warning">Modo de prueba</span>
+      <span class="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-2xs font-bold uppercase tracking-wide text-warning">Modo de prueba</span>
     </div>
 
     <!-- Tarjetas de prueba -->
@@ -143,7 +143,7 @@ async function pay(outcome: SimulatedPaymentOutcome) {
           <span class="min-w-0 break-words text-right text-slate-500">{{ card.label }}</span>
         </button>
       </div>
-      <p class="mt-2 text-[11px] text-slate-500">Cualquier fecha futura y cualquier CVC de 3 cifras.</p>
+      <p class="mt-2 text-2xs text-slate-500">Cualquier fecha futura y cualquier CVC de 3 cifras.</p>
     </div>
 
     <div>
@@ -213,7 +213,7 @@ async function pay(outcome: SimulatedPaymentOutcome) {
       <template v-else-if="chargedNow">Pagar {{ formatMoney(checkout.amountCents, checkout.currency) }}</template>
       <template v-else>Suscribirse · hoy 0 €</template>
     </button>
-    <p class="flex items-center justify-center gap-1.5 text-[11px] text-slate-500"><Icon icon="shield-halved" class="h-3 w-3" />Con Stripe, este formulario lo sirve Stripe y Tercer Tiempo no ve la tarjeta.</p>
+    <p class="flex items-center justify-center gap-1.5 text-2xs text-slate-500"><Icon icon="shield-halved" class="h-3 w-3" />Con Stripe, este formulario lo sirve Stripe y Tercer Tiempo no ve la tarjeta.</p>
   </form>
 
   <!-- 3D Secure: lo que enseñaría el banco -->

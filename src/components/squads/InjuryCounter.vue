@@ -58,7 +58,7 @@ const initial = computed(() => {
       Parte del {{ formatDate(injury.startedOn) }}<template v-if="injury.expectedReturnOn"> → vuelta prevista el {{ formatDate(injury.expectedReturnOn) }}</template>
     </p>
     <p class="mt-0.5 text-xs font-medium" :class="overdue ? 'text-amber-700' : 'text-slate-700'">{{ remaining }}</p>
-    <p v-if="initial !== null || injury.averageDays" class="mt-1 text-[11px] text-slate-500">
+    <p v-if="initial !== null || injury.averageDays" class="mt-1 text-2xs text-slate-500">
       <template v-if="initial !== null">Al dar el parte se previeron {{ initial }} días. </template>
       <template v-if="injury.averageDays">Media orientativa de esta lesión: ≈ {{ injury.averageDays }} días.</template>
     </p>

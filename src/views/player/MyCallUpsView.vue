@@ -76,7 +76,7 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl">
+  <div class="mx-auto max-w-narrow">
     <PageHeader title="Mis convocatorias" subtitle="Las convocatorias de tu equipo que tienes que contestar y los próximos entrenamientos." />
 
     <Alert v-if="!squad" kind="info">

@@ -229,7 +229,7 @@ const faqs = computed(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl">
+  <div class="mx-auto max-w-medium">
     <!-- Cabecera -->
     <header class="text-center">
       <p class="eyebrow">Precios</p>

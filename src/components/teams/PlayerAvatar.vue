@@ -22,8 +22,8 @@ const initials = computed(() => {
 });
 
 const sizeClasses: Record<NonNullable<typeof props.size>, string> = {
-  xs: 'h-6 w-6 text-[9px]',
-  sm: 'h-8 w-8 text-[10px]',
+  xs: 'h-6 w-6 text-2xs',
+  sm: 'h-8 w-8 text-2xs',
   md: 'h-10 w-10 text-xs',
   lg: 'h-16 w-16 text-base',
   xl: 'h-28 w-28 text-2xl',

@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue';
 import { api } from '@/api';
 import { goalsDonutOption, minutesBarsOption, rankingChartHeight, ratingRankingOption, ratingRankingPool, teamRatingOption, teamResultsOption } from '@/charts/options';
 import AppChart from '@/components/charts/AppChart.vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
+import type { ChoiceOption } from '@/components/ui/choice';
 import ChartCard from '@/components/charts/ChartCard.vue';
 import Alert from '@/components/ui/Alert.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
@@ -36,6 +38,10 @@ const myId = computed(() => (auth.playerSquad?.squadId === squadId.value ? auth.
 const me = computed(() => data.value?.players.find((r) => r.player.id === myId.value) ?? null);
 
 const donutMetric = ref<'goals' | 'goalContributions'>('goals');
+const donutMetrics: ChoiceOption<'goals' | 'goalContributions'>[] = [
+  { value: 'goals', label: 'Goles' },
+  { value: 'goalContributions', label: 'G + A', title: 'Goles y asistencias' },
+];
 
 const hasRecords = computed(() => (data.value?.matchesRecorded ?? 0) > 0);
 const teamResults = computed(() => (timeline.data.value?.matches.length ? teamResultsOption(timeline.data.value.matches) : null));
@@ -163,18 +169,7 @@ watch(view, () => {
 
       <ChartCard v-if="hasRecords" title="Reparto de goles" subtitle="Según las actas registradas.">
         <template #actions>
-          <div class="inline-flex rounded-lg border border-slate-200 p-0.5 text-xs">
-            <button
-              v-for="option in ([['goals', 'Goles'], ['goalContributions', 'G + A']] as const)"
-              :key="option[0]"
-              type="button"
-              class="rounded-md px-2 py-0.5 font-medium"
-              :class="donutMetric === option[0] ? 'bg-action text-white shadow-glow' : 'text-slate-600 hover:bg-slate-100'"
-              @click="donutMetric = option[0]"
-            >
-              {{ option[1] }}
-            </button>
-          </div>
+          <ChoiceToggle v-model="donutMetric" :options="donutMetrics" label="Qué reparto" size="xs" min-item="4rem" />
         </template>
         <AppChart v-if="donut" :option="donut" :height="300" label="Reparto de goles entre los jugadores" />
       </ChartCard>
@@ -230,7 +225,7 @@ watch(view, () => {
         </thead>
         <tbody v-for="group in groups" :key="group.key" class="divide-y divide-slate-100">
           <tr v-if="group.label">
-            <td :colspan="columns.length + 1" class="bg-surface-2 px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <td :colspan="columns.length + 1" class="bg-surface-2 px-3 py-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">
               {{ group.label }} · {{ group.rows.length }}
             </td>
           </tr>

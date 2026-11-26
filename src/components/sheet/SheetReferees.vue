@@ -15,7 +15,7 @@ const onlyMain = computed(() => props.referees.officials.every((o) => o.role ===
 
 <template>
   <div class="rounded-xl border border-slate-200 p-4">
-    <p class="flex items-center gap-1.5 pb-1 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+    <p class="flex items-center gap-1.5 pb-1 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">
       <Icon icon="flag" class="h-3 w-3" />{{ referees.designated ? 'Equipo arbitral designado' : 'Equipo arbitral' }}
     </p>
     <p v-if="referees.officials.length === 0" class="text-sm text-slate-500">
@@ -33,7 +33,7 @@ const onlyMain = computed(() => props.referees.officials.every((o) => o.role ===
         <span v-else class="min-w-0 break-words font-medium text-slate-800">{{ official.name }}</span>
       </li>
     </ul>
-    <p v-if="referees.designated && referees.officials.length > 0" class="mt-2 text-[11px] text-slate-500">
+    <p v-if="referees.designated && referees.officials.length > 0" class="mt-2 text-2xs text-slate-500">
       Lo designa la federación y puede cambiar hasta el día del partido.<template v-if="onlyMain"> Los asistentes llegan con el acta.</template>
     </p>
   </div>

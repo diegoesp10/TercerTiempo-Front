@@ -96,7 +96,7 @@ const { sorted, sortBy, state } = useSort<Row, SortKey>(rows, getters, 'match', 
         <div class="flex min-w-0 items-center gap-2.5">
           <TeamCrest v-if="ownTeam" :src="ownTeam.crestUrl" :name="ownTeam.name" :short-name="ownTeam.shortName" size="md" />
           <div class="min-w-0">
-            <p class="flex items-center gap-1.5 whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide text-accent-400">
+            <p class="flex items-center gap-1.5 whitespace-nowrap text-2xs font-semibold uppercase tracking-wide text-accent-400">
               <span class="h-2 w-2 shrink-0 rounded-full bg-accent-400" />Tu equipo
             </p>
             <p class="break-words text-sm font-semibold leading-snug text-slate-900">{{ ownTeam?.name ?? 'Tu equipo' }}</p>
@@ -105,7 +105,7 @@ const { sorted, sortBy, state } = useSort<Row, SortKey>(rows, getters, 'match', 
         <span class="shrink-0 text-xs font-semibold text-slate-400">vs</span>
         <div class="flex min-w-0 items-center justify-end gap-2.5 text-right">
           <div class="min-w-0">
-            <p class="flex items-center justify-end gap-1.5 whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+            <p class="flex items-center justify-end gap-1.5 whitespace-nowrap text-2xs font-semibold uppercase tracking-wide text-slate-500">
               Media en contra<span class="h-2 w-2 shrink-0 rounded-full bg-slate-400" />
             </p>
             <p class="break-words text-sm font-semibold leading-snug text-slate-900">Sus rivales</p>

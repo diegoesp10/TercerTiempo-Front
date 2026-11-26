@@ -74,14 +74,14 @@ useBackFallback(() => {
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Reparto de notas</p>
             <ol class="mt-3 flex h-32 items-end gap-1.5" aria-label="Cuántas notas de cada valor">
               <li v-for="(count, score) in data.stats.distribution" :key="score" class="flex flex-1 flex-col items-center gap-1">
-                <span class="text-[10px] font-semibold text-slate-500">{{ count || '' }}</span>
+                <span class="text-2xs font-semibold text-slate-500">{{ count || '' }}</span>
                 <span
                   class="w-full rounded-t"
                   :class="score >= 7 ? 'bg-emerald-500' : score >= 5 ? 'bg-amber-400' : 'bg-red-500'"
                   :style="{ height: `${Math.max(count ? 6 : 2, (count / maxBar) * 88)}px`, opacity: count ? 1 : 0.25 }"
                   :title="`${count} ${count === 1 ? 'nota' : 'notas'} de ${score}`"
                 />
-                <span class="font-figures text-[11px] text-slate-500">{{ score }}</span>
+                <span class="font-figures text-2xs text-slate-500">{{ score }}</span>
               </li>
             </ol>
           </div>

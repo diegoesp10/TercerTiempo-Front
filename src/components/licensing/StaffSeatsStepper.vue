@@ -23,7 +23,7 @@ const clamp = (value: number) => Math.min(props.max, Math.max(props.min, Number.
       inputmode="numeric"
       :min="min"
       :max="max"
-      class="h-9 w-14 border-x border-line bg-transparent text-center font-figures font-semibold text-slate-900 outline-none"
+      class="h-9 w-14 border-x border-line bg-transparent text-center font-figures font-semibold text-slate-900 outline-none focus-visible:bg-brand-500/10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-400"
       :disabled="disabled"
       :aria-label="label"
       @change="seats = clamp(Number(($event.target as HTMLInputElement).value))"

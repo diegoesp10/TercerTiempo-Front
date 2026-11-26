@@ -19,6 +19,6 @@ const shortcut = isMac ? '⌘ F' : 'Ctrl F';
       <Icon icon="magnifying-glass" class="h-3.5 w-3.5" />
     </span>
     Buscar
-    <kbd class="hidden rounded border border-line px-1.5 font-sans text-[10px] font-medium text-slate-500 sm:inline">{{ shortcut }}</kbd>
+    <kbd class="hidden rounded border border-line px-1.5 font-sans text-2xs font-medium text-slate-500 sm:inline">{{ shortcut }}</kbd>
   </button>
 </template>

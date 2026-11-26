@@ -63,7 +63,7 @@ const cards = computed(() => [
       >
         <span
           v-if="card.item === 'Club'"
-          class="absolute -top-3 left-6 rounded-full bg-action px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm"
+          class="absolute -top-3 left-6 rounded-full bg-action px-3 py-1 text-2xs font-bold uppercase tracking-wider text-white shadow-sm"
         >Lo primero que contratas</span>
 
         <div>

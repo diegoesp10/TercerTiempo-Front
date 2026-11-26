@@ -20,7 +20,7 @@ useBackFallback(() => (auth.profileRoute ? { to: auth.profileRoute, label: 'Volv
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl">
+  <div class="mx-auto max-w-narrow">
     <PageHeader title="Ajustes" subtitle="El tema y tus preferencias se guardan en este dispositivo; la contraseña, en tu cuenta." />
 
     <ThemeSettingsCard />

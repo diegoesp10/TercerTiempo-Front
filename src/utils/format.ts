@@ -325,6 +325,25 @@ export const officialEventLabels: Record<OfficialEventType, string> = {
 export const sheetSourceLabel = (provider: string | null | undefined) =>
   provider === 'asturfutbol' ? 'asturfutbol.es (federación)' : provider ?? 'web de actas';
 
+const nameParticles = new Set(['de', 'del', 'la', 'las', 'los', 'y']);
+const lowerEs = (text: string) => text.toLocaleLowerCase('es-ES');
+
+/**
+ * Una persona tal y como la escribe el acta de la federación («QUINTANA TORRES, DIEGO») en la forma de la app («Diego
+ * Quintana Torres»): primero el nombre, mayúscula inicial si venía todo en mayúsculas y las partículas de los apellidos en
+ * minúscula («David del Valle Prieto»). Es lo mismo que hace la API con los árbitros (`Referee.DisplayName`).
+ */
+export function sheetPersonName(name: string): string {
+  let clean = name.trim().split(/\s+/).join(' ');
+  const comma = clean.indexOf(',');
+  if (comma > 0) clean = `${clean.slice(comma + 1).trim()} ${clean.slice(0, comma).trim()}`.trim();
+  if (clean.toLocaleUpperCase('es-ES') === clean) {
+    clean = lowerEs(clean).replace(/(^|[\s'.-])(\p{L})/gu, (_, before: string, letter: string) => before + letter.toLocaleUpperCase('es-ES'));
+  }
+  const words = clean.split(' ');
+  return words.map((word, i) => (i > 0 && i < words.length - 1 && nameParticles.has(lowerEs(word)) ? lowerEs(word) : word)).join(' ');
+}
+
 export const sheetFieldLabels: Record<SheetDifferenceDto['field'], string> = {
   played: 'Jugó',
   started: 'Titular',

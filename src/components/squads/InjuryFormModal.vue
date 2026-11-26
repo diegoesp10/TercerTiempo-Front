@@ -471,7 +471,7 @@ async function save() {
             </p>
           </div>
           <p v-if="occasionsError" class="field-error">No se han podido cargar los partidos y entrenamientos: {{ occasionsError }}</p>
-          <p class="mt-1 text-[11px] text-slate-500">
+          <p class="mt-1 text-2xs text-slate-500">
             Así queda cuándo fue: el partido la enseña como registrada y el entrenamiento, que se lesionó allí. «En otro sitio» si fue fuera del equipo o no se sabe.
           </p>
         </template>
@@ -506,7 +506,7 @@ async function save() {
               :options="siteOptions"
               @update:model-value="chooseSite($event as string | null)"
             />
-            <p v-if="typeDef.siteKind === 'Muscle'" class="mt-1 text-[11px] text-slate-500">
+            <p v-if="typeDef.siteKind === 'Muscle'" class="mt-1 text-2xs text-slate-500">
               Si no se sabe el músculo exacto, elige su grupo (isquiotibiales, cuádriceps, gemelos y sóleo…).
             </p>
           </div>
@@ -553,11 +553,11 @@ async function save() {
         <div>
           <label class="label" :for="`${formId}-start`">Fecha del parte</label>
           <input :id="`${formId}-start`" v-model="form.startedOn" type="date" required class="input" :min="startedMin" :max="today" @change="proposeReturn()" />
-          <p class="mt-1 text-[11px] text-slate-500">Desde ese día cuentan los días de baja.</p>
+          <p class="mt-1 text-2xs text-slate-500">Desde ese día cuentan los días de baja.</p>
           <button
             v-if="selectedOccasion && form.startedOn !== selectedOccasion.day && selectedOccasion.day <= today"
             type="button"
-            class="mt-1 text-left text-[11px] font-medium text-brand-600 underline underline-offset-2 hover:text-brand-700"
+            class="mt-1 text-left text-2xs font-medium text-brand-600 underline underline-offset-2 hover:text-brand-700"
             @click="useOccasionDay"
           >
             Poner el día {{ selectedOccasion.kind === 'Match' ? 'del partido' : 'del entrenamiento' }} ({{ formatDate(selectedOccasion.day) }})

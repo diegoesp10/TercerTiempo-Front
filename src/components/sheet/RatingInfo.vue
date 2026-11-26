@@ -79,7 +79,7 @@ const blocks: { title: string; icon: string; tone: string; items: Item[] }[] = [
 
     <div class="mt-5 grid gap-6 sm:grid-cols-2">
       <section v-for="block in blocks" :key="block.title">
-        <h3 class="mb-1 flex items-center gap-2 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+        <h3 class="mb-1 flex items-center gap-2 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           <span class="grid h-6 w-6 place-items-center rounded-md bg-surface-2" :class="block.tone"><Icon :icon="block.icon" class="h-3 w-3" /></span>
           {{ block.title }}
         </h3>

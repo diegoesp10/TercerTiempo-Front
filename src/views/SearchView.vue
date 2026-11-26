@@ -69,10 +69,10 @@ const counts = computed(() => new Map((all.value?.groups ?? []).map((g) => [g.ty
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl">
+  <div class="mx-auto max-w-medium">
     <PageHeader title="Buscar" subtitle="Ligas, equipos, clubes, jugadores, cuerpos técnicos, partidos y tus plantillas." />
 
-    <form class="card flex items-center gap-3 py-3" role="search" @submit.prevent="submit">
+    <form class="card flex items-center gap-3 py-3 has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-brand-400/50" role="search" @submit.prevent="submit">
       <Icon icon="magnifying-glass" class="h-4 w-4 shrink-0 text-slate-400" />
       <input
         v-model="text"

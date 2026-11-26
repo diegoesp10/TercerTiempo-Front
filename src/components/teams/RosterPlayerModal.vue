@@ -230,12 +230,12 @@ const { sorted: internalSorted, sortBy: sortInternal, state: internalState } = u
       </div>
       <p v-if="!detail.entry.stats" class="mt-2 text-sm text-slate-500">Todavía no aparece en ningún acta pública.</p>
       <dl v-else class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
-        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Partidos</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.appearances }}</dd></div>
-        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Titular</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.started }}</dd></div>
-        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Minutos</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.minutesPlayed }}</dd></div>
-        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Goles</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.goals }}</dd></div>
-        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Amarillas</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.yellowCards }}</dd></div>
-        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Rojas</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.redCards }}</dd></div>
+        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-2xs uppercase tracking-wide text-slate-500">Partidos</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.appearances }}</dd></div>
+        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-2xs uppercase tracking-wide text-slate-500">Titular</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.started }}</dd></div>
+        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-2xs uppercase tracking-wide text-slate-500">Minutos</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.minutesPlayed }}</dd></div>
+        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-2xs uppercase tracking-wide text-slate-500">Goles</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.goals }}</dd></div>
+        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-2xs uppercase tracking-wide text-slate-500">Amarillas</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.yellowCards }}</dd></div>
+        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-2xs uppercase tracking-wide text-slate-500">Rojas</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.entry.stats.redCards }}</dd></div>
       </dl>
 
       <!-- Dorsales: la ficha no lleva uno fijo, el de cada partido sale de su acta -->
@@ -300,12 +300,12 @@ const { sorted: internalSorted, sortBy: sortInternal, state: internalState } = u
         <p v-else-if="detail.internal.length === 0" class="text-sm text-slate-500">El cuerpo técnico aún no ha registrado ningún acta con este jugador.</p>
         <template v-else>
           <dl v-if="detail.internalStats" class="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
-            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Partidos</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.internalStats.appearances }}</dd></div>
-            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Minutos</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.internalStats.minutesPlayed }}</dd></div>
-            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Goles</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.internalStats.goals }}</dd></div>
-            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Asist.</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.internalStats.assists }}</dd></div>
-            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Tiros</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.internalStats.shotsOnTarget }}/{{ detail.internalStats.shots }}</dd></div>
-            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-[11px] uppercase tracking-wide text-slate-500">Nota media</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.internalStats.averageRating?.toFixed(1) ?? '—' }}</dd></div>
+            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-2xs uppercase tracking-wide text-slate-500">Partidos</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.internalStats.appearances }}</dd></div>
+            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-2xs uppercase tracking-wide text-slate-500">Minutos</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.internalStats.minutesPlayed }}</dd></div>
+            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-2xs uppercase tracking-wide text-slate-500">Goles</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.internalStats.goals }}</dd></div>
+            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-2xs uppercase tracking-wide text-slate-500">Asist.</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.internalStats.assists }}</dd></div>
+            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-2xs uppercase tracking-wide text-slate-500">Tiros</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.internalStats.shotsOnTarget }}/{{ detail.internalStats.shots }}</dd></div>
+            <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-center"><dt class="text-2xs uppercase tracking-wide text-slate-500">Nota media</dt><dd class="font-display text-xl font-bold text-slate-900">{{ detail.internalStats.averageRating?.toFixed(1) ?? '—' }}</dd></div>
           </dl>
           <div class="overflow-x-auto">
             <table class="min-w-full text-sm">

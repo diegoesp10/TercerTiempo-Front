@@ -335,7 +335,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
           <div
             v-else
             class="flex w-full min-w-0 items-center gap-1 rounded border py-0.5 text-left font-medium leading-tight transition hover:brightness-105"
-            :class="[chipClass(itemOf(arg)), isSelected(itemOf(arg)) ? 'ring-2 ring-brand-400' : '', arg.isNarrow ? 'justify-center px-0 text-[10px]' : 'px-1 text-xs']"
+            :class="[chipClass(itemOf(arg)), isSelected(itemOf(arg)) ? 'ring-2 ring-brand-400' : '', arg.isNarrow ? 'justify-center px-0 text-2xs' : 'px-1 text-xs']"
             :title="arg.event.title"
           >
             <!-- Partido jugado: sin hora (ya no importa) para que quepan el rival y el resultado -->
@@ -380,7 +380,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
       <span class="inline-flex items-center gap-1.5"><span class="inline-flex h-3.5 w-5 items-center justify-center rounded border border-dashed border-slate-300 bg-surface-2/70 text-slate-500"><Icon icon="check" class="h-2 w-2" /></span>Ya realizado</span>
       <span class="inline-flex items-center gap-1.5" title="En los partidos por jugar: sancionados (5.ª amarilla, expulsión o sanción del comité de competición) y lesionados"><Icon icon="ban" class="h-3 w-3 text-red-600" />No disponibles</span>
       <span class="inline-flex items-center gap-1.5" title="Partidos jugados: verde si se ganó, amarillo si se empató y rojo si se perdió, con el marcador">
-        <span class="inline-flex overflow-hidden rounded text-[9px] font-bold leading-none">
+        <span class="inline-flex overflow-hidden rounded text-2xs font-bold leading-none">
           <span v-for="r in legendResults" :key="r" class="grid h-3.5 w-3.5 place-items-center" :class="resultStyle[r].solid">{{ outcomeLabels[r] }}</span>
         </span>
         Ganado, empatado o perdido

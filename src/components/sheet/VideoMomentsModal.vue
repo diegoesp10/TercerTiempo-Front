@@ -198,7 +198,7 @@ watch(current, () =>
             Siguiente<Icon icon="chevron-right" class="h-3 w-3" />
           </button>
         </div>
-        <p class="mt-2 text-[11px] text-slate-500">
+        <p class="mt-2 text-2xs text-slate-500">
           El minuto es el del vídeo, no el del partido. Cada acción empieza {{ LEAD_SECONDS }} s antes para ver la jugada entera.
         </p>
       </div>
@@ -217,7 +217,7 @@ watch(current, () =>
               <span v-if="moment.color" class="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-line" :style="{ backgroundColor: moment.color }" aria-hidden="true" />
               <span class="min-w-0 flex-1 text-sm text-slate-700">
                 <span class="break-words">{{ moment.label }}</span>
-                <span v-if="moment.who || multipleVideos" class="block break-words text-[11px] text-slate-500">
+                <span v-if="moment.who || multipleVideos" class="block break-words text-2xs text-slate-500">
                   {{ [moment.who, multipleVideos ? videoOf(moment)?.label : null].filter(Boolean).join(' · ') }}
                 </span>
               </span>

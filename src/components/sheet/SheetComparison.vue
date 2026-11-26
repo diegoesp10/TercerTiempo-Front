@@ -14,7 +14,7 @@ import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useSort, type SortValue } from '@/composables/useSort';
 import type { SheetComparisonDto, SheetComparisonRowDto } from '@/types/api';
-import { positionShortLabels, sheetFieldLabels } from '@/utils/format';
+import { positionShortLabels, sheetFieldLabels, sheetPersonName } from '@/utils/format';
 import PlayerName from '@/components/players/PlayerName.vue';
 
 const props = defineProps<{ squadId: string; matchId: string }>();
@@ -182,7 +182,7 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
           <ul class="mt-2 flex flex-wrap gap-2">
             <li v-for="line in data.unmatchedOfficial" :key="line.id" class="max-w-full">
               <Badge :tone="line.played ? 'amber' : 'slate'" class="max-w-full">
-                <PlayerName :name="line.fullName" /><template v-if="line.played"> · {{ line.minutesPlayed }}'</template>
+                <PlayerName :name="sheetPersonName(line.fullName)" :title="`En el acta: ${line.fullName}`" /><template v-if="line.played"> · {{ line.minutesPlayed }}'</template>
               </Badge>
             </li>
           </ul>
@@ -195,6 +195,6 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
       </template>
     </section>
 
-    <OfficialSheetPanel :match-id="matchId" :sheet="data.official" :highlight-team-id="data.squad.teamId" :squad-id="squadId" @refreshed="load()" />
+    <OfficialSheetPanel :match-id="matchId" :sheet="data.official" :match="data.match" :highlight-team-id="data.squad.teamId" :squad-id="squadId" @refreshed="load()" />
   </template>
 </template>

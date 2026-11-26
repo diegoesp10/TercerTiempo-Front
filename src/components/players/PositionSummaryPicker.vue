@@ -29,7 +29,7 @@ const items = computed<TabItem[]>(() =>
 
 <template>
   <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
-    <span class="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500" aria-hidden="true">Resumen como</span>
+    <span class="font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500" aria-hidden="true">Resumen como</span>
     <ResponsiveTabs :model-value="model" :items="items" label="Resumen como" variant="toggle" @update:model-value="model = $event as Position" />
   </div>
 </template>

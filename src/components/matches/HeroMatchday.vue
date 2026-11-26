@@ -67,7 +67,7 @@ const outcomeClass = (m: MatchDto, side: 'home' | 'away') => {
           />
         </div>
         <p v-if="matchday?.matchday" class="shrink-0 font-figures text-3xl font-extrabold leading-none text-slate-900">
-          <span class="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Jornada</span>
+          <span class="font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">Jornada</span>
           {{ matchday.matchday }}
         </p>
       </div>

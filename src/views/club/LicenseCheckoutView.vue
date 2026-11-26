@@ -83,7 +83,7 @@ watch(data, async (checkout) => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl">
+  <div class="mx-auto max-w-medium">
     <Spinner v-if="loading && !data" class="my-12" />
     <Alert v-else-if="error" kind="error">{{ error }}</Alert>
 
@@ -109,7 +109,7 @@ watch(data, async (checkout) => {
               <p class="text-sm font-medium text-slate-700">{{ data.clubName }}</p>
               <p class="text-xs text-slate-500">{{ data.teamNames.length === 1 ? data.teamNames[0] : `${data.teamNames.length} equipos: ${data.teamNames.join(', ')}` }}</p>
             </div>
-            <span class="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">{{ billingIntervalLabels[data.interval] }}</span>
+            <span class="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-2xs font-semibold text-slate-600">{{ billingIntervalLabels[data.interval] }}</span>
           </div>
 
           <ul class="mt-4 space-y-1.5 text-sm text-slate-600">

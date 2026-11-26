@@ -21,6 +21,8 @@ watch(
 </script>
 
 <template>
+  <!-- Capas: el aviso de abajo va con la cabecera (z-45), por debajo de las ventanas (z-50), que en el móvil salen
+       como hoja desde abajo y tienen sus botones ahí; la raya de arriba, por encima de todo. -->
   <div class="pointer-events-none fixed inset-x-0 top-0 z-[60]" aria-hidden="true">
     <Transition name="fade">
       <div v-if="visible" class="loading-bar h-0.5 w-full" />
@@ -29,13 +31,13 @@ watch(
   <Transition name="chip">
     <div
       v-if="visible && loading.current"
-      class="pointer-events-none fixed bottom-4 right-4 z-[60] flex items-center gap-2.5 rounded-full border border-line bg-surface/95 py-1.5 pl-1.5 pr-3.5 text-xs font-medium text-slate-700 shadow-card backdrop-blur"
+      class="pointer-events-none fixed bottom-4 right-4 z-45 flex items-center gap-2.5 rounded-full border border-line bg-surface/95 py-1.5 pl-1.5 pr-3.5 text-xs font-medium text-slate-700 shadow-card backdrop-blur"
       role="status"
       aria-live="polite"
     >
       <BrandMark :size="22" animated />
       <span>{{ loading.current }}…</span>
-      <span v-if="loading.pending > 1" class="rounded-full bg-brand-500/15 px-1.5 font-display text-[10px] font-bold text-brand-500">+{{ loading.pending - 1 }}</span>
+      <span v-if="loading.pending > 1" class="rounded-full bg-brand-500/15 px-1.5 font-display text-2xs font-bold text-brand-500">+{{ loading.pending - 1 }}</span>
     </div>
   </Transition>
 </template>

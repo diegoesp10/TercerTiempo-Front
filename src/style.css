@@ -160,6 +160,17 @@
   --font-sans: "Archivo Variable", "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-display: "Archivo Variable", "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
+  /* La letra más pequeña de la app (etiquetas, leyendas, contadores): nada por debajo de 11 px. Sin altura de línea
+     propia, como los tamaños escritos a mano que sustituye. */
+  --text-2xs: 0.6875rem;
+
+  /* Los tres anchos de página (max-w-narrow, max-w-medium, max-w-page): formularios y listas de una columna, páginas de dos
+     columnas como el buscador o el pago, y el marco de todo lo demás. En una pantalla de 2560 px el contenido no pasa de
+     1536 px, para que nada quede lejos de su etiqueta. Ninguna vista usa un ancho propio. */
+  --container-narrow: 48rem;
+  --container-medium: 64rem;
+  --container-page: 96rem;
+
   --color-canvas: var(--t-canvas);
   --color-navy-950: var(--t-canvas);
   --color-navy-900: var(--t-canvas-2);
@@ -289,6 +300,14 @@
     cursor: not-allowed;
   }
 
+  /* Con el dedo, ninguna casilla por debajo de 20 px (las hay de 14 y 16 px para el ratón). */
+  @media (pointer: coarse) {
+    input:where([type="checkbox"], [type="radio"]) {
+      min-width: 1.25rem;
+      min-height: 1.25rem;
+    }
+  }
+
   thead {
     font-family: var(--font-display);
     font-variation-settings: "wdth" 90;
@@ -306,8 +325,12 @@
   table {
     width: 100%;
   }
-  .col-sm, .col-md, .col-lg {
+  .col-xs, .col-sm, .col-md, .col-lg {
     display: none;
+  }
+  /* .col-xs: lo que sobra solo en los móviles más estrechos (por debajo de 360 px, p. ej. un plegable cerrado). */
+  @media (min-width: 360px) {
+    .col-xs { display: table-cell; }
   }
   @media (min-width: 640px) {
     .col-sm { display: table-cell; }
@@ -430,7 +453,7 @@
 
   /* Etiqueta pequeña en mayúsculas, estilo marcador deportivo */
   .eyebrow {
-    @apply inline-block font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-500;
+    @apply inline-block font-display text-2xs font-semibold uppercase tracking-[0.14em] text-brand-500;
   }
   /* Cifra de una casilla que cabe siempre entera: dentro de un @container sin relleno se encoge lo justo según sus
      caracteres (--chars) y nunca pasa de --fit-max. En Archivo cada carácter ocupa hasta ~0,62 em; 0,66 deja margen. */

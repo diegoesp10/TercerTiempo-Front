@@ -186,7 +186,7 @@ const best = (metric: MetricRow) => Math.max(...rows.value.map((r) => metric.val
           </div>
         </div>
         <div v-for="group in candidateGroups" :key="group.key" class="mt-3">
-          <p v-if="group.label" class="mb-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{{ group.label }} · {{ group.rows.length }}</p>
+          <p v-if="group.label" class="mb-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ group.label }} · {{ group.rows.length }}</p>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="row in group.rows"

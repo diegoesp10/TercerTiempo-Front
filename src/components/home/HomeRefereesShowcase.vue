@@ -123,7 +123,7 @@ const initials = (name: string) =>
 
         <dl class="mt-4 grid grid-cols-2 gap-2 pb-4 sm:grid-cols-4">
           <div v-for="figure in figures" :key="figure.label">
-            <dt class="text-[11px] uppercase tracking-wide text-slate-500">{{ figure.label }}</dt>
+            <dt class="text-2xs uppercase tracking-wide text-slate-500">{{ figure.label }}</dt>
             <dd class="font-figures text-2xl font-extrabold text-slate-900">{{ figure.value.toLocaleString('es-ES') }}</dd>
           </div>
         </dl>
@@ -161,9 +161,9 @@ const initials = (name: string) =>
             </span>
             <span class="shrink-0 text-right">
               <span class="block font-figures text-lg font-extrabold leading-tight text-slate-900">{{ referee.matches }}</span>
-              <span class="block text-[11px] text-slate-500">{{ referee.matches === 1 ? 'partido' : 'partidos' }}</span>
+              <span class="block text-2xs text-slate-500">{{ referee.matches === 1 ? 'partido' : 'partidos' }}</span>
             </span>
-            <span class="hidden w-20 shrink-0 text-right text-[11px] text-slate-500 sm:block">
+            <span class="hidden w-20 shrink-0 text-right text-2xs text-slate-500 sm:block">
               {{ referee.lastMatchAt ? formatDate(referee.lastMatchAt) : '—' }}
             </span>
           </RouterLink>

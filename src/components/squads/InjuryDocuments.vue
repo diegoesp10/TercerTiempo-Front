@@ -153,7 +153,7 @@ const iconOf = (document: InjuryDocumentDto) => (document.contentType === 'appli
         </div>
         <input ref="fileInput" type="file" :accept="ACCEPT" class="block w-full text-xs text-slate-600 file:mr-2 file:cursor-pointer file:rounded-md file:border-0 file:bg-surface-3 file:px-2.5 file:py-1.5 file:text-xs file:font-medium" @change="pick" />
         <input v-model="form.note" type="text" maxlength="200" class="input text-xs" placeholder="Nota opcional: resonancia del 12 de noviembre, informe de urgencias…" />
-        <p class="text-[11px] text-slate-500">PDF o imagen (JPG, PNG o WebP), hasta 15 MB. Solo lo abren el club, el cuerpo técnico y el propio jugador.</p>
+        <p class="text-2xs text-slate-500">PDF o imagen (JPG, PNG o WebP), hasta 15 MB. Solo lo abren el club, el cuerpo técnico y el propio jugador.</p>
         <div class="flex justify-end gap-2">
           <button type="button" class="btn-ghost btn-sm" @click="formOpen = false">Cancelar</button>
           <button type="submit" class="btn-primary btn-sm" v-busy="busy" :disabled="busy || !form.file"><Icon icon="cloud-arrow-up" class="mr-1 h-3 w-3" />Subir</button>

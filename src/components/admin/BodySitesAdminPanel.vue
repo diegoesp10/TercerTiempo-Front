@@ -309,12 +309,12 @@ onMounted(load);
         <label class="block">
           <span class="label">Nombre</span>
           <input v-model="form.label" type="text" maxlength="80" required class="input" placeholder="Ej.: Bíceps femoral" />
-          <span class="mt-1 block text-[11px] text-slate-500">Lo que aclara va entre paréntesis al final: «Escápula (omóplato)».</span>
+          <span class="mt-1 block text-2xs text-slate-500">Lo que aclara va entre paréntesis al final: «Escápula (omóplato)».</span>
         </label>
         <div>
           <p class="label">Clase</p>
           <ChoiceToggle :model-value="form.kind" :options="kindOptions" label="Clase de sitio" size="xs" :disabled="hasChildren" @update:model-value="chooseKind" />
-          <p v-if="hasChildren" class="mt-1 text-[11px] text-slate-500">Es el grupo de {{ editing?.children }} sitios: la clase no cambia mientras los tenga.</p>
+          <p v-if="hasChildren" class="mt-1 text-2xs text-slate-500">Es el grupo de {{ editing?.children }} sitios: la clase no cambia mientras los tenga.</p>
         </div>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
@@ -337,7 +337,7 @@ onMounted(load);
             :options="parentOptions"
             @update:model-value="form.parent = ($event as string | null)"
           />
-          <p class="mt-1 text-[11px] text-slate-500">
+          <p class="mt-1 text-2xs text-slate-500">
             {{ hasChildren ? 'Ya es grupo de otros: no puede estar en otro.' : 'Un sitio de la misma clase que lo contiene (el bíceps femoral, en los isquiotibiales): si no se sabe cuál, se elige el grupo.' }}
           </p>
         </div>

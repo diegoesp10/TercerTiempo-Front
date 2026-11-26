@@ -153,7 +153,7 @@ async function logoutAdmin() {
          cookies (z-40); solo los modales (z-50) la tapan. -->
     <header ref="header" class="sticky top-0 z-45 border-b border-line bg-surface/95">
       <!-- La fila se mide (useFit) y sus marcas data-* dicen qué se ve; nada de ella encoge (todo shrink-0). -->
-      <div ref="headerRow" class="group/hdr mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-6 px-4 sm:px-6 lg:px-10">
+      <div ref="headerRow" class="group/hdr mx-auto flex h-16 w-full max-w-page items-center justify-between gap-6 px-4 sm:px-6 lg:px-10">
         <RouterLink to="/" class="flex shrink-0 items-center gap-2 sm:gap-3" aria-label="Tercer Tiempo: inicio">
           <BrandMark :size="34" />
           <span class="whitespace-nowrap font-display text-xl font-bold uppercase tracking-wide text-slate-900 group-data-[nobrand]/hdr:hidden sm:text-2xl">Tercer <span class="text-brand-500">Tiempo</span></span>
@@ -317,7 +317,7 @@ async function logoutAdmin() {
     <SearchPalette v-if="canSearch" />
     <ConfirmDialog />
 
-    <main class="mx-auto w-full max-w-[1760px] flex-1 px-4 py-6 max-[360px]:px-2 sm:px-6 sm:py-8 lg:px-10" :class="consent.needsBanner ? 'pb-48 sm:pb-36 lg:pb-28' : ''">
+    <main class="mx-auto w-full max-w-page flex-1 px-4 py-6 max-[360px]:px-2 sm:px-6 sm:py-8 lg:px-10" :class="consent.needsBanner ? 'pb-48 sm:pb-36 lg:pb-28' : ''">
       <div v-if="!route.meta.root && !route.meta.error" class="mb-4">
         <BackButton />
       </div>

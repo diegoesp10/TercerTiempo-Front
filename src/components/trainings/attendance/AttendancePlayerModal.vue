@@ -92,7 +92,7 @@ const stats = computed(() => {
         </div>
         <div class="shrink-0 pr-2 text-right">
           <p class="font-figures text-3xl font-bold leading-none" :class="rateText(p.attendanceRate)">{{ p.attendanceRate === null ? '—' : `${p.attendanceRate} %` }}</p>
-          <p class="mt-1 text-[11px] text-slate-500">de asistencia</p>
+          <p class="mt-1 text-2xs text-slate-500">de asistencia</p>
         </div>
       </div>
     </template>
@@ -102,7 +102,7 @@ const stats = computed(() => {
 
       <dl class="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-5">
         <div v-for="s in stats" :key="s.label">
-          <dt class="text-[11px] font-medium uppercase tracking-wide text-slate-500">{{ s.label }}</dt>
+          <dt class="text-2xs font-medium uppercase tracking-wide text-slate-500">{{ s.label }}</dt>
           <dd class="font-semibold tabular-nums" :class="s.tone">
             {{ s.value }}<span v-if="s.hint" class="ml-1 text-xs font-normal text-slate-500">{{ s.hint }}</span>
           </dd>
@@ -111,7 +111,7 @@ const stats = computed(() => {
 
       <!-- Faltas con su motivo, lo primero que se busca -->
       <section v-if="row.misses.length">
-        <p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">Faltas · {{ row.misses.length }}</p>
+        <p class="mb-2 text-2xs font-medium uppercase tracking-wide text-slate-500">Faltas · {{ row.misses.length }}</p>
         <ul class="divide-y divide-line overflow-hidden rounded-xl border border-line">
           <li v-for="m in row.misses" :key="m.day.sessionId" class="flex items-start gap-3 px-3 py-2.5">
             <span class="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md ring-1 ring-inset" :class="outcomeCell[m.outcome]">
@@ -134,15 +134,15 @@ const stats = computed(() => {
       <p v-else-if="p.sessions" class="flex items-center gap-2 text-sm text-emerald-600"><Icon icon="circle-check" class="h-3.5 w-3.5" />No ha faltado a ninguno.</p>
 
       <section v-if="calendar.length">
-        <p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">Calendario</p>
+        <p class="mb-2 text-2xs font-medium uppercase tracking-wide text-slate-500">Calendario</p>
         <div class="overflow-x-auto pb-1">
           <div class="inline-flex gap-[3px]">
-            <div class="mr-1 grid grid-rows-[auto_repeat(7,0.875rem)] gap-[3px] text-[9px] leading-[0.875rem] text-slate-400">
+            <div class="mr-1 grid grid-rows-[auto_repeat(7,0.875rem)] gap-[3px] text-2xs leading-[0.875rem] text-slate-400">
               <span class="h-3" />
               <span v-for="(d, i) in weekdayInitials" :key="d">{{ i % 2 === 0 ? d : '' }}</span>
             </div>
             <div v-for="w in calendar" :key="w.key" class="grid grid-rows-[auto_repeat(7,0.875rem)] gap-[3px]">
-              <span class="h-3 whitespace-nowrap text-[9px] leading-3 text-slate-400">{{ w.month }}</span>
+              <span class="h-3 whitespace-nowrap text-2xs leading-3 text-slate-400">{{ w.month }}</span>
               <span v-for="c in w.cells" :key="c.key" class="h-3.5 w-3.5 rounded-[3px]" :class="cellClass(c)" :title="cellTitle(c)" />
             </div>
           </div>
@@ -150,7 +150,7 @@ const stats = computed(() => {
       </section>
 
       <section v-if="p.injuries?.length">
-        <p class="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-500">Lesiones</p>
+        <p class="mb-1.5 text-2xs font-medium uppercase tracking-wide text-slate-500">Lesiones</p>
         <p v-for="i in p.injuries" :key="i.id" class="flex items-start gap-1.5 text-sm">
           <Icon icon="user-injured" class="mt-0.5 h-3 w-3 shrink-0 text-danger" />
           <InjuryNote :injury="i" :badge="false" />

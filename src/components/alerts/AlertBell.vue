@@ -89,7 +89,7 @@ async function openAlert(alert: AlertDto) {
       <Icon icon="bell" class="h-4 w-4" />
       <span
         v-if="store.unread"
-        class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-solid px-1 text-[10px] font-bold leading-none text-white"
+        class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-solid px-1 text-2xs font-bold leading-none text-white"
       >{{ store.unread > 9 ? '9+' : store.unread }}</span>
     </button>
 
@@ -120,18 +120,18 @@ async function openAlert(alert: AlertDto) {
               <span class="min-w-0 flex-1">
                 <span class="flex items-baseline justify-between gap-2">
                   <span class="text-sm font-semibold text-slate-900">{{ alert.title }}</span>
-                  <span v-if="alert.resolved" class="shrink-0 text-[11px] font-medium text-emerald-600">Resuelto</span>
+                  <span v-if="alert.resolved" class="shrink-0 text-2xs font-medium text-emerald-600">Resuelto</span>
                   <span
                     v-else-if="daysLeft(alert) !== null"
-                    class="shrink-0 text-[11px] font-semibold"
+                    class="shrink-0 text-2xs font-semibold"
                     :class="daysLeft(alert)! <= 5 ? 'text-danger' : 'text-warning'"
                   >{{ remaining(daysLeft(alert)!) }}</span>
                 </span>
-                <span class="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-accent-400">
+                <span class="mt-0.5 inline-flex items-center gap-1 text-2xs font-medium uppercase tracking-wide text-accent-400">
                   <Icon :icon="kindInfo[alert.kind]?.icon ?? 'bell'" class="h-2.5 w-2.5" />{{ kindInfo[alert.kind]?.label ?? 'Aviso' }}
                 </span>
                 <span class="mt-0.5 block text-xs leading-relaxed text-slate-600">{{ alert.message }}</span>
-                <span class="mt-1 block text-[11px] text-slate-400">
+                <span class="mt-1 block text-2xs text-slate-400">
                   {{ formatKickoff(alert.createdAt) }}<template v-if="alert.dueOn"> · último día {{ formatDate(alert.dueOn) }}</template>
                 </span>
               </span>

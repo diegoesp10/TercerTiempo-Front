@@ -397,28 +397,28 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
     <div v-if="playerId && totals && totals.injuries > 0" class="mb-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
       <div class="rounded-xl border border-line bg-surface-2 p-2.5">
         <p class="text-lg font-bold text-slate-900">{{ totals.injuries }}</p>
-        <p class="text-[11px] text-slate-500">
+        <p class="text-2xs text-slate-500">
           {{ totals.injuries === 1 ? 'lesión' : 'lesiones' }}<template v-if="totals.relapses"> · {{ totals.relapses === 1 ? '1 recaída' : `${totals.relapses} recaídas` }}</template>
         </p>
       </div>
       <div class="rounded-xl border border-line bg-surface-2 p-2.5">
         <p class="text-lg font-bold tabular-nums text-slate-900">{{ totals.daysOut }}</p>
-        <p class="text-[11px] text-slate-500">{{ totals.daysOut === 1 ? 'día de baja' : 'días de baja' }} en total</p>
+        <p class="text-2xs text-slate-500">{{ totals.daysOut === 1 ? 'día de baja' : 'días de baja' }} en total</p>
       </div>
       <div class="rounded-xl border border-line bg-surface-2 p-2.5" title="Media de días del parte al alta de las lesiones superadas">
         <p class="text-lg font-bold tabular-nums text-slate-900">{{ totals.averageRecoveryDays === null ? '—' : `${formatNumber(totals.averageRecoveryDays, 1)} días` }}</p>
-        <p class="text-[11px] text-slate-500">
+        <p class="text-2xs text-slate-500">
           <template v-if="totals.recovered">en recuperarse · {{ totals.recovered === 1 ? '1 superada' : `${totals.recovered} superadas` }}</template>
           <template v-else>ninguna superada todavía</template>
         </p>
       </div>
       <div v-if="playerLeft" class="rounded-xl border border-line bg-surface-2 p-2.5">
         <p class="text-lg font-bold text-slate-500">De baja</p>
-        <p class="text-[11px] text-slate-500">ya no está en la plantilla</p>
+        <p class="text-2xs text-slate-500">ya no está en la plantilla</p>
       </div>
       <div v-else class="rounded-xl border border-line bg-surface-2 p-2.5">
         <p class="text-lg font-bold" :class="active.length ? 'text-danger' : 'text-success'">{{ active.length ? 'Lesionado' : 'Disponible' }}</p>
-        <p class="text-[11px] text-slate-500">ahora</p>
+        <p class="text-2xs text-slate-500">ahora</p>
       </div>
     </div>
 
@@ -549,7 +549,7 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
           </tbody>
         </table>
       </div>
-      <p class="mt-1.5 text-[11px] text-slate-500">Días de baja contados del día del parte al del alta. «Previstos» es lo que se previó al dar el parte: así se ve lo que tardó de verdad frente a lo esperado.</p>
+      <p class="mt-1.5 text-2xs text-slate-500">Días de baja contados del día del parte al del alta. «Previstos» es lo que se previó al dar el parte: así se ve lo que tardó de verdad frente a lo esperado.</p>
     </div>
 
     <!-- Plantilla: historial de esta temporada -->

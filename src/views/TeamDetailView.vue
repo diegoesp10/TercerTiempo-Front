@@ -172,7 +172,7 @@ async function linkToClub() {
       <div class="grid grid-cols-2 gap-3 @2xs:grid-cols-3 @3xl:grid-cols-6">
         <div v-for="(figure, i) in standingFigures" :key="figure.label" class="relative min-w-0 rounded-xl border border-line bg-surface px-2 pb-3 pt-2.5 text-center shadow-card sm:px-3">
           <span v-if="i === 0" class="absolute inset-x-3 top-0 h-0.5 rounded-b bg-brand-500" aria-hidden="true" />
-          <p class="break-words font-display text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-500 sm:text-[11px] sm:tracking-[0.12em]">{{ figure.label }}</p>
+          <p class="break-words font-display text-2xs font-semibold uppercase tracking-[0.06em] text-slate-500 sm:text-2xs sm:tracking-[0.12em]">{{ figure.label }}</p>
           <div class="@container mt-1">
             <p class="fit-figure font-figures font-extrabold leading-none tabular-nums text-slate-900 [--fit-max:1.25rem] sm:[--fit-max:1.5rem]" :style="{ '--chars': String(figure.value).length }">{{ figure.value }}</p>
           </div>
@@ -335,7 +335,7 @@ async function linkToClub() {
               </thead>
               <tbody v-for="group in rosterGroups" :key="group.key" class="divide-y divide-slate-100">
                 <tr v-if="group.label">
-                  <td colspan="2" class="bg-surface-2 px-2 py-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{{ group.label }} · {{ group.rows.length }}</td>
+                  <td colspan="2" class="bg-surface-2 px-2 py-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ group.label }} · {{ group.rows.length }}</td>
                 </tr>
                 <tr v-for="{ entry } in group.rows" :key="entry.id">
                   <td class="py-2 pr-3">

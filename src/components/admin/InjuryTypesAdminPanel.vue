@@ -360,7 +360,7 @@ onMounted(load);
           <label>
             <span class="label">Duración media (días)</span>
             <input v-model.number="form.averageDays" type="number" min="1" max="730" class="input" placeholder="Sin referencia" />
-            <span class="mt-1 block text-[11px] text-slate-500">Vacía si no hay una referencia (como «Otra»).</span>
+            <span class="mt-1 block text-2xs text-slate-500">Vacía si no hay una referencia (como «Otra»).</span>
           </label>
           <label>
             <span class="label">Orden en la lista</span>
@@ -371,7 +371,7 @@ onMounted(load);
         <div>
           <p class="label">¿Qué se pregunta de dónde fue?</p>
           <ChoiceToggle :model-value="form.asks" :options="asksOptions" label="Qué se pregunta de dónde fue" @update:model-value="chooseAsks" />
-          <p class="mt-1 text-[11px] text-slate-500">
+          <p class="mt-1 text-2xs text-slate-500">
             <template v-if="form.asks === 'kind'">Cualquier sitio de una clase: «¿Qué músculo?» en la contractura, «¿Qué hueso?» en la fractura.</template>
             <template v-else-if="form.asks === 'base'">Siempre el mismo sitio, del que sale el lado: la rodilla en el ligamento cruzado («¿Qué rodilla?»).</template>
             <template v-else>Nada del cuerpo: una enfermedad.</template>
@@ -390,12 +390,12 @@ onMounted(load);
             {{ form.asks === 'base' ? 'Lo que lo precisa' : 'Solo estos sitios' }}
             <span class="font-normal text-slate-400">({{ form.sites.length ? `${form.sites.length} elegidos` : form.asks === 'base' ? 'ninguno' : 'todos' }})</span>
           </p>
-          <p class="mb-1.5 text-[11px] text-slate-500">{{ listHelp }} Como mucho {{ MAX_SITES }}.</p>
+          <p class="mb-1.5 text-2xs text-slate-500">{{ listHelp }} Como mucho {{ MAX_SITES }}.</p>
           <input v-model="siteFilter" type="search" class="input mb-2" placeholder="Buscar un sitio" aria-label="Buscar un sitio en la lista" />
           <div class="max-h-64 overflow-y-auto rounded-lg border border-line p-2">
             <p v-if="candidateGroups.length === 0" class="px-1 py-2 text-xs text-slate-500">Ningún sitio encaja.</p>
             <fieldset v-for="group in candidateGroups" :key="group.region" class="mb-2 last:mb-0">
-              <legend class="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ group.label }}</legend>
+              <legend class="px-1 text-2xs font-semibold uppercase tracking-wide text-slate-500">{{ group.label }}</legend>
               <label v-for="site in group.sites" :key="site.code" class="flex cursor-pointer items-start gap-2 rounded px-1 py-1 text-sm hover:bg-surface-2">
                 <input
                   type="checkbox"
@@ -411,7 +411,7 @@ onMounted(load);
               </label>
             </fieldset>
           </div>
-          <button v-if="form.sites.length" type="button" class="mt-1 text-[11px] font-medium text-brand-600 underline underline-offset-2" @click="form.sites = []">Vaciar la lista</button>
+          <button v-if="form.sites.length" type="button" class="mt-1 text-2xs font-medium text-brand-600 underline underline-offset-2" @click="form.sites = []">Vaciar la lista</button>
         </div>
 
         <label v-if="form.asks !== 'none'" class="flex items-start gap-2 text-sm text-slate-700">
@@ -422,7 +422,7 @@ onMounted(load);
           <input v-model="form.active" type="checkbox" class="mt-0.5" />
           <span>Se ofrece al registrar lesiones<span class="block text-xs text-slate-500">Si lo quitas queda retirado: las lesiones que ya lo tienen lo conservan.</span></span>
         </label>
-        <p class="text-[11px] text-slate-500">Cambiar lo que pregunta no toca las lesiones ya guardadas: conservan su sitio y su lado.</p>
+        <p class="text-2xs text-slate-500">Cambiar lo que pregunta no toca las lesiones ya guardadas: conservan su sitio y su lado.</p>
       </form>
       <template #footer>
         <div class="flex flex-wrap items-center justify-end gap-2">
