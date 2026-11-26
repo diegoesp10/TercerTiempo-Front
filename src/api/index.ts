@@ -65,6 +65,7 @@ import type {
   ApplyVideoAnalysisRequest,
   ApplyVideoAnalysisResultDto,
   MatchVideoAnalysisDto,
+  VideoAnalysisStampDto,
   TeamProfileDto,
   MatchVideoDto,
   OfficialSheetDto,
@@ -270,6 +271,9 @@ export const api = {
     /** Propuesta de acta interna que sale del vídeo del partido (estado del análisis, calidad, equipos y jugadores seguidos). */
     videoAnalysis: (squadId: string, matchId: string, silent = false) =>
       http<MatchVideoAnalysisDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis`, { silent }),
+    /** Solo la huella, cada pocos segundos mientras se analiza: si cambia, se vuelve a pedir el análisis entero. */
+    videoAnalysisStamp: (squadId: string, matchId: string) =>
+      http<VideoAnalysisStampDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis/stamp`, { silent: true }),
     /** Analiza (o vuelve a analizar) el vídeo indicado, o todos los de la plantilla en el partido. */
     requestVideoAnalysis: (squadId: string, matchId: string, videoId?: string) =>
       http<MatchVideoAnalysisDto>(`/api/squads/${squadId}/matches/${matchId}/video-analysis`, { method: 'POST', body: { videoId: videoId ?? null } }),

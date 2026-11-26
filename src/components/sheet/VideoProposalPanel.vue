@@ -92,16 +92,26 @@ const analysingNow = computed(() => analysis.value?.videos.some((v) => v.state =
 const noAnalyzer = computed(() =>
   !!analysis.value?.enabled && !analysis.value.analyzerOnline && analysis.value.videos.some((v) => waitingStates.includes(v.state)));
 
-// Mientras se analiza se pregunta cada 3 s (lo que esté en cola o comprimiéndose, cada 10 s); con la pestaña oculta se
-// para y, al volver, se pregunta enseguida. Tras salir del acta no se programa nada más, aunque quede una respuesta en camino.
+// Mientras se analiza se pregunta la huella cada 2 s (lo que esté en cola o comprimiéndose, cada 5 s) y el análisis entero
+// solo si ha cambiado; con la pestaña oculta se para y, al volver, se pregunta enseguida. Tras salir del acta no se
+// programa nada más, aunque quede una respuesta en camino.
 let timer: ReturnType<typeof setTimeout> | null = null;
 let disposed = false;
 function schedule() {
   if (timer) clearTimeout(timer);
-  timer = !disposed && !document.hidden && busyWithAnalysis.value ? setTimeout(() => void load(true), analysingNow.value ? 3_000 : 10_000) : null;
+  timer = !disposed && !document.hidden && busyWithAnalysis.value ? setTimeout(() => void check(), analysingNow.value ? 2_000 : 5_000) : null;
+}
+async function check() {
+  try {
+    const { stamp } = await api.squads.videoAnalysisStamp(props.squadId, props.matchId);
+    if (stamp !== analysis.value?.stamp) return await load(true);
+  } catch {
+    // Sin conexión o la API ocupada: se vuelve a preguntar en la siguiente.
+  }
+  schedule();
 }
 function onVisibility() {
-  if (!document.hidden && !disposed && busyWithAnalysis.value) void load(true);
+  if (!document.hidden && !disposed && busyWithAnalysis.value) void check();
   else schedule();
 }
 document.addEventListener('visibilitychange', onVisibility);

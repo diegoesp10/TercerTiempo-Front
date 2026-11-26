@@ -2365,6 +2365,12 @@ export interface MatchVideoAnalysisDto {
   analyzerSeenAt: string | null;
   /** El acta oficial está cerrada: al volcar, los minutos (por descarte), la titularidad, los goles y las tarjetas salen de ella. */
   officialSheetClosed: boolean;
+  /** Huella de lo que se ve: mientras la de …/video-analysis/stamp sea la misma, no hace falta volver a pedir el análisis. */
+  stamp: string;
+}
+
+export interface VideoAnalysisStampDto {
+  stamp: string;
 }
 
 export interface ApplyVideoAnalysisRequest {
