@@ -1,19 +1,26 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, h, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import AgendaList from '@/components/trainings/AgendaList.vue';
 import TrainingAttendancePanel from '@/components/trainings/attendance/TrainingAttendancePanel.vue';
-import TrainingCalendar from '@/components/trainings/TrainingCalendar.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import { useAsync } from '@/composables/useAsync';
 import { useLazyMount } from '@/composables/useLazyMount';
 import { useSquad } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
-import type { ExerciseDto, MatchDto, Position, TrainingSummaryDto, TrialPlayerDto } from '@/types/api';
+import type { ExerciseDto, MatchDto, Position, SquadAgendaItemDto, TrainingSummaryDto, TrialPlayerDto } from '@/types/api';
 import { toDateKey } from '@/utils/format';
+
+// El calendario (FullCalendar, con preact y su polyfill) va en su propio trozo: la página, «Lo próximo» y la asistencia
+// salen sin esperarlo, con un hueco del alto del mes (o de la lista, en el móvil) mientras llega.
+const TrainingCalendar = defineAsyncComponent({
+  loader: () => import('@/components/trainings/TrainingCalendar.vue'),
+  loadingComponent: { render: () => h('div', { class: 'skeleton h-96 rounded-xl sm:h-[39.5rem]', role: 'status', 'aria-label': 'Cargando el calendario…' }) },
+  delay: 0,
+});
 
 // Las ventanas se descargan la primera vez que se abren, no con la agenda.
 const ExerciseLibraryModal = defineAsyncComponent(() => import('@/components/trainings/ExerciseLibraryModal.vue'));
@@ -32,17 +39,56 @@ const photos = computed<Record<string, string | null>>(() => Object.fromEntries(
 const positions = computed<Record<string, Position | null>>(() =>
   Object.fromEntries([...(detail.value?.players ?? []), ...(detail.value?.leftPlayers ?? [])].map((p) => [p.id, p.position ?? null])));
 
-// Agenda (entrenamientos y partidos) de los días que enseña el calendario: la pide él al cambiar de vista o de fechas.
-const range = ref<{ from: string; to: string } | null>(null);
-const agenda = useAsync(
-  () => (range.value ? api.trainings.agenda(squadId.value, range.value.from, range.value.to) : Promise.resolve([])),
+// Agenda (entrenamientos y partidos). Al entrar se pide de una vez una ventana que cubre el mes del calendario (sea cual
+// sea la vista, la de hoy cabe en él) y «Lo próximo» (de dos semanas atrás a cinco por delante): mientras el calendario
+// se mueva dentro de ella, se filtra lo que ya hay; fuera, se pide el tramo que enseña.
+function shiftDays(days: number, from = new Date()) {
+  const date = new Date(from);
+  date.setDate(date.getDate() + days);
+  return date;
+}
+function agendaWindow() {
+  const today = new Date();
+  const first = new Date(today.getFullYear(), today.getMonth(), 1);
+  // El mes del calendario: seis semanas desde el lunes de la semana del día 1.
+  const gridStart = shiftDays(-((first.getDay() + 6) % 7), first);
+  const gridEnd = shiftDays(41, gridStart);
+  const upcomingFrom = shiftDays(-14, today);
+  const upcomingTo = shiftDays(35, today);
+  return {
+    from: toDateKey(gridStart < upcomingFrom ? gridStart : upcomingFrom),
+    to: toDateKey(gridEnd > upcomingTo ? gridEnd : upcomingTo),
+    upcomingFrom: toDateKey(upcomingFrom),
+    upcomingTo: toDateKey(upcomingTo),
+  };
+}
+const agendaRange = agendaWindow();
+type DayRange = { from: string; to: string };
+const inWindow = (r: DayRange) => r.from >= agendaRange.from && r.to <= agendaRange.to;
+const within = (items: SquadAgendaItemDto[], from: string, to: string) =>
+  items.filter((item) => {
+    const day = toDateKey(new Date(item.startsAt));
+    return day >= from && day <= to;
+  });
+
+const windowAgenda = useAsync(() => api.trainings.agenda(squadId.value, agendaRange.from, agendaRange.to), { redirectOnError: false });
+
+const range = ref<DayRange | null>(null);
+const outside = useAsync(
+  () => (range.value && !inWindow(range.value) ? api.trainings.agenda(squadId.value, range.value.from, range.value.to) : Promise.resolve([])),
   { immediate: false, redirectOnError: false },
 );
-function onRange(next: { from: string; to: string }) {
+function onRange(next: DayRange) {
   if (range.value?.from === next.from && range.value?.to === next.to) return;
   range.value = next;
-  void agenda.run();
+  if (!inWindow(next)) void outside.run();
 }
+const calendarItems = computed(() => {
+  if (!range.value) return [];
+  return inWindow(range.value) ? within(windowAgenda.data.value ?? [], range.value.from, range.value.to) : outside.data.value ?? [];
+});
+const calendarLoading = computed(() => (range.value && !inWindow(range.value) ? outside.loading.value : windowAgenda.loading.value));
+const agendaError = computed(() => windowAgenda.error.value ?? outside.error.value);
 
 const catalog = useAsync(() => api.trainings.catalog(), { redirectOnError: false });
 const library = ref<ExerciseDto[]>([]);
@@ -78,22 +124,16 @@ async function onPromoted() {
 
 // «Lo próximo»: entrenamientos y partidos de las dos semanas pasadas a las cinco que vienen, sea cual sea el mes a la
 // vista. Va lo último ya realizado (atenuado, como referencia) y lo que queda.
-function shiftDays(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return toDateKey(date);
-}
-const upcoming = useAsync(() => api.trainings.agenda(squadId.value, shiftDays(-14), shiftDays(35)), { redirectOnError: false });
 const next = computed(() => {
-  const list = upcoming.data.value ?? [];
+  const list = within(windowAgenda.data.value ?? [], agendaRange.upcomingFrom, agendaRange.upcomingTo);
   return [...list.filter((i) => i.done).slice(-1), ...list.filter((i) => !i.done).slice(0, 6)];
 });
 
 // Se sube al guardar algo de una sesión (lista incluida) para que la tabla de asistencia se vuelva a contar.
 const attendanceKey = ref(0);
 function refresh() {
-  void agenda.run();
-  void upcoming.run();
+  void windowAgenda.run();
+  if (range.value && !inWindow(range.value)) void outside.run();
   attendanceKey.value++;
 }
 
@@ -138,7 +178,7 @@ function onCreated() {
 </script>
 
 <template>
-  <Alert v-if="agenda.error.value" kind="error" class="mb-4">{{ agenda.error.value }}</Alert>
+  <Alert v-if="agendaError" kind="error" class="mb-4">{{ agendaError }}</Alert>
   <Alert v-if="libraryError" kind="warning" class="mb-4">{{ libraryError }}</Alert>
 
   <div class="mb-4 flex flex-wrap items-center justify-end gap-3">
@@ -155,9 +195,9 @@ function onCreated() {
   <!-- min-w-0 en las dos columnas: sin él, la columna se ensancha hasta lo que piden las pestañas del calendario, que así
        nunca pasan al menú y sacan la página de la pantalla en un móvil estrecho. -->
   <div class="grid gap-6 xl:grid-cols-[1fr_20rem]">
-    <div class="min-w-0" :class="agenda.loading.value ? 'is-refreshing' : ''">
+    <div class="min-w-0" :class="calendarLoading ? 'is-refreshing' : ''">
       <TrainingCalendar
-        :items="agenda.data.value ?? []"
+        :items="calendarItems"
         :team-id="teamId"
         :can-plan="canManage"
         :selected-id="selectedId"
@@ -177,7 +217,7 @@ function onCreated() {
       <section>
         <h3 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Lo próximo</h3>
         <p class="mb-2 text-xs text-slate-500">Entrenamientos y partidos por orden, con lo último ya realizado delante.</p>
-        <p v-if="upcoming.loading.value && !upcoming.data.value" class="text-sm text-slate-500">Cargando…</p>
+        <p v-if="windowAgenda.loading.value && !windowAgenda.data.value" class="text-sm text-slate-500">Cargando…</p>
         <p v-else-if="next.length === 0" class="text-sm text-slate-500">Nada en las próximas semanas.</p>
         <AgendaList v-else :items="next" :squad-id="squadId" :team-id="teamId" :can-manage="canManage" @training="openSession" />
       </section>

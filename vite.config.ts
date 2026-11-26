@@ -24,8 +24,32 @@ function preloadFont(): Plugin {
   };
 }
 
+// Cada archivo de texto del build, también en .gz con la compresión más alta: el Nginx los sirve tal cual (gzip_static)
+// en vez de comprimir en cada petición con el nivel bajo de por defecto. Los que no llegan a 1 KB no compensan.
+function precompress(): Plugin {
+  return {
+    name: 'precompress-gzip',
+    apply: 'build',
+    async writeBundle(options) {
+      const { readdir, readFile, writeFile } = await import('node:fs/promises');
+      const { join } = await import('node:path');
+      const { gzipSync, constants } = await import('node:zlib');
+      const dir = options.dir;
+      if (!dir) return;
+      const files = (await readdir(dir, { recursive: true, withFileTypes: true }))
+        .filter((entry) => entry.isFile() && /\.(?:js|css|html|svg|json|txt|xml|wasm)$/.test(entry.name))
+        .map((entry) => join(entry.parentPath, entry.name));
+      await Promise.all(files.map(async (file) => {
+        const content = await readFile(file);
+        if (content.length < 1024) return;
+        await writeFile(`${file}.gz`, gzipSync(content, { level: constants.Z_BEST_COMPRESSION }));
+      }));
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [vue(), tailwindcss(), preloadFont()],
+  plugins: [vue(), tailwindcss(), preloadFont(), precompress()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -46,7 +70,9 @@ export default defineConfig({
             { name: 'vue', test: /[\\/]node_modules[\\/](?:\.pnpm[\\/][^\\/]+[\\/]node_modules[\\/])?(?:vue|@vue|vue-router|pinia)[\\/]/, priority: 40 },
             { name: 'echarts', test: /[\\/]node_modules[\\/].*(?:echarts|zrender)[\\/]/, priority: 30 },
             { name: 'three', test: /[\\/]node_modules[\\/].*[\\/]three[\\/]/, priority: 20 },
-            { name: 'gsap', test: /[\\/]node_modules[\\/].*[\\/]gsap[\\/]/, priority: 10 },
+            // El calendario de la agenda con lo que arrastra (preact y el polyfill de Temporal): aparte de la vista, que
+            // así se pinta sin esperarlo.
+            { name: 'fullcalendar', test: /[\\/]node_modules[\\/].*(?:@fullcalendar|preact|temporal-polyfill)[\\/]/, priority: 10 },
           ],
         },
       },
