@@ -232,7 +232,7 @@ const { sorted: sortedAppointments, sortBy, state } = useSort<AppointmentDto, Ap
             <p class="break-words font-medium text-slate-900">{{ filial.teamName }}</p>
             <p v-if="filial.competitionName" class="text-xs text-slate-500">{{ filial.competitionName }}</p>
           </div>
-          <button type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy" :disabled="busy" @click="addFilial(filial)">
+          <button type="button" class="btn-primary btn-sm py-1.5" v-busy="busy" :disabled="busy" @click="addFilial(filial)">
             <Icon icon="plus" class="h-3 w-3" />Añadir a la licencia
           </button>
         </li>
@@ -262,7 +262,7 @@ const { sorted: sortedAppointments, sortBy, state } = useSort<AppointmentDto, Ap
             <button
               v-if="club.teams.length > 1"
               type="button"
-              class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+              class="btn-ghost-danger btn-sm px-2"
               v-busy="busy"
               :disabled="busy"
               @click="removeTeam(team.teamId, team.teamName)"
@@ -333,7 +333,7 @@ const { sorted: sortedAppointments, sortBy, state } = useSort<AppointmentDto, Ap
             <RouterLink :to="{ name: 'register', query: { code: lastCreated.accessCode } }" class="font-medium underline">Darme de alta</RouterLink>
             o, si ya tiene cuenta, lo canjea desde su panel.
           </p>
-          <button type="button" class="btn-secondary mt-2 px-3 py-1 text-xs" @click="copyCode(lastCreated)">{{ copied === lastCreated.id ? 'Copiado ✓' : 'Copiar código' }}</button>
+          <button type="button" class="btn-secondary btn-sm mt-2" @click="copyCode(lastCreated)">{{ copied === lastCreated.id ? 'Copiado ✓' : 'Copiar código' }}</button>
         </div>
       </section>
 
@@ -369,7 +369,7 @@ const { sorted: sortedAppointments, sortBy, state } = useSort<AppointmentDto, Ap
                   <Badge :tone="appointmentStatusTone(appointment.status)">{{ appointmentStatusLabels[appointment.status] }}</Badge>
                   <div v-if="appointment.accessCode" class="mt-1 flex items-center gap-2">
                     <span class="font-mono text-sm tracking-widest text-slate-800">{{ appointment.accessCode }}</span>
-                    <button type="button" class="btn-ghost px-2 py-0.5 text-xs" @click="copyCode(appointment)">{{ copied === appointment.id ? '✓' : 'Copiar' }}</button>
+                    <button type="button" class="btn-ghost btn-sm px-2 py-0.5" @click="copyCode(appointment)">{{ copied === appointment.id ? '✓' : 'Copiar' }}</button>
                   </div>
                   <p v-else-if="appointment.redeemedAt" class="mt-1 text-xs text-slate-500">Canjeado el {{ formatKickoff(appointment.redeemedAt) }}</p>
                 </td>
@@ -382,12 +382,12 @@ const { sorted: sortedAppointments, sortBy, state } = useSort<AppointmentDto, Ap
                 <td class="py-2 text-right whitespace-nowrap">
                   <template v-if="appointment.status === 'Revoked'"></template>
                   <template v-else-if="editingId === appointment.id">
-                    <button type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="saveValidity(appointment)">Guardar</button>
-                    <button type="button" class="btn-ghost ml-1 px-3 py-1 text-xs" @click="editingId = null">Cancelar</button>
+                    <button type="button" class="btn-primary btn-sm" v-busy="busy" :disabled="busy" @click="saveValidity(appointment)">Guardar</button>
+                    <button type="button" class="btn-ghost btn-sm ml-1" @click="editingId = null">Cancelar</button>
                   </template>
                   <template v-else>
-                    <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="startEdit(appointment)">Validez</button>
-                    <button type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" @click="revoke(appointment)">Revocar</button>
+                    <button type="button" class="btn-ghost btn-sm" v-busy="busy" :disabled="busy" @click="startEdit(appointment)">Validez</button>
+                    <button type="button" class="btn-ghost-danger btn-sm" v-busy="busy" :disabled="busy" @click="revoke(appointment)">Revocar</button>
                   </template>
                 </td>
               </tr>

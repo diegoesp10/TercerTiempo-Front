@@ -409,7 +409,7 @@ async function remove() {
       <section class="mb-6">
         <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Datos</h3>
-          <button v-if="canChange && !editingDetails" type="button" class="btn-ghost px-2 py-1 text-xs" @click="editingDetails = true"><Icon icon="pen" class="mr-1 h-3 w-3" />Editar</button>
+          <button v-if="canChange && !editingDetails" type="button" class="btn-ghost btn-sm px-2" @click="editingDetails = true"><Icon icon="pen" class="mr-1 h-3 w-3" />Editar</button>
         </div>
         <p v-if="canEdit && finished" class="mb-2 flex items-center gap-1.5 text-xs text-slate-500">
           <Icon icon="lock" class="h-3 w-3" />Ya ha pasado: no se puede cambiar. Solo se pasa lista de quién vino y quién faltó.
@@ -475,7 +475,7 @@ async function remove() {
       <section class="mb-6">
         <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Ejercicios <span class="font-normal normal-case text-slate-400">· {{ items.length ? `${formatDurationMinutes(itemsTotal)} en total` : `la sesión dura ${formatDurationMinutes(session.durationMinutes)}` }}</span></h3>
-          <button v-if="canChange" type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy === 'items'" :disabled="busy !== null || !itemsDirty || !!itemsProblem" :title="itemsProblem ?? undefined" @click="saveItems">Guardar ejercicios</button>
+          <button v-if="canChange" type="button" class="btn-primary btn-sm" v-busy="busy === 'items'" :disabled="busy !== null || !itemsDirty || !!itemsProblem" :title="itemsProblem ?? undefined" @click="saveItems">Guardar ejercicios</button>
         </div>
         <p v-if="canChange && itemsProblem" class="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800" role="status">
           <Icon icon="triangle-exclamation" class="mr-1 h-3 w-3" />Aún no se pueden guardar: {{ itemsProblem }}
@@ -511,8 +511,8 @@ async function remove() {
               <span v-if="session.mine.reason" class="ml-1 text-xs text-slate-500">({{ session.mine.reason }})</span>
             </p>
             <div v-if="!session.started" class="flex gap-2">
-              <button v-if="session.mine.status === 'WillMiss'" type="button" class="btn-secondary px-3 py-1 text-xs" v-busy="busy === 'absence'" :disabled="busy !== null" @click="reportAbsence(false)">Al final sí voy</button>
-              <button v-else-if="!absenceOpen" type="button" class="btn-secondary px-3 py-1 text-xs" @click="absenceOpen = true">No podré ir</button>
+              <button v-if="session.mine.status === 'WillMiss'" type="button" class="btn-secondary btn-sm" v-busy="busy === 'absence'" :disabled="busy !== null" @click="reportAbsence(false)">Al final sí voy</button>
+              <button v-else-if="!absenceOpen" type="button" class="btn-secondary btn-sm" @click="absenceOpen = true">No podré ir</button>
             </div>
           </div>
           <p v-if="!session.mine.injured && session.mine.hereInjury" class="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
@@ -521,8 +521,8 @@ async function remove() {
           </p>
           <form v-if="absenceOpen && !session.started && !session.mine.injured" class="mt-2 flex flex-wrap gap-2" @submit.prevent="reportAbsence(true)">
             <input v-model="absenceReason" type="text" maxlength="200" class="input min-w-0 flex-1 px-2 py-1 text-sm" placeholder="Motivo (opcional): trabajo, examen, lesión…" />
-            <button type="submit" class="btn-primary px-3 py-1 text-xs" v-busy="busy === 'absence'" :disabled="busy !== null">Avisar al cuerpo técnico</button>
-            <button type="button" class="btn-ghost px-2 py-1 text-xs" @click="absenceOpen = false">Cancelar</button>
+            <button type="submit" class="btn-primary btn-sm" v-busy="busy === 'absence'" :disabled="busy !== null">Avisar al cuerpo técnico</button>
+            <button type="button" class="btn-ghost btn-sm px-2" @click="absenceOpen = false">Cancelar</button>
           </form>
         </div>
 
@@ -530,12 +530,12 @@ async function remove() {
           <GroupByPositionToggle v-model="groupedRollCall" />
           <template v-if="canEdit">
             <span class="text-slate-500">Marcar a todos:</span>
-            <button v-if="session.started" type="button" class="btn-secondary px-2 py-1 text-xs" @click="markAll('Attended')">Vinieron (salvo los que avisaron)</button>
-            <button v-if="!finished" type="button" class="btn-secondary px-2 py-1 text-xs" @click="markAll('Expected')">Cuentan con venir</button>
+            <button v-if="session.started" type="button" class="btn-secondary btn-sm px-2" @click="markAll('Attended')">Vinieron (salvo los que avisaron)</button>
+            <button v-if="!finished" type="button" class="btn-secondary btn-sm px-2" @click="markAll('Expected')">Cuentan con venir</button>
             <button
               v-if="canRecordInjuries"
               type="button"
-              class="btn-secondary px-2 py-1 text-xs"
+              class="btn-secondary btn-sm px-2"
               v-busy="injuryLoading"
               :disabled="busy !== null || injuryLoading"
               title="Apunta quién se lesionó en esta sesión: queda como el sitio donde se lesionó y desde ahí sale de baja"
@@ -543,7 +543,7 @@ async function remove() {
             ><Icon icon="user-injured" class="mr-1 h-3 w-3" />Se lesionó alguien</button>
             <button
               type="button"
-              class="btn-primary ml-auto px-3 py-1 text-xs"
+              class="btn-primary btn-sm ml-auto"
               v-busy="busy === 'attendance'"
               :disabled="busy !== null || !attendanceDirty"
               :title="busy === null && !attendanceDirty ? 'No hay cambios que guardar' : undefined"
@@ -565,7 +565,7 @@ async function remove() {
                   <button
                     v-if="canRecordInjuries && maybeHere(line) && !leftLine(line)"
                     type="button"
-                    class="btn-ghost px-2 py-1 text-xs text-brand-500"
+                    class="btn-ghost btn-sm px-2 text-brand-500"
                     v-busy="injuryLoading"
                     :disabled="busy !== null || injuryLoading"
                     title="El parte es de este día y no dice dónde se lesionó: si fue en esta sesión, queda enlazada a ella"
@@ -592,8 +592,8 @@ async function remove() {
                     @input="setReason(keyOf(line), ($event.target as HTMLInputElement).value)"
                   />
                   <div v-if="line.trialPlayerId" class="flex items-center gap-1">
-                    <button v-if="promoteFor !== line.trialPlayerId" type="button" class="btn-ghost px-2 py-1 text-xs text-brand-500" :disabled="busy !== null" @click="openPromote(lineOf(keyOf(line))!)"><Icon icon="plus" class="mr-1 h-3 w-3" />Hacerle ficha</button>
-                    <button type="button" class="btn-ghost px-1.5 py-1 text-red-600 hover:bg-red-50" :aria-label="`Quitar a ${lineOf(keyOf(line))?.playerName} de la sesión`" :disabled="busy !== null" @click="removeTrial(lineOf(keyOf(line))!)"><Icon icon="xmark" class="h-3 w-3" /></button>
+                    <button v-if="promoteFor !== line.trialPlayerId" type="button" class="btn-ghost btn-sm px-2 text-brand-500" :disabled="busy !== null" @click="openPromote(lineOf(keyOf(line))!)"><Icon icon="plus" class="mr-1 h-3 w-3" />Hacerle ficha</button>
+                    <button type="button" class="btn-ghost-danger px-1.5 py-1" :aria-label="`Quitar a ${lineOf(keyOf(line))?.playerName} de la sesión`" :disabled="busy !== null" @click="removeTrial(lineOf(keyOf(line))!)"><Icon icon="xmark" class="h-3 w-3" /></button>
                   </div>
                 </template>
                 <template v-else>
@@ -608,7 +608,7 @@ async function remove() {
                 <button
                   v-if="canEdit && !leftLine(line)"
                   type="button"
-                  class="btn-ghost px-2 py-0.5 text-xs"
+                  class="btn-ghost btn-sm px-2 py-0.5"
                   v-busy="injuryLoading"
                   :disabled="busy !== null || injuryLoading"
                   @click="openInjuryEdit(hereOf(line)!.id)"
@@ -621,8 +621,8 @@ async function remove() {
                   <label class="label text-xs" :for="`pr-pos-${line.trialPlayerId}`">Posición</label>
                   <SearchSelect :id="`pr-pos-${line.trialPlayerId}`" v-model="promoteForm.position" :options="positionOptions" size="sm" placeholder="Elige su posición" />
                 </div>
-                <button type="submit" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy === 'promote'" :disabled="busy !== null || !promoteForm.position" :title="promoteForm.position ? undefined : 'Elige su posición'">Hacerle ficha</button>
-                <button type="button" class="btn-ghost px-2 py-1.5 text-xs" @click="promoteFor = null">Cancelar</button>
+                <button type="submit" class="btn-primary btn-sm py-1.5" v-busy="busy === 'promote'" :disabled="busy !== null || !promoteForm.position" :title="promoteForm.position ? undefined : 'Elige su posición'">Hacerle ficha</button>
+                <button type="button" class="btn-ghost btn-sm px-2 py-1.5" @click="promoteFor = null">Cancelar</button>
               </form>
             </li>
           </template>
@@ -661,7 +661,7 @@ async function remove() {
     <template v-if="session && canEdit" #footer>
       <div class="flex flex-wrap justify-between gap-2">
         <div class="flex gap-2">
-          <button v-if="canChange" type="button" class="btn-ghost text-red-600 hover:bg-red-50" :disabled="busy !== null" @click="remove"><Icon icon="trash" class="mr-1.5 h-3.5 w-3.5" />Borrar sesión</button>
+          <button v-if="canChange" type="button" class="btn-ghost-danger" :disabled="busy !== null" @click="remove"><Icon icon="trash" class="mr-1.5 h-3.5 w-3.5" />Borrar sesión</button>
         </div>
         <button type="button" class="btn-secondary" @click="emit('close')">Cerrar</button>
       </div>

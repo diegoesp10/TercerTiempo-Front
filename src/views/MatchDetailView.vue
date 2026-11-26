@@ -193,7 +193,7 @@ const entriesOf = (sheet: MatchSquadSheetDto) => sortedEntries.value.filter((r) 
             El club ha aprobado tu solicitud. Canjea tu pase
             (<strong class="text-slate-900">{{ passPrice(sheet.access.readyPassPriceCents ?? 0, sheet.access.currency) }}</strong>) para verlo aquí.
           </p>
-          <RouterLink :to="{ name: 'pass', params: { code: sheet.access.readyPassCode } }" class="btn-primary px-3 py-1 text-xs">
+          <RouterLink :to="{ name: 'pass', params: { code: sheet.access.readyPassCode } }" class="btn-primary btn-sm">
             <Icon icon="ticket" class="mr-1.5 h-3 w-3" />Canjear el pase
           </RouterLink>
         </template>
@@ -208,7 +208,7 @@ const entriesOf = (sheet: MatchSquadSheetDto) => sortedEntries.value.filter((r) 
             <template v-if="sheet.access.hasVideo"> · vídeo <strong class="text-slate-900">{{ passPrice(sheet.access.videoPriceCents, sheet.access.currency) }}</strong></template>.
           </p>
           <p v-if="sheet.access.requestStatus === 'Rejected'" class="text-xs text-slate-500">El club rechazó tu última solicitud; puedes volver a pedirlo.</p>
-          <button v-if="signedIn" type="button" class="btn-primary px-3 py-1 text-xs" @click="openRequest(sheet.squadId)">
+          <button v-if="signedIn" type="button" class="btn-primary btn-sm" @click="openRequest(sheet.squadId)">
             <Icon icon="ticket" class="mr-1.5 h-3 w-3" />Solicitar acceso
           </button>
           <p v-else><RouterLink to="/login" class="font-medium text-accent-400 hover:underline">Entra con tu cuenta</RouterLink> para solicitarlo.</p>

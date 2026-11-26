@@ -170,7 +170,7 @@ watch(current, () =>
       <div class="order-1 min-w-0">
         <Alert v-if="videoError" kind="error">
           No se puede abrir el vídeo: {{ videoError }}
-          <button v-if="current" type="button" class="btn-ghost ml-1 px-2 py-0.5 text-xs" @click="show(current)">Reintentar</button>
+          <button v-if="current" type="button" class="btn-ghost btn-sm ml-1 px-2 py-0.5" @click="show(current)">Reintentar</button>
         </Alert>
         <VideoPlayer
           v-else-if="src"
@@ -186,7 +186,7 @@ watch(current, () =>
         </div>
 
         <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <button type="button" class="btn-secondary px-3 py-1 text-xs" :disabled="!previous" @click="previous && show(previous)">
+          <button type="button" class="btn-secondary btn-sm" :disabled="!previous" @click="previous && show(previous)">
             <Icon icon="chevron-left" class="h-3 w-3" />Anterior
           </button>
           <p v-if="current" class="min-w-0 flex-1 basis-40 text-center text-sm text-slate-700" aria-live="polite">
@@ -194,7 +194,7 @@ watch(current, () =>
             <template v-if="current.who"> · {{ current.who }}</template>
             · <span class="font-figures tabular-nums">{{ clock(current) }}</span>
           </p>
-          <button type="button" class="btn-secondary px-3 py-1 text-xs" :disabled="!next" @click="next && show(next)">
+          <button type="button" class="btn-secondary btn-sm" :disabled="!next" @click="next && show(next)">
             Siguiente<Icon icon="chevron-right" class="h-3 w-3" />
           </button>
         </div>

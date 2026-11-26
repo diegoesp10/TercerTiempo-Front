@@ -9,6 +9,7 @@ import { useConsentStore } from './stores/consent';
 import { useSeasonStore } from './stores/season';
 import { installSessionSync } from './stores/sessionSync';
 import { installAnalytics } from './utils/analytics';
+import { installFormValidation } from './utils/formValidation';
 import '@fontsource-variable/archivo/wdth.css';
 import './style.css';
 
@@ -17,6 +18,7 @@ const app = createApp(App).use(pinia).use(router).component('Icon', Icon).direct
 // La analítica propia se instala siempre pero no hace nada sin el consentimiento del visitante.
 installAnalytics(router);
 installSessionSync(router);
+installFormValidation();
 // Lo que necesita cualquier página (temporadas, política de cookies y, con sesión guardada, la cuenta: plantillas,
 // vínculos, visibilidad) se pide ya, mientras baja el código de la ruta, y no al montar. Nada de esto bloquea la vista.
 void useSeasonStore(pinia).load();

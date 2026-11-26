@@ -5,6 +5,7 @@ import { errorMessage } from '@/api/http';
 import TrainingPeriodFilter from '@/components/trainings/TrainingPeriodFilter.vue';
 import TrainingTallyStats from '@/components/trainings/TrainingTallyStats.vue';
 import Alert from '@/components/ui/Alert.vue';
+import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vue';
 import type { MyTrainingAttendanceDto } from '@/types/api';
 
 // Los entrenamientos del jugador: de una temporada (empieza por la actual) o de todas, y entre las fechas que elija.
@@ -33,6 +34,7 @@ watch([squadId, from, to], () => void load(), { immediate: true });
 const season = computed(() => data.value?.seasons.find((s) => s.squadId === squadId.value) ?? null);
 
 // Al cambiar de temporada, las fechas de otra no sirven.
+const seasonOptions = computed<SelectOption[]>(() => (data.value?.seasons ?? []).map((s) => ({ value: s.squadId, label: `${s.teamName} · ${s.label}` })));
 function chooseSeason(value: string) {
   from.value = null;
   to.value = null;
@@ -52,10 +54,16 @@ function chooseSeason(value: string) {
       :max="season?.endsOn"
       :all-label="squadId ? 'Toda la temporada' : 'Siempre'"
     >
-      <select v-if="data && data.seasons.length" :value="squadId ?? ''" class="input px-2 py-1 text-xs" aria-label="Temporada" @change="chooseSeason(($event.target as HTMLSelectElement).value)">
-        <option value="">Todas las temporadas</option>
-        <option v-for="s in data.seasons" :key="s.squadId" :value="s.squadId">{{ s.teamName }} · {{ s.label }}</option>
-      </select>
+      <SearchSelect
+        v-if="data && data.seasons.length"
+        :model-value="squadId"
+        :options="seasonOptions"
+        size="sm"
+        clearable
+        placeholder="Todas las temporadas"
+        aria-label="Temporada"
+        @update:model-value="chooseSeason(($event as string | null) ?? '')"
+      />
     </TrainingPeriodFilter>
     <Alert v-if="error" kind="error">{{ error }}</Alert>
     <p v-else-if="loading && !data" class="text-sm text-slate-500">Cargando…</p>

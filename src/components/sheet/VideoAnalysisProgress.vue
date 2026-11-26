@@ -194,7 +194,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
 
     <!-- Lo que ha ido sabiendo -->
     <div v-if="log.length > 0">
-      <button type="button" class="btn-ghost px-2 py-0.5 text-xs" :aria-expanded="showLog" @click="showLog = !showLog">
+      <button type="button" class="btn-ghost btn-sm px-2 py-0.5" :aria-expanded="showLog" @click="showLog = !showLog">
         <Icon icon="chevron-down" class="h-3 w-3 transition-transform" :class="showLog ? 'rotate-180' : ''" />
         Qué ha ido haciendo ({{ log.length }})
       </button>

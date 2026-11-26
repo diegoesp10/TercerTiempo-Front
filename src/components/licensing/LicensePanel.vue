@@ -108,7 +108,7 @@ async function act(call: () => Promise<ClubLicenseDto>) {
       </div>
       <div class="flex items-center gap-2">
         <Badge v-if="catalog?.provider === 'mock'" tone="amber">Pagos simulados</Badge>
-        <RouterLink :to="plansLink" class="btn-secondary px-3 py-1.5 text-xs">Precios</RouterLink>
+        <RouterLink :to="plansLink" class="btn-secondary btn-sm py-1.5">Precios</RouterLink>
       </div>
     </div>
 
@@ -190,18 +190,18 @@ async function act(call: () => Promise<ClubLicenseDto>) {
       </ul>
 
       <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-        <RouterLink v-if="license.status === 'Expired'" :to="plansLink" class="btn-primary px-3 py-1.5 text-xs">
+        <RouterLink v-if="license.status === 'Expired'" :to="plansLink" class="btn-primary btn-sm py-1.5">
           <Icon icon="credit-card" class="h-3.5 w-3.5" />Renovar licencia
         </RouterLink>
-        <RouterLink v-else-if="!license.contracted" :to="plansLink" class="btn-primary px-3 py-1.5 text-xs">
+        <RouterLink v-else-if="!license.contracted" :to="plansLink" class="btn-primary btn-sm py-1.5">
           <Icon icon="star" class="h-3.5 w-3.5" />Contratar licencia
         </RouterLink>
-        <RouterLink v-else :to="plansLink" class="btn-secondary px-3 py-1.5 text-xs"><Icon icon="user-group" class="h-3.5 w-3.5" />Técnicos y facturación</RouterLink>
+        <RouterLink v-else :to="plansLink" class="btn-secondary btn-sm py-1.5"><Icon icon="user-group" class="h-3.5 w-3.5" />Técnicos y facturación</RouterLink>
 
         <button
           v-if="isSubscribed(license)"
           type="button"
-          class="btn-ghost px-3 py-1.5 text-xs"
+          class="btn-ghost btn-sm py-1.5"
           v-busy="busy"
           :disabled="busy"
           @click="cancelRenewal"
@@ -209,7 +209,7 @@ async function act(call: () => Promise<ClubLicenseDto>) {
         <button
           v-else-if="license.contracted && !license.autoRenew && license.status !== 'Expired'"
           type="button"
-          class="btn-ghost px-3 py-1.5 text-xs"
+          class="btn-ghost btn-sm py-1.5"
           v-busy="busy"
           :disabled="busy"
           @click="resumeRenewal"

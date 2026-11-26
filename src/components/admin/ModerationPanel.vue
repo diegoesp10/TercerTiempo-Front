@@ -4,6 +4,7 @@ import { adminApi } from '@/api/admin';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import type { CommentCheckDto, CommentFilter, ForbiddenWordKind, ForbiddenWordsDto, RefereeCommentAdminDto, RefereeCommentsDto } from '@/types/api';
 import { formatDate, formatKickoff, officialRoleLabels, raterLabel } from '@/utils/format';
@@ -82,6 +83,7 @@ async function toggle(comment: RefereeCommentAdminDto) {
 // --- Palabras prohibidas ---
 const kindLabels: Record<ForbiddenWordKind, string> = { Profanity: 'Palabrotas', Insult: 'Insultos', Slur: 'Vejaciones', Threat: 'Amenazas' };
 const kinds = Object.keys(kindLabels) as ForbiddenWordKind[];
+const kindOptions = kinds.map((kind) => ({ value: kind, label: kindLabels[kind] }));
 const words = shallowRef<ForbiddenWordsDto | null>(null);
 const wordSearch = ref('');
 const kindFilter = ref<ForbiddenWordKind | null>(null);
@@ -235,10 +237,8 @@ onMounted(() => {
           <input id="forbidden-term" v-model="newTerm" class="input w-full" maxlength="160" placeholder="p. ej. tuercebotas" />
         </div>
         <div>
-          <label class="label" for="forbidden-kind">Tipo</label>
-          <select id="forbidden-kind" v-model="newKind" class="input">
-            <option v-for="kind in kinds" :key="kind" :value="kind">{{ kindLabels[kind] }}</option>
-          </select>
+          <span class="label">Tipo</span>
+          <ChoiceToggle v-model="newKind" :options="kindOptions" label="Tipo" />
         </div>
         <button type="submit" class="btn-primary" v-busy="savingWord" :disabled="savingWord || !newTerm.trim()"><Icon icon="plus" class="h-3.5 w-3.5" />Añadir</button>
       </form>

@@ -113,10 +113,10 @@ async function noVote(item: PendingRefereeRatingDto) {
               </div>
             </div>
             <div class="flex flex-wrap gap-2 @xs:pl-11 @lg:shrink-0 @lg:pl-0">
-              <RouterLink :to="{ name: 'match', params: { matchId: item.match.id }, query: { tab: 'arbitros' } }" class="btn-primary flex-auto px-3 py-1 text-xs @xs:flex-none">
+              <RouterLink :to="{ name: 'match', params: { matchId: item.match.id }, query: { tab: 'arbitros' } }" class="btn-primary btn-sm flex-auto @xs:flex-none">
                 <Icon icon="star" class="mr-1 h-3 w-3" />Puntuar
               </RouterLink>
-              <button type="button" class="btn-ghost flex-auto px-3 py-1 text-xs @xs:flex-none" v-busy="busy === keyOf(item)" :disabled="busy !== null" @click="noVote(item)">No votar</button>
+              <button type="button" class="btn-ghost btn-sm flex-auto @xs:flex-none" v-busy="busy === keyOf(item)" :disabled="busy !== null" @click="noVote(item)">No votar</button>
             </div>
           </div>
         </li>

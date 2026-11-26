@@ -552,22 +552,22 @@ const suggestMounted = useLazyMount(suggesting);
     <div v-if="rivalAccessState && rival?.access" class="card mt-4 flex flex-wrap items-center justify-between gap-3 py-3 text-sm text-slate-600">
       <template v-if="rivalAccessState === 'pass'">
         <p><Icon icon="ticket" class="mr-1.5 h-3.5 w-3.5 text-accent-400" />Tienes un pase de lo interno de <strong class="text-slate-900">{{ rival.teamName }}</strong> en este partido.</p>
-        <RouterLink :to="{ name: 'match', params: { matchId }, query: { vista: 'visitante' } }" class="btn-secondary px-3 py-1 text-xs">Verlo</RouterLink>
+        <RouterLink :to="{ name: 'match', params: { matchId }, query: { vista: 'visitante' } }" class="btn-secondary btn-sm">Verlo</RouterLink>
       </template>
       <template v-else-if="rivalAccessState === 'ready'">
         <p>El club de <strong class="text-slate-900">{{ rival.teamName }}</strong> ha aprobado tu solicitud ({{ passPrice(rival.access.readyPassPriceCents ?? 0, rival.access.currency) }}).</p>
-        <RouterLink :to="{ name: 'pass', params: { code: rival.access.readyPassCode } }" class="btn-primary px-3 py-1 text-xs"><Icon icon="ticket" class="mr-1.5 h-3 w-3" />Canjear el pase</RouterLink>
+        <RouterLink :to="{ name: 'pass', params: { code: rival.access.readyPassCode } }" class="btn-primary btn-sm"><Icon icon="ticket" class="mr-1.5 h-3 w-3" />Canjear el pase</RouterLink>
       </template>
       <template v-else-if="rivalAccessState === 'pending'">
         <p><Icon icon="hourglass-half" class="mr-1 h-3.5 w-3.5 text-warning" />Tu solicitud a <strong class="text-slate-900">{{ rival.teamName }}</strong> está pendiente: su club todavía no la ha decidido.</p>
-        <RouterLink :to="{ name: 'my-passes' }" class="btn-ghost px-3 py-1 text-xs">Mis pases</RouterLink>
+        <RouterLink :to="{ name: 'my-passes' }" class="btn-ghost btn-sm">Mis pases</RouterLink>
       </template>
       <template v-else>
         <p>
           <strong class="text-slate-900">{{ rival.teamName }}</strong> da acceso a lo interno de este partido:
           acta interna {{ passPrice(rival.access.sheetPriceCents, rival.access.currency) }}<template v-if="rival.access.hasVideo"> · vídeo {{ passPrice(rival.access.videoPriceCents, rival.access.currency) }}</template>.
         </p>
-        <button type="button" class="btn-secondary px-3 py-1 text-xs" @click="requestRival(false)"><Icon icon="ticket" class="mr-1.5 h-3 w-3" />Solicitar acceso</button>
+        <button type="button" class="btn-secondary btn-sm" @click="requestRival(false)"><Icon icon="ticket" class="mr-1.5 h-3 w-3" />Solicitar acceso</button>
       </template>
     </div>
 
@@ -590,7 +590,7 @@ const suggestMounted = useLazyMount(suggesting);
           <Icon icon="triangle-exclamation" class="mt-1 h-3.5 w-3.5 shrink-0" />
           <span><strong>Es el próximo partido del equipo</strong> y la convocatoria todavía no está enviada: prepárala y envíala para que cada jugador la firme.</span>
         </p>
-        <button type="button" class="btn-primary px-3 py-1.5 text-xs" @click="selectTab('convocatoria')"><Icon icon="users" class="mr-1.5 h-3 w-3" />Ir a la convocatoria</button>
+        <button type="button" class="btn-primary btn-sm py-1.5" @click="selectTab('convocatoria')"><Icon icon="users" class="mr-1.5 h-3 w-3" />Ir a la convocatoria</button>
       </div>
     </Alert>
 

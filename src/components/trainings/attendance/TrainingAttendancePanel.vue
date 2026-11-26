@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import TrainingPeriodFilter from '@/components/trainings/TrainingPeriodFilter.vue';
@@ -121,6 +122,11 @@ const missCounts = computed(
 const shown = computed(() => ordered.value.filter((r) => matchesMissFilter(r, missFilter.value)));
 const filtering = computed(() => missFilter.value !== 'all');
 const emptyFilter = computed(() => missFilters.find((f) => f.key === missFilter.value)?.empty ?? '');
+// Un filtro sin nadie no se puede elegir (salvo el que ya está puesto) y dice por qué.
+const missChoices = computed(() => missFilters.map((f) => {
+  const empty = f.key !== 'all' && missCounts.value[f.key] === 0;
+  return { value: f.key, label: f.label, icon: f.icon, count: missCounts.value[f.key], disabled: empty && missFilter.value !== f.key, title: empty ? f.empty : f.hint };
+}));
 
 // Lo que sale en el desplegable del buscador: los que siguen primero; se encuentran también por la posición.
 const finderOptions = computed<ComboboxOption[]>(() =>
@@ -254,7 +260,7 @@ const names = (rows: AttendanceRow[]) => rows.map((r) => r.name).join(', ');
         <button
           v-if="byPosition && !filtering"
           type="button"
-          class="btn-ghost shrink-0 px-2.5 py-1.5 text-xs"
+          class="btn-ghost btn-sm shrink-0 px-2.5 py-1.5"
           :title="allClosed ? 'Abrir todos los grupos' : 'Plegar todos los grupos y ver solo las cabeceras'"
           @click="toggleAll"
         >
@@ -271,22 +277,7 @@ const names = (rows: AttendanceRow[]) => rows.map((r) => r.name).join(', ');
 
       <!-- Filtro de faltas a la izquierda; la leyenda de las casillas a la derecha -->
       <div class="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <div class="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por faltas">
-          <button
-            v-for="f in missFilters"
-            :key="f.key"
-            type="button"
-            class="flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
-            :class="missFilter === f.key ? 'border-action bg-action text-white' : 'border-line text-slate-600 hover:bg-surface-2'"
-            :aria-pressed="missFilter === f.key"
-            :disabled="f.key !== 'all' && missCounts[f.key] === 0 && missFilter !== f.key"
-            :title="f.key !== 'all' && missCounts[f.key] === 0 ? f.empty : f.hint"
-            @click="missFilter = missFilter === f.key ? 'all' : f.key"
-          >
-            <Icon :icon="f.icon" class="h-3 w-3" />{{ f.label }}
-            <span class="tabular-nums opacity-70">{{ missCounts[f.key] }}</span>
-          </button>
-        </div>
+        <ChoiceToggle v-model="missFilter" :options="missChoices" label="Filtrar por faltas" size="xs" min-item="6.5rem" />
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
           <span v-for="o in legend" :key="o" class="flex items-center gap-1.5">
             <span class="grid h-4 w-4 place-items-center rounded ring-1 ring-inset" :class="outcomeCell[o]"><Icon :icon="outcomeIcons[o]" class="h-2.5 w-2.5" /></span>

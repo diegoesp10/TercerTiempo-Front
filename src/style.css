@@ -369,7 +369,8 @@
   .btn-primary,
   .btn-danger,
   .btn-secondary,
-  .btn-ghost {
+  .btn-ghost,
+  .btn-ghost-danger {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition duration-150
       focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas
       disabled:cursor-not-allowed disabled:opacity-50;
@@ -387,6 +388,15 @@
   .btn-ghost {
     @apply text-slate-600 hover:bg-surface-2 hover:text-slate-900;
   }
+  /* Quitar, borrar, revocar: sin fondo, en el rojo de peligro de cada tema. */
+  .btn-ghost-danger {
+    @apply text-danger hover:bg-danger/10;
+  }
+  /* Botón pequeño (filas, tarjetas, acciones secundarias): el mismo botón con menos relleno y letra xs. Va detrás de los
+     botones para ganarles el relleno y la letra. */
+  .btn-sm {
+    @apply px-3 py-1 text-xs;
+  }
   .input {
     @apply block w-full rounded-lg border border-slate-300 bg-surface px-3 py-2 text-sm text-slate-900 shadow-sm
       placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25;
@@ -403,6 +413,10 @@
   }
   .field-error {
     @apply mt-1 text-xs text-danger;
+  }
+  /* Campo con un aviso (de su formulario o de utils/formValidation.ts): borde y anillo de peligro hasta que se corrige. */
+  .input[aria-invalid='true'] {
+    @apply border-danger focus:border-danger focus:ring-danger/25;
   }
 
   /* Botón en curso (directiva v-busy): anillo girando delante del texto, del color del propio botón. */

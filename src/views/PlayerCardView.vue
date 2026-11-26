@@ -171,8 +171,8 @@ const band = computed(() => {
         <Badge v-if="data.isMe" tone="blue">Eres tú</Badge>
         <Badge v-if="data.extended" tone="green">{{ data.internalProfileLink ? 'De tu club' : 'Perfil público' }}</Badge>
         <Badge v-else tone="slate"><Icon icon="lock" class="mr-1 h-2.5 w-2.5" />Perfil completo privado</Badge>
-        <RouterLink :to="{ name: 'team', params: { teamId: data.team.id } }" class="btn-secondary px-3 py-1.5 text-xs">Ver el equipo</RouterLink>
-        <RouterLink v-if="data.internalProfileLink" :to="data.internalProfileLink" class="btn-secondary px-3 py-1.5 text-xs">
+        <RouterLink :to="{ name: 'team', params: { teamId: data.team.id } }" class="btn-secondary btn-sm py-1.5">Ver el equipo</RouterLink>
+        <RouterLink v-if="data.internalProfileLink" :to="data.internalProfileLink" class="btn-secondary btn-sm py-1.5">
           <Icon icon="chart-line" class="h-3 w-3" />Perfil en la plantilla
         </RouterLink>
       </template>

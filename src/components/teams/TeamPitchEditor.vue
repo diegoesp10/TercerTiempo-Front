@@ -54,7 +54,7 @@ async function save() {
         <span class="mb-1 block text-[11px] text-slate-500">Ancho (m)</span>
         <input v-model.number="width" type="number" min="35" max="90" step="0.5" inputmode="decimal" class="input w-24 px-2 py-1 text-center" placeholder="62" />
       </label>
-      <button type="submit" class="btn-secondary px-3 py-1 text-xs" v-busy="saving" :disabled="saving || !dirty">Guardar medidas</button>
+      <button type="submit" class="btn-secondary btn-sm" v-busy="saving" :disabled="saving || !dirty">Guardar medidas</button>
     </div>
     <p v-if="error" class="field-error">{{ error }}</p>
     <p v-else-if="done && !dirty" class="mt-1 text-xs text-emerald-700">Medidas guardadas.</p>

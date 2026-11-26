@@ -72,7 +72,7 @@ async function leave() {
       <!-- Quién eres: foto, nombre y equipo, sin cifras. -->
       <aside class="card flex flex-col items-center text-center lg:sticky lg:top-24">
         <PlayerAvatar :src="auth.player.photoUrl" :name="auth.displayName" size="xl" />
-        <button type="button" class="btn-secondary mt-3 px-3 py-1.5 text-xs" @click="photoOpen = true">
+        <button type="button" class="btn-secondary btn-sm mt-3 py-1.5" @click="photoOpen = true">
           <Icon icon="camera" class="h-3 w-3" />{{ auth.player.photoUrl ? 'Cambiar mi foto' : 'Subir mi foto' }}
         </button>
         <h2 class="mt-4 break-words font-display text-2xl font-bold leading-tight text-slate-900">{{ auth.displayName }}</h2>

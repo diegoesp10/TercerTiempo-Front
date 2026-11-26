@@ -74,7 +74,7 @@ async function cancel(request: MyPassRequestDto) {
                 {{ passContents(pass.includesSheet, pass.includesVideo, pass.allowsDownload) }} de {{ pass.teamName }} · {{ passPrice(pass.priceCents, pass.currency) }} · canjeado el {{ formatKickoff(pass.redeemedAt) }}
               </p>
             </div>
-            <RouterLink :to="{ name: 'match', params: { matchId: pass.match.id }, query: { vista: 'visitante' } }" class="btn-primary px-3 py-1 text-xs">Ver el partido</RouterLink>
+            <RouterLink :to="{ name: 'match', params: { matchId: pass.match.id }, query: { vista: 'visitante' } }" class="btn-primary btn-sm">Ver el partido</RouterLink>
           </li>
         </ul>
       </section>
@@ -97,11 +97,11 @@ async function cancel(request: MyPassRequestDto) {
               </p>
             </div>
             <div class="flex gap-2">
-              <button v-if="request.status === 'Pending'" type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy === request.id" :disabled="busy === request.id" @click="cancel(request)">Retirar</button>
-              <RouterLink v-else-if="request.passCode && !request.passRedeemed" :to="{ name: 'pass', params: { code: request.passCode } }" class="btn-primary px-3 py-1 text-xs">
+              <button v-if="request.status === 'Pending'" type="button" class="btn-ghost-danger btn-sm" v-busy="busy === request.id" :disabled="busy === request.id" @click="cancel(request)">Retirar</button>
+              <RouterLink v-else-if="request.passCode && !request.passRedeemed" :to="{ name: 'pass', params: { code: request.passCode } }" class="btn-primary btn-sm">
                 <Icon icon="ticket" class="mr-1.5 h-3 w-3" />Canjear
               </RouterLink>
-              <RouterLink v-else-if="request.passRedeemed" :to="{ name: 'match', params: { matchId: request.match.id }, query: { vista: 'visitante' } }" class="btn-ghost px-3 py-1 text-xs">Ver el partido</RouterLink>
+              <RouterLink v-else-if="request.passRedeemed" :to="{ name: 'match', params: { matchId: request.match.id }, query: { vista: 'visitante' } }" class="btn-ghost btn-sm">Ver el partido</RouterLink>
             </div>
           </li>
         </ul>

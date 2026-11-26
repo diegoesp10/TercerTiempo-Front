@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
+import EmptyState from '@/components/ui/EmptyState.vue';
 import Modal from '@/components/ui/Modal.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import type { ExerciseDto, ExerciseRequest, ExerciseType, ExerciseTypeDto } from '@/types/api';
@@ -44,6 +46,10 @@ const counts = computed(() => {
   return map;
 });
 const filterTypes = computed(() => props.exerciseTypes.filter((t) => counts.value.has(t.type)));
+const typeChoices = computed(() => [
+  { value: 'all', label: 'Todos', count: props.exercises.length },
+  ...filterTypes.value.map((t) => ({ value: t.type as string, label: t.label, icon: exerciseTypeStyle[t.type].icon, count: counts.value.get(t.type), title: t.description })),
+]);
 const filtered = computed(() => {
   const needle = fold(query.value.trim());
   return props.exercises.filter(
@@ -146,40 +152,21 @@ async function remove() {
             <Icon icon="magnifying-glass" class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input v-model="query" type="search" class="input w-full pl-9" placeholder="Buscar por nombre, descripción o material" aria-label="Buscar ejercicio" @keydown.esc.stop="query = ''" />
           </label>
-          <div v-if="filterTypes.length > 1" class="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por tipo">
-            <button
-              type="button"
-              class="cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition"
-              :class="typeFilter === null ? 'border-action bg-action text-white' : 'border-line text-slate-600 hover:bg-surface-2'"
-              :aria-pressed="typeFilter === null"
-              @click="typeFilter = null"
-            >
-              Todos <span class="tabular-nums opacity-70">{{ exercises.length }}</span>
-            </button>
-            <button
-              v-for="t in filterTypes"
-              :key="t.type"
-              type="button"
-              class="flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition"
-              :class="typeFilter === t.type ? 'border-action bg-action text-white' : 'border-line text-slate-600 hover:bg-surface-2'"
-              :aria-pressed="typeFilter === t.type"
-              :title="t.description"
-              @click="typeFilter = typeFilter === t.type ? null : t.type"
-            >
-              <Icon :icon="exerciseTypeStyle[t.type].icon" class="h-3 w-3" />{{ t.label }}
-              <span class="tabular-nums opacity-70">{{ counts.get(t.type) }}</span>
-            </button>
-          </div>
+          <ChoiceToggle
+            v-if="filterTypes.length > 1"
+            :options="typeChoices"
+            :model-value="typeFilter ?? 'all'"
+            label="Filtrar por tipo"
+            size="xs"
+            min-item="7.5rem"
+            @update:model-value="typeFilter = $event === 'all' ? null : ($event as ExerciseType)"
+          />
         </div>
 
-        <div v-if="exercises.length === 0" class="flex flex-col items-center rounded-2xl border border-dashed border-line px-6 py-10 text-center">
-          <span class="mb-3 grid h-12 w-12 place-items-center rounded-full bg-surface-2 text-slate-400"><Icon icon="book-open" class="h-5 w-5" /></span>
-          <p class="font-semibold text-slate-800">Todavía no hay ejercicios</p>
-          <p class="mt-1 max-w-sm text-sm text-slate-500">
-            {{ readonly ? 'Cuando el cuerpo técnico los prepare, saldrán aquí.' : 'Crea el primero con el formulario: lo tendrás a mano en cada entrenamiento.' }}
-          </p>
-        </div>
-        <p v-else-if="groups.length === 0" class="rounded-xl bg-surface-2 px-4 py-6 text-center text-sm text-slate-500">Ningún ejercicio coincide con la búsqueda.</p>
+        <EmptyState v-if="exercises.length === 0" icon="book-open" title="Todavía no hay ejercicios">
+          {{ readonly ? 'Cuando el cuerpo técnico los prepare, saldrán aquí.' : 'Crea el primero con el formulario: lo tendrás a mano en cada entrenamiento.' }}
+        </EmptyState>
+        <EmptyState v-else-if="groups.length === 0" compact>Ningún ejercicio coincide con la búsqueda.</EmptyState>
 
         <div v-for="g in groups" :key="g.type" class="mb-4 last:mb-0">
           <h3 class="mb-2 flex items-center gap-2 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500" :title="g.description">
@@ -235,7 +222,7 @@ async function remove() {
               <Icon :icon="editing ? 'pen' : 'plus'" class="h-3.5 w-3.5 shrink-0 text-brand-500" />
               <span class="min-w-0 break-words">{{ editing ? 'Editar ejercicio' : 'Nuevo ejercicio' }}</span>
             </h3>
-            <button v-if="editing" type="button" class="btn-ghost shrink-0 px-2 py-1 text-xs" title="Dejar de editar y crear uno nuevo" @click="cancelEdit">
+            <button v-if="editing" type="button" class="btn-ghost btn-sm shrink-0 px-2" title="Dejar de editar y crear uno nuevo" @click="cancelEdit">
               <Icon icon="plus" class="mr-1 h-3 w-3" />Nuevo
             </button>
           </header>
@@ -305,7 +292,7 @@ async function remove() {
             <button
               v-if="editing"
               type="button"
-              class="btn-ghost px-2.5 text-red-600 hover:bg-red-500/10"
+              class="btn-ghost-danger px-2.5"
               :disabled="busy"
               :title="busy ? 'Espera a que termine lo que se está guardando' : 'Quitarlo de la biblioteca (las sesiones que lo tienen no cambian)'"
               @click="remove"

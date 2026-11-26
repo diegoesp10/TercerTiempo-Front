@@ -235,8 +235,8 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
           </div>
         </div>
         <div class="flex shrink-0 flex-wrap gap-2 lg:pl-3">
-          <button type="button" class="btn-primary px-3 py-1.5 text-xs" @click="emit('share', uploaded)"><Icon icon="ticket" class="mr-1.5 h-3 w-3" />Generar un pase</button>
-          <button type="button" class="btn-ghost px-3 py-1.5 text-xs" @click="uploaded = null">Ahora no</button>
+          <button type="button" class="btn-primary btn-sm py-1.5" @click="emit('share', uploaded)"><Icon icon="ticket" class="mr-1.5 h-3 w-3" />Generar un pase</button>
+          <button type="button" class="btn-ghost btn-sm py-1.5" @click="uploaded = null">Ahora no</button>
         </div>
       </div>
     </div>
@@ -306,9 +306,9 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
       </p>
       <Alert v-if="error" kind="error" class="mt-3">{{ error }}</Alert>
       <div class="mt-3 flex gap-2">
-        <button v-if="status === 'uploading'" type="button" class="btn-secondary px-3 py-1 text-xs" :disabled="!session" @click="pause">Pausar</button>
-        <button v-else-if="status === 'paused'" type="button" class="btn-primary px-3 py-1 text-xs" @click="start">Reanudar</button>
-        <button v-if="status !== 'finishing'" type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="!session" @click="cancel">Cancelar subida</button>
+        <button v-if="status === 'uploading'" type="button" class="btn-secondary btn-sm" :disabled="!session" @click="pause">Pausar</button>
+        <button v-else-if="status === 'paused'" type="button" class="btn-primary btn-sm" @click="start">Reanudar</button>
+        <button v-if="status !== 'finishing'" type="button" class="btn-ghost-danger btn-sm" :disabled="!session" @click="cancel">Cancelar subida</button>
       </div>
     </div>
   </div>

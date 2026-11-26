@@ -199,8 +199,8 @@ const statusTone: Record<MatchPassStatus, 'green' | 'amber' | 'red' | 'slate' | 
         <p class="font-semibold">Pase listo: {{ passContents(created.includesSheet, created.includesVideo, created.allowsDownload) }} · {{ passPrice(created.priceCents, created.currency) }}</p>
         <div class="mt-2 flex flex-wrap items-center gap-2">
           <code class="rounded bg-surface px-2 py-1 font-figures text-base tracking-widest text-slate-900">{{ created.code }}</code>
-          <button type="button" class="btn-secondary px-3 py-1 text-xs" @click="copy(created.code, 'code')"><Icon icon="copy" class="mr-1.5 h-3 w-3" />{{ copied === 'code' ? 'Copiado ✓' : 'Copiar código' }}</button>
-          <button type="button" class="btn-secondary px-3 py-1 text-xs" @click="copy(passLink(created.code), 'link')"><Icon icon="link" class="mr-1.5 h-3 w-3" />{{ copied === 'link' ? 'Copiado ✓' : 'Copiar enlace' }}</button>
+          <button type="button" class="btn-secondary btn-sm" @click="copy(created.code, 'code')"><Icon icon="copy" class="mr-1.5 h-3 w-3" />{{ copied === 'code' ? 'Copiado ✓' : 'Copiar código' }}</button>
+          <button type="button" class="btn-secondary btn-sm" @click="copy(passLink(created.code), 'link')"><Icon icon="link" class="mr-1.5 h-3 w-3" />{{ copied === 'link' ? 'Copiado ✓' : 'Copiar enlace' }}</button>
         </div>
         <p class="mt-1 text-xs">Envíaselo a quien quieras. Se canjea una sola vez, con su cuenta, antes del {{ formatKickoff(created.expiresAt) }}.</p>
       </div>
@@ -223,10 +223,10 @@ const statusTone: Record<MatchPassStatus, 'green' | 'amber' | 'red' | 'slate' | 
             </p>
           </div>
           <div class="flex gap-2">
-            <button v-if="pass.status === 'Pending'" type="button" class="btn-ghost px-3 py-1 text-xs" @click="copy(passLink(pass.code), pass.id)">
+            <button v-if="pass.status === 'Pending'" type="button" class="btn-ghost btn-sm" @click="copy(passLink(pass.code), pass.id)">
               <Icon icon="link" class="mr-1.5 h-3 w-3" />{{ copied === pass.id ? 'Copiado ✓' : 'Enlace' }}
             </button>
-            <button v-if="pass.canRevoke" type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy" @click="revoke(pass)">Revocar</button>
+            <button v-if="pass.canRevoke" type="button" class="btn-ghost-danger btn-sm" :disabled="busy" @click="revoke(pass)">Revocar</button>
           </div>
         </li>
       </ul>

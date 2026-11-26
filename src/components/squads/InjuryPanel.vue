@@ -327,7 +327,7 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
           <p class="text-xs text-slate-500">Quién está lesionado, por qué, cuántos días de baja lleva desde el parte y cuándo se espera que vuelva.</p>
         </template>
       </div>
-      <button v-if="canRecord" type="button" class="btn-secondary px-3 py-1 text-xs" v-busy="busy" :disabled="busy || loading" :title="busy || loading ? busyTitle : undefined" @click="openNew()">
+      <button v-if="canRecord" type="button" class="btn-secondary btn-sm" v-busy="busy" :disabled="busy || loading" :title="busy || loading ? busyTitle : undefined" @click="openNew()">
         <Icon icon="plus" class="mr-1.5 h-3 w-3" />Nueva lesión
       </button>
     </div>
@@ -366,7 +366,7 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
             <button
               v-if="openInjuryOf(p.squadPlayerId)"
               type="button"
-              class="btn-primary px-3 py-1 text-xs"
+              class="btn-primary btn-sm"
               v-busy="busy"
               :disabled="busy"
               :title="busy ? busyTitle : 'Es la lesión que ya tiene registrada: queda como la de este partido y la posible lesión, registrada'"
@@ -377,7 +377,7 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
             <button
               v-else
               type="button"
-              class="btn-primary px-3 py-1 text-xs"
+              class="btn-primary btn-sm"
               v-busy="busy"
               :disabled="busy"
               :title="busy ? busyTitle : 'Registrar la lesión con lo que cuenta la crónica: lo revisas antes de guardar'"
@@ -385,7 +385,7 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
             >
               <Icon icon="user-injured" class="mr-1 h-3 w-3" />Registrar
             </button>
-            <button type="button" class="btn-ghost px-2.5 py-1 text-xs" v-busy="busy" :disabled="busy" :title="busy ? busyTitle : 'No fue una lesión: deja de proponerse'" @click="dismissProposal(p)">
+            <button type="button" class="btn-ghost btn-sm px-2.5" v-busy="busy" :disabled="busy" :title="busy ? busyTitle : 'No fue una lesión: deja de proponerse'" @click="dismissProposal(p)">
               Descartar
             </button>
           </div>
@@ -452,9 +452,9 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
             </p>
           </div>
           <div v-if="canManage" class="flex shrink-0 gap-1">
-            <button type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy" :disabled="busy" :title="busy ? busyTitle : 'Dar el alta: el día que se recupera cierra el contador'" @click="openClose(e.injury)"><Icon icon="check" class="mr-1 h-3 w-3" />Alta</button>
-            <button type="button" class="btn-ghost px-2 py-1 text-xs" v-busy="busy" :disabled="busy" :title="busy ? busyTitle : 'Corregir la lesión'" aria-label="Corregir la lesión" @click="openEdit(e.injury)"><Icon icon="pen" class="h-3.5 w-3.5" /></button>
-            <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" :title="busy ? busyTitle : 'Borrar la lesión'" aria-label="Borrar la lesión" @click="remove(e.injury)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
+            <button type="button" class="btn-primary btn-sm" v-busy="busy" :disabled="busy" :title="busy ? busyTitle : 'Dar el alta: el día que se recupera cierra el contador'" @click="openClose(e.injury)"><Icon icon="check" class="mr-1 h-3 w-3" />Alta</button>
+            <button type="button" class="btn-ghost btn-sm px-2" v-busy="busy" :disabled="busy" :title="busy ? busyTitle : 'Corregir la lesión'" aria-label="Corregir la lesión" @click="openEdit(e.injury)"><Icon icon="pen" class="h-3.5 w-3.5" /></button>
+            <button type="button" class="btn-ghost-danger btn-sm px-2" v-busy="busy" :disabled="busy" :title="busy ? busyTitle : 'Borrar la lesión'" aria-label="Borrar la lesión" @click="remove(e.injury)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
           </div>
         </div>
         <InjuryCounter :injury="e.injury" />
@@ -538,10 +538,10 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
                   <InjuryDocuments :squad-id="e.squadId" :injury="e.injury" :can-manage="editable(e)" :can-open="canOpenDocuments" @updated="onDocuments" />
                   <div v-if="editable(e) || deletable(e)" class="mt-2 flex flex-wrap gap-1">
                     <template v-if="editable(e) && e.injury.returnedOn">
-                      <button type="button" class="btn-secondary px-2.5 py-1 text-xs" :disabled="!!relapseBlocked(e.injury)" :title="relapseBlocked(e.injury) ?? 'Ha vuelto a lesionarse de lo mismo: lesión nueva enlazada a esta, que conserva su alta'" @click="openRelapse(e.injury)">Recaída</button>
-                      <button type="button" class="btn-ghost px-2.5 py-1 text-xs" :disabled="!!reopenBlocked(e.injury)" :title="reopenBlocked(e.injury) ?? 'Solo si el alta se dio por error'" @click="reopen(e.injury)">Deshacer el alta</button>
+                      <button type="button" class="btn-secondary btn-sm px-2.5" :disabled="!!relapseBlocked(e.injury)" :title="relapseBlocked(e.injury) ?? 'Ha vuelto a lesionarse de lo mismo: lesión nueva enlazada a esta, que conserva su alta'" @click="openRelapse(e.injury)">Recaída</button>
+                      <button type="button" class="btn-ghost btn-sm px-2.5" :disabled="!!reopenBlocked(e.injury)" :title="reopenBlocked(e.injury) ?? 'Solo si el alta se dio por error'" @click="reopen(e.injury)">Deshacer el alta</button>
                     </template>
-                    <button v-if="deletable(e)" type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" :disabled="busy" :title="busy ? busyTitle : 'Borrar la lesión (registrada por error)'" aria-label="Borrar la lesión" @click="remove(e.injury)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
+                    <button v-if="deletable(e)" type="button" class="btn-ghost-danger btn-sm px-2" :disabled="busy" :title="busy ? busyTitle : 'Borrar la lesión (registrada por error)'" aria-label="Borrar la lesión" @click="remove(e.injury)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
                   </div>
                 </td>
               </tr>
@@ -576,10 +576,10 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
           </span>
           <span v-if="canManage" class="flex flex-wrap gap-1">
             <template v-if="editable(e) && e.injury.returnedOn">
-              <button type="button" class="btn-ghost px-2 py-1 text-xs" :disabled="!!relapseBlocked(e.injury)" :title="relapseBlocked(e.injury) ?? 'Ha vuelto a lesionarse de lo mismo: lesión nueva enlazada a esta, que conserva su alta'" @click="openRelapse(e.injury)">Recaída</button>
-              <button type="button" class="btn-ghost px-2 py-1 text-xs" :disabled="!!reopenBlocked(e.injury)" :title="reopenBlocked(e.injury) ?? 'Solo si el alta se dio por error'" @click="reopen(e.injury)">Deshacer el alta</button>
+              <button type="button" class="btn-ghost btn-sm px-2" :disabled="!!relapseBlocked(e.injury)" :title="relapseBlocked(e.injury) ?? 'Ha vuelto a lesionarse de lo mismo: lesión nueva enlazada a esta, que conserva su alta'" @click="openRelapse(e.injury)">Recaída</button>
+              <button type="button" class="btn-ghost btn-sm px-2" :disabled="!!reopenBlocked(e.injury)" :title="reopenBlocked(e.injury) ?? 'Solo si el alta se dio por error'" @click="reopen(e.injury)">Deshacer el alta</button>
             </template>
-            <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" :title="busy ? busyTitle : 'Borrar la lesión (registrada por error)'" aria-label="Borrar" @click="remove(e.injury)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
+            <button type="button" class="btn-ghost-danger btn-sm px-2" v-busy="busy" :disabled="busy" :title="busy ? busyTitle : 'Borrar la lesión (registrada por error)'" aria-label="Borrar" @click="remove(e.injury)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
           </span>
         </li>
       </ul>

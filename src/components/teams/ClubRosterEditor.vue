@@ -107,8 +107,8 @@ async function add() {
             </td>
             <td class="py-2 pr-3 whitespace-nowrap"><RosterStatsSummary :stats="entry.stats" /></td>
             <td class="py-2 text-right whitespace-nowrap" @click.stop>
-              <button type="button" class="btn-ghost px-2 py-1 text-xs" v-busy="busy" :disabled="busy" aria-label="Ver y editar la ficha" @click="openId = entry.id"><Icon icon="pen" class="h-3.5 w-3.5" /></button>
-              <button type="button" class="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" aria-label="Retirar ficha" @click="remove(entry)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
+              <button type="button" class="btn-ghost btn-sm px-2" v-busy="busy" :disabled="busy" aria-label="Ver y editar la ficha" @click="openId = entry.id"><Icon icon="pen" class="h-3.5 w-3.5" /></button>
+              <button type="button" class="btn-ghost-danger btn-sm px-2" v-busy="busy" :disabled="busy" aria-label="Retirar ficha" @click="remove(entry)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
             </td>
           </tr>
         </tbody>

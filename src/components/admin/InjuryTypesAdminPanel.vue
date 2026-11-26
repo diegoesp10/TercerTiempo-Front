@@ -331,7 +331,7 @@ onMounted(load);
                   <span class="inline-block" :title="deleteBlocked(type)">
                     <button
                       type="button"
-                      class="btn-ghost text-xs text-red-600"
+                      class="btn-ghost-danger text-xs"
                       :disabled="busy || type.injuries > 0"
                       :aria-describedby="type.injuries > 0 ? `blocked-${type.code}` : undefined"
                       @click="remove(type)"

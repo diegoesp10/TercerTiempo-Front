@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import PlayerName from '@/components/players/PlayerName.vue';
@@ -11,6 +12,7 @@ import InjuryNote from '@/components/trainings/InjuryNote.vue';
 import SuspensionNote from '@/components/trainings/SuspensionNote.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import EmptyState from '@/components/ui/EmptyState.vue';
 import GroupByPositionToggle from '@/components/ui/GroupByPositionToggle.vue';
 import Modal from '@/components/ui/Modal.vue';
 import Spinner from '@/components/ui/Spinner.vue';
@@ -258,6 +260,11 @@ const filterOptions = computed(() => {
   ];
 });
 const filterEmpty = computed(() => filterOptions.value.find((o) => o.key === activeFilter.value)?.empty ?? '');
+// Un filtro que no enseñaría a nadie no se puede elegir (salvo el que ya está puesto) y dice por qué.
+const filterChoices = computed(() => filterOptions.value.map((o) => {
+  const empty = o.key !== 'all' && o.count === 0;
+  return { value: o.key, label: o.label, icon: o.icon ?? undefined, count: o.count, disabled: empty && filter.value !== o.key, title: empty ? o.empty : o.title };
+}));
 watch(() => props.matchId, () => {
   editing.value = false;
   filter.value = 'all';
@@ -491,14 +498,12 @@ async function respond(response: CallUpResponse) {
     </p>
 
     <!-- Partido empezado sin convocatoria enviada: ya no hay nada que hacer -->
-    <section v-if="closedEmpty && closedState" class="card flex flex-col items-center gap-2 border-dashed px-4 py-10 text-center">
-      <span class="grid h-11 w-11 place-items-center rounded-full bg-surface-2 text-slate-500"><Icon icon="lock" class="h-4 w-4" /></span>
-      <h3 class="font-semibold text-slate-900">Convocatoria cerrada</h3>
-      <p class="max-w-md text-sm text-slate-600">{{ closedState.reason }}. {{ closedText }}</p>
-      <p v-if="data.canEdit && !data.id && data.match.status === 'Played'" class="max-w-md text-xs text-slate-500">
+    <EmptyState v-if="closedEmpty && closedState" class="card" icon="lock" title="Convocatoria cerrada" title-tag="h3">
+      {{ closedState.reason }}. {{ closedText }}
+      <p v-if="data.canEdit && !data.id && data.match.status === 'Played'" class="mt-2 text-xs text-slate-500">
         El acta interna de este partido sale con toda la plantilla: márcale a cada uno si jugó.
       </p>
-    </section>
+    </EmptyState>
 
     <template v-else>
       <!-- La línea del jugador que mira; antes de enviarse la convocatoria, ni va ni deja de ir -->
@@ -527,8 +532,8 @@ async function respond(response: CallUpResponse) {
               {{ data.mine.called ? callUpResponseLabels[data.mine.response] : data.mine.response === 'Acknowledged' ? 'Enterado' : 'Sin firmar' }}
             </Badge>
             <template v-if="!data.closed">
-              <button v-if="data.mine.called && data.mine.response !== 'Confirmed'" type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy === 'respond'" :disabled="busy !== null" @click="respond('Confirmed')"><Icon icon="check" class="mr-1.5 h-3 w-3" />Firmar la convocatoria</button>
-              <button v-else-if="!data.mine.called && data.mine.response !== 'Acknowledged'" type="button" class="btn-secondary px-3 py-1.5 text-xs" v-busy="busy === 'respond'" :disabled="busy !== null" @click="respond('Acknowledged')">Enterado</button>
+              <button v-if="data.mine.called && data.mine.response !== 'Confirmed'" type="button" class="btn-primary btn-sm py-1.5" v-busy="busy === 'respond'" :disabled="busy !== null" @click="respond('Confirmed')"><Icon icon="check" class="mr-1.5 h-3 w-3" />Firmar la convocatoria</button>
+              <button v-else-if="!data.mine.called && data.mine.response !== 'Acknowledged'" type="button" class="btn-secondary btn-sm py-1.5" v-busy="busy === 'respond'" :disabled="busy !== null" @click="respond('Acknowledged')">Enterado</button>
             </template>
           </div>
         </div>
@@ -544,8 +549,8 @@ async function respond(response: CallUpResponse) {
             <div class="flex flex-wrap items-center gap-2 text-xs">
               <GroupByPositionToggle v-model="groupByPosition" />
               <template v-if="editable">
-                <button type="button" class="btn-ghost px-2 py-1 text-xs" :disabled="!!allBlocked" :title="allBlocked" @click="selectAll(true)">Todos</button>
-                <button type="button" class="btn-ghost px-2 py-1 text-xs" @click="selectAll(false)">Ninguno</button>
+                <button type="button" class="btn-ghost btn-sm px-2" :disabled="!!allBlocked" :title="allBlocked" @click="selectAll(true)">Todos</button>
+                <button type="button" class="btn-ghost btn-sm px-2" @click="selectAll(false)">Ninguno</button>
               </template>
             </div>
           </div>
@@ -583,25 +588,11 @@ async function respond(response: CallUpResponse) {
           </div>
 
           <!-- Vista rápida del cuerpo técnico -->
-          <div v-if="showsFilter" class="mb-3 flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtrar la lista">
-            <button
-              v-for="o in filterOptions"
-              :key="o.key"
-              type="button"
-              class="cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
-              :class="filter === o.key ? 'border-action bg-action text-white' : 'border-line text-slate-600 hover:bg-surface-2'"
-              :aria-pressed="filter === o.key"
-              :disabled="o.key !== 'all' && o.count === 0 && filter !== o.key"
-              :title="o.key !== 'all' && o.count === 0 ? o.empty : o.title"
-              @click="filter = filter === o.key ? 'all' : o.key"
-            >
-              <Icon v-if="o.icon" :icon="o.icon" class="mr-1 h-3 w-3" />{{ o.label }} <span class="tabular-nums opacity-70">{{ o.count }}</span>
-            </button>
-          </div>
+          <ChoiceToggle v-if="showsFilter" v-model="filter" class="mb-3" :options="filterChoices" label="Filtrar la lista" size="xs" min-item="7rem" />
 
-          <p v-if="groups.length === 0" class="rounded-lg border border-dashed border-line px-3 py-6 text-center text-sm text-slate-500">
+          <EmptyState v-if="groups.length === 0" compact>
             {{ filterEmpty }}. <button type="button" class="font-medium text-accent-400 hover:underline" @click="filter = 'all'">Ver a todos</button>
-          </p>
+          </EmptyState>
           <div v-else class="overflow-hidden rounded-lg border border-line">
             <div v-for="g in groups" :key="g.key">
               <div v-if="g.label" class="flex items-center justify-between gap-2 border-b border-line bg-surface-2 px-3 py-1.5">
@@ -664,7 +655,7 @@ async function respond(response: CallUpResponse) {
               <template v-else>Lo decides en cada convocatoria.</template>
               Si la envías con menos, el cuerpo técnico y el club reciben un aviso de que faltan jugadores hasta que la completes.
             </p>
-            <button v-if="!data.sizeFixed" type="button" class="btn-secondary mt-3 w-full px-3 py-1.5 text-xs" :disabled="busy !== null" :title="busy !== null ? 'Espera a que termine lo que se está guardando' : undefined" @click="openSizeAsk">
+            <button v-if="!data.sizeFixed" type="button" class="btn-secondary btn-sm mt-3 w-full py-1.5" :disabled="busy !== null" :title="busy !== null ? 'Espera a que termine lo que se está guardando' : undefined" @click="openSizeAsk">
               {{ size === null ? 'Decir a cuántos convoco' : 'Cambiar el número' }}
             </button>
           </section>
@@ -722,7 +713,7 @@ async function respond(response: CallUpResponse) {
               <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check" class="mr-1.5 h-3 w-3 text-slate-400" />Enviada</span><strong class="tabular-nums text-slate-700">{{ data.counts.sent }}</strong></li>
               <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check-double" class="mr-1.5 h-3 w-3 text-success" />Vista</span><strong class="tabular-nums text-emerald-600">{{ data.counts.seen }}</strong></li>
             </ul>
-            <button v-if="canEdit && unseen > 0" type="button" class="btn-secondary mt-3 w-full px-3 py-1.5 text-xs" v-busy="busy === 'resend'" :disabled="busy !== null" @click="resend"><Icon icon="paper-plane" class="mr-1.5 h-3 w-3" />Reenviar a quien no la ha visto ({{ unseen }})</button>
+            <button v-if="canEdit && unseen > 0" type="button" class="btn-secondary btn-sm mt-3 w-full py-1.5" v-busy="busy === 'resend'" :disabled="busy !== null" @click="resend"><Icon icon="paper-plane" class="mr-1.5 h-3 w-3" />Reenviar a quien no la ha visto ({{ unseen }})</button>
             <p class="mt-2 text-xs text-slate-500">Un check: le ha llegado el aviso. Doble check verde: la ha abierto. La firma va aparte.</p>
           </section>
 

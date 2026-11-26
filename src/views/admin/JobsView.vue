@@ -532,17 +532,13 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
             <h2 class="font-semibold text-slate-900">Últimas llamadas</h2>
             <p class="text-xs text-slate-500">Cada petición real a una web externa (lo servido desde la caché no aparece). Se guardan 30 días.</p>
           </div>
-          <div class="flex flex-wrap gap-1.5">
-            <button type="button" class="rounded-full border px-3 py-1 text-xs" :class="provider === null ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600'" @click="provider = null">Todas</button>
-            <button
-              v-for="source in data.sources"
-              :key="source.provider"
-              type="button"
-              class="rounded-full border px-3 py-1 text-xs"
-              :class="provider === source.provider ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600'"
-              @click="provider = source.provider"
-            >{{ sourceTitle(source) }}</button>
-          </div>
+          <ChoiceToggle
+            :options="[{ value: '', label: 'Todas' }, ...data.sources.map((source) => ({ value: source.provider, label: sourceTitle(source) }))]"
+            :model-value="provider ?? ''"
+            label="Qué web"
+            size="xs"
+            @update:model-value="provider = $event || null"
+          />
         </div>
         <p v-if="!data.requests.length" class="text-sm text-slate-500">Sin llamadas guardadas.</p>
         <div v-else class="max-h-[32rem] overflow-auto rounded-lg border border-slate-200">

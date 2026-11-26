@@ -4,6 +4,7 @@ import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Modal from '@/components/ui/Modal.vue';
+import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vue';
 import type { LicenseCheckoutDto, SimulatedPaymentOutcome } from '@/types/api';
 import { formatMoney } from '@/utils/format';
 
@@ -31,6 +32,11 @@ const testCards: TestCard[] = [
 ];
 
 const form = reactive({ email: '', number: '', expiry: '', cvc: '', name: '', country: 'ES' });
+const countries: SelectOption[] = [
+  { value: 'ES', label: 'España' },
+  { value: 'PT', label: 'Portugal' },
+  { value: 'FR', label: 'Francia' },
+];
 const errors = reactive<Record<string, string | null>>({ number: null, expiry: null, cvc: null, name: null });
 const paying = ref(false);
 const payError = ref<string | null>(null);
@@ -195,11 +201,7 @@ async function pay(outcome: SimulatedPaymentOutcome) {
       </div>
       <div>
         <label class="label" for="pay-country">País</label>
-        <select id="pay-country" v-model="form.country" class="input">
-          <option value="ES">España</option>
-          <option value="PT">Portugal</option>
-          <option value="FR">Francia</option>
-        </select>
+        <SearchSelect id="pay-country" :model-value="form.country" :options="countries" aria-label="País" @update:model-value="form.country = String($event ?? 'ES')" />
       </div>
     </div>
 

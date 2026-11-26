@@ -199,7 +199,7 @@ const nextTrainings = computed(() => (trainings.data.value ?? []).slice(0, 3));
             <Badge :tone="nextCallUp.mine.called ? callUpResponseTone[nextCallUp.mine.response] : nextCallUp.mine.response === 'Acknowledged' ? 'slate' : 'amber'">
               {{ nextCallUp.mine.called ? callUpResponseLabels[nextCallUp.mine.response] : nextCallUp.mine.response === 'Acknowledged' ? 'Enterado' : 'Sin firmar' }}
             </Badge>
-            <RouterLink v-if="nextCallUp.mine.response === 'Pending'" to="/mis-convocatorias" class="btn-primary px-3 py-1 text-xs">{{ nextCallUp.mine.called ? 'Firmar' : 'Darme por enterado' }}</RouterLink>
+            <RouterLink v-if="nextCallUp.mine.response === 'Pending'" to="/mis-convocatorias" class="btn-primary btn-sm">{{ nextCallUp.mine.called ? 'Firmar' : 'Darme por enterado' }}</RouterLink>
           </p>
         </template>
       </div>

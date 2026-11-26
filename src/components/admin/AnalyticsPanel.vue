@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
 import { adminApi } from '@/api/admin';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
@@ -20,6 +21,10 @@ const to = ref(iso(new Date()));
 const from = ref(iso(new Date(Date.now() - 29 * 86_400_000)));
 const clubId = ref<string | null>(null);
 const scope = ref<ClubScope>('Subject');
+const scopeOptions: { value: ClubScope; label: string }[] = [
+  { value: 'Subject', label: 'Visitas a sus páginas' },
+  { value: 'Actor', label: 'Lo que hacen sus usuarios' },
+];
 
 const data = ref<AnalyticsReportDto | null>(null);
 const loading = ref(false);
@@ -87,9 +92,8 @@ const shortDay = (day: string) => new Date(`${day}T00:00:00`).toLocaleDateString
         <span class="label">Club</span>
         <SearchSelect id="analytics-club" placeholder="Toda la web" :model-value="clubId" :options="clubOptions" clearable @update:model-value="clubId = ($event as string | null)" />
       </div>
-      <div v-if="clubId" class="col-span-2 flex flex-wrap gap-1 rounded-lg border border-line p-1 text-sm" role="radiogroup">
-        <button type="button" class="rounded-md px-3 py-1" :class="scope === 'Subject' ? 'bg-action text-white' : 'text-slate-600'" @click="scope = 'Subject'">Visitas a sus páginas</button>
-        <button type="button" class="rounded-md px-3 py-1" :class="scope === 'Actor' ? 'bg-action text-white' : 'text-slate-600'" @click="scope = 'Actor'">Lo que hacen sus usuarios</button>
+      <div v-if="clubId" class="col-span-2">
+        <ChoiceToggle v-model="scope" :options="scopeOptions" label="Qué medir del club" min-item="10rem" />
       </div>
     </div>
 

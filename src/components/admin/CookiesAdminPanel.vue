@@ -4,6 +4,7 @@ import { adminApi } from '@/api/admin';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
 import Modal from '@/components/ui/Modal.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
 import { confirmDialog } from '@/composables/useConfirm';
@@ -25,6 +26,16 @@ const notice = ref<string | null>(null);
 const busy = ref(false);
 const editing = ref<AdminCookieDto | null>(null);
 const formOpen = ref(false);
+const categoryOptions: { value: UpsertCookieRequest['category']; label: string }[] = [
+  { value: 'Necessary', label: 'Necesaria (exenta)' },
+  { value: 'Preferences', label: 'Preferencias (exenta)' },
+  { value: 'Analytics', label: 'Analítica (con consentimiento)' },
+];
+const storageOptions: { value: UpsertCookieRequest['storage']; label: string }[] = [
+  { value: 'LocalStorage', label: 'Almacenamiento local' },
+  { value: 'SessionStorage', label: 'Almacenamiento de sesión' },
+  { value: 'Cookie', label: 'Cookie' },
+];
 const form = reactive<UpsertCookieRequest>({ name: '', category: 'Necessary', storage: 'LocalStorage', provider: 'Tercer Tiempo', purpose: '', duration: '', sortOrder: 10 });
 const newVersion = ref('');
 
@@ -160,7 +171,7 @@ onMounted(load);
               <td class="px-3 py-2 text-xs whitespace-nowrap text-slate-600">{{ cookie.duration }}</td>
               <td class="px-3 py-2 text-right whitespace-nowrap">
                 <button type="button" class="btn-ghost text-xs" @click="openForm(cookie)">Editar</button>
-                <button type="button" class="btn-ghost text-xs text-red-600" @click="remove(cookie)">Quitar</button>
+                <button type="button" class="btn-ghost-danger text-xs" @click="remove(cookie)">Quitar</button>
               </td>
             </tr>
           </tbody>
@@ -174,23 +185,13 @@ onMounted(load);
           <span class="label">Nombre (clave en el navegador)</span>
           <input v-model="form.name" type="text" maxlength="100" required :disabled="!!editing" class="input font-mono" />
         </label>
-        <div class="grid grid-cols-2 gap-3">
-          <label>
-            <span class="label">Categoría</span>
-            <select v-model="form.category" class="input">
-              <option value="Necessary">Necesaria (exenta)</option>
-              <option value="Preferences">Preferencias (exenta)</option>
-              <option value="Analytics">Analítica (con consentimiento)</option>
-            </select>
-          </label>
-          <label>
-            <span class="label">Dónde se guarda</span>
-            <select v-model="form.storage" class="input">
-              <option value="LocalStorage">Almacenamiento local</option>
-              <option value="SessionStorage">Almacenamiento de sesión</option>
-              <option value="Cookie">Cookie</option>
-            </select>
-          </label>
+        <div>
+          <span class="label">Categoría</span>
+          <ChoiceToggle v-model="form.category" :options="categoryOptions" label="Categoría" min-item="8rem" />
+        </div>
+        <div>
+          <span class="label">Dónde se guarda</span>
+          <ChoiceToggle v-model="form.storage" :options="storageOptions" label="Dónde se guarda" min-item="8rem" />
         </div>
         <label class="block">
           <span class="label">Finalidad</span>

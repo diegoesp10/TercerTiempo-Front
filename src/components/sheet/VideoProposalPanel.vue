@@ -552,7 +552,7 @@ async function apply(overwrite = false) {
             <template v-if="parts.length > 1">{{ videoPartLabels[part.part] }} · </template>{{ part.state === 'Ready' && part.appliedAt ? 'Volcado al acta' : stateLabels[part.state] }}<template v-if="part.state === 'Running' || part.pausedMidway"> · {{ part.progress }} %</template>
           </Badge>
         </template>
-        <button v-if="analysis && parts.length > 0" type="button" class="btn-ghost px-3 py-1 text-xs" :aria-expanded="open" aria-controls="video-proposal-body" @click="open = !open">
+        <button v-if="analysis && parts.length > 0" type="button" class="btn-ghost btn-sm" :aria-expanded="open" aria-controls="video-proposal-body" @click="open = !open">
           <Icon icon="chevron-down" class="h-3 w-3 transition-transform" :class="open ? 'rotate-180' : ''" />{{ open ? 'Ocultar' : 'Ver la propuesta' }}
         </button>
       </div>
@@ -567,7 +567,7 @@ async function apply(overwrite = false) {
           Este partido todavía no tiene vídeo de tu plantilla.
           <template v-if="analysis.enabled">Al subirlo se comprime y, cuando termina, se analiza solo.</template>
         </p>
-        <button v-if="canManage" type="button" class="btn-secondary px-3 py-1 text-xs" @click="emit('go-video')">
+        <button v-if="canManage" type="button" class="btn-secondary btn-sm" @click="emit('go-video')">
           <Icon icon="cloud-arrow-up" class="h-3 w-3" />Subir el vídeo
         </button>
       </div>
@@ -607,7 +607,7 @@ async function apply(overwrite = false) {
             <button
               v-busy="cancelling === part.videoId"
               type="button"
-              class="btn-ghost px-3 py-1 text-xs"
+              class="btn-ghost btn-sm"
               :disabled="pausing !== null || cancelling !== null || requesting !== null"
               @click="cancel(part)"
             >
@@ -826,7 +826,7 @@ async function apply(overwrite = false) {
             <button
               v-if="playersOf(part).length > (shown[part.videoId] ?? PAGE)"
               type="button"
-              class="btn-ghost mt-2 px-3 py-1 text-xs"
+              class="btn-ghost btn-sm mt-2"
               @click="shown[part.videoId] = (shown[part.videoId] ?? PAGE) + PAGE * 2"
             >
               Mostrar más ({{ playersOf(part).length - (shown[part.videoId] ?? PAGE) }} sin enseñar)
@@ -850,7 +850,7 @@ async function apply(overwrite = false) {
       <div v-if="teamRows.length > 0" class="mt-5 border-t border-slate-100 pt-4">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h3 class="text-sm font-semibold text-slate-900">Datos del equipo</h3>
-          <button v-if="teamMomentList.length > 0" type="button" class="btn-secondary px-3 py-1 text-xs" @click="watchTeam(null)">
+          <button v-if="teamMomentList.length > 0" type="button" class="btn-secondary btn-sm" @click="watchTeam(null)">
             <Icon icon="video" class="h-3 w-3" />Ver las jugadas en el vídeo
           </button>
         </div>
@@ -900,7 +900,7 @@ async function apply(overwrite = false) {
                   <button
                     v-if="row.kind && teamMomentCount(row.kind) > 0"
                     type="button"
-                    class="btn-ghost whitespace-nowrap px-2 py-0.5 text-xs"
+                    class="btn-ghost btn-sm whitespace-nowrap px-2 py-0.5"
                     :title="`Ver en el vídeo: ${row.label.toLowerCase()} de los dos equipos`"
                     @click="watchTeam(row.kind)"
                   >

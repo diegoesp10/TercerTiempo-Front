@@ -4,6 +4,7 @@ import { adminApi } from '@/api/admin';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import EmptyState from '@/components/ui/EmptyState.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useSort } from '@/composables/useSort';
@@ -189,10 +190,9 @@ const { sorted, sortBy, state } = useSort<PresenceSessionDto, SortKey>(
           >{{ item.label }}</button>
         </div>
 
-        <p v-if="sessions.length === 0" class="mt-4 rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-slate-500">
-          <Icon icon="users" class="mb-2 h-5 w-5 text-slate-400" /><br />
+        <EmptyState v-if="sessions.length === 0" class="mt-4" icon="users" compact>
           {{ query.trim() || type !== 'all' || status !== 'all' ? 'Nadie coincide con la búsqueda.' : 'Nadie tiene la web abierta con su cuenta ahora mismo.' }}
-        </p>
+        </EmptyState>
 
         <div v-else class="mt-4 max-h-[70vh] overflow-auto rounded-lg border border-line">
           <table class="min-w-full text-sm">

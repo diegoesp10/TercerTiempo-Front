@@ -117,9 +117,9 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
                 <p v-if="c.notes" class="mt-1 whitespace-pre-line text-sm text-slate-600">{{ c.notes }}</p>
               </div>
               <div class="flex flex-wrap gap-2">
-                <button v-if="c.mine.called && c.mine.response !== 'Confirmed'" type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy === c.callUpId" :disabled="busy !== null" @click="respond(c, 'Confirmed')"><Icon icon="check" class="mr-1.5 h-3 w-3" />Firmar la convocatoria</button>
-                <button v-else-if="!c.mine.called && c.mine.response !== 'Acknowledged'" type="button" class="btn-secondary px-3 py-1.5 text-xs" v-busy="busy === c.callUpId" :disabled="busy !== null" @click="respond(c, 'Acknowledged')">Enterado</button>
-                <RouterLink :to="{ name: 'sheet', params: { squadId: c.squadId, matchId: c.match.id }, query: { tab: 'convocatoria' } }" class="btn-ghost px-3 py-1.5 text-xs">Ver la convocatoria</RouterLink>
+                <button v-if="c.mine.called && c.mine.response !== 'Confirmed'" type="button" class="btn-primary btn-sm py-1.5" v-busy="busy === c.callUpId" :disabled="busy !== null" @click="respond(c, 'Confirmed')"><Icon icon="check" class="mr-1.5 h-3 w-3" />Firmar la convocatoria</button>
+                <button v-else-if="!c.mine.called && c.mine.response !== 'Acknowledged'" type="button" class="btn-secondary btn-sm py-1.5" v-busy="busy === c.callUpId" :disabled="busy !== null" @click="respond(c, 'Acknowledged')">Enterado</button>
+                <RouterLink :to="{ name: 'sheet', params: { squadId: c.squadId, matchId: c.match.id }, query: { tab: 'convocatoria' } }" class="btn-ghost btn-sm py-1.5">Ver la convocatoria</RouterLink>
               </div>
             </div>
             <p v-if="c.mine.called" class="mt-2 text-xs text-slate-500">Si no vas a poder ir, díselo a tu cuerpo técnico: la convocatoria la cambian ellos.</p>
@@ -159,14 +159,14 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
                 <Badge v-if="item.session.mine?.injured" tone="red" title="Estás lesionado: no entrenas y no tienes que avisar">Lesionado</Badge>
                 <MyAttendanceBadge v-else-if="item.session.mine" :status="item.session.mine.status" />
                 <template v-if="item.session.mine?.injured" />
-                <button v-else-if="item.session.mine?.status === 'WillMiss'" type="button" class="btn-secondary px-3 py-1 text-xs" v-busy="busy === item.session.id" :disabled="busy !== null" @click="absence(item, false)">Al final sí voy</button>
-                <button v-else-if="absenceFor !== item.session.id" type="button" class="btn-secondary px-3 py-1 text-xs" :disabled="busy !== null" @click="absenceFor = item.session.id">No podré ir</button>
+                <button v-else-if="item.session.mine?.status === 'WillMiss'" type="button" class="btn-secondary btn-sm" v-busy="busy === item.session.id" :disabled="busy !== null" @click="absence(item, false)">Al final sí voy</button>
+                <button v-else-if="absenceFor !== item.session.id" type="button" class="btn-secondary btn-sm" :disabled="busy !== null" @click="absenceFor = item.session.id">No podré ir</button>
               </div>
             </div>
             <form v-if="absenceFor === item.session.id" class="mt-2 flex flex-wrap gap-2" @submit.prevent="absence(item, true)">
               <input v-model="absenceReason" type="text" maxlength="200" class="input min-w-0 flex-1 px-2 py-1 text-sm" placeholder="Motivo (opcional)" />
-              <button type="submit" class="btn-primary px-3 py-1 text-xs" v-busy="busy === item.session.id" :disabled="busy !== null">Avisar al cuerpo técnico</button>
-              <button type="button" class="btn-ghost px-2 py-1 text-xs" @click="absenceFor = null">Cancelar</button>
+              <button type="submit" class="btn-primary btn-sm" v-busy="busy === item.session.id" :disabled="busy !== null">Avisar al cuerpo técnico</button>
+              <button type="button" class="btn-ghost btn-sm px-2" @click="absenceFor = null">Cancelar</button>
             </form>
           </li>
         </ul>

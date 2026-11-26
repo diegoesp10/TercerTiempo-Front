@@ -132,7 +132,7 @@ const tips = computed(() => [
       <div class="mt-5 flex flex-wrap items-center gap-2">
         <button type="button" class="btn-primary" @click="cameraInput?.click()"><Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />Hacer foto</button>
         <button type="button" class="btn-secondary" @click="fileInput?.click()"><Icon icon="cloud-arrow-up" class="mr-1.5 h-3.5 w-3.5" />Elegir de la galería</button>
-        <button v-if="hasPhoto" type="button" class="btn-ghost ml-auto text-red-600" v-busy="busy" :disabled="busy" @click="removePhoto">Quitar mi foto</button>
+        <button v-if="hasPhoto" type="button" class="btn-ghost-danger ml-auto" v-busy="busy" :disabled="busy" @click="removePhoto">Quitar mi foto</button>
       </div>
     </template>
 

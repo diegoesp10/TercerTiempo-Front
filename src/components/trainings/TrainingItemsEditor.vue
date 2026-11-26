@@ -143,7 +143,7 @@ function remove(index: number) {
             <div class="mb-1 ml-auto flex shrink-0 items-center gap-0.5">
               <button type="button" class="btn-ghost h-8 w-8 p-0" :disabled="index === 0" title="Subir" aria-label="Subir" @click="move(index, -1)"><Icon icon="chevron-up" class="h-3 w-3" /></button>
               <button type="button" class="btn-ghost h-8 w-8 p-0" :disabled="index === modelValue.length - 1" title="Bajar" aria-label="Bajar" @click="move(index, 1)"><Icon icon="chevron-down" class="h-3 w-3" /></button>
-              <button type="button" class="btn-ghost h-8 w-8 p-0 text-red-600 hover:bg-red-500/10 hover:text-red-600" title="Quitar el ejercicio" aria-label="Quitar" @click="remove(index)"><Icon icon="trash" class="h-3 w-3" /></button>
+              <button type="button" class="btn-ghost-danger h-8 w-8 p-0" title="Quitar el ejercicio" aria-label="Quitar" @click="remove(index)"><Icon icon="trash" class="h-3 w-3" /></button>
             </div>
           </div>
 

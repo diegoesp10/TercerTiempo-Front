@@ -75,7 +75,7 @@ function apply() {
 
     <template #footer>
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <button v-if="!readonly && hadNote" type="button" class="btn-ghost text-red-600" @click="emit('save', null)">
+        <button v-if="!readonly && hadNote" type="button" class="btn-ghost-danger" @click="emit('save', null)">
           <Icon icon="trash" class="text-xs" />Quitar la nota
         </button>
         <span v-else />

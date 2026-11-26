@@ -59,9 +59,10 @@ function choose(value: T) {
       type="button"
       role="radio"
       :aria-checked="option.value === modelValue"
-      :disabled="disabled"
+      :disabled="disabled || option.disabled"
+      :title="option.title"
       class="flex cursor-pointer flex-wrap items-center justify-center gap-x-2 gap-y-1 break-words text-center leading-snug transition disabled:cursor-not-allowed group-data-[row]/choice:shrink-0 group-data-[row]/choice:flex-nowrap group-data-[row]/choice:whitespace-nowrap"
-      :class="[itemClass, option.value === modelValue ? onClass : offClass]"
+      :class="[itemClass, option.value === modelValue ? onClass : offClass, option.disabled ? 'opacity-50' : '']"
       @click="choose(option.value)"
     >
       <!-- En rejilla el icono va encima del nombre: al lado, la casilla estrecha partiría la palabra. -->
@@ -70,6 +71,7 @@ function choose(value: T) {
         <span class="min-w-0">{{ option.label }}</span>
       </span>
       <span v-else class="min-w-0">{{ option.label }}</span>
+      <span v-if="option.count !== undefined" class="tabular-nums opacity-70">{{ option.count }}</span>
       <span
         v-if="option.badge"
         class="rounded-full px-2 py-0.5 text-[11px] font-bold"

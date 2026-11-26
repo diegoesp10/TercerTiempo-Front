@@ -121,7 +121,7 @@ async function submit() {
             </p>
           </div>
           <span v-if="t.id === trialId" class="inline-flex items-center gap-1 text-xs font-semibold text-brand-500"><Icon icon="check" class="h-3 w-3" />Elegido</span>
-          <button v-else type="button" class="btn-secondary px-2.5 py-1 text-xs" :aria-label="`Elegir a ${t.fullName} para hacerle ficha`" :disabled="busy" @click="pick(t)">Elegir</button>
+          <button v-else type="button" class="btn-secondary btn-sm px-2.5" :aria-label="`Elegir a ${t.fullName} para hacerle ficha`" :disabled="busy" @click="pick(t)">Elegir</button>
         </li>
       </ul>
     </section>

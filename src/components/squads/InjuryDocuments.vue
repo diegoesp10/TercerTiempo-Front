@@ -121,7 +121,7 @@ const iconOf = (document: InjuryDocumentDto) => (document.contentType === 'appli
         </div>
         <span class="flex shrink-0 gap-0.5">
           <button v-if="canOpen" type="button" class="btn-ghost px-1.5 py-1" aria-label="Descargar" title="Descargar" @click="open(document, true)"><Icon icon="download" class="h-3 w-3" /></button>
-          <button v-if="canManage" type="button" class="btn-ghost px-1.5 py-1 text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" aria-label="Quitar el documento" title="Quitar" @click="remove(document)">
+          <button v-if="canManage" type="button" class="btn-ghost-danger px-1.5 py-1" v-busy="busy" :disabled="busy" aria-label="Quitar el documento" title="Quitar" @click="remove(document)">
             <Icon icon="trash" class="h-3 w-3" />
           </button>
         </span>
@@ -131,7 +131,7 @@ const iconOf = (document: InjuryDocumentDto) => (document.contentType === 'appli
     <Alert v-if="error && !formOpen" kind="error" class="mt-2">{{ error }}</Alert>
 
     <template v-if="canManage">
-      <button v-if="!formOpen" type="button" class="btn-ghost mt-1 px-2 py-1 text-xs" :disabled="busy || full" :title="full ? 'Una lesión admite como mucho 10 documentos' : undefined" @click="openForm">
+      <button v-if="!formOpen" type="button" class="btn-ghost btn-sm mt-1 px-2" :disabled="busy || full" :title="full ? 'Una lesión admite como mucho 10 documentos' : undefined" @click="openForm">
         <Icon icon="paperclip" class="mr-1 h-3 w-3" />Adjuntar radiografía o informe
       </button>
 
@@ -155,8 +155,8 @@ const iconOf = (document: InjuryDocumentDto) => (document.contentType === 'appli
         <input v-model="form.note" type="text" maxlength="200" class="input text-xs" placeholder="Nota opcional: resonancia del 12 de noviembre, informe de urgencias…" />
         <p class="text-[11px] text-slate-500">PDF o imagen (JPG, PNG o WebP), hasta 15 MB. Solo lo abren el club, el cuerpo técnico y el propio jugador.</p>
         <div class="flex justify-end gap-2">
-          <button type="button" class="btn-ghost px-3 py-1 text-xs" @click="formOpen = false">Cancelar</button>
-          <button type="submit" class="btn-primary px-3 py-1 text-xs" v-busy="busy" :disabled="busy || !form.file"><Icon icon="cloud-arrow-up" class="mr-1 h-3 w-3" />Subir</button>
+          <button type="button" class="btn-ghost btn-sm" @click="formOpen = false">Cancelar</button>
+          <button type="submit" class="btn-primary btn-sm" v-busy="busy" :disabled="busy || !form.file"><Icon icon="cloud-arrow-up" class="mr-1 h-3 w-3" />Subir</button>
         </div>
       </form>
     </template>

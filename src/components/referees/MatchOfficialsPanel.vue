@@ -161,12 +161,12 @@ async function save(official: MatchOfficialDto) {
       <button
         v-if="open.length > 1"
         type="button"
-        class="btn-secondary px-3 py-1.5 text-xs"
+        class="btn-secondary btn-sm py-1.5"
         v-busy="saving === 'all'"
         :disabled="saving !== null"
         @click="noVote(null)"
       ><Icon icon="ban" class="mr-1.5 h-3 w-3" />No votar a nadie ({{ open.length }})</button>
-      <RouterLink :to="{ name: 'referees', query: data?.categoryKey ? { categoria: data.categoryKey } : {} }" class="btn-ghost px-3 py-1.5 text-xs">
+      <RouterLink :to="{ name: 'referees', query: data?.categoryKey ? { categoria: data.categoryKey } : {} }" class="btn-ghost btn-sm py-1.5">
         <Icon icon="flag" class="h-3.5 w-3.5" />{{ data?.category ? `Árbitros de ${data.category}` : 'Todos los árbitros' }}
       </RouterLink>
     </div>
@@ -229,14 +229,14 @@ async function save(official: MatchOfficialDto) {
             <div class="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                class="btn-primary px-3 py-1.5 text-xs"
+                class="btn-primary btn-sm py-1.5"
                 v-busy="saving === official.refereeId"
                 :disabled="saving !== null || drafts[official.refereeId]!.score === null"
                 @click="save(official)"
               >Guardar nota</button>
               <button
                 type="button"
-                class="btn-ghost px-3 py-1.5 text-xs"
+                class="btn-ghost btn-sm py-1.5"
                 :disabled="saving !== null"
                 @click="noVote(official)"
               >No votar</button>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
 import { adminApi } from '@/api/admin';
 import { errorMessage } from '@/api/http';
 import PaymentEventList from '@/components/licensing/PaymentEventList.vue';
@@ -24,6 +25,13 @@ const data = ref<LicensesOverviewDto | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const filter = ref<'all' | 'owes' | 'trial' | 'paying' | 'inactive'>('all');
+const filterOptions = [
+  { value: 'all', label: 'Todas' },
+  { value: 'owes', label: 'Deben' },
+  { value: 'trial', label: 'En prueba' },
+  { value: 'paying', label: 'Al día' },
+  { value: 'inactive', label: 'Sin acceso' },
+] as const;
 
 const stateLabels: Record<AdminLicenseState, string> = {
   trial: 'En prueba',
@@ -216,14 +224,7 @@ defineExpose({ load });
               <Icon icon="magnifying-glass" class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               <input v-model="search" type="search" class="input w-full py-1.5 pl-9 text-sm" placeholder="Buscar club o equipo" />
             </label>
-            <button
-              v-for="option in ([['all', 'Todas'], ['owes', 'Deben'], ['trial', 'En prueba'], ['paying', 'Al día'], ['inactive', 'Sin acceso']] as const)"
-              :key="option[0]"
-              type="button"
-              class="rounded-full border px-3 py-1 text-xs"
-              :class="filter === option[0] ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600'"
-              @click="filter = option[0]"
-            >{{ option[1] }}</button>
+            <ChoiceToggle v-model="filter" :options="filterOptions" label="Qué licencias" size="xs" />
             <button type="button" class="btn-ghost text-xs" v-busy="loading" :disabled="loading" @click="load"><Icon icon="rotate-right" class="h-3 w-3" /></button>
           </div>
         </div>

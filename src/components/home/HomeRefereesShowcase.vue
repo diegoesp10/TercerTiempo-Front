@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef, watch } from 'vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
 import { api } from '@/api';
 import StarRating from '@/components/referees/StarRating.vue';
 import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
@@ -33,6 +34,7 @@ onMounted(async () => {
 // apenas cubren las ligas nacionales: si la categoría de la liga casi no tiene árbitros, se enseña la de más partidos.
 const MIN_REFEREES = 5;
 watch(selectedId, () => (picked.value = null));
+const categoryOptions = computed(() => categories.value.map((c) => ({ value: c.key, label: c.name })));
 const category = computed(() =>
   categories.value.find((c) => c.key === picked.value)
   ?? categories.value.find((c) => selectedId.value && c.competitionIds.includes(selectedId.value) && c.referees >= MIN_REFEREES)
@@ -108,17 +110,15 @@ const initials = (name: string) =>
 
     <div class="overflow-hidden rounded-2xl border border-line bg-surface shadow-card lg:col-span-7">
       <header class="border-b border-line px-5 pt-4">
-        <div v-if="categories.length" class="flex flex-wrap gap-1.5" role="group" aria-label="Categoría">
-          <button
-            v-for="item in categories"
-            :key="item.key"
-            type="button"
-            class="rounded-full px-3 py-1 text-xs font-semibold transition"
-            :class="item.key === category?.key ? 'bg-action text-white' : 'bg-surface-2 text-slate-600 ring-1 ring-line hover:text-slate-900'"
-            :aria-pressed="item.key === category?.key"
-            @click="picked = item.key"
-          >{{ item.name }}</button>
-        </div>
+        <ChoiceToggle
+          v-if="categories.length"
+          :options="categoryOptions"
+          :model-value="category?.key ?? null"
+          label="Categoría"
+          size="xs"
+          min-item="6.5rem"
+          @update:model-value="picked = $event"
+        />
         <div v-else class="h-6 w-2/3 animate-pulse rounded-full bg-surface-2" />
 
         <dl class="mt-4 grid grid-cols-2 gap-2 pb-4 sm:grid-cols-4">

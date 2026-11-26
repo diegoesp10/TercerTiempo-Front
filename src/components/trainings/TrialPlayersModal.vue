@@ -108,9 +108,9 @@ async function remove(trial: TrialPlayerDto) {
             </p>
           </div>
           <div v-if="!readonly" class="flex shrink-0 flex-wrap gap-1">
-            <button v-if="promoteId !== t.id" type="button" class="btn-secondary px-2 py-1 text-xs" :disabled="busy" @click="startPromote(t)"><Icon icon="plus" class="mr-1 h-3 w-3" />Hacerle ficha</button>
+            <button v-if="promoteId !== t.id" type="button" class="btn-secondary btn-sm px-2" :disabled="busy" @click="startPromote(t)"><Icon icon="plus" class="mr-1 h-3 w-3" />Hacerle ficha</button>
             <button type="button" class="btn-ghost px-2 py-1" aria-label="Editar" :disabled="busy" @click="startEdit(t)"><Icon icon="pen" class="h-3.5 w-3.5" /></button>
-            <button type="button" class="btn-ghost px-2 py-1 text-red-600 hover:bg-red-50" aria-label="Borrar" :disabled="busy" @click="remove(t)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
+            <button type="button" class="btn-ghost-danger px-2 py-1" aria-label="Borrar" :disabled="busy" @click="remove(t)"><Icon icon="trash" class="h-3.5 w-3.5" /></button>
           </div>
         </div>
         <form v-if="promoteId === t.id" class="mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-brand-500/40 bg-surface-2 p-2" @submit.prevent="promote(t)">
@@ -119,8 +119,8 @@ async function remove(trial: TrialPlayerDto) {
             <label class="label text-xs" :for="`tp-pos-${t.id}`">Posición</label>
             <SearchSelect :id="`tp-pos-${t.id}`" v-model="promoteForm.position" :options="positionOptions" size="sm" placeholder="Elige su posición" />
           </div>
-          <button type="submit" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy" :disabled="busy || !promoteForm.position">Hacerle ficha</button>
-          <button type="button" class="btn-ghost px-2 py-1.5 text-xs" @click="promoteId = null">Cancelar</button>
+          <button type="submit" class="btn-primary btn-sm py-1.5" v-busy="busy" :disabled="busy || !promoteForm.position">Hacerle ficha</button>
+          <button type="button" class="btn-ghost btn-sm px-2 py-1.5" @click="promoteId = null">Cancelar</button>
         </form>
       </li>
     </ul>

@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { adminApi } from '@/api/admin';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
+import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
 import type { FootballSyncSettingsDto, SyncScopeKind } from '@/types/api';
 import { formatDate, formatKickoff } from '@/utils/format';
 
@@ -32,6 +33,10 @@ const season = ref('');
 const pastSeason = computed(() => scope.value === 'FullSeason' && season.value.trim().length > 0);
 const seasonValid = computed(() => !pastSeason.value || /^\s*\d{4}\s*[/-]\s*(\d{2}|\d{4})\s*$/.test(season.value));
 
+const scopeOptions: { value: SyncScopeKind; label: string }[] = [
+  { value: 'CurrentRound', label: 'La jornada en curso' },
+  { value: 'FullSeason', label: 'La temporada completa' },
+];
 const schedule = reactive({ scheduledScope: 'CurrentRound' as SyncScopeKind, daysBack: 3, daysAhead: 4, rostersInRound: false, fullSyncEveryDays: 7 });
 
 const scopes: { value: SyncScopeKind; label: string }[] = [
@@ -227,13 +232,10 @@ onMounted(load);
       <summary class="cursor-pointer font-medium text-slate-800">Programación automática</summary>
       <form class="mt-3 space-y-3" @submit.prevent="saveSchedule">
         <div class="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
-          <label class="col-span-2 sm:w-56">
+          <div class="col-span-2">
             <span class="label">Cada pasada descarga</span>
-            <select v-model="schedule.scheduledScope" class="input">
-              <option value="CurrentRound">La jornada en curso</option>
-              <option value="FullSeason">La temporada completa</option>
-            </select>
-          </label>
+            <ChoiceToggle v-model="schedule.scheduledScope" :options="scopeOptions" label="Cada pasada descarga" min-item="8rem" />
+          </div>
           <label class="sm:w-36">
             <span class="label">Días antes de hoy</span>
             <input v-model.number="schedule.daysBack" type="number" min="0" max="14" required class="input" />

@@ -41,7 +41,7 @@ const statusInfo: Record<PaymentEventStatus, { label: string; tone: 'green' | 'a
         <button
           v-if="admin && (event.status === 'failed' || event.status === 'pending' || event.status === 'ignored')"
           type="button"
-          class="btn-ghost px-2 py-1 text-xs"
+          class="btn-ghost btn-sm px-2"
           v-busy="retrying === event.id"
           :disabled="retrying === event.id"
           @click="emit('retry', event.id)"

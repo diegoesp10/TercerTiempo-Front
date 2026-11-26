@@ -192,7 +192,7 @@ const { sorted: internalSorted, sortBy: sortInternal, state: internalState } = u
             {{ current.position ? positionLabels[current.position] : 'Sin posición' }}
             <Badge v-if="current.managedByClub" tone="blue" class="ml-2">Club</Badge>
           </p>
-          <button type="button" class="btn-ghost mt-1 px-2 py-1 text-xs" v-busy="busy" :disabled="busy" @click="photoInput?.click()">
+          <button type="button" class="btn-ghost btn-sm mt-1 px-2" v-busy="busy" :disabled="busy" @click="photoInput?.click()">
             <Icon icon="camera" class="mr-1.5 h-3.5 w-3.5" />{{ current.photoUrl ? 'Cambiar foto' : 'Subir foto' }}
           </button>
         </div>

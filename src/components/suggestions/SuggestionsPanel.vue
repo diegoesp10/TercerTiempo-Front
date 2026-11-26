@@ -92,7 +92,7 @@ async function resolve(s: SuggestionDto, approve: boolean) {
         </h2>
         <p class="text-xs text-slate-500">Lo que cada jugador propone corregir o añadir en su línea del acta. Al aprobar, se escribe en el acta.</p>
       </div>
-      <button v-if="resolved.length" type="button" class="btn-ghost px-3 py-1 text-xs" @click="showResolved = !showResolved">
+      <button v-if="resolved.length" type="button" class="btn-ghost btn-sm" @click="showResolved = !showResolved">
         {{ showResolved ? 'Ocultar resueltas' : `Ver resueltas (${resolved.length})` }}
       </button>
     </div>

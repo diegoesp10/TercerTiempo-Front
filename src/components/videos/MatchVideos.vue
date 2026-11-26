@@ -211,22 +211,22 @@ const accessIcon = (video: MatchVideoDto) => (video.access === 'Locked' ? 'lock'
             </div>
 
             <div class="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end">
-              <button v-if="video.canWatch && playing !== video.id" type="button" class="btn-primary px-3 py-1.5 text-xs" v-busy="busy === video.id" :disabled="busy === video.id" @click="play(video)">
+              <button v-if="video.canWatch && playing !== video.id" type="button" class="btn-primary btn-sm py-1.5" v-busy="busy === video.id" :disabled="busy === video.id" @click="play(video)">
                 <Icon icon="play" class="mr-1.5 h-3 w-3" />Ver
               </button>
               <template v-else-if="video.canWatch">
-                <button type="button" class="btn-secondary px-3 py-1.5 text-xs" title="Pide un enlace nuevo si el vídeo dejó de cargar" v-busy="busy === video.id" :disabled="busy === video.id" @click="play(video)">
+                <button type="button" class="btn-secondary btn-sm py-1.5" title="Pide un enlace nuevo si el vídeo dejó de cargar" v-busy="busy === video.id" :disabled="busy === video.id" @click="play(video)">
                   <Icon icon="rotate-right" class="mr-1.5 h-3 w-3" />Recargar
                 </button>
-                <button type="button" class="btn-secondary px-3 py-1.5 text-xs" @click="close">
+                <button type="button" class="btn-secondary btn-sm py-1.5" @click="close">
                   <Icon icon="xmark" class="mr-1.5 h-3 w-3" />Cerrar
                 </button>
               </template>
-              <button v-if="video.canDownload" type="button" class="btn-secondary px-3 py-1.5 text-xs" title="Descargar el archivo" :disabled="busy === video.id" @click="download(video)">
+              <button v-if="video.canDownload" type="button" class="btn-secondary btn-sm py-1.5" title="Descargar el archivo" :disabled="busy === video.id" @click="download(video)">
                 <Icon icon="download" class="mr-1.5 h-3 w-3" />Descargar
               </button>
               <template v-if="video.access === 'Locked' && requestable?.includes(video.squadId)">
-                <button v-if="signedIn" type="button" class="btn-secondary px-3 py-1.5 text-xs" @click="emit('request', video.squadId)">
+                <button v-if="signedIn" type="button" class="btn-secondary btn-sm py-1.5" @click="emit('request', video.squadId)">
                   <Icon icon="ticket" class="mr-1.5 h-3 w-3" />Solicitar acceso
                 </button>
                 <span v-else class="text-xs text-slate-500">
@@ -234,7 +234,7 @@ const accessIcon = (video: MatchVideoDto) => (video.access === 'Locked' ? 'lock'
                 </span>
               </template>
               <span v-if="video.canDelete" class="lg:ml-1 lg:border-l lg:border-line lg:pl-3">
-                <button type="button" class="btn-ghost px-3 py-1.5 text-xs text-red-600 hover:bg-red-50" v-busy="busy === video.id" :disabled="busy === video.id" @click="remove(video)">
+                <button type="button" class="btn-ghost-danger btn-sm py-1.5" v-busy="busy === video.id" :disabled="busy === video.id" @click="remove(video)">
                   <Icon icon="trash" class="mr-1.5 h-3 w-3" />Eliminar
                 </button>
               </span>
@@ -255,10 +255,10 @@ const accessIcon = (video: MatchVideoDto) => (video.access === 'Locked' ? 'lock'
               </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <button v-if="analyzable" type="button" class="btn-secondary px-3 py-1.5 text-xs" :disabled="video.status === 'Uploaded' || video.status === 'Processing'" :title="video.status === 'Uploaded' || video.status === 'Processing' ? 'Cuando termine de comprimirse' : 'Ir a la sección «Del vídeo» del acta interna'" @click="emit('analyze')">
+              <button v-if="analyzable" type="button" class="btn-secondary btn-sm py-1.5" :disabled="video.status === 'Uploaded' || video.status === 'Processing'" :title="video.status === 'Uploaded' || video.status === 'Processing' ? 'Cuando termine de comprimirse' : 'Ir a la sección «Del vídeo» del acta interna'" @click="emit('analyze')">
                 <Icon icon="magnifying-glass" class="mr-1.5 h-3 w-3" />Analizar el vídeo
               </button>
-              <button type="button" class="btn-secondary px-3 py-1.5 text-xs" @click="emit('share', video)">
+              <button type="button" class="btn-secondary btn-sm py-1.5" @click="emit('share', video)">
                 <Icon icon="ticket" class="mr-1.5 h-3 w-3" />Generar un pase
               </button>
             </div>

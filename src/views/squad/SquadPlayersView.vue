@@ -316,7 +316,7 @@ async function reinstate(player: SquadPlayerDto) {
             El número es exacto: al convocar no se puede marcar a más y, si se envía con menos, el cuerpo técnico y el club reciben un aviso de que
             faltan jugadores hasta completarla. <template v-if="callUpMode === 'ask'">Se pregunta al empezar cada convocatoria.</template>
           </p>
-          <button type="button" class="btn-secondary mt-3 px-3 py-1 text-xs" v-busy="busy" :disabled="!!callUpBlocked" :title="callUpBlocked" @click="saveCallUpSize">Guardar</button>
+          <button type="button" class="btn-secondary btn-sm mt-3" v-busy="busy" :disabled="!!callUpBlocked" :title="callUpBlocked" @click="saveCallUpSize">Guardar</button>
         </div>
 
         <div>
@@ -324,7 +324,7 @@ async function reinstate(player: SquadPlayerDto) {
           <p class="mt-2 text-xs text-slate-500">Si la federación publica fichas nuevas (futbolasturiano.es), tráelas a la plantilla. Antes de importar te avisa: puede tardar.</p>
           <button
             type="button"
-            class="btn-secondary mt-3 px-3 py-1 text-xs"
+            class="btn-secondary btn-sm mt-3"
             v-busy="busy"
             :disabled="busy"
             :title="busy ? 'Espera a que termine lo que se está guardando' : 'Trae las fichas nuevas de la federación; antes te pide confirmación'"
@@ -375,7 +375,7 @@ async function reinstate(player: SquadPlayerDto) {
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
             <h2 class="font-semibold text-slate-900">{{ canManage || canInvitePlayers ? 'Fichas e invitaciones' : 'Fichas' }}</h2>
-            <button v-if="canManage" type="button" class="btn-primary px-3 py-1.5 text-xs" @click="addOpen = true">
+            <button v-if="canManage" type="button" class="btn-primary btn-sm py-1.5" @click="addOpen = true">
               <Icon icon="plus" class="mr-1.5 h-3 w-3" />Añadir jugador
               <Badge v-if="waitingTrials > 0" tone="amber">{{ waitingTrials }} a prueba</Badge>
             </button>
@@ -425,7 +425,7 @@ async function reinstate(player: SquadPlayerDto) {
                   </td>
                   <td v-if="canInvitePlayers" class="py-2 pr-3 text-xs text-slate-400">—</td>
                   <td v-if="canManage" class="py-2 text-right whitespace-nowrap">
-                    <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="reinstate(player)">Reincorporar</button>
+                    <button type="button" class="btn-ghost btn-sm" v-busy="busy" :disabled="busy" @click="reinstate(player)">Reincorporar</button>
                   </td>
                 </template>
                 <template v-else-if="editingId === player.id">
@@ -445,8 +445,8 @@ async function reinstate(player: SquadPlayerDto) {
                   <td class="col-md py-2 pr-3 text-xs text-slate-500">{{ player.linked ? player.linkedPlayerName : '—' }}</td>
                   <td v-if="canInvitePlayers" class="py-2 pr-3 text-xs text-slate-500">{{ player.linked ? 'Vinculado' : '—' }}</td>
                   <td class="py-2 text-right whitespace-nowrap">
-                    <button type="button" class="btn-primary px-3 py-1 text-xs" v-busy="busy" :disabled="busy || !edit.position || !edit.fullName.trim()" :title="edit.position ? undefined : 'Elige su posición'" @click="saveEdit">Guardar</button>
-                    <button type="button" class="btn-ghost ml-1 px-3 py-1 text-xs" @click="editingId = null">Cancelar</button>
+                    <button type="button" class="btn-primary btn-sm" v-busy="busy" :disabled="busy || !edit.position || !edit.fullName.trim()" :title="edit.position ? undefined : 'Elige su posición'" @click="saveEdit">Guardar</button>
+                    <button type="button" class="btn-ghost btn-sm ml-1" @click="editingId = null">Cancelar</button>
                   </td>
                 </template>
                 <template v-else>
@@ -471,15 +471,15 @@ async function reinstate(player: SquadPlayerDto) {
                     <template v-else>
                       <p v-if="player.inviteCode" class="mb-1 font-mono text-sm tracking-widest text-slate-900">{{ player.inviteCode }}</p>
                       <div class="flex flex-wrap gap-1">
-                        <button v-if="player.inviteCode" type="button" class="btn-secondary px-2 py-1 text-xs" :aria-label="`Copiar código de ${player.fullName}`" @click="copyCode(player)">{{ copied === player.id ? 'Copiado ✓' : 'Copiar' }}</button>
-                        <button v-if="player.inviteCode" type="button" class="btn-ghost px-2 py-1 text-xs" :aria-label="`Copiar enlace de alta de ${player.fullName}`" title="Enlace a la página de alta con el código ya puesto" @click="copyCode(player, true)"><Icon icon="link" class="mr-1 h-3 w-3" />{{ copied === `${player.id}:link` ? 'Copiado ✓' : 'Enlace de alta' }}</button>
-                        <button type="button" class="btn-ghost px-2 py-1 text-xs" :aria-label="`Generar código para ${player.fullName}`" v-busy="busy" :disabled="busy" @click="generateCode(player)">{{ player.inviteCode ? 'Generar otro' : 'Generar código' }}</button>
+                        <button v-if="player.inviteCode" type="button" class="btn-secondary btn-sm px-2" :aria-label="`Copiar código de ${player.fullName}`" @click="copyCode(player)">{{ copied === player.id ? 'Copiado ✓' : 'Copiar' }}</button>
+                        <button v-if="player.inviteCode" type="button" class="btn-ghost btn-sm px-2" :aria-label="`Copiar enlace de alta de ${player.fullName}`" title="Enlace a la página de alta con el código ya puesto" @click="copyCode(player, true)"><Icon icon="link" class="mr-1 h-3 w-3" />{{ copied === `${player.id}:link` ? 'Copiado ✓' : 'Enlace de alta' }}</button>
+                        <button type="button" class="btn-ghost btn-sm px-2" :aria-label="`Generar código para ${player.fullName}`" v-busy="busy" :disabled="busy" @click="generateCode(player)">{{ player.inviteCode ? 'Generar otro' : 'Generar código' }}</button>
                       </div>
                     </template>
                   </td>
                   <td v-if="canManage" class="py-2 text-right whitespace-nowrap">
-                    <button type="button" class="btn-ghost px-3 py-1 text-xs" v-busy="busy" :disabled="busy" @click="startEdit(player)">Editar</button>
-                    <button type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy" :disabled="busy" @click="remove(player)">Baja</button>
+                    <button type="button" class="btn-ghost btn-sm" v-busy="busy" :disabled="busy" @click="startEdit(player)">Editar</button>
+                    <button type="button" class="btn-ghost-danger btn-sm" v-busy="busy" :disabled="busy" @click="remove(player)">Baja</button>
                   </td>
                 </template>
               </tr>

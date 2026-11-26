@@ -151,7 +151,7 @@ const hasScore = (match: MatchDto) => match.status === 'Played' && match.homeGoa
         <button
           v-if="current !== null && selected !== current"
           type="button"
-          class="btn-secondary px-3 py-1.5 text-xs"
+          class="btn-secondary btn-sm py-1.5"
           v-busy="loading" :disabled="loading"
           @click="go(current)"
         >

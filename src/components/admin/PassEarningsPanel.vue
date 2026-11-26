@@ -56,7 +56,7 @@ defineExpose({ load });
         <h2 class="font-semibold text-slate-900">Pases vendidos</h2>
         <p class="text-xs text-slate-500">Acceso a actas internas y vídeos que venden los clubes. Cada venta guarda su reparto: lo del club y lo de la plataforma.</p>
       </div>
-      <button type="button" class="btn-ghost px-3 py-1 text-xs" :disabled="loading" @click="load"><Icon icon="rotate-right" class="mr-1.5 h-3 w-3" />Actualizar</button>
+      <button type="button" class="btn-ghost btn-sm" :disabled="loading" @click="load"><Icon icon="rotate-right" class="mr-1.5 h-3 w-3" />Actualizar</button>
     </div>
 
     <Alert v-if="error" kind="error" class="mt-3">{{ error }}</Alert>

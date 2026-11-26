@@ -224,7 +224,7 @@ watch(tab, () => { saved.value = null; void load(); }, { immediate: true });
   <div>
     <PageHeader title="Pases del club" subtitle="Quién ve el acta interna y el vídeo de vuestros partidos sin ser de la plantilla, a qué precio y lo que habéis vendido." />
     <div class="-mt-2 mb-4 flex justify-end">
-      <RouterLink :to="{ name: 'my-passes' }" class="btn-ghost px-3 py-1 text-xs"><Icon icon="ticket" class="mr-1.5 h-3 w-3" />Pases que habéis canjeado de otros clubes</RouterLink>
+      <RouterLink :to="{ name: 'my-passes' }" class="btn-ghost btn-sm"><Icon icon="ticket" class="mr-1.5 h-3 w-3" />Pases que habéis canjeado de otros clubes</RouterLink>
     </div>
 
     <Alert v-if="!auth.isClub" kind="warning">Solo las cuentas de club gestionan los pases y sus precios.</Alert>
@@ -259,8 +259,8 @@ watch(tab, () => { saved.value = null; void load(); }, { immediate: true });
                   <p v-if="r.message" class="mt-1 rounded bg-surface-2 px-2 py-1 text-xs text-slate-700">«{{ r.message }}»</p>
                 </div>
                 <div v-if="approving !== r.id" class="flex gap-2">
-                  <button type="button" class="btn-primary px-3 py-1 text-xs" @click="startApprove(r)">Aprobar…</button>
-                  <button type="button" class="btn-ghost px-3 py-1 text-xs text-red-600 hover:bg-red-50" v-busy="busy === r.id" :disabled="busy === r.id" @click="reject(r)">Rechazar</button>
+                  <button type="button" class="btn-primary btn-sm" @click="startApprove(r)">Aprobar…</button>
+                  <button type="button" class="btn-ghost-danger btn-sm" v-busy="busy === r.id" :disabled="busy === r.id" @click="reject(r)">Rechazar</button>
                 </div>
               </div>
 
@@ -363,7 +363,7 @@ watch(tab, () => { saved.value = null; void load(); }, { immediate: true });
                     <input v-model="rowDrafts[rowKey(m)].video" type="text" inputmode="decimal" class="input w-24 tabular-nums" :placeholder="centsToEuros(prices.videoPriceCents)" :disabled="!m.hasVideo" :title="m.hasVideo ? undefined : 'Sin vídeo subido'" />
                   </td>
                   <td class="py-2 pl-2 text-right whitespace-nowrap">
-                    <button v-if="rowChanged(m)" type="button" class="btn-secondary px-3 py-1 text-xs" v-busy="busy === rowKey(m)" :disabled="busy === rowKey(m) || rowInvalid(m)" @click="saveRow(m)">Guardar</button>
+                    <button v-if="rowChanged(m)" type="button" class="btn-secondary btn-sm" v-busy="busy === rowKey(m)" :disabled="busy === rowKey(m) || rowInvalid(m)" @click="saveRow(m)">Guardar</button>
                     <span v-else-if="saved === rowKey(m)" class="text-xs text-emerald-600"><Icon icon="check" class="mr-1 h-3 w-3" />Guardado</span>
                     <span v-else class="text-xs text-slate-400">{{ passPrice(m.effectiveSheetPriceCents) }} / {{ passPrice(m.effectiveVideoPriceCents) }}</span>
                   </td>

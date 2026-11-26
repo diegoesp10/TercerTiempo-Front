@@ -4,6 +4,7 @@ import { adminApi } from '@/api/admin';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import EmptyState from '@/components/ui/EmptyState.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { confirmDialog } from '@/composables/useConfirm';
@@ -521,8 +522,8 @@ defineExpose({ load });
             </p>
           </div>
           <div class="flex flex-wrap gap-2">
-            <button type="button" class="btn-ghost px-3 py-1.5 text-xs" :disabled="busy || sheetFinished === 0" @click="clearQueue(true)">Limpiar terminadas</button>
-            <button type="button" class="btn-ghost px-3 py-1.5 text-xs text-danger" :disabled="busy || sheets.pending === 0" @click="clearQueue(false)">
+            <button type="button" class="btn-ghost btn-sm py-1.5" :disabled="busy || sheetFinished === 0" @click="clearQueue(true)">Limpiar terminadas</button>
+            <button type="button" class="btn-ghost-danger btn-sm py-1.5" :disabled="busy || sheets.pending === 0" @click="clearQueue(false)">
               <Icon icon="trash" class="h-3 w-3" />Vaciar cola
             </button>
           </div>
@@ -550,10 +551,9 @@ defineExpose({ load });
           >{{ sheetLabels[status] }} · {{ count }}</button>
         </div>
 
-        <p v-if="!sheetTotal" class="mt-4 rounded-lg border border-dashed border-line px-4 py-6 text-center text-sm text-slate-500">
-          <Icon icon="download" class="mb-2 h-5 w-5 text-slate-400" /><br />
+        <EmptyState v-if="!sheetTotal" class="mt-4" icon="download" compact>
           No hay actas pedidas. Lanza los datos de las ligas con «Actas de los partidos jugados» marcado.
-        </p>
+        </EmptyState>
 
         <!-- Con más de 5 jornadas, la lista va en su propio scroll (cabecera de cada jornada fija) para no alargar la página. -->
         <div v-else class="mt-4 space-y-4" :class="groups.length > 5 ? 'max-h-[75vh] overflow-y-auto overscroll-contain pr-1' : ''">
