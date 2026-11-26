@@ -10,7 +10,28 @@
     <script src="/theme-init.js"></script>
   </head>
   <body class="min-h-screen bg-canvas text-slate-900 antialiased">
-    <div id="app"></div>
+    <div id="app">
+      <!-- Hasta que arranca la app (Vue lo sustituye al montar): la cabecera y la forma de una página, no un hueco. -->
+      <div class="flex min-h-screen flex-col" role="status" aria-label="Cargando Tercer Tiempo…" aria-busy="true">
+        <div class="border-b border-line bg-surface/95">
+          <div class="mx-auto flex h-16 w-full max-w-[1760px] items-center gap-3 px-4 sm:px-6 lg:px-10">
+            <span class="skeleton h-9 w-9 rounded-full"></span>
+            <span class="skeleton h-5 w-44"></span>
+          </div>
+        </div>
+        <div class="mx-auto w-full max-w-[1760px] flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+          <div class="space-y-4 rounded-2xl bg-canvas p-4 sm:p-6">
+            <span class="skeleton block h-8 w-72 max-w-full"></span>
+            <span class="skeleton block h-40"></span>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <span class="skeleton block h-24"></span>
+              <span class="skeleton block h-24"></span>
+              <span class="skeleton block h-24"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

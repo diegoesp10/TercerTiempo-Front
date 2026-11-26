@@ -1,10 +1,31 @@
 import { fileURLToPath, URL } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 
+// La fuente de la marca (solo la parte latina, la de casi todo el texto) se pide a la vez que el CSS, sin esperar a que
+// el CSS la nombre. Su nombre lleva la huella del build, así que se busca en lo generado.
+function preloadFont(): Plugin {
+  let base = '/';
+  return {
+    name: 'preload-archivo-latin',
+    apply: 'build',
+    configResolved(config) {
+      base = config.base;
+    },
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        const font = Object.keys(ctx.bundle ?? {}).find((name) => /archivo-latin-wdth-normal-[\w-]+\.woff2$/.test(name));
+        if (!font) return [];
+        return [{ tag: 'link', attrs: { rel: 'preload', href: `${base}${font}`, as: 'font', type: 'font/woff2', crossorigin: true }, injectTo: 'head' }];
+      },
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
+  plugins: [vue(), tailwindcss(), preloadFont()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

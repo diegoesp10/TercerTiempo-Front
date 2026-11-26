@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue';
+import { defineAsyncComponent, h, type AsyncComponentLoader } from 'vue';
+import Skeleton from '@/components/ui/Skeleton.vue';
 import HomePredictorShowcase from '@/components/home/HomePredictorShowcase.vue';
 import HomeRefereesShowcase from '@/components/home/HomeRefereesShowcase.vue';
 import HeroMatchday from '@/components/matches/HeroMatchday.vue';
 import { useAuthStore } from '@/stores/auth';
 
-// Cada cuenta solo descarga su panel: el del jugador trae ECharts y la portada sin sesión no lo necesita.
-const ClubHomeView = defineAsyncComponent(() => import('@/views/club/ClubHomeView.vue'));
-const CoachHomeView = defineAsyncComponent(() => import('@/views/coach/CoachHomeView.vue'));
-const PlayerDashboardView = defineAsyncComponent(() => import('@/views/player/PlayerDashboardView.vue'));
+// Cada cuenta solo descarga su panel: el del jugador trae ECharts y la portada sin sesión no lo necesita. Mientras baja
+// se ve su forma, no la página en blanco (si llega enseguida, ni eso).
+const PanelLoading = () => h(Skeleton, { variant: 'cards', count: 3, label: 'Cargando tu panel…' });
+const panel = (loader: AsyncComponentLoader) => defineAsyncComponent({ loader, loadingComponent: PanelLoading, delay: 100 });
+const ClubHomeView = panel(() => import('@/views/club/ClubHomeView.vue'));
+const CoachHomeView = panel(() => import('@/views/coach/CoachHomeView.vue'));
+const PlayerDashboardView = panel(() => import('@/views/player/PlayerDashboardView.vue'));
 
 const auth = useAuthStore();
 

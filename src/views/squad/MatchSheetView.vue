@@ -68,6 +68,14 @@ const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, 
 const initialTab = route.query.tab;
 if (typeof initialTab !== 'string') void panelLoaders.partido();
 else if (initialTab in panelLoaders) void panelLoaders[initialTab as keyof typeof panelLoaders]();
+// Lo que pide la pestaña abierta solo depende de la URL: sale ya, a la vez que el acta, y no cuando esta llega. Los campos
+// de la liga solo los usa quien prepara la convocatoria (el club y su cuerpo técnico).
+if (typeof initialTab !== 'string' || initialTab === 'partido') api.prefetch.officialSheet(props.matchId);
+else if (initialTab === 'convocatoria') {
+  api.prefetch.squad(props.squadId);
+  api.prefetch.callUp(props.squadId, props.matchId);
+  if (auth.isClub || auth.isCoach) api.prefetch.grounds(props.squadId);
+}
 
 /** «partido» es el acta pública (federación); «interna», la que rellena el cuerpo técnico. */
 type Tab = 'partido' | 'convocatoria' | 'interna' | 'comparador' | 'video' | 'pases' | 'arbitros' | 'previa';

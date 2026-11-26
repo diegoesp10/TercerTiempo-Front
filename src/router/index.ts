@@ -16,8 +16,8 @@ declare module 'vue-router' {
   }
 }
 
-// Lo que dura la salida de la página anterior (.page-leave-active en style.css): el scroll se mueve cuando ya no se ve.
-const PAGE_LEAVE_MS = 150;
+// La página anterior sale sin animación, en un fotograma (style.css): el scroll se mueve cuando ya no se ve.
+const PAGE_LEAVE_MS = 32;
 // «Volver»: lo más que se espera a que la página sea tan alta como para llegar a donde estaba (los datos, las imágenes).
 const SCROLL_WAIT_MS = 2_000;
 

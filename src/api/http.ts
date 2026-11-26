@@ -81,6 +81,7 @@ export function clearHttpCache() {
   cache.clear();
   inFlight.clear();
   revalidating.clear();
+  prefetched.clear();
   generation++;
 }
 
@@ -90,6 +91,7 @@ function forgetAfterWrite(options: RequestOptions) {
   for (const [key, entry] of cache) if (!entry.reference) cache.delete(key);
   inFlight.clear();
   revalidating.clear();
+  prefetched.clear();
   generation++;
 }
 
@@ -105,11 +107,30 @@ function adminViewerToken(): string | null {
   return useAuthStore().token ? null : useAdminSessionStore().session?.token ?? null;
 }
 
+const keyOf = (path: string, options: RequestOptions) =>
+  `${options.anonymous ? '' : options.token ?? useAuthStore().token ?? adminViewerToken() ?? ''}|${useSeasonStore().selectedId ?? ''}|${path}`;
+
+// Lecturas que una página sabe que va a hacer en cuanto llegue su primera respuesta (lo de la pestaña abierta): salen
+// ya, a la vez que esa, y la primera lectura igual de los próximos segundos se queda con su respuesta (o la espera). Solo
+// la primera: los sondeos de después piden lo suyo.
+const PREFETCH_MS = 4_000;
+const prefetched = new Map<string, { generation: number; until: number; promise: Promise<unknown> }>();
+
+/** Pide ya una lectura (GET con la sesión) que la página va a hacer enseguida; si falla, ya lo dirá esa lectura. */
+export function prefetch(path: string) {
+  const key = keyOf(path, {});
+  if (prefetched.has(key) || (cache.get(key)?.keep ?? 0) > Date.now() || inFlight.get(key)?.generation === generation) return;
+  const promise = request(path, { silent: true });
+  promise.catch(() => undefined);
+  prefetched.set(key, { generation, until: Date.now() + PREFETCH_MS, promise });
+  setTimeout(() => { if (prefetched.get(key)?.promise === promise) prefetched.delete(key); }, PREFETCH_MS);
+}
+
 export function http<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const method = options.method ?? 'GET';
   if (method !== 'GET') return request<T>(path, options).finally(() => { if (!options.keepCache) forgetAfterWrite(options); });
 
-  const key = `${options.anonymous ? '' : options.token ?? useAuthStore().token ?? adminViewerToken() ?? ''}|${useSeasonStore().selectedId ?? ''}|${path}`;
+  const key = keyOf(path, options);
   const now = Date.now();
   const cached = cache.get(key);
   if (cached && cached.keep > now) {
@@ -118,6 +139,17 @@ export function http<T>(path: string, options: RequestOptions = {}): Promise<T> 
       revalidate(key, path, options);
     }
     return Promise.resolve(cached.data as T);
+  }
+
+  const early = prefetched.get(key);
+  if (early) {
+    prefetched.delete(key);
+    if (early.generation === generation && early.until > now) {
+      return early.promise.then((data) => {
+        if (early.generation === generation) remember(key, data, options);
+        return data as T;
+      });
+    }
   }
 
   const pending = inFlight.get(key);

@@ -425,19 +425,14 @@
   }
 
   /* Transición entre páginas: con keyframes (y sin estado *-from) la página nunca se queda invisible aunque el
-     navegador no llegue a pintar el fotograma intermedio. */
+     navegador no llegue a pintar el fotograma intermedio. Solo la entrada: la salida retrasaría la página nueva (y sus
+     peticiones), que con out-in no se monta hasta que la anterior ha salido. */
   .page-enter-active {
     animation: page-in 0.2s ease-out;
   }
-  .page-leave-active {
-    animation: page-out 0.14s ease-in;
-  }
-  /* Pestañas de la plantilla: solo un fundido, la cabecera no se mueve. */
+  /* Pestañas de la plantilla: solo un fundido de entrada, la cabecera no se mueve. */
   .tab-enter-active {
     animation: tab-in 0.16s ease-out;
-  }
-  .tab-leave-active {
-    animation: tab-out 0.1s ease-in;
   }
 
   /* Contenido que se está recargando con datos anteriores a la vista: se atenúa en lugar de desaparecer. */
@@ -465,11 +460,6 @@
   to { opacity: 1; }
 }
 
-@keyframes tab-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
 /* Foco visible con teclado en enlaces y controles que no son botones de la casa. */
 :where(a, summary, [role="radio"], [role="tab"]):focus-visible {
   outline: 2px solid var(--t-brand-400);
@@ -494,11 +484,6 @@
 @keyframes page-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes page-out {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-4px); }
 }
 
 @utility shadow-glow {

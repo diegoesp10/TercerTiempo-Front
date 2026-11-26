@@ -1,4 +1,4 @@
-import { http, httpBlob, mediaBaseUrl } from './http';
+import { http, httpBlob, mediaBaseUrl, prefetch } from './http';
 import type {
   ApprovePassRequest,
   ClubPassPricesDto,
@@ -155,6 +155,13 @@ const SQUAD_READ_CACHE_MS = 30_000;
 const PAGE_STALE_MS = 5 * 60_000;
 
 export const api = {
+  /** Lo que una página va a pedir en cuanto llegue su primera respuesta: sale ya, a la vez (prefetch en http.ts). */
+  prefetch: {
+    officialSheet: (matchId: string) => prefetch(`/api/matches/${matchId}/official-sheet`),
+    squad: (squadId: string) => prefetch(`/api/squads/${squadId}`),
+    callUp: (squadId: string, matchId: string) => prefetch(`/api/squads/${squadId}/matches/${matchId}/callup`),
+    grounds: (squadId: string) => prefetch(`/api/squads/${squadId}/grounds`),
+  },
   privacy: {
     /** Política de cookies vigente con su catálogo. */
     cookies: () => http<CookiePolicyDto>('/api/cookies', { silent: true }),

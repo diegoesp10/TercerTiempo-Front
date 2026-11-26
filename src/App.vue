@@ -1,26 +1,15 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
 import type { RouteLocationNormalizedLoaded } from 'vue-router';
 import GrassField from '@/components/backgrounds/GrassField.vue';
 import AppShell from '@/components/layout/AppShell.vue';
-import { useAuthStore } from '@/stores/auth';
 import { useSeasonStore } from '@/stores/season';
-import { useConsentStore } from '@/stores/consent';
 import CookieBanner from '@/components/privacy/CookieBanner.vue';
 import { usePresenceHeartbeat } from '@/composables/usePresenceHeartbeat';
 
-const auth = useAuthStore();
+// Las temporadas, las cookies y la cuenta se piden en main.ts, antes de montar. Las actualizaciones de datos de la API no
+// se anuncian aquí: se siguen en la página oculta /jobs.
 const season = useSeasonStore();
-const consent = useConsentStore();
 usePresenceHeartbeat();
-
-// Al arrancar con sesión guardada, refrescamos la cuenta (plantillas, vínculos, visibilidad) sin bloquear la UI.
-// Las actualizaciones de datos de la API no se anuncian aquí: se siguen en la página oculta /jobs.
-onMounted(() => {
-  void season.load();
-  void consent.load();
-  if (auth.isAuthenticated) void auth.refreshAccount().catch(() => undefined);
-});
 
 /**
  * Clave de la página: las rutas con pestañas (la plantilla) se identifican por su layout, así cambiar de pestaña no
@@ -37,7 +26,9 @@ function pageKey(route: RouteLocationNormalizedLoaded) {
   <GrassField />
   <AppShell>
     <RouterView v-slot="{ Component, route }">
-      <!-- Un único nodo raíz por página para que la transición pueda animarlo (las vistas tienen varias raíces). -->
+      <!-- Un único nodo raíz por página para que la transición pueda animarlo (las vistas tienen varias raíces). Solo se
+           anima la entrada: con out-in la página nueva no se monta (ni pide sus datos) hasta que sale la anterior, y
+           sin animación de salida eso es un fotograma. -->
       <Transition name="page" mode="out-in">
         <!-- Cambiar de temporada vuelve a montar la página: todo se carga de nuevo con los datos de esa temporada. -->
         <div :key="`${season.selectedId ?? 'actual'}|${pageKey(route)}`" class="page-root">
