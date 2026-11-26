@@ -47,8 +47,8 @@ watch([category, duty], async ([current, wanted]) => {
   if (!current) return;
   loading.value = true;
   try {
-    const list = await api.referees.category(current.key, { duty: wanted, sort: rated.value ? 'Average' : 'Matches' });
-    if (category.value?.key === current.key && duty.value === wanted) referees.value = list.referees.slice(0, 5);
+    const list = await api.referees.category(current.key, { duty: wanted, sort: rated.value ? 'Average' : 'Matches', take: 5 });
+    if (category.value?.key === current.key && duty.value === wanted) referees.value = list.referees;
   } catch {
     referees.value = [];
   } finally {

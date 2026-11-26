@@ -4,21 +4,15 @@ import { api } from '@/api';
 import type { ClubAlertsDto } from '@/types/api';
 import { useAuthStore } from './auth';
 
-const REFRESH_MS = 5 * 60_000;
-// Al volver a la pestaña solo se pregunta si la última respuesta tiene más de esto.
-const STALE_ON_RETURN_MS = 30_000;
-
 /**
- * Avisos de la campanita de cualquier cuenta (club, cuerpo técnico o jugador). Se cargan al entrar, cada cinco minutos
- * y al volver a la pestaña; las acciones que los crean o resuelven (licencia, convocatorias de partido, ausencias a
- * entrenamientos) llaman a load().
+ * Avisos de la campanita de cualquier cuenta (club, cuerpo técnico o jugador). Se cargan al entrar y cuando el latido de
+ * la sesión (cada minuto, al cambiar de página y al volver a la pestaña) trae otra huella (checkStamp); las acciones que
+ * los crean o resuelven (licencia, convocatorias de partido, ausencias a entrenamientos) llaman a load().
  */
 export const useAlertsStore = defineStore('alerts', () => {
   const auth = useAuthStore();
   const data = shallowRef<ClubAlertsDto | null>(null);
   const loading = ref(false);
-  let timer: ReturnType<typeof setInterval> | null = null;
-  let loadedAt = 0;
 
   const alerts = computed(() => data.value?.alerts ?? []);
   const unread = computed(() => data.value?.unread ?? 0);
@@ -31,7 +25,6 @@ export const useAlertsStore = defineStore('alerts', () => {
     loading.value = true;
     try {
       data.value = await api.alerts.mine();
-      loadedAt = Date.now();
     } catch { /* sin avisos no se enseña nada: la campanita se queda como estaba */ }
     finally {
       loading.value = false;
@@ -51,6 +44,7 @@ export const useAlertsStore = defineStore('alerts', () => {
     if (alertIds.length === 0 || !data.value) return;
     const ids = new Set(alertIds);
     data.value = {
+      ...data.value,
       unread: Math.max(0, data.value.unread - alertIds.length),
       alerts: data.value.alerts.map((a) => (ids.has(a.id) ? { ...a, seen: true } : a)),
     };
@@ -61,20 +55,19 @@ export const useAlertsStore = defineStore('alerts', () => {
     }
   }
 
-  const onVisible = () => { if (document.visibilityState === 'visible' && Date.now() - loadedAt > STALE_ON_RETURN_MS) void load(); };
+  /** La huella que trae el latido de la sesión: si no es la de los avisos que se tienen, se vuelven a pedir. */
+  function checkStamp(stamp: string | undefined) {
+    if (!stamp || !auth.isAuthenticated || loading.value || data.value?.stamp === stamp) return;
+    void load();
+  }
 
   watch(() => auth.isAuthenticated, (signedIn) => {
-    if (timer) clearInterval(timer);
-    timer = null;
-    document.removeEventListener('visibilitychange', onVisible);
     if (!signedIn) {
       data.value = null;
       return;
     }
     void load();
-    timer = setInterval(() => { if (document.visibilityState === 'visible') void load(); }, REFRESH_MS);
-    document.addEventListener('visibilitychange', onVisible);
   }, { immediate: true });
 
-  return { alerts, fresh, earlier, unread, loading, load, markRead, markAllRead, markSeen };
+  return { alerts, fresh, earlier, unread, loading, load, markRead, markAllRead, markSeen, checkStamp };
 });

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import VideoUploader from '@/components/videos/VideoUploader.vue';
@@ -11,6 +11,7 @@ import { formatBytes, formatKickoff, formatMinutes, videoAccessLabels, videoPart
 import { confirmDialog } from '@/composables/useConfirm';
 import TeamName from '@/components/teams/TeamName.vue';
 import { useViewer } from '@/composables/useViewer';
+import { useLivePoll } from '@/composables/useLivePoll';
 
 // El reproductor (Plyr y su CSS) solo se descarga cuando hay un vídeo que ver, no con cada partido.
 const VideoPlayer = defineAsyncComponent(() => import('@/components/videos/VideoPlayer.vue'));
@@ -60,27 +61,33 @@ async function load(silent = false) {
 watch(() => props.matchId, () => void load(), { immediate: true });
 defineExpose({ load });
 
-// Mientras algún vídeo esté en cola o comprimiéndose se vuelve a preguntar cada pocos segundos: el avance y el
-// tamaño final aparecen sin recargar la página.
+// Mientras algún vídeo esté en cola o comprimiéndose se pregunta cada pocos segundos solo por su estado y su avance (una
+// consulta en vez de la lista con sus permisos y nombres): el avance se pinta en el momento y la lista entera solo se vuelve
+// a pedir cuando alguno cambia de estado (acaba, falla o se borra), que es cuando cambian su tamaño, su duración o lo que
+// se puede hacer con él. Con la pestaña oculta no se pregunta; al volver, una vez enseguida.
 const POLL_MS = 10_000;
-const compressing = computed(() => videos.value.some((v) => v.status === 'Uploaded' || v.status === 'Processing'));
-let poll: ReturnType<typeof setInterval> | null = null;
-// Con la pestaña oculta no se pregunta; al volver, una vez enseguida.
-watch(compressing, (active) => {
-  if (active && !poll) poll = setInterval(() => { if (!document.hidden) void load(true); }, POLL_MS);
-  else if (!active && poll) {
-    clearInterval(poll);
-    poll = null;
+const pending = (v: MatchVideoDto) => v.status === 'Uploaded' || v.status === 'Processing';
+const compressing = computed(() => videos.value.some(pending));
+
+async function checkProgress() {
+  const current = videos.value;
+  const watched = current.filter(pending);
+  if (!watched.length) return;
+  const rows = new Map((await api.matches.videosProgress(props.matchId, watched.map((v) => v.id))).map((r) => [r.id, r]));
+  // Si mientras tanto se ha recargado la lista (al subir o borrar), esta respuesta ya no vale.
+  if (current !== videos.value) return;
+  if (watched.some((v) => rows.get(v.id)?.status !== v.status)) {
+    await load(true);
+    return;
   }
-}, { immediate: true });
-function onVisibility() {
-  if (!document.hidden && poll) void load(true);
+  if (watched.some((v) => rows.get(v.id)?.progress !== v.progress)) {
+    videos.value = current.map((v) => {
+      const row = rows.get(v.id);
+      return row && row.progress !== v.progress ? { ...v, progress: row.progress } : v;
+    });
+  }
 }
-document.addEventListener('visibilitychange', onVisibility);
-onBeforeUnmount(() => {
-  if (poll) clearInterval(poll);
-  document.removeEventListener('visibilitychange', onVisibility);
-});
+useLivePoll(checkProgress, POLL_MS, compressing);
 
 // --- Subida (por trozos, en VideoUploader) ---
 const canUploadHere = computed(() => props.canUpload && !!props.uploadSquadId);

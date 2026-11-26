@@ -36,7 +36,8 @@ onMounted(async () => {
     category.value = mine.find((item) => item.ratings > 0) ?? mine[0] ?? c.value[0] ?? null;
     if (category.value) {
       try {
-        best.value = (await api.referees.category(category.value.key, { duty: 'Main', sort: 'Average' })).referees.filter((r) => r.ratings > 0).slice(0, 3);
+        // Por media, los que tienen nota van primero: con los 3 primeros basta.
+        best.value = (await api.referees.category(category.value.key, { duty: 'Main', sort: 'Average', take: 3 })).referees.filter((r) => r.ratings > 0);
       } catch {
         best.value = [];
       }

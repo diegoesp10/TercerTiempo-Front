@@ -68,6 +68,8 @@ import type {
   VideoAnalysisStampDto,
   TeamProfileDto,
   MatchVideoDto,
+  MatchVideoProgressDto,
+  PresencePulseDto,
   OfficialSheetDto,
   PerformanceWithMatchDto,
   PlayerDashboardDto,
@@ -176,7 +178,8 @@ export const api = {
     register: (body: RegisterRequest) => http<AuthResponse>('/api/auth/register', { method: 'POST', body }),
     invite: (inviteCode: string) => http<SquadInviteDto>(`/api/auth/invite/${encodeURIComponent(inviteCode.trim())}`),
     login: (body: LoginRequest) => http<AuthResponse>('/api/auth/login', { method: 'POST', body }),
-    me: () => http<AccountDto>('/api/auth/me'),
+    // Al arrancar y al entrar en algunos paneles: dentro de unos segundos vale la misma (tras guardar algo se vuelve a pedir).
+    me: () => http<AccountDto>('/api/auth/me', { cacheMs: 10_000 }),
     /** Último cambio de contraseña y si ya se puede volver a cambiar (uno cada 24 h). */
     passwordStatus: () => http<PasswordStatusDto>('/api/auth/password', { silent: true }),
     changePassword: (body: ChangePasswordRequest) => http<AuthResponse>('/api/auth/password', { method: 'PUT', body }),
@@ -349,7 +352,7 @@ export const api = {
    * `end` y el token de la sesión que se cierra, desaparece de la lista al momento.
    */
   presence: {
-    ping: (path: string) => http<void>('/api/presence', { method: 'POST', body: { path }, silent: true, keepCache: true }),
+    ping: (path: string) => http<PresencePulseDto>('/api/presence', { method: 'POST', body: { path }, silent: true, keepCache: true }),
     end: (token: string) => http<void>('/api/presence', { method: 'DELETE', token, silent: true, keepCache: true }),
   },
 
@@ -363,8 +366,11 @@ export const api = {
   referees: {
     // Públicas: van sin token. Los árbitros se buscan siempre dentro de una categoría.
     categories: () => http<RefereeCategoryDto[]>('/api/referees/categories', { anonymous: true, cacheMs: REFERENCE_CACHE_MS, reference: true }),
-    category: (category: string, filter: { duty?: OfficialDuty; search?: string; sort?: RefereeSort; order?: SortOrder } = {}) => {
-      const query = new URLSearchParams(Object.entries(filter).filter((entry): entry is [string, string] => !!entry[1])).toString();
+    /** take: solo los primeros en ese orden (la portada enseña 5 de una categoría que puede tener 150). */
+    category: (category: string, filter: { duty?: OfficialDuty; search?: string; sort?: RefereeSort; order?: SortOrder; take?: number } = {}) => {
+      const query = new URLSearchParams(
+        Object.entries(filter).filter((entry): entry is [string, string | number] => !!entry[1]).map(([key, value]) => [key, String(value)]),
+      ).toString();
       return http<RefereeCategoryListDto>(`/api/referees/categories/${encodeURIComponent(category)}${query ? `?${query}` : ''}`, { anonymous: true });
     },
     get: (refereeId: string) => http<RefereeDetailDto>(`/api/referees/${refereeId}`, { anonymous: true }),
@@ -452,7 +458,9 @@ export const api = {
 
   /** Licencia del club (primer equipo y filiales): estado de la cuenta, la licencia del club y pago (simulado de momento). */
   licensing: {
-    status: () => http<LicensingStatusDto>('/api/licensing/status', { silent: true }),
+    // La banda de la cabecera, el panel del club y la página de planes la piden a la vez: una sola petición cada medio minuto
+    // (cualquier cambio de la licencia, como cualquier escritura, la vuelve a pedir).
+    status: () => http<LicensingStatusDto>('/api/licensing/status', { silent: true, cacheMs: 30_000 }),
     club: () => http<ClubLicenseDto>('/api/licensing/club'),
     /** Precios de la licencia de club y de cada técnico (público). */
     plans: () => http<LicensingCatalogDto>('/api/licensing/plans', { silent: true }),
@@ -494,6 +502,9 @@ export const api = {
       http<OfficialSheetDto>(`/api/matches/${matchId}/official-sheet`),
     /** silent: sondeo mientras un vídeo se comprime, sin encender la barra de carga. */
     videos: (matchId: string, silent = false) => http<MatchVideoDto[]>(`/api/matches/${matchId}/videos`, { silent }),
+    /** Solo el estado y el avance de los vídeos que se están comprimiendo (una consulta), para seguirlos sin pedir la lista. */
+    videosProgress: (matchId: string, ids: string[]) =>
+      http<MatchVideoProgressDto[]>(`/api/matches/${matchId}/videos/progress?${ids.map((id) => `id=${encodeURIComponent(id)}`).join('&')}`, { silent: true }),
     /** Previa con probabilidades y análisis del rival (solo cuerpo técnico). */
     preview: (matchId: string) => http<MatchPreviewDto>(`/api/matches/${matchId}/preview`, { cacheMs: TAB_CACHE_MS }),
   },

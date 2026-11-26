@@ -522,6 +522,13 @@ export interface ClubAlertsDto {
   /** Avisos nuevos (sin ver y vigentes): el número de la campanita. */
   unread: number;
   alerts: AlertDto[];
+  /** Huella de la campanita: mientras el latido de la sesión traiga la misma, no hace falta volver a pedirlos. */
+  stamp: string;
+}
+
+/** Respuesta del latido de la sesión (POST /api/presence). */
+export interface PresencePulseDto {
+  alertsStamp: string;
 }
 
 // --- Licencia del club (primer equipo y filiales) ---
@@ -2092,6 +2099,13 @@ export interface SheetComparisonDto {
 
 /** Uploaded (en cola para comprimir), Processing, Ready o Failed. Se ve y se descarga en todos: hasta Ready se sirve el original. */
 export type VideoStatus = 'Uploaded' | 'Processing' | 'Ready' | 'Failed';
+
+/** Estado y avance de un vídeo que se está comprimiendo (GET /api/matches/{id}/videos/progress). */
+export interface MatchVideoProgressDto {
+  id: string;
+  status: VideoStatus;
+  progress: number;
+}
 
 export interface MatchVideoDto {
   id: string;

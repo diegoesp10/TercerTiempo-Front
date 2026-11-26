@@ -12,8 +12,9 @@ import { formatDate } from '@/utils/format';
 const auth = useAuthStore();
 const status = shallowRef<LicensingStatusDto | null>(null);
 
+// Dos valores sueltos, no un array: un array nuevo en cada lectura dispararía la petición cada vez que se refresca la cuenta.
 watch(
-  () => [auth.isAuthenticated, auth.account?.type] as const,
+  [() => auth.isAuthenticated, () => auth.account?.type],
   async ([authenticated]) => {
     status.value = null;
     if (!authenticated) return;

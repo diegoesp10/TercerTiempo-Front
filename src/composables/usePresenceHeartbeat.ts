@@ -1,6 +1,7 @@
 import { onBeforeUnmount, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '@/api';
+import { useAlertsStore } from '@/stores/alerts';
 import { useAuthStore } from '@/stores/auth';
 import { safePath } from '@/utils/safePath';
 
@@ -11,17 +12,19 @@ const AFTER_NAVIGATION_MS = 1_500;
  * Latido de la sesión para la lista «Gente en sesión» de la administración: con una cuenta abierta y la pestaña a la
  * vista, cada minuto y al cambiar de página se avisa a la API de en qué página está. Con la pestaña oculta no se manda
  * nada (pasa a inactivo); al salir de la cuenta, la sesión se quita de la lista al momento. El administrador no lo
- * manda: no cuenta como gente en sesión.
+ * manda: no cuenta como gente en sesión. La respuesta trae la huella de los avisos: la campanita solo los vuelve a pedir
+ * cuando cambia, sin un sondeo propio.
  */
 export function usePresenceHeartbeat() {
   const auth = useAuthStore();
+  const alerts = useAlertsStore();
   const route = useRoute();
   let timer: ReturnType<typeof setInterval> | null = null;
   let pending: ReturnType<typeof setTimeout> | null = null;
 
   function ping() {
     if (!auth.token || document.hidden) return;
-    void api.presence.ping(safePath(route)).catch(() => undefined);
+    void api.presence.ping(safePath(route)).then((pulse) => alerts.checkStamp(pulse?.alertsStamp)).catch(() => undefined);
   }
 
   function stop() {

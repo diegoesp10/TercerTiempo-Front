@@ -12,7 +12,8 @@ const props = withDefaults(
 const failed = ref(false);
 watch(() => props.src, () => { failed.value = false; });
 
-const loaded = useAuthImage(toRef(props, 'src'));
+const box = ref<HTMLElement | null>(null);
+const loaded = useAuthImage(toRef(props, 'src'), box);
 const url = computed(() => (failed.value ? null : loaded.value));
 
 const initials = computed(() => {
@@ -30,7 +31,7 @@ const sizeClasses: Record<NonNullable<typeof props.size>, string> = {
 </script>
 
 <template>
-  <span class="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-2 ring-1 ring-line" :class="sizeClasses[size]" :title="decorative ? undefined : name">
+  <span ref="box" class="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-2 ring-1 ring-line" :class="sizeClasses[size]" :title="decorative ? undefined : name">
     <img v-if="url" :src="url" :alt="decorative ? '' : name" class="h-full w-full object-cover" loading="lazy" @error="failed = true" />
     <span v-else class="font-display font-bold tracking-wide text-slate-500" aria-hidden="true">{{ initials }}</span>
   </span>
