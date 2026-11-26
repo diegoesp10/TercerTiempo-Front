@@ -159,16 +159,16 @@ watch(selectedId, (id) => {
         <table class="min-w-full text-sm">
           <thead class="bg-slate-50 text-xs text-slate-500">
             <tr>
-              <SortHeader class="px-2 py-2 text-left max-[360px]:px-1 sm:px-3" label="#" title="Posición" v-bind="state('position')" @sort="sortBy('position')" />
-              <SortHeader class="px-2 py-2 text-left max-[360px]:px-1 sm:px-3" label="Equipo" v-bind="state('team')" @sort="sortBy('team')" />
-              <SortHeader class="px-2 py-2 text-center max-[360px]:px-1 sm:px-3" label="PJ" title="Partidos jugados" v-bind="state('played')" @sort="sortBy('played')" />
+              <SortHeader class="px-2 py-2 text-left max-[400px]:px-1 sm:px-3" label="#" title="Posición" v-bind="state('position')" @sort="sortBy('position')" />
+              <SortHeader class="px-2 py-2 text-left max-[400px]:px-1 sm:px-3" label="Equipo" v-bind="state('team')" @sort="sortBy('team')" />
+              <SortHeader class="px-2 py-2 text-center max-[400px]:px-1 sm:px-3" label="PJ" title="Partidos jugados" v-bind="state('played')" @sort="sortBy('played')" />
               <SortHeader class="col-sm px-3 py-2 text-center" label="G" title="Ganados" v-bind="state('won')" @sort="sortBy('won')" />
               <SortHeader class="col-sm px-3 py-2 text-center" label="E" title="Empatados" v-bind="state('drawn')" @sort="sortBy('drawn')" />
               <SortHeader class="col-sm px-3 py-2 text-center" label="P" title="Perdidos" v-bind="state('lost')" @sort="sortBy('lost')" />
               <SortHeader class="col-md px-3 py-2 text-center" label="GF" title="Goles a favor" v-bind="state('goalsFor')" @sort="sortBy('goalsFor')" />
               <SortHeader class="col-md px-3 py-2 text-center" label="GC" title="Goles en contra" v-bind="state('goalsAgainst')" @sort="sortBy('goalsAgainst')" />
               <SortHeader class="col-xs px-2 py-2 text-center sm:px-3" label="DG" title="Diferencia de goles" v-bind="state('goalDifference')" @sort="sortBy('goalDifference')" />
-              <SortHeader class="px-2 py-2 text-center font-semibold max-[360px]:px-1 sm:px-3" label="Pts" title="Puntos" v-bind="state('points')" @sort="sortBy('points')" />
+              <SortHeader class="px-2 py-2 text-center font-semibold max-[400px]:px-1 sm:px-3" label="Pts" title="Puntos" v-bind="state('points')" @sort="sortBy('points')" />
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
@@ -177,7 +177,7 @@ watch(selectedId, (id) => {
               :key="row.teamId"
               :class="isMine(row.teamId) ? 'my-club-row font-semibold' : 'hover:bg-slate-50'"
             >
-              <td class="px-2 py-1.5 max-[360px]:px-1 sm:px-3">
+              <td class="px-2 py-1.5 max-[400px]:px-1 sm:px-3">
                 <span
                   class="inline-flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold tabular-nums"
                   :class="zoneStyle(zones, row.position) ? '' : 'text-slate-500'"
@@ -185,21 +185,22 @@ watch(selectedId, (id) => {
                   :title="zones.find((z) => z.position === row.position)?.label"
                 >{{ row.position }}</span>
               </td>
-              <td class="px-2 py-2 max-[360px]:px-1 sm:px-3">
-                <RouterLink :to="{ name: 'team', params: { teamId: row.teamId } }" class="flex items-center gap-2 wrap-anywhere hover:text-accent-400 hover:underline">
+              <td class="px-2 py-2 max-[400px]:px-1 sm:px-3">
+                <RouterLink :to="{ name: 'team', params: { teamId: row.teamId } }" class="flex items-center gap-2 hover:text-accent-400 hover:underline">
                   <TeamCrest :src="row.crestUrl" :name="row.teamName" size="xs" />
-                  {{ row.teamName }}
-                  <MyClubBadge v-if="isMine(row.teamId)" />
+                  <!-- Nombre y marca de tu club en línea (en el móvil, solo la estrella): la marca baja de línea si no cabe y una
+                       palabra que no cabe se parte, antes que ensanchar la tabla en el móvil más estrecho. -->
+                  <span class="min-w-0 wrap-anywhere">{{ row.teamName }}<MyClubBadge v-if="isMine(row.teamId)" compact class="ml-1.5 align-middle wrap-normal" /></span>
                 </RouterLink>
               </td>
-              <td class="px-2 py-2 text-center tabular-nums max-[360px]:px-1 sm:px-3">{{ row.played }}</td>
+              <td class="px-2 py-2 text-center tabular-nums max-[400px]:px-1 sm:px-3">{{ row.played }}</td>
               <td class="col-sm px-3 py-2 text-center tabular-nums">{{ row.won }}</td>
               <td class="col-sm px-3 py-2 text-center tabular-nums">{{ row.drawn }}</td>
               <td class="col-sm px-3 py-2 text-center tabular-nums">{{ row.lost }}</td>
               <td class="col-md px-3 py-2 text-center tabular-nums">{{ row.goalsFor }}</td>
               <td class="col-md px-3 py-2 text-center tabular-nums">{{ row.goalsAgainst }}</td>
               <td class="col-xs px-2 py-2 text-center tabular-nums sm:px-3">{{ row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference }}</td>
-              <td class="px-2 py-2 text-center font-semibold tabular-nums max-[360px]:px-1 sm:px-3">{{ row.points }}</td>
+              <td class="px-2 py-2 text-center font-semibold tabular-nums max-[400px]:px-1 sm:px-3">{{ row.points }}</td>
             </tr>
           </tbody>
         </table>
