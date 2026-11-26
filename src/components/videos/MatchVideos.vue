@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
-import VideoPlayer from '@/components/videos/VideoPlayer.vue';
 import VideoUploader from '@/components/videos/VideoUploader.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -12,6 +11,9 @@ import { formatBytes, formatKickoff, formatMinutes, videoAccessLabels, videoPart
 import { confirmDialog } from '@/composables/useConfirm';
 import TeamName from '@/components/teams/TeamName.vue';
 import { useViewer } from '@/composables/useViewer';
+
+// El reproductor (Plyr y su CSS) solo se descarga cuando hay un vídeo que ver, no con cada partido.
+const VideoPlayer = defineAsyncComponent(() => import('@/components/videos/VideoPlayer.vue'));
 
 const props = defineProps<{
   matchId: string;

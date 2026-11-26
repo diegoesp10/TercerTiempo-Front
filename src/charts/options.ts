@@ -1,6 +1,6 @@
 // Constructores de opciones de Apache ECharts: funciones puras que reciben DTOs de la API y devuelven la configuración.
-import { graphic } from 'echarts/core';
 import type { EChartsOption } from 'echarts';
+import { linearGradient } from './gradient';
 import type {
   PlayerAxesDto,
   PlayerMatchPointDto,
@@ -24,7 +24,7 @@ const dot = (color: string) =>
   `<span style="display:inline-block;width:8px;height:8px;border-radius:9999px;background:${color};margin-right:6px"></span>`;
 
 const verticalGradient = (color: string, from = 0.35, to = 0) =>
-  new graphic.LinearGradient(0, 0, 0, 1, [
+  linearGradient(0, 1, [
     { offset: 0, color: hexToRgba(color, from) },
     { offset: 1, color: hexToRgba(color, to) },
   ]);
@@ -459,7 +459,7 @@ function highlightLabel(ranked: SquadPlayerStatsDto[], highlightId: string | nul
 export function minutesBarsOption(rows: SquadPlayerStatsDto[], limit = 16, theme: ChartTheme = 'light', highlightId?: string | null): EChartsOption {
   const colors = chartPalettes[theme];
   const top = rankedWithMe(rows.filter((r) => r.stats.minutes > 0).sort((a, b) => b.stats.minutes - a.stats.minutes), limit, highlightId);
-  const bar = new graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#6ee7b7' }, { offset: 1, color: palette.emerald }]);
+  const bar = linearGradient(1, 0, [{ offset: 0, color: '#6ee7b7' }, { offset: 1, color: palette.emerald }]);
 
   return {
     grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },

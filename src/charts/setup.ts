@@ -2,10 +2,8 @@
 import { registerTheme, use } from 'echarts/core';
 import { BarChart, HeatmapChart, LineChart, PieChart, RadarChart, ScatterChart } from 'echarts/charts';
 import {
-  DataZoomComponent,
   GridComponent,
   LegendComponent,
-  MarkAreaComponent,
   MarkLineComponent,
   RadarComponent,
   TitleComponent,
@@ -29,8 +27,6 @@ export function setupCharts() {
     ScatterChart,
     HeatmapChart,
     GridComponent,
-    DataZoomComponent,
-    MarkAreaComponent,
     TooltipComponent,
     LegendComponent,
     TitleComponent,

@@ -38,3 +38,6 @@ export function layerZIndex(id: number | null): number {
 
 // Los desplegables que van a <body> (SearchSelect) tienen que quedar por encima de la capa más alta abierta.
 export const popoverZIndex = computed(() => BASE_LAYER + 5 + stack.length);
+
+// Con una capa abierta el fondo animado se para: no se ve y su desenfoque se recalcularía en cada fotograma.
+export const anyLayerOpen = computed(() => stack.length > 0);

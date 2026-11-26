@@ -1,6 +1,6 @@
 // Gráficos del previsor de resultados (Apache ECharts): funciones puras que reciben los DTOs del previsor.
-import { graphic } from 'echarts/core';
 import type { EChartsOption } from 'echarts';
+import { linearGradient } from './gradient';
 import type { LeaguePredictionEvolutionDto, LeagueZonesDto, TeamPredictionDto } from '@/types/api';
 import { chartPalettes, palette, seriesColors, type ChartTheme } from './theme';
 
@@ -25,7 +25,7 @@ const dot = (color: string) =>
   `<span style="display:inline-block;width:8px;height:8px;border-radius:9999px;background:${color};margin-right:6px"></span>`;
 
 const horizontalGradient = (color: string) =>
-  new graphic.LinearGradient(0, 0, 1, 0, [
+  linearGradient(1, 0, [
     { offset: 0, color: `${color}66` },
     { offset: 1, color },
   ]);

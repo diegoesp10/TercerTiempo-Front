@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
-import LeaguePredictor from '@/components/league/LeaguePredictor.vue';
 import MatchdayFixtures from '@/components/matches/MatchdayFixtures.vue';
 import Alert from '@/components/ui/Alert.vue';
 import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
@@ -20,6 +19,9 @@ import { groupByLevel } from '@/utils/format';
 import { competitionOptions as optionsFor } from '@/utils/territories';
 import { useSeasonStore } from '@/stores/season';
 import { rangeText, zoneRanges, zoneStyle } from '@/utils/zones';
+
+// El previsor (con sus gráficos) solo se descarga al abrir su pestaña: la clasificación no lo necesita.
+const LeaguePredictor = defineAsyncComponent(() => import('@/components/league/LeaguePredictor.vue'));
 
 const season = useSeasonStore();
 

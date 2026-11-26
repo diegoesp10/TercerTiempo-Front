@@ -1,22 +1,25 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import AgendaList from '@/components/trainings/AgendaList.vue';
-import ExerciseLibraryModal from '@/components/trainings/ExerciseLibraryModal.vue';
 import TrainingAttendancePanel from '@/components/trainings/attendance/TrainingAttendancePanel.vue';
 import TrainingCalendar from '@/components/trainings/TrainingCalendar.vue';
-import TrainingPlanModal from '@/components/trainings/TrainingPlanModal.vue';
-import TrainingSessionModal from '@/components/trainings/TrainingSessionModal.vue';
-import TrialPlayersModal from '@/components/trainings/TrialPlayersModal.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import { useAsync } from '@/composables/useAsync';
+import { useLazyMount } from '@/composables/useLazyMount';
 import { useSquad } from '@/composables/useSquad';
 import { useAuthStore } from '@/stores/auth';
 import type { ExerciseDto, MatchDto, Position, TrainingSummaryDto, TrialPlayerDto } from '@/types/api';
 import { toDateKey } from '@/utils/format';
+
+// Las ventanas se descargan la primera vez que se abren, no con la agenda.
+const ExerciseLibraryModal = defineAsyncComponent(() => import('@/components/trainings/ExerciseLibraryModal.vue'));
+const TrainingPlanModal = defineAsyncComponent(() => import('@/components/trainings/TrainingPlanModal.vue'));
+const TrainingSessionModal = defineAsyncComponent(() => import('@/components/trainings/TrainingSessionModal.vue'));
+const TrialPlayersModal = defineAsyncComponent(() => import('@/components/trainings/TrialPlayersModal.vue'));
 
 const { squadId, detail, reload } = useSquad();
 const auth = useAuthStore();
@@ -103,6 +106,11 @@ const libraryOpen = ref(false);
 
 watch(() => route.query.sesion, (id) => { if (typeof id === 'string') selectedId.value = id; });
 
+const sessionMounted = useLazyMount(() => selectedId.value !== null);
+const planMounted = useLazyMount(planOpen);
+const libraryMounted = useLazyMount(libraryOpen);
+const trialsMounted = useLazyMount(trialsOpen);
+
 function openSession(session: TrainingSummaryDto | { id: string }) {
   selectedId.value = session.id;
 }
@@ -179,6 +187,7 @@ function onCreated() {
   <TrainingAttendancePanel v-if="canManage" class="mt-6" :squad-id="squadId" :photos="photos" :positions="positions" :reload-key="attendanceKey" />
 
   <TrainingSessionModal
+    v-if="sessionMounted"
     :open="selectedId !== null"
     :squad-id="squadId"
     :session-id="selectedId"
@@ -192,7 +201,7 @@ function onCreated() {
     @trials-changed="loadTrials"
     @promoted="onPromoted"
   />
-  <TrainingPlanModal :open="planOpen" :squad-id="squadId" :date="planDate" :time="planTime" :library="library" :catalog="catalog.data.value" @close="planOpen = false" @created="onCreated" />
-  <ExerciseLibraryModal :open="libraryOpen" :squad-id="squadId" :exercises="library" :exercise-types="catalog.data.value?.exerciseTypes ?? []" :readonly="!canManage" @close="libraryOpen = false" @changed="library = $event" />
-  <TrialPlayersModal :open="trialsOpen" :squad-id="squadId" :trial-players="trials" :readonly="!canManage" @close="trialsOpen = false" @changed="loadTrials" @promoted="onPromoted" />
+  <TrainingPlanModal v-if="planMounted" :open="planOpen" :squad-id="squadId" :date="planDate" :time="planTime" :library="library" :catalog="catalog.data.value" @close="planOpen = false" @created="onCreated" />
+  <ExerciseLibraryModal v-if="libraryMounted" :open="libraryOpen" :squad-id="squadId" :exercises="library" :exercise-types="catalog.data.value?.exerciseTypes ?? []" :readonly="!canManage" @close="libraryOpen = false" @changed="library = $event" />
+  <TrialPlayersModal v-if="trialsMounted" :open="trialsOpen" :squad-id="squadId" :trial-players="trials" :readonly="!canManage" @close="trialsOpen = false" @changed="loadTrials" @promoted="onPromoted" />
 </template>

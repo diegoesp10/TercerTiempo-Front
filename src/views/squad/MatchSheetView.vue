@@ -1,25 +1,16 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
-import OfficialSheetPanel from '@/components/sheet/OfficialSheetPanel.vue';
-import SheetComparison from '@/components/sheet/SheetComparison.vue';
 import TeamMatchStatsCard from '@/components/sheet/TeamMatchStatsCard.vue';
 import VideoProposalPanel from '@/components/sheet/VideoProposalPanel.vue';
-import MatchPreview from '@/components/matches/MatchPreview.vue';
-import MatchVideos from '@/components/videos/MatchVideos.vue';
-import MatchPassesPanel from '@/components/passes/MatchPassesPanel.vue';
-import RequestAccessModal from '@/components/passes/RequestAccessModal.vue';
-import MatchOfficialsPanel from '@/components/referees/MatchOfficialsPanel.vue';
-import SuggestPerformanceModal from '@/components/suggestions/SuggestPerformanceModal.vue';
-import MatchCallUpPanel from '@/components/trainings/MatchCallUpPanel.vue';
 import { callUpClosed } from '@/components/trainings/callUpState';
+import { useLazyMount } from '@/composables/useLazyMount';
 import { ApiError, errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import CardIcon from '@/components/ui/CardIcon.vue';
 import CardMarks from '@/components/sheet/CardMarks.vue';
-import PlayerNoteModal from '@/components/sheet/PlayerNoteModal.vue';
 import RatingInfo from '@/components/sheet/RatingInfo.vue';
 import StarterMark from '@/components/sheet/StarterMark.vue';
 import RatingBadge from '@/components/ui/RatingBadge.vue';
@@ -43,6 +34,28 @@ import { opponentOf } from '@/utils/crests';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import { useViewer } from '@/composables/useViewer';
 
+// Cada pestaña y cada ventana se descarga cuando se abre; la pestaña con la que llega la página se pide ya, a la vez que
+// el acta, para no esperar a que llegue.
+const panelLoaders = {
+  partido: () => import('@/components/sheet/OfficialSheetPanel.vue'),
+  convocatoria: () => import('@/components/trainings/MatchCallUpPanel.vue'),
+  comparador: () => import('@/components/sheet/SheetComparison.vue'),
+  video: () => import('@/components/videos/MatchVideos.vue'),
+  pases: () => import('@/components/passes/MatchPassesPanel.vue'),
+  arbitros: () => import('@/components/referees/MatchOfficialsPanel.vue'),
+  previa: () => import('@/components/matches/MatchPreview.vue'),
+};
+const OfficialSheetPanel = defineAsyncComponent(panelLoaders.partido);
+const MatchCallUpPanel = defineAsyncComponent(panelLoaders.convocatoria);
+const SheetComparison = defineAsyncComponent(panelLoaders.comparador);
+const MatchVideos = defineAsyncComponent(panelLoaders.video);
+const MatchPassesPanel = defineAsyncComponent(panelLoaders.pases);
+const MatchOfficialsPanel = defineAsyncComponent(panelLoaders.arbitros);
+const MatchPreview = defineAsyncComponent(panelLoaders.previa);
+const RequestAccessModal = defineAsyncComponent(() => import('@/components/passes/RequestAccessModal.vue'));
+const PlayerNoteModal = defineAsyncComponent(() => import('@/components/sheet/PlayerNoteModal.vue'));
+const SuggestPerformanceModal = defineAsyncComponent(() => import('@/components/suggestions/SuggestPerformanceModal.vue'));
+
 const props = defineProps<{ squadId: string; matchId: string }>();
 useBackFallback(() => ({ to: { name: 'squad-matches', params: { squadId: props.squadId } }, label: 'Volver a los partidos de la plantilla' }));
 
@@ -52,6 +65,9 @@ const auth = useAuthStore();
 const { isAdmin } = useViewer();
 
 const { data, loading, error } = useAsync(() => api.squads.sheet(props.squadId, props.matchId));
+const initialTab = route.query.tab;
+if (typeof initialTab !== 'string') void panelLoaders.partido();
+else if (initialTab in panelLoaders) void panelLoaders[initialTab as keyof typeof panelLoaders]();
 
 /** «partido» es el acta pública (federación); «interna», la que rellena el cuerpo técnico. */
 type Tab = 'partido' | 'convocatoria' | 'interna' | 'comparador' | 'video' | 'pases' | 'arbitros' | 'previa';
@@ -480,6 +496,10 @@ const sortOptions = computed<SelectOption[]>(() => [
 ]);
 const sortDirection = computed(() =>
   (sortKey.value === 'player' ? (sortDesc.value ? 'De la Z a la A' : 'De la A a la Z') : sortDesc.value ? 'De mayor a menor' : 'De menor a mayor'));
+
+const requestMounted = useLazyMount(requestingRival);
+const noteMounted = useLazyMount(() => noteRow.value !== null);
+const suggestMounted = useLazyMount(suggesting);
 </script>
 
 <template>
@@ -534,7 +554,7 @@ const sortDirection = computed(() =>
     </div>
 
     <RequestAccessModal
-      v-if="rival?.access"
+      v-if="rival?.access && requestMounted"
       :open="requestingRival"
       :squad-id="rival.squadId"
       :match-id="matchId"
@@ -998,6 +1018,7 @@ const sortDirection = computed(() =>
       </p>
     </section>
     <PlayerNoteModal
+      v-if="noteMounted"
       :open="noteRow !== null"
       :player-name="noteRow?.player.fullName ?? ''"
       :photo-url="noteRow?.player.photoUrl"
@@ -1008,7 +1029,7 @@ const sortDirection = computed(() =>
       @save="applyNote"
     />
     <SuggestPerformanceModal
-      v-if="canSuggest"
+      v-if="canSuggest && suggestMounted"
       :open="suggesting"
       :match="data.match"
       :current="myPerformance"

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue';
 import { api } from '@/api';
 import { errorMessage } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import ChoiceToggle from '@/components/ui/ChoiceToggle.vue';
 import Modal from '@/components/ui/Modal.vue';
-import VideoPlayer from '@/components/videos/VideoPlayer.vue';
+import type VideoPlayerComponent from '@/components/videos/VideoPlayer.vue';
 import {
   momentKindLabels,
   momentKindOrder,
@@ -87,7 +87,9 @@ const clock = (moment: VideoMoment) =>
 
 // --- El vídeo ---
 
-const player = ref<InstanceType<typeof VideoPlayer> | null>(null);
+// El reproductor se descarga al abrir la ventana con un vídeo, no con el acta.
+const VideoPlayer = defineAsyncComponent(() => import('@/components/videos/VideoPlayer.vue'));
+const player = ref<InstanceType<typeof VideoPlayerComponent> | null>(null);
 const src = ref<string | null>(null);
 const shownVideo = ref<string | null>(null);
 const startAt = ref(0);

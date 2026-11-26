@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
+import { anyLayerOpen } from '@/composables/useModalStack';
 import { whenIdle } from '@/utils/idle';
 
 /**
  * Fondo de toda la aplicación: un campo de fútbol real visto desde la banda a ras de césped, renderizado con
- * Three.js e iluminación física sobre un juego de texturas fotográficas de hierba (color, normales, rugosidad y
- * oclusión; ambientCG Grass004, CC0, en public/textures/grass). Encima van las bandas de siega y las líneas de cal,
- * y el viento peina la hierba a rachas (ondas de brillo y un leve vaivén de las normales).
+ * Three.js e iluminación física sobre dos texturas fotográficas de hierba de 1024 px (color y normales; ambientCG
+ * Grass004, CC0, en public/textures/grass). Encima van las bandas de siega y las líneas de cal, y el viento peina la
+ * hierba a rachas (ondas de brillo y un leve vaivén de las normales).
  *
- * Tema claro = tarde de sol; tema oscuro = noche bajo los focos. 30 fps como máximo, se para con la pestaña oculta,
- * con animaciones reducidas se queda quieto y sin WebGL se ve un degradado.
+ * El contenido tapa casi todo el fondo, así que cuesta lo mínimo: 24 fps a resolución 1×, sin antialias, y se para
+ * con la pestaña oculta, con una ventana abierta o tras 20 s sin tocar nada. En el móvil, con poca memoria o con
+ * animaciones reducidas se pinta una sola vez; con ahorro de datos ni se descarga (se ve un degradado).
+ *
+ * Tema claro = tarde de sol; tema oscuro = noche bajo los focos.
  */
 const settings = useSettingsStore();
 const host = ref<HTMLDivElement | null>(null);
@@ -20,10 +24,14 @@ const ready = ref(false);
 let dispose: (() => void) | null = null;
 let unmounted = false;
 let applyTheme: ((dark: boolean) => void) | null = null;
+let wake: (() => void) | null = null;
 
 const TILE_METERS = 2.2;
 const FIELD_W = 160;
 const FIELD_D = 120;
+const FRAME_MS = 1000 / 24;
+const IDLE_MS = 20_000;
+const WAKE_EVENTS = ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll'] as const;
 
 const noiseGlsl = `
   float ttHash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
@@ -88,24 +96,31 @@ function drawOverlay(): HTMLCanvasElement {
 onMounted(async () => {
   const el = host.value;
   if (!el) return;
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const nav = navigator as { connection?: { saveData?: boolean }; deviceMemory?: number };
 
   try {
     const probe = document.createElement('canvas');
-    if (!(probe.getContext('webgl2') ?? probe.getContext('webgl'))) throw new Error('no webgl');
+    if (nav.connection?.saveData || !(probe.getContext('webgl2') ?? probe.getContext('webgl'))) throw new Error('sin fondo animado');
   } catch {
     fallback.value = true;
     return;
   }
 
-  // Three.js y las texturas (~1 MB) esperan a que la página y sus datos hayan llegado: el fondo es lo último.
+  // Una sola imagen, sin bucle: en el móvil el campo apenas asoma por los márgenes y la batería manda.
+  const still =
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+    window.matchMedia('(pointer: coarse)').matches ||
+    window.innerWidth < 768 ||
+    (nav.deviceMemory ?? 8) <= 4;
+
+  // Three.js y las texturas (~800 KB) esperan a que la página y sus datos hayan llegado: el fondo es lo último.
   await whenIdle(2500);
   if (unmounted) return;
   const THREE = await import('three');
   if (unmounted) return;
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'low-power' });
+  renderer.setPixelRatio(1);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.domElement.style.width = '100%';
@@ -118,9 +133,6 @@ onMounted(async () => {
   camera.position.set(-9, 1.35, -34);
   camera.lookAt(2, 0.4, 12);
 
-  // Texturas: 2K siempre; en pantallas grandes y densas, color y normales a 4K.
-  const big = (window.screen.width ?? 0) * window.devicePixelRatio >= 3000 && !(navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
-  const loader = new THREE.TextureLoader();
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
   const tile = (texture: InstanceType<typeof THREE.Texture>, srgb = false) => {
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -129,20 +141,34 @@ onMounted(async () => {
     if (srgb) texture.colorSpace = THREE.SRGBColorSpace;
     return texture;
   };
-  const load = (name: string, srgb = false) =>
-    new Promise<InstanceType<typeof THREE.Texture>>((resolve, reject) => loader.load(`/textures/grass/${name}.webp`, (t) => resolve(tile(t, srgb)), undefined, reject));
+  // Las imágenes se decodifican fuera del hilo principal (ImageBitmap). La hierba no tiene arriba ni abajo, así que
+  // no hace falta darles la vuelta; si el navegador no sabe, se cargan como siempre.
+  const loadClassic = (url: string) =>
+    new Promise<InstanceType<typeof THREE.Texture>>((resolve, reject) => new THREE.TextureLoader().load(url, resolve, undefined, reject));
+  const loadBitmap = (url: string) =>
+    new Promise<InstanceType<typeof THREE.Texture>>((resolve, reject) =>
+      new THREE.ImageBitmapLoader().setOptions({ premultiplyAlpha: 'none' }).load(
+        url,
+        (bitmap) => {
+          const texture = new THREE.Texture(bitmap);
+          texture.flipY = false;
+          texture.needsUpdate = true;
+          resolve(texture);
+        },
+        undefined,
+        reject,
+      ),
+    );
+  const load = async (name: string, srgb = false) => {
+    const url = `/textures/grass/${name}.webp`;
+    const texture = typeof createImageBitmap === 'function' ? await loadBitmap(url).catch(() => loadClassic(url)) : await loadClassic(url);
+    return tile(texture, srgb);
+  };
 
   let map: InstanceType<typeof THREE.Texture>;
   let normalMap: InstanceType<typeof THREE.Texture>;
-  let roughnessMap: InstanceType<typeof THREE.Texture>;
-  let aoMap: InstanceType<typeof THREE.Texture>;
   try {
-    [map, normalMap, roughnessMap, aoMap] = await Promise.all([
-      load(big ? 'color-4k' : 'color-2k', true),
-      load(big ? 'normal-4k' : 'normal-2k'),
-      load('roughness-2k'),
-      load('ao-2k'),
-    ]);
+    [map, normalMap] = await Promise.all([load('color-1k', true), load('normal-1k')]);
   } catch {
     renderer.dispose();
     renderer.domElement.remove();
@@ -150,22 +176,19 @@ onMounted(async () => {
     return;
   }
   if (unmounted) {
-    for (const t of [map, normalMap, roughnessMap, aoMap]) t.dispose();
+    map.dispose();
+    normalMap.dispose();
     renderer.dispose();
     renderer.domElement.remove();
     return;
   }
-  aoMap.channel = 0;
 
   const uniforms = { uTime: { value: 0 }, uWind: { value: 1 } };
   const material = new THREE.MeshStandardMaterial({
     map,
     normalMap,
     normalScale: new THREE.Vector2(0.9, 0.9),
-    roughnessMap,
     roughness: 1,
-    aoMap,
-    aoMapIntensity: 0.7,
     metalness: 0,
   });
   material.onBeforeCompile = (shader) => {
@@ -216,14 +239,29 @@ onMounted(async () => {
   const fog = new THREE.Fog(0x000000, 20, 150);
   scene.fog = fog;
 
+  let running = false;
+  let compiled = false;
+  let frame = 0;
+  let lastDraw = 0;
+  let windTime = 0;
+  const draw = (now: number) => {
+    // El viento avanza solo mientras se pinta: al volver de una pausa sigue donde estaba, sin saltos.
+    if (!still && lastDraw) windTime += Math.min(now - lastDraw, 100) / 1000;
+    lastDraw = now;
+    uniforms.uTime.value = windTime;
+    renderer.render(scene, camera);
+  };
+  const redrawIfPaused = () => { if (compiled && !running) draw(performance.now()); };
+
   applyTheme = (dark) => {
     const canvasColor = getComputedStyle(document.documentElement).getPropertyValue('--t-canvas').trim() || (dark ? '#0a1120' : '#eef1f6');
     fog.color.set(canvasColor);
     scene.background = new THREE.Color(canvasColor);
+    // Sin el mapa de oclusión, la luz del cielo baja un poco para que la hierba no quede más clara que antes.
     if (dark) {
       hemi.color.set(0x90a8d8);
       hemi.groundColor.set(0x0c1a10);
-      hemi.intensity = 0.7;
+      hemi.intensity = 0.6;
       sun.color.set(0xd8e6ff);
       sun.intensity = 2.2;
       sun.position.set(-30, 55, 10);
@@ -233,7 +271,7 @@ onMounted(async () => {
     } else {
       hemi.color.set(0xd6e6ff);
       hemi.groundColor.set(0x4a6a30);
-      hemi.intensity = 0.95;
+      hemi.intensity = 0.8;
       sun.color.set(0xfff0d6);
       sun.intensity = 2.4;
       sun.position.set(45, 50, -25);
@@ -241,8 +279,7 @@ onMounted(async () => {
       fog.near = 18;
       fog.far = 100;
     }
-    // Sin animación no hay bucle que repinte: el cambio de tema se dibuja aquí.
-    if (reduced) renderer.render(scene, camera);
+    redrawIfPaused();
   };
   applyTheme(settings.isDark);
 
@@ -253,43 +290,73 @@ onMounted(async () => {
     camera.aspect = w / h;
     camera.fov = w < 768 ? 46 : 36;
     camera.updateProjectionMatrix();
-    if (reduced) renderer.render(scene, camera);
+    redrawIfPaused();
   };
   resize();
   window.addEventListener('resize', resize);
 
-  const start = performance.now();
-  let frame = 0;
-  let last = 0;
-  const draw = (now: number) => {
-    uniforms.uTime.value = reduced ? 0 : (now - start) / 1000;
-    renderer.render(scene, camera);
-  };
+  // El shader se compila sin bloquear la página (si el navegador lo permite) antes de la primera imagen.
+  try {
+    await renderer.compileAsync(scene, camera);
+  } catch {
+    renderer.compile(scene, camera);
+  }
+  if (unmounted) {
+    for (const t of [map, normalMap, overlayTexture]) t.dispose();
+    renderer.dispose();
+    renderer.domElement.remove();
+    window.removeEventListener('resize', resize);
+    return;
+  }
+  compiled = true;
+
+  let lastInput = performance.now();
+  const shouldRun = () => !still && !document.hidden && !anyLayerOpen.value && performance.now() - lastInput < IDLE_MS;
   const loop = (now: number) => {
+    if (!shouldRun()) {
+      running = false;
+      return;
+    }
     frame = requestAnimationFrame(loop);
-    if (document.hidden || now - last < 1000 / 30) return;
-    last = now;
+    if (now - lastDraw < FRAME_MS) return;
     draw(now);
   };
-  draw(start);
+  wake = () => {
+    lastInput = performance.now();
+    if (!running && shouldRun()) {
+      running = true;
+      frame = requestAnimationFrame(loop);
+    }
+  };
+
+  draw(performance.now());
   ready.value = true;
-  // Con animaciones reducidas el campo se queda quieto: ni siquiera se programa el bucle.
-  if (!reduced) frame = requestAnimationFrame(loop);
+  if (!still) {
+    for (const name of WAKE_EVENTS) window.addEventListener(name, wake, { passive: true });
+    document.addEventListener('visibilitychange', wake);
+    wake();
+  }
 
   dispose = () => {
     cancelAnimationFrame(frame);
     window.removeEventListener('resize', resize);
+    if (wake) {
+      for (const name of WAKE_EVENTS) window.removeEventListener(name, wake);
+      document.removeEventListener('visibilitychange', wake);
+    }
     ground.geometry.dispose();
     overlay.geometry.dispose();
     material.dispose();
     overlay.material.dispose();
-    for (const t of [map, normalMap, roughnessMap, aoMap, overlayTexture]) t.dispose();
+    for (const t of [map, normalMap, overlayTexture]) t.dispose();
     renderer.dispose();
     renderer.domElement.remove();
   };
 });
 
 watch(() => settings.isDark, (dark) => applyTheme?.(dark));
+// Al cerrar la última ventana, el campo vuelve a moverse.
+watch(anyLayerOpen, (open) => { if (!open) wake?.(); });
 onBeforeUnmount(() => { unmounted = true; dispose?.(); });
 </script>
 
