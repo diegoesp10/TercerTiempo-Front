@@ -19,6 +19,14 @@ const url = computed(() => {
   return props.src.startsWith('/') ? `${apiBaseUrl}${props.src}` : props.src;
 });
 
+// Los escudos de la API vienen en miniaturas de 64, 128 y 192 px: el navegador elige la que pide la pantalla (con
+// `sizes`, el lado al que se pinta) en vez de bajar el original, que puede pesar más de 100 KB.
+const THUMBNAILS = [64, 128, 192];
+const thumbnail = (width: number) => `${url.value}${url.value!.includes('?') ? '&' : '?'}size=${width}`;
+const fromApi = computed(() => url.value !== null && props.src!.startsWith('/api/teams/'));
+const srcset = computed(() => (fromApi.value ? THUMBNAILS.map((w) => `${thumbnail(w)} ${w}w`).join(', ') : undefined));
+const imgSrc = computed(() => (fromApi.value ? thumbnail(128) : url.value));
+
 const initials = computed(() => {
   const short = props.shortName?.trim();
   if (short && short.length <= 3) return short.toUpperCase();
@@ -33,6 +41,7 @@ const sizeClasses: Record<NonNullable<typeof props.size>, string> = {
   md: 'h-10 w-10 text-xs',
   lg: 'h-14 w-14 text-sm',
 };
+const pixels: Record<NonNullable<typeof props.size>, string> = { xs: '20px', sm: '32px', md: '40px', lg: '56px' };
 </script>
 
 <template>
@@ -41,7 +50,16 @@ const sizeClasses: Record<NonNullable<typeof props.size>, string> = {
     :class="sizeClasses[size]"
     :title="name"
   >
-    <img v-if="url" :src="url" :alt="name" class="h-full w-full object-contain p-0.5" loading="lazy" @error="failed = true" />
+    <img
+      v-if="url"
+      :src="imgSrc ?? undefined"
+      :srcset="srcset"
+      :sizes="srcset ? pixels[size] : undefined"
+      :alt="name"
+      class="h-full w-full object-contain p-0.5"
+      loading="lazy"
+      @error="failed = true"
+    />
     <span v-else class="font-display font-bold tracking-wide text-slate-600" aria-hidden="true">{{ initials }}</span>
   </span>
 </template>
