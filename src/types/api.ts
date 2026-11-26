@@ -2314,7 +2314,7 @@ export interface VideoAnalysisPartDto {
   title: string;
   videoStatus: VideoStatus;
   videoProgress: number;
-  /** Duración del vídeo en segundos, cuando se conoce: el análisis tarda más o menos lo mismo. */
+  /** Duración del vídeo en segundos, cuando se conoce: el análisis tarda unos dos tercios de eso. */
   durationSeconds: number | null;
   state: VideoAnalysisState;
   progress: number;

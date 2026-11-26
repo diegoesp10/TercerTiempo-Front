@@ -183,9 +183,12 @@ const unidentifiedMinutes = (part: VideoAnalysisPartDto) =>
 /** Por debajo de esto, la mayoría de lo que se leyó en su espalda no era ese número: que lo mire el técnico. */
 const DOUBTFUL_SHIRT = 0.3;
 
-/** Cuánto va a tardar: más o menos lo que dura el vídeo. */
+/** Cuánto va a tardar: unos dos tercios de lo que dura el vídeo (Ojeador 2.4.0 con una RTX 5070 Ti, 60 minutos para un partido de 96). */
+const ANALYSIS_SHARE_OF_VIDEO = 2 / 3;
 const duration = (part: VideoAnalysisPartDto) =>
-  part.durationSeconds ? `unos ${Math.max(1, Math.round(part.durationSeconds / 60))} minutos` : 'más o menos lo que dura el vídeo';
+  part.durationSeconds
+    ? `unos ${Math.max(1, Math.round((part.durationSeconds * ANALYSIS_SHARE_OF_VIDEO) / 60))} minutos`
+    : 'unos dos tercios de lo que dura el vídeo';
 
 const requesting = ref<string | null>(null);
 const requestError = ref<string | null>(null);

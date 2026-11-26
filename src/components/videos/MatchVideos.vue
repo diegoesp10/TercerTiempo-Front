@@ -251,7 +251,7 @@ const accessIcon = (video: MatchVideoDto) => (video.access === 'Locked' ? 'lock'
               </p>
               <p><Icon icon="lock" class="mr-1.5 h-3 w-3 text-slate-400" />Solo lo ve tu plantilla. Para que alguien de fuera lo vea o lo descargue, dale un pase de este partido.</p>
               <p v-if="analyzable">
-                <Icon icon="magnifying-glass" class="mr-1.5 h-3 w-3 text-accent-400" />El analizador saca del vídeo una propuesta para el acta interna (tiros, posesión, quién jugó); tarda más o menos lo que dura el vídeo.
+                <Icon icon="magnifying-glass" class="mr-1.5 h-3 w-3 text-accent-400" />El analizador saca del vídeo una propuesta para el acta interna (tiros, posesión, quién jugó); tarda unos dos tercios de lo que dura el vídeo.
               </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
