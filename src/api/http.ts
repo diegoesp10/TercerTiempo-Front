@@ -240,8 +240,10 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
 
     if (!response.ok) {
       if (response.status === 401 && auth.token && !options.token) auth.logout();
-      // Token del administrador caducado (un 401 sin código del catálogo): se cierra su sesión.
-      if (response.status === 401 && viewerToken && !(data as ProblemDetails | null)?.code) useAdminSessionStore().end();
+      // Token del administrador caducado o ya no válido (el 401 del propio token, no el de una contraseña mal escrita):
+      // se cierra su sesión.
+      const code = (data as ProblemDetails | null)?.code;
+      if (response.status === 401 && viewerToken && (!code || code === 'auth.session_expired')) useAdminSessionStore().end();
       const problem = (data as ProblemDetails | null) ?? { status: response.status, title: response.statusText };
       throw new ApiError(response.status, problem);
     }
