@@ -4,8 +4,8 @@
  * mezclas del texto principal (oscuro en claro, claro en oscuro) con transparente.
  */
 :root {
-  --fc-breezy-primary: var(--t-brand-500);
-  --fc-breezy-primary-over: var(--t-brand-600);
+  --fc-breezy-primary: var(--t-action);
+  --fc-breezy-primary-over: var(--t-action-hover);
   --fc-breezy-primary-foreground: #ffffff;
 
   --fc-breezy-secondary: var(--fc-breezy-background);
@@ -15,7 +15,7 @@
   --fc-breezy-secondary-icon: var(--fc-breezy-faint-foreground);
   --fc-breezy-secondary-icon-over: var(--fc-breezy-muted-foreground);
 
-  --fc-breezy-event: var(--t-brand-500);
+  --fc-breezy-event: var(--t-action);
   --fc-breezy-event-contrast: #ffffff;
   --fc-breezy-background-event: var(--t-accent-400);
   --fc-breezy-highlight: color-mix(in srgb, var(--t-brand-500) 9%, transparent);

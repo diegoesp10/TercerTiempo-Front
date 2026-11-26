@@ -139,7 +139,7 @@ export const outcomeIcons: Record<Outcome, string> = {
 export const outcomeCell: Record<Outcome, string> = {
   Attended: 'bg-emerald-500/15 text-emerald-600 ring-emerald-500/30',
   Missed: 'bg-red-500/15 text-red-600 ring-red-500/30',
-  Warned: 'bg-amber-400/20 text-amber-600 ring-amber-500/30',
+  Warned: 'bg-amber-400/20 text-warning ring-amber-500/30',
   Injured: 'bg-slate-400/15 text-slate-500 ring-slate-400/30',
 };
 
@@ -152,7 +152,7 @@ export const outcomeBar: Record<Outcome, string> = {
 };
 
 export const rateText = (rate: number | null) =>
-  rate === null ? 'text-slate-400' : rate >= 80 ? 'text-emerald-600' : rate >= 50 ? 'text-amber-600' : 'text-red-600';
+  rate === null ? 'text-slate-400' : rate >= 80 ? 'text-emerald-600' : rate >= 50 ? 'text-warning' : 'text-red-600';
 
 /** Calor de una semana: de verde intenso (todo) a rojo (casi nada). */
 export function rateHeat(rate: number | null) {

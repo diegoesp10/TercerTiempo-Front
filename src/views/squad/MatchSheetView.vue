@@ -110,6 +110,16 @@ const rivalRequestable = computed(() => (rival.value?.access?.canRequest && !riv
 const requestingRival = ref(false);
 const requestPreferVideo = ref(false);
 const rivalRequested = ref(false);
+// Qué decir de lo interno del rival bajo el marcador: con pase, aprobado, pendiente o que se puede pedir; si no, nada (ni la
+// tarjeta).
+const rivalAccessState = computed(() => {
+  const access = rival.value?.access;
+  if (!matchOver.value || !access) return null;
+  if (access.sheetPass || access.videoPass) return 'pass';
+  if (access.readyPassCode) return 'ready';
+  if (access.requestStatus === 'Pending' || rivalRequested.value) return 'pending';
+  return access.canRequest ? 'requestable' : null;
+});
 function requestRival(video: boolean) {
   requestPreferVideo.value = video;
   requestingRival.value = true;
@@ -522,7 +532,7 @@ const suggestMounted = useLazyMount(suggesting);
         </p>
         <p class="text-2xl font-bold tabular-nums text-slate-900 sm:text-3xl">
           <template v-if="data.match.status === 'Played'">{{ data.match.homeGoals }} - {{ data.match.awayGoals }}</template>
-          <span v-else class="text-slate-300">vs</span>
+          <span v-else class="text-slate-400">vs</span>
         </p>
         <p class="flex min-w-0 flex-col items-center gap-1.5 break-words text-sm font-semibold sm:text-lg" :class="data.match.awayTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">
           <TeamCrest :src="data.match.awayTeam.crestUrl" :name="data.match.awayTeam.name" :short-name="data.match.awayTeam.shortName" size="md" />
@@ -531,20 +541,20 @@ const suggestMounted = useLazyMount(suggesting);
       </div>
     </div>
 
-    <div v-if="matchOver && rival?.access" class="card mt-4 flex flex-wrap items-center justify-between gap-3 py-3 text-sm text-slate-600">
-      <template v-if="rival.access.sheetPass || rival.access.videoPass">
+    <div v-if="rivalAccessState && rival?.access" class="card mt-4 flex flex-wrap items-center justify-between gap-3 py-3 text-sm text-slate-600">
+      <template v-if="rivalAccessState === 'pass'">
         <p><Icon icon="ticket" class="mr-1.5 h-3.5 w-3.5 text-accent-400" />Tienes un pase de lo interno de <strong class="text-slate-900">{{ rival.teamName }}</strong> en este partido.</p>
         <RouterLink :to="{ name: 'match', params: { matchId }, query: { vista: 'visitante' } }" class="btn-secondary px-3 py-1 text-xs">Verlo</RouterLink>
       </template>
-      <template v-else-if="rival.access.readyPassCode">
+      <template v-else-if="rivalAccessState === 'ready'">
         <p>El club de <strong class="text-slate-900">{{ rival.teamName }}</strong> ha aprobado tu solicitud ({{ passPrice(rival.access.readyPassPriceCents ?? 0, rival.access.currency) }}).</p>
         <RouterLink :to="{ name: 'pass', params: { code: rival.access.readyPassCode } }" class="btn-primary px-3 py-1 text-xs"><Icon icon="ticket" class="mr-1.5 h-3 w-3" />Canjear el pase</RouterLink>
       </template>
-      <template v-else-if="rival.access.requestStatus === 'Pending' || rivalRequested">
-        <p><Icon icon="hourglass-half" class="mr-1 h-3.5 w-3.5 text-amber-500" />Tu solicitud a <strong class="text-slate-900">{{ rival.teamName }}</strong> está pendiente: su club todavía no la ha decidido.</p>
+      <template v-else-if="rivalAccessState === 'pending'">
+        <p><Icon icon="hourglass-half" class="mr-1 h-3.5 w-3.5 text-warning" />Tu solicitud a <strong class="text-slate-900">{{ rival.teamName }}</strong> está pendiente: su club todavía no la ha decidido.</p>
         <RouterLink :to="{ name: 'my-passes' }" class="btn-ghost px-3 py-1 text-xs">Mis pases</RouterLink>
       </template>
-      <template v-else-if="rival.access.canRequest">
+      <template v-else>
         <p>
           <strong class="text-slate-900">{{ rival.teamName }}</strong> da acceso a lo interno de este partido:
           acta interna {{ passPrice(rival.access.sheetPriceCents, rival.access.currency) }}<template v-if="rival.access.hasVideo"> · vídeo {{ passPrice(rival.access.videoPriceCents, rival.access.currency) }}</template>.
@@ -792,7 +802,7 @@ const suggestMounted = useLazyMount(suggesting);
                 <button
                   v-if="hasNote(row)"
                   type="button"
-                  class="ml-1.5 text-accent-400 hover:text-accent-300"
+                  class="ml-1.5 text-accent-400 hover:text-accent-500"
                   :title="`Tiene nota: ${row.notes}`"
                   :aria-label="`Ver la nota de ${row.player.fullName}`"
                   @click="noteRow = row"

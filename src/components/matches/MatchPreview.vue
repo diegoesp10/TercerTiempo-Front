@@ -315,7 +315,7 @@ const playerSorts = reactive([
     <TeamSeasonStats v-if="squadId && myTeamId" compact :squad-id="squadId" :team-id="myTeamId" />
 
     <section class="rounded-xl border border-line bg-surface-2 p-4 text-xs text-slate-500">
-      <p v-for="note in data.dataNotes" :key="note" class="flex gap-2"><Icon icon="triangle-exclamation" class="mt-0.5 h-3 w-3 shrink-0 text-amber-500" /><span>{{ note }}</span></p>
+      <p v-for="note in data.dataNotes" :key="note" class="flex gap-2"><Icon icon="triangle-exclamation" class="mt-0.5 h-3 w-3 shrink-0 text-warning" /><span>{{ note }}</span></p>
     </section>
   </div>
 </template>

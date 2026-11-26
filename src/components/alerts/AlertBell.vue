@@ -89,7 +89,7 @@ async function openAlert(alert: AlertDto) {
       <Icon icon="bell" class="h-4 w-4" />
       <span
         v-if="store.unread"
-        class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white"
+        class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-solid px-1 text-[10px] font-bold leading-none text-white"
       >{{ store.unread > 9 ? '9+' : store.unread }}</span>
     </button>
 
@@ -124,7 +124,7 @@ async function openAlert(alert: AlertDto) {
                   <span
                     v-else-if="daysLeft(alert) !== null"
                     class="shrink-0 text-[11px] font-semibold"
-                    :class="daysLeft(alert)! <= 5 ? 'text-red-500' : 'text-amber-500'"
+                    :class="daysLeft(alert)! <= 5 ? 'text-danger' : 'text-warning'"
                   >{{ remaining(daysLeft(alert)!) }}</span>
                 </span>
                 <span class="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-accent-400">

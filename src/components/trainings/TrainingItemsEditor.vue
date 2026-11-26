@@ -186,7 +186,7 @@ function remove(index: number) {
               <button
                 type="button"
                 class="rounded-full border px-2.5 py-0.5 text-xs font-semibold transition"
-                :class="!item.positions?.length ? 'border-brand-500 bg-brand-500 text-white' : 'border-line bg-surface text-slate-600 hover:border-brand-400 hover:text-slate-900'"
+                :class="!item.positions?.length ? 'border-action bg-action text-white' : 'border-line bg-surface text-slate-600 hover:border-brand-400 hover:text-slate-900'"
                 :aria-pressed="!item.positions?.length"
                 @click="toggleGroup(index, null)"
               >Toda la plantilla</button>
@@ -195,7 +195,7 @@ function remove(index: number) {
                 :key="group.position"
                 type="button"
                 class="rounded-full border px-2.5 py-0.5 text-xs font-semibold transition"
-                :class="item.positions?.includes(group.position) ? 'border-brand-500 bg-brand-500 text-white' : 'border-line bg-surface text-slate-600 hover:border-brand-400 hover:text-slate-900'"
+                :class="item.positions?.includes(group.position) ? 'border-action bg-action text-white' : 'border-line bg-surface text-slate-600 hover:border-brand-400 hover:text-slate-900'"
                 :aria-pressed="!!item.positions?.includes(group.position)"
                 @click="toggleGroup(index, group.position)"
               >{{ group.label }}</button>

@@ -38,7 +38,7 @@ const initial = computed(() => {
   <div class="mt-2 rounded-xl border border-line bg-surface-2 p-3">
     <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
       <p class="flex items-baseline gap-1.5">
-        <span class="font-display text-3xl font-semibold leading-none tabular-nums" :class="overdue ? 'text-amber-600' : 'text-slate-900'">{{ days }}</span>
+        <span class="font-display text-3xl font-semibold leading-none tabular-nums" :class="overdue ? 'text-warning' : 'text-slate-900'">{{ days }}</span>
         <span class="text-sm text-slate-600">{{ days === 1 ? 'día de baja' : 'días de baja' }}<template v-if="days === 0"> · parte de hoy</template></span>
       </p>
       <p v-if="expected !== null" class="text-xs tabular-nums text-slate-500">{{ days }} de {{ expected }} previstos</p>

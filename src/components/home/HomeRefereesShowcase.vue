@@ -114,7 +114,7 @@ const initials = (name: string) =>
             :key="item.key"
             type="button"
             class="rounded-full px-3 py-1 text-xs font-semibold transition"
-            :class="item.key === category?.key ? 'bg-brand-500 text-white' : 'bg-surface-2 text-slate-600 ring-1 ring-line hover:text-slate-900'"
+            :class="item.key === category?.key ? 'bg-action text-white' : 'bg-surface-2 text-slate-600 ring-1 ring-line hover:text-slate-900'"
             :aria-pressed="item.key === category?.key"
             @click="picked = item.key"
           >{{ item.name }}</button>

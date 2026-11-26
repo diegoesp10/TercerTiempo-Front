@@ -319,11 +319,11 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
       <div>
         <template v-if="playerId">
-          <h2 class="font-semibold text-slate-900"><Icon icon="user-injured" class="mr-2 h-4 w-4 text-red-500" />Lesiones</h2>
+          <h2 class="font-semibold text-slate-900"><Icon icon="user-injured" class="mr-2 h-4 w-4 text-danger" />Lesiones</h2>
           <p class="text-xs text-slate-500">Todas las que ha tenido en el club, también en otras temporadas: del parte al alta, lo previsto y lo real. Las registra el cuerpo técnico.</p>
         </template>
         <template v-else>
-          <h2 class="font-semibold text-slate-900"><Icon icon="user-injured" class="mr-2 h-4 w-4 text-red-500" />Lesionados</h2>
+          <h2 class="font-semibold text-slate-900"><Icon icon="user-injured" class="mr-2 h-4 w-4 text-danger" />Lesionados</h2>
           <p class="text-xs text-slate-500">Quién está lesionado, por qué, cuántos días de baja lleva desde el parte y cuándo se espera que vuelva.</p>
         </template>
       </div>
@@ -417,7 +417,7 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
         <p class="text-[11px] text-slate-500">ya no está en la plantilla</p>
       </div>
       <div v-else class="rounded-xl border border-line bg-surface-2 p-2.5">
-        <p class="text-lg font-bold" :class="active.length ? 'text-red-500' : 'text-emerald-500'">{{ active.length ? 'Lesionado' : 'Disponible' }}</p>
+        <p class="text-lg font-bold" :class="active.length ? 'text-danger' : 'text-success'">{{ active.length ? 'Lesionado' : 'Disponible' }}</p>
         <p class="text-[11px] text-slate-500">ahora</p>
       </div>
     </div>

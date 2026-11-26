@@ -150,7 +150,7 @@ async function remove() {
             <button
               type="button"
               class="cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition"
-              :class="typeFilter === null ? 'border-brand-500 bg-brand-500 text-white' : 'border-line text-slate-600 hover:bg-surface-2'"
+              :class="typeFilter === null ? 'border-action bg-action text-white' : 'border-line text-slate-600 hover:bg-surface-2'"
               :aria-pressed="typeFilter === null"
               @click="typeFilter = null"
             >
@@ -161,7 +161,7 @@ async function remove() {
               :key="t.type"
               type="button"
               class="flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition"
-              :class="typeFilter === t.type ? 'border-brand-500 bg-brand-500 text-white' : 'border-line text-slate-600 hover:bg-surface-2'"
+              :class="typeFilter === t.type ? 'border-action bg-action text-white' : 'border-line text-slate-600 hover:bg-surface-2'"
               :aria-pressed="typeFilter === t.type"
               :title="t.description"
               @click="typeFilter = typeFilter === t.type ? null : t.type"

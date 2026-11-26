@@ -10,6 +10,8 @@
   (@theme inline) apuntan a esas variables, así que cambiar el tema no toca ninguna vista.
   La escala "slate" es la escala de grises de la interfaz: slate-900 = texto principal, slate-500 = secundario,
   slate-200 = líneas, slate-50 = relleno sutil. emerald/sky/amber/red son los tonos semánticos de badges y avisos.
+  Para el texto y los iconos de error, aviso y correcto, danger/warning/success (llegan a 4,5:1 en los dos temas); para
+  un relleno con letra blanca, action o danger-solid. Los tonos de Tailwind que no están aquí no cambian con el tema.
 */
 :root {
   color-scheme: light;
@@ -26,7 +28,7 @@
   --t-slate-100: #e9edf2;
   --t-slate-200: #d5dbe5;
   --t-slate-300: #b9c2d1;
-  --t-slate-400: #64748b;
+  --t-slate-400: #5f6e85;
   --t-slate-500: #5f6b80;
   --t-slate-600: #48536a;
   --t-slate-700: #333d52;
@@ -35,14 +37,14 @@
 
   --t-brand-300: #8ab4ff;
   --t-brand-400: #4a8bf5;
-  --t-brand-500: #1f6fe8;
+  --t-brand-500: #1a64d6;
   --t-brand-600: #1558c2;
   --t-brand-700: #10459a;
   --t-action: #1f6fe8;
   --t-action-hover: #1558c2;
   --t-accent-300: #74c7ea;
-  --t-accent-400: #0b86b8;
-  --t-accent-500: #086f99;
+  --t-accent-400: #086f99;
+  --t-accent-500: #065a7c;
 
   --t-emerald-50: #e8f8ef;
   --t-emerald-100: #d2f1df;
@@ -50,7 +52,7 @@
   --t-emerald-300: #6fcf9d;
   --t-emerald-400: #3bb877;
   --t-emerald-500: #22a35f;
-  --t-emerald-600: #198850;
+  --t-emerald-600: #157846;
   --t-emerald-700: #156e42;
   --t-emerald-800: #105634;
   --t-emerald-900: #0b3d25;
@@ -65,16 +67,18 @@
   --t-amber-100: #ffecc2;
   --t-amber-200: #ffd98a;
   --t-amber-400: #f5b53f;
-  --t-amber-700: #a35e00;
+  --t-amber-700: #985700;
   --t-amber-800: #7a4600;
   --t-amber-900: #5c3500;
 
   --t-red-50: #fdecef;
   --t-red-100: #fbd9df;
   --t-red-200: #f5b3bf;
-  --t-red-600: #d12a46;
+  --t-red-600: #c02540;
   --t-red-700: #ad1f38;
   --t-red-800: #87182c;
+  --t-danger-solid: #c02540;
+  --t-danger-solid-hover: #ad1f38;
 
   --t-shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px -16px rgba(16, 24, 40, 0.18);
   --t-shadow-glow: 0 1px 2px rgba(16, 24, 40, 0.08), 0 6px 16px -8px rgba(31, 111, 232, 0.45);
@@ -104,7 +108,7 @@
 
   --t-brand-300: #8ab4ff;
   --t-brand-400: #5a9bff;
-  --t-brand-500: #2f7bff;
+  --t-brand-500: #4189ff;
   --t-brand-600: #2162d6;
   --t-brand-700: #184ba6;
   --t-action: #2162d6;
@@ -144,6 +148,9 @@
   --t-red-600: #ff6b81;
   --t-red-700: #ff8597;
   --t-red-800: #ffb1bd;
+  /* El red-600 del tema oscuro es para leerse sobre el fondo oscuro; con letra blanca hace falta uno más profundo. */
+  --t-danger-solid: #d0304b;
+  --t-danger-solid-hover: #b52840;
 
   --t-shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -20px rgba(0, 0, 0, 0.8);
   --t-shadow-glow: 0 0 0 1px rgba(47, 123, 255, 0.4), 0 8px 24px -10px rgba(47, 123, 255, 0.5);
@@ -215,6 +222,12 @@
   --color-red-600: var(--t-red-600);
   --color-red-700: var(--t-red-700);
   --color-red-800: var(--t-red-800);
+
+  --color-danger: var(--t-red-600);
+  --color-warning: var(--t-amber-700);
+  --color-success: var(--t-emerald-600);
+  --color-danger-solid: var(--t-danger-solid);
+  --color-danger-solid-hover: var(--t-danger-solid-hover);
 
   --shadow-card: var(--t-shadow-card);
   --shadow-glow: var(--t-shadow-glow);
@@ -336,10 +349,12 @@
 }
 
 @layer components {
-  /* Todas las rutas comparten una superficie de lectura opaca: el césped queda en los márgenes (más finos por debajo
-     de 360 px, junto con los del main, para que el contenido no pierda un tercio del ancho). */
+  /* La superficie de lectura deja asomar el campo por los márgenes. Las pantallas de acceso ya tienen su propia tarjeta. */
   .page-root {
     @apply rounded-2xl bg-canvas p-4 max-[360px]:p-3 sm:p-6;
+  }
+  .page-root:has(> [data-page-surface='transparent']) {
+    background-color: transparent;
   }
   .content-note {
     @apply rounded-lg border border-line bg-surface-2 px-4 py-3 text-xs leading-relaxed text-slate-600;
@@ -352,6 +367,7 @@
 
   .btn,
   .btn-primary,
+  .btn-danger,
   .btn-secondary,
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition duration-150
@@ -361,6 +377,9 @@
   .btn-primary {
     @apply bg-action text-white hover:bg-action-hover;
     box-shadow: var(--t-shadow-glow);
+  }
+  .btn-danger {
+    @apply bg-danger-solid text-white hover:bg-danger-solid-hover;
   }
   .btn-secondary {
     @apply border border-slate-300 bg-surface text-slate-800 hover:border-brand-400 hover:bg-surface-2;
@@ -383,7 +402,7 @@
     @apply min-w-0 rounded-xl border border-line bg-surface p-4 shadow-card sm:p-5;
   }
   .field-error {
-    @apply mt-1 text-xs text-red-600;
+    @apply mt-1 text-xs text-danger;
   }
 
   /* Botón en curso (directiva v-busy): anillo girando delante del texto, del color del propio botón. */

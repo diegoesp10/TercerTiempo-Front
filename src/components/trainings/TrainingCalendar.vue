@@ -224,7 +224,7 @@ const kindBar: Record<TrainingSummaryDto['kind'], string> = {
   Other: 'border-l-slate-400',
 };
 const doneClass = 'border-dashed border-slate-300 bg-surface-2/70 text-slate-500';
-const matchClass = 'border-brand-500 bg-brand-500 text-white shadow-sm';
+const matchClass = 'border-action bg-action text-white shadow-sm';
 const matchDoneClass = 'border-dashed border-brand-500/40 bg-brand-500/10 text-slate-500';
 
 function chipClass(item: SquadAgendaItemDto) {
@@ -364,7 +364,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
                 <template v-else>
                   <span class="truncate">{{ itemOf(arg).training!.title }}</span>
                   <span v-if="itemOf(arg).training!.mine?.injured" class="ml-0.5 text-red-600" title="Estás lesionado: no entrenas">·</span>
-                  <span v-else-if="itemOf(arg).training!.mine?.status === 'WillMiss'" class="ml-0.5 text-amber-600" title="Has avisado de que faltas">·</span>
+                  <span v-else-if="itemOf(arg).training!.mine?.status === 'WillMiss'" class="ml-0.5 text-warning" title="Has avisado de que faltas">·</span>
                 </template>
               </template>
             </template>
@@ -375,7 +375,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
 
     <!-- Leyenda: qué es cada cosa y qué está ya hecho -->
     <p class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-      <span class="inline-flex items-center gap-1.5"><span class="inline-flex h-3.5 w-5 items-center justify-center rounded border border-brand-500 bg-brand-500 text-white"><Icon icon="futbol" class="h-2 w-2" /></span>Partido (convocatoria)</span>
+      <span class="inline-flex items-center gap-1.5"><span class="inline-flex h-3.5 w-5 items-center justify-center rounded border border-action bg-action text-white"><Icon icon="futbol" class="h-2 w-2" /></span>Partido (convocatoria)</span>
       <span class="inline-flex items-center gap-1.5"><span class="h-3.5 w-5 rounded border border-brand-500/40 bg-brand-500/10"></span>Entrenamiento (citación)</span>
       <span class="inline-flex items-center gap-1.5"><span class="inline-flex h-3.5 w-5 items-center justify-center rounded border border-dashed border-slate-300 bg-surface-2/70 text-slate-500"><Icon icon="check" class="h-2 w-2" /></span>Ya realizado</span>
       <span class="inline-flex items-center gap-1.5" title="En los partidos por jugar: sancionados (5.ª amarilla, expulsión o sanción del comité de competición) y lesionados"><Icon icon="ban" class="h-3 w-3 text-red-600" />No disponibles</span>

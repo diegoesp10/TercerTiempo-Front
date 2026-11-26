@@ -33,7 +33,7 @@ const detail = () => props.ground?.address ?? props.ground?.locality ?? null;
     </div>
   </div>
   <div v-else-if="place" class="flex min-w-0 items-start gap-2">
-    <Icon icon="location-dot" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+    <Icon icon="location-dot" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
     <div class="min-w-0 flex-1">
       <p class="font-medium text-slate-900" :class="compact ? 'text-sm' : ''">{{ place }}</p>
       <p class="text-xs text-slate-500">Sitio alternativo (no es uno de los campos de la liga)</p>

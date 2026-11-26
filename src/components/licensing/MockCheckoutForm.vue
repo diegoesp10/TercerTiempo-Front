@@ -118,7 +118,7 @@ async function pay(outcome: SimulatedPaymentOutcome) {
         <h2 class="font-semibold text-slate-900">Pagar con tarjeta</h2>
         <p class="mt-1 text-xs text-slate-500">Pasarela simulada con el mismo recorrido que Stripe Checkout. No se cobra nada y los datos de la tarjeta no salen de tu navegador.</p>
       </div>
-      <span class="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-500">Modo de prueba</span>
+      <span class="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-warning">Modo de prueba</span>
     </div>
 
     <!-- Tarjetas de prueba -->
@@ -184,14 +184,14 @@ async function pay(outcome: SimulatedPaymentOutcome) {
           />
         </div>
       </div>
-      <p v-for="key in ['number', 'expiry', 'cvc']" v-show="errors[key]" :key="key" class="mt-1 text-xs text-red-500">{{ errors[key] }}</p>
+      <p v-for="key in ['number', 'expiry', 'cvc']" v-show="errors[key]" :key="key" class="mt-1 text-xs text-danger">{{ errors[key] }}</p>
     </fieldset>
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
       <div>
         <label class="label" for="pay-name">Nombre del titular</label>
         <input id="pay-name" v-model="form.name" type="text" autocomplete="off" class="input" placeholder="Como aparece en la tarjeta" />
-        <p v-if="errors.name" class="mt-1 text-xs text-red-500">{{ errors.name }}</p>
+        <p v-if="errors.name" class="mt-1 text-xs text-danger">{{ errors.name }}</p>
       </div>
       <div>
         <label class="label" for="pay-country">País</label>

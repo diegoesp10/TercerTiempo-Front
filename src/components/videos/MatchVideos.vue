@@ -247,7 +247,7 @@ const accessIcon = (video: MatchVideoDto) => (video.access === 'Locked' ? 'lock'
                 <Icon icon="circle-info" class="mr-1.5 h-3 w-3 text-accent-400" />Se comprime en el servidor sin bajar de 1080p para que ocupe la mitad o menos; mientras tanto se ve y se descarga tal cual se subió.
               </p>
               <p v-else-if="video.status === 'Failed'">
-                <Icon icon="triangle-exclamation" class="mr-1.5 h-3 w-3 text-amber-500" />No se pudo comprimir<template v-if="video.processingError">: {{ video.processingError }}</template>. Se sirve tal cual se subió.
+                <Icon icon="triangle-exclamation" class="mr-1.5 h-3 w-3 text-warning" />No se pudo comprimir<template v-if="video.processingError">: {{ video.processingError }}</template>. Se sirve tal cual se subió.
               </p>
               <p><Icon icon="lock" class="mr-1.5 h-3 w-3 text-slate-400" />Solo lo ve tu plantilla. Para que alguien de fuera lo vea o lo descargue, dale un pase de este partido.</p>
               <p v-if="analyzable">

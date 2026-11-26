@@ -54,7 +54,7 @@ const isMock = computed(() => data.value?.provider === 'mock');
 
 const simulations: { event: SimulatedLicenseEvent; label: string; tone: string }[] = [
   { event: 'RenewalPaid', label: 'Renovación cobrada', tone: 'text-emerald-600' },
-  { event: 'RenewalFailed', label: 'Cobro rechazado', tone: 'text-amber-600' },
+  { event: 'RenewalFailed', label: 'Cobro rechazado', tone: 'text-warning' },
   { event: 'SubscriptionDeleted', label: 'Fin de suscripción', tone: 'text-red-600' },
 ];
 const canSimulate = (row: AdminLicenseDto) => isMock.value && row.contracted && row.provider === 'mock';
@@ -208,7 +208,7 @@ defineExpose({ load });
           <div>
             <h2 class="font-semibold text-slate-900">Licencias por equipo</h2>
             <p class="text-xs text-slate-500">Sin licencia vigente, nadie del club (club, cuerpo técnico ni jugadores) accede a los datos del equipo; el club solo puede pagar.</p>
-            <p v-if="isMock" class="mt-1 text-xs text-amber-600">Pasarela simulada: en cada licencia con suscripción puedes lanzar los avisos que mandaría Stripe.</p>
+            <p v-if="isMock" class="mt-1 text-xs text-warning">Pasarela simulada: en cada licencia con suscripción puedes lanzar los avisos que mandaría Stripe.</p>
           </div>
           <div class="flex flex-wrap items-center gap-1.5">
             <label class="relative w-full sm:w-56">
@@ -221,7 +221,7 @@ defineExpose({ load });
               :key="option[0]"
               type="button"
               class="rounded-full border px-3 py-1 text-xs"
-              :class="filter === option[0] ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600'"
+              :class="filter === option[0] ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600'"
               @click="filter = option[0]"
             >{{ option[1] }}</button>
             <button type="button" class="btn-ghost text-xs" v-busy="loading" :disabled="loading" @click="load"><Icon icon="rotate-right" class="h-3 w-3" /></button>
@@ -330,7 +330,7 @@ defineExpose({ load });
                 </td>
                 <td class="px-3 py-2">
                   <Badge :tone="paymentTone[payment.status]">{{ paymentStatusLabels[payment.status] }}</Badge>
-                  <span v-if="payment.failureReason" class="mt-0.5 block text-xs text-red-500">{{ payment.failureReason }}</span>
+                  <span v-if="payment.failureReason" class="mt-0.5 block text-xs text-danger">{{ payment.failureReason }}</span>
                 </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
                   {{ money(payment.amountCents) }}

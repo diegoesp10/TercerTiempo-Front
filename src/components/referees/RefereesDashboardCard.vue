@@ -85,8 +85,8 @@ async function noVote(item: PendingRefereeRatingDto) {
     <div v-else class="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <h3 class="text-sm font-semibold text-slate-900">
-          <Icon icon="triangle-exclamation" class="mr-1.5 h-3.5 w-3.5 text-amber-500" />Partidos jugados por puntuar
-          <span v-if="pending.length" class="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-500">{{ pending.length }}</span>
+          <Icon icon="triangle-exclamation" class="mr-1.5 h-3.5 w-3.5 text-warning" />Partidos jugados por puntuar
+          <span v-if="pending.length" class="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-warning">{{ pending.length }}</span>
         </h3>
       </div>
       <p class="mt-1 text-xs text-slate-500">
@@ -122,7 +122,7 @@ async function noVote(item: PendingRefereeRatingDto) {
         </li>
       </ul>
       <p v-else class="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
-        <Icon icon="circle-check" class="h-3.5 w-3.5 text-emerald-500" />Nada pendiente: has contestado por todos tus partidos del último mes.
+        <Icon icon="circle-check" class="h-3.5 w-3.5 text-success" />Nada pendiente: has contestado por todos tus partidos del último mes.
       </p>
     </div>
 

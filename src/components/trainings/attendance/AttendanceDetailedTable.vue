@@ -16,12 +16,12 @@ defineEmits<{ pick: [row: AttendanceRow]; toggle: [key: string] }>();
 
 const columns: { key: SortKey; icon: string; tone?: string; label: string; title: string }[] = [
   { key: 'sessions', icon: 'calendar-days', label: 'Días', title: 'Días de entrenamiento: los acabados que le tocaban (estaba en la plantilla); los que se perdió lesionado no cuentan' },
-  { key: 'attended', icon: 'check', tone: 'text-emerald-500', label: 'Vino', title: 'Días que entrenó: entrenamientos a los que vino' },
-  { key: 'missed', icon: 'xmark', tone: 'text-red-500', label: 'Faltó', title: 'Días que no entrenó: faltó, avisando o sin avisar' },
-  { key: 'warned', icon: 'bell', tone: 'text-amber-500', label: 'Avisó', title: 'Avisó: de los que faltó, en cuántos avisó antes' },
+  { key: 'attended', icon: 'check', tone: 'text-success', label: 'Vino', title: 'Días que entrenó: entrenamientos a los que vino' },
+  { key: 'missed', icon: 'xmark', tone: 'text-danger', label: 'Faltó', title: 'Días que no entrenó: faltó, avisando o sin avisar' },
+  { key: 'warned', icon: 'bell', tone: 'text-warning', label: 'Avisó', title: 'Avisó: de los que faltó, en cuántos avisó antes' },
   { key: 'rate', icon: 'percent', label: 'Asist.', title: '% de asistencia: días que entrenó sobre los días de entrenamiento' },
   { key: 'minutes', icon: 'stopwatch', label: 'Tiempo', title: 'Tiempo entrenado: la duración de cada entrenamiento al que vino' },
-  { key: 'injured', icon: 'user-injured', tone: 'text-red-400', label: 'Lesión', title: 'Lesionado: entrenamientos que se perdió lesionado; no cuentan como días de entrenamiento ni como faltas' },
+  { key: 'injured', icon: 'user-injured', tone: 'text-danger', label: 'Lesión', title: 'Lesionado: entrenamientos que se perdió lesionado; no cuentan como días de entrenamiento ni como faltas' },
   { key: 'lastMiss', icon: 'calendar-xmark', label: 'Últ. falta', title: 'Última falta: el último entrenamiento al que faltó' },
 ];
 </script>
@@ -58,14 +58,14 @@ const columns: { key: SortKey; icon: string; tone?: string; label: string; title
                 <Badge v-if="!r.player.active" tone="slate" title="Causó baja en la plantilla: sale con lo que entrenó mientras estuvo">De baja</Badge>
               </button>
               <p v-for="i in r.player.injuries ?? []" :key="i.id" class="mt-0.5 flex items-start gap-1.5 pl-9">
-                <Icon icon="user-injured" class="mt-0.5 h-3 w-3 shrink-0 text-red-500" />
+                <Icon icon="user-injured" class="mt-0.5 h-3 w-3 shrink-0 text-danger" />
                 <InjuryNote :injury="i" :badge="false" />
               </p>
             </td>
             <td class="px-2 py-1.5 text-right tabular-nums text-slate-700">{{ r.player.sessions }}</td>
             <td class="px-2 py-1.5 text-right font-semibold tabular-nums text-slate-900">{{ r.player.attended }}</td>
             <td class="px-2 py-1.5 text-right tabular-nums text-slate-700">{{ r.player.missed }}</td>
-            <td class="px-2 py-1.5 text-right tabular-nums" :class="r.player.warned ? 'text-amber-600' : 'text-slate-400'">{{ r.player.warned || '—' }}</td>
+            <td class="px-2 py-1.5 text-right tabular-nums" :class="r.player.warned ? 'text-warning' : 'text-slate-400'">{{ r.player.warned || '—' }}</td>
             <td class="px-2 py-1.5 text-right font-semibold tabular-nums" :class="rateText(r.player.attendanceRate)">
               {{ r.player.attendanceRate === null ? '—' : `${r.player.attendanceRate} %` }}
             </td>

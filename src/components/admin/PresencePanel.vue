@@ -173,7 +173,7 @@ const { sorted, sortBy, state } = useSort<PresenceSessionDto, SortKey>(
             role="radio"
             :aria-checked="type === item.value"
             class="rounded-full border px-3 py-1 text-xs"
-            :class="type === item.value ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
+            :class="type === item.value ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
             @click="type = item.value"
           >{{ item.label }} · {{ item.count }}</button>
           <span class="mx-1 hidden w-px self-stretch bg-line sm:block" />
@@ -184,7 +184,7 @@ const { sorted, sortBy, state } = useSort<PresenceSessionDto, SortKey>(
             role="radio"
             :aria-checked="status === item.value"
             class="rounded-full border px-3 py-1 text-xs"
-            :class="status === item.value ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
+            :class="status === item.value ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
             @click="status = item.value"
           >{{ item.label }}</button>
         </div>

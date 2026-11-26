@@ -72,7 +72,7 @@ const due = (item: SquadAgendaItemDto) => props.canManage && !!item.isNext && it
       >
         <span
           class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-          :class="result(item) ? resultStyle[result(item)!].soft : item.done ? 'bg-surface-2 text-slate-500' : 'bg-brand-500 text-white'"
+          :class="result(item) ? resultStyle[result(item)!].soft : item.done ? 'bg-surface-2 text-slate-500' : 'bg-action text-white'"
         >
           <Icon :icon="item.done ? 'circle-check' : 'futbol'" class="h-3.5 w-3.5" />
         </span>
@@ -98,7 +98,7 @@ const due = (item: SquadAgendaItemDto) => props.canManage && !!item.isNext && it
             <template v-else>
               <Badge tone="green">{{ item.callUp.counts.called }} convocados</Badge>
               <Badge v-if="canManage" :tone="item.callUp.counts.seen >= item.callUp.counts.sent ? 'green' : 'slate'">
-                <Icon icon="check-double" class="mr-1 h-3 w-3" :class="item.callUp.counts.seen > 0 ? 'text-emerald-500' : ''" />{{ item.callUp.counts.seen }}/{{ item.callUp.counts.sent }} vistas
+                <Icon icon="check-double" class="mr-1 h-3 w-3" :class="item.callUp.counts.seen > 0 ? 'text-success' : ''" />{{ item.callUp.counts.seen }}/{{ item.callUp.counts.sent }} vistas
               </Badge>
               <Badge v-if="canManage && item.callUp.counts.pending && !compact" tone="amber">{{ item.callUp.counts.pending }} sin firmar</Badge>
               <Badge v-if="item.callUp.mine" :tone="item.callUp.mine.called ? callUpResponseTone[item.callUp.mine.response] : 'slate'">

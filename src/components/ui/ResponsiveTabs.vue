@@ -104,7 +104,7 @@ const look = computed(() => {
       row: '',
       items: 'rounded-lg border border-line text-xs',
       item: 'gap-1.5 px-3 py-1.5 font-medium first:rounded-l-[7px] last:rounded-r-[7px]',
-      on: 'bg-brand-500 text-white',
+      on: 'bg-action text-white',
       off: 'text-slate-600 hover:bg-surface-2 hover:text-slate-900',
       count: 'bg-white/20 text-white',
       trigger: 'gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-surface-2',

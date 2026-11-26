@@ -164,11 +164,11 @@ function onBlur() {
           @mousedown.prevent="keepWritten"
           @mouseenter="highlighted = suggestions.length"
         >
-          <p class="font-medium text-slate-900"><Icon icon="pen" class="mr-1.5 h-3 w-3 text-amber-500" />Usar «{{ place.trim() }}» como sitio alternativo</p>
+          <p class="font-medium text-slate-900"><Icon icon="pen" class="mr-1.5 h-3 w-3 text-warning" />Usar «{{ place.trim() }}» como sitio alternativo</p>
           <p class="text-xs text-slate-500">Por obras, un campo prestado o cualquier otro sitio que no sea de la liga.</p>
         </li>
       </ul>
-      <p v-if="place.trim() && !open" class="mt-1.5 text-xs text-amber-600">Sitio alternativo: no es uno de los campos de la liga.</p>
+      <p v-if="place.trim() && !open" class="mt-1.5 text-xs text-warning">Sitio alternativo: no es uno de los campos de la liga.</p>
       <p v-else-if="!grounds.length" class="mt-1.5 text-xs text-slate-500">Todavía no hay campos de la liga en el catálogo: escribe el sitio.</p>
     </div>
   </div>

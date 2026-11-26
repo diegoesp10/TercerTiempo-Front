@@ -152,7 +152,7 @@ const stats = computed(() => {
       <section v-if="p.injuries?.length">
         <p class="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-500">Lesiones</p>
         <p v-for="i in p.injuries" :key="i.id" class="flex items-start gap-1.5 text-sm">
-          <Icon icon="user-injured" class="mt-0.5 h-3 w-3 shrink-0 text-red-500" />
+          <Icon icon="user-injured" class="mt-0.5 h-3 w-3 shrink-0 text-danger" />
           <InjuryNote :injury="i" :badge="false" />
         </p>
       </section>

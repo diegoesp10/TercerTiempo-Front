@@ -34,7 +34,7 @@ const average = computed(() => (props.tally.attended ? Math.round(props.tally.at
     </div>
     <div v-if="tally.injured || tally.injuries?.length" class="mt-3 rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-slate-700">
       <p class="flex items-center gap-2">
-        <Icon icon="user-injured" class="h-3.5 w-3.5 text-red-500" />
+        <Icon icon="user-injured" class="h-3.5 w-3.5 text-danger" />
         <template v-if="tally.injured">{{ self ? 'Te perdiste' : 'Se perdió' }} {{ tally.injured }} {{ tally.injured === 1 ? 'entrenamiento' : 'entrenamientos' }} por lesión: no cuentan como faltas.</template>
         <template v-else>{{ self ? 'Estuviste' : 'Estuvo' }} lesionado en este periodo.</template>
       </p>

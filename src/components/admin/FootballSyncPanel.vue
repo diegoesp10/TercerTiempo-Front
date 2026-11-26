@@ -174,7 +174,7 @@ onMounted(load);
         <button
           type="button"
           class="rounded-full border px-3 py-1 text-xs"
-          :class="allLeagues ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
+          :class="allLeagues ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
           @click="leagues = []"
         >Todas</button>
         <button
@@ -182,7 +182,7 @@ onMounted(load);
           :key="league.id"
           type="button"
           class="rounded-full border px-3 py-1 text-xs"
-          :class="leagues.includes(league.id) ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
+          :class="leagues.includes(league.id) ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
           :aria-pressed="leagues.includes(league.id)"
           @click="toggleLeague(league.id)"
         >{{ league.name }}</button>

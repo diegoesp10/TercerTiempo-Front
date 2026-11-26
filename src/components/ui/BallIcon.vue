@@ -4,5 +4,5 @@ withDefaults(defineProps<{ title?: string; ownGoal?: boolean }>(), { title: 'Gol
 
 <template>
   <!-- Balón de Font Awesome; en propia puerta se tiñe de rojo. -->
-  <Icon icon="futbol" class="inline-block h-4 w-4 align-[-3px]" :class="ownGoal ? 'text-red-500' : 'text-slate-900'" :title="title" :aria-label="title" role="img" />
+  <Icon icon="futbol" class="inline-block h-4 w-4 align-[-3px]" :class="ownGoal ? 'text-danger' : 'text-slate-900'" :title="title" :aria-label="title" role="img" />
 </template>

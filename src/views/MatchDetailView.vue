@@ -124,7 +124,7 @@ const entriesOf = (sheet: MatchSquadSheetDto) => sortedEntries.value.filter((r) 
         </RouterLink>
         <div class="text-2xl font-bold tabular-nums text-slate-900 sm:text-3xl">
           <template v-if="data.match.status === 'Played'">{{ data.match.homeGoals }} - {{ data.match.awayGoals }}</template>
-          <span v-else class="text-slate-300">vs</span>
+          <span v-else class="text-slate-400">vs</span>
         </div>
         <RouterLink :to="{ name: 'team', params: { teamId: data.match.awayTeam.id } }" class="flex min-w-0 flex-col items-center gap-2 break-words text-sm font-semibold text-slate-900 hover:text-accent-400 sm:text-lg">
           <TeamCrest :src="data.match.awayTeam.crestUrl" :name="data.match.awayTeam.name" :short-name="data.match.awayTeam.shortName" size="lg" />
@@ -198,7 +198,7 @@ const entriesOf = (sheet: MatchSquadSheetDto) => sortedEntries.value.filter((r) 
           </RouterLink>
         </template>
         <p v-else-if="sheet.access.requestStatus === 'Pending'">
-          <Icon icon="hourglass-half" class="mr-1 h-3.5 w-3.5 text-amber-500" />Tu solicitud está pendiente: el club todavía no la ha decidido.
+          <Icon icon="hourglass-half" class="mr-1 h-3.5 w-3.5 text-warning" />Tu solicitud está pendiente: el club todavía no la ha decidido.
           <RouterLink to="/mis-pases" class="font-medium text-accent-400 hover:underline">Ver mis pases</RouterLink>
         </p>
         <template v-else-if="sheet.access.canRequest">

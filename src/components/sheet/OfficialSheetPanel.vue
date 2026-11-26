@@ -245,7 +245,7 @@ const groups = (team: OfficialTeamSheetDto) => {
                         v-if="injuryOfLine.get(line.id)"
                         icon="user-injured"
                         class="ml-1.5 h-3 w-3"
-                        :class="injuryOfLine.get(line.id)!.confirmed ? 'text-red-500' : 'text-amber-500'"
+                        :class="injuryOfLine.get(line.id)!.confirmed ? 'text-danger' : 'text-warning'"
                         :title="injuryTitle(injuryOfLine.get(line.id)!)"
                         :aria-label="injuryTitle(injuryOfLine.get(line.id)!)"
                       />
@@ -316,7 +316,7 @@ const groups = (team: OfficialTeamSheetDto) => {
               <template v-else-if="row.injury">
                 <span class="w-10 shrink-0 text-right tabular-nums text-slate-500 sm:w-12">{{ row.injury.minute !== null ? `${row.injury.minute}'` : '—' }}</span>
                 <span class="inline-flex w-10 shrink-0 items-center sm:w-14" :title="injuryTitle(row.injury)">
-                  <Icon icon="user-injured" :class="row.injury.confirmed ? 'text-red-500' : 'text-amber-500'" />
+                  <Icon icon="user-injured" :class="row.injury.confirmed ? 'text-danger' : 'text-warning'" />
                 </span>
                 <span class="min-w-0 flex-1">
                   <PlayerName :name="row.injury.playerName" />

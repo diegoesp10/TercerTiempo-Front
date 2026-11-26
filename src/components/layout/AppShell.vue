@@ -271,7 +271,7 @@ async function logoutAdmin() {
               :aria-checked="item.id === season.selected?.id"
               class="rounded-full border px-3 py-1 text-sm font-semibold tabular-nums"
               :class="item.id === season.selected?.id
-                ? (item.isCurrent ? 'border-brand-400 bg-brand-500 text-white' : 'border-amber-400/70 bg-amber-500/15 text-amber-700')
+                ? (item.isCurrent ? 'border-brand-400 bg-action text-white' : 'border-amber-400/70 bg-amber-500/15 text-amber-700')
                 : 'border-line text-slate-600'"
               @click="season.select(item.id); menuOpen = false"
             >
@@ -303,7 +303,7 @@ async function logoutAdmin() {
 
     <LoadingBar />
     <div v-if="admin.isActive" class="border-b border-red-400/30 bg-red-500/10 px-4 py-2 text-center text-sm text-slate-700">
-      <Icon icon="eye" class="mr-1.5 h-3.5 w-3.5 text-red-500" />
+      <Icon icon="eye" class="mr-1.5 h-3.5 w-3.5 text-danger" />
       <strong class="text-slate-900">Modo administrador:</strong> ves lo de todos los clubes, técnicos y jugadores solo para consultar; cada cuenta edita lo suyo.
       <RouterLink to="/jobs" class="ml-1 font-semibold text-accent-400 hover:underline">Ir a la administración</RouterLink>
     </div>

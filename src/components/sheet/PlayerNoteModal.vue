@@ -69,7 +69,7 @@ function apply() {
       />
       <div class="mt-1 flex justify-between gap-3 text-xs text-slate-500">
         <span>Ctrl + Enter para aplicarla. Se guarda con el acta al pulsar «Guardar acta».</span>
-        <span class="shrink-0 tabular-nums" :class="nearLimit ? 'font-semibold text-amber-600' : ''">{{ draft.length }}/{{ MAX_LENGTH }}</span>
+        <span class="shrink-0 tabular-nums" :class="nearLimit ? 'font-semibold text-warning' : ''">{{ draft.length }}/{{ MAX_LENGTH }}</span>
       </div>
     </template>
 

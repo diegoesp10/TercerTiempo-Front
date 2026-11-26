@@ -171,7 +171,7 @@ onMounted(() => {
           :key="option.value"
           type="button"
           class="rounded-full border px-3 py-1 text-xs"
-          :class="filter === option.value ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600'"
+          :class="filter === option.value ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600'"
           @click="filter = option.value"
         >{{ option.label }}</button>
         <button type="button" class="btn-ghost text-xs" v-busy="loadingComments" :disabled="loadingComments" title="Actualizar" @click="loadComments">
@@ -202,7 +202,7 @@ onMounted(() => {
               <button
                 type="button"
                 class="text-xs"
-                :class="comment.hidden ? 'btn-ghost' : 'btn-ghost border-red-400/60 text-red-500 hover:bg-red-500/10'"
+                :class="comment.hidden ? 'btn-ghost' : 'btn-ghost border-red-400/60 text-danger hover:bg-red-500/10'"
                 v-busy="toggling === comment.ratingId"
                 :disabled="toggling !== null"
                 @click="toggle(comment)"
@@ -212,7 +212,7 @@ onMounted(() => {
             </div>
           </div>
           <p class="mt-2 text-sm leading-relaxed" :class="comment.hidden ? 'text-slate-500 line-through' : 'text-slate-700'">“{{ comment.comment }}”</p>
-          <p v-if="comment.flaggedTerms.length" class="mt-1 flex flex-wrap items-center gap-1 text-xs text-red-500">
+          <p v-if="comment.flaggedTerms.length" class="mt-1 flex flex-wrap items-center gap-1 text-xs text-danger">
             Contiene:
             <span v-for="term in comment.flaggedTerms" :key="term" class="rounded bg-red-500/10 px-1.5 py-0.5 font-semibold">{{ term }}</span>
           </p>
@@ -252,7 +252,7 @@ onMounted(() => {
         <button
           type="button"
           class="rounded-full border px-3 py-1 text-xs"
-          :class="kindFilter === null ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600'"
+          :class="kindFilter === null ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600'"
           @click="kindFilter = null"
         >Todas ({{ words?.total ?? 0 }})</button>
         <button
@@ -260,7 +260,7 @@ onMounted(() => {
           :key="kind"
           type="button"
           class="rounded-full border px-3 py-1 text-xs"
-          :class="kindFilter === kind ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600'"
+          :class="kindFilter === kind ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600'"
           @click="kindFilter = kind"
         >{{ kindLabels[kind] }} ({{ countByKind[kind] }})</button>
       </div>
@@ -270,7 +270,7 @@ onMounted(() => {
         <li v-for="word in shownWords" :key="word.term" class="flex items-center gap-1 rounded-full border border-line bg-surface-2 py-0.5 pl-2.5 pr-1 text-xs">
           <span class="h-1.5 w-1.5 rounded-full" :class="{ 'bg-amber-400': word.kind === 'Profanity', 'bg-red-500': word.kind === 'Insult', 'bg-blue-400': word.kind === 'Slur', 'bg-slate-400': word.kind === 'Threat' }" :title="kindLabels[word.kind]" />
           <span class="text-slate-700">{{ word.term }}</span>
-          <button type="button" class="rounded-full p-1 text-slate-400 hover:bg-red-500/10 hover:text-red-500" :aria-label="`Quitar ${word.term}`" @click="removeWord(word.term)">
+          <button type="button" class="rounded-full p-1 text-slate-400 hover:bg-red-500/10 hover:text-danger" :aria-label="`Quitar ${word.term}`" @click="removeWord(word.term)">
             <Icon icon="xmark" class="h-2.5 w-2.5" />
           </button>
         </li>

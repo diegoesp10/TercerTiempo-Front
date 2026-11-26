@@ -589,7 +589,7 @@ async function respond(response: CallUpResponse) {
               :key="o.key"
               type="button"
               class="cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
-              :class="filter === o.key ? 'border-brand-500 bg-brand-500 text-white' : 'border-line text-slate-600 hover:bg-surface-2'"
+              :class="filter === o.key ? 'border-action bg-action text-white' : 'border-line text-slate-600 hover:bg-surface-2'"
               :aria-pressed="filter === o.key"
               :disabled="o.key !== 'all' && o.count === 0 && filter !== o.key"
               :title="o.key !== 'all' && o.count === 0 ? o.empty : o.title"
@@ -634,7 +634,7 @@ async function respond(response: CallUpResponse) {
                     <Badge v-else-if="e.response === 'Acknowledged'" tone="slate">Enterado</Badge>
                     <Badge v-else-if="e.linked" tone="slate">No va</Badge>
                     <span v-if="data.canEdit && e.linked" class="inline-flex w-14 shrink-0 items-center justify-end gap-1 text-xs" :title="deliveryTitle(e)">
-                      <template v-if="delivery(e) === 'seen'"><Icon icon="check-double" class="h-3.5 w-3.5 text-emerald-500" aria-label="Vista" /><span class="text-emerald-500">Vista</span></template>
+                      <template v-if="delivery(e) === 'seen'"><Icon icon="check-double" class="h-3.5 w-3.5 text-success" aria-label="Vista" /><span class="text-success">Vista</span></template>
                       <template v-else-if="delivery(e) === 'sent'"><Icon icon="check" class="h-3.5 w-3.5 text-slate-400" aria-label="Enviada" /><span class="text-slate-400">Enviada</span></template>
                     </span>
                   </template>
@@ -720,7 +720,7 @@ async function respond(response: CallUpResponse) {
             <h3 class="mb-2 font-semibold text-slate-900">Entrega</h3>
             <ul class="space-y-1">
               <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check" class="mr-1.5 h-3 w-3 text-slate-400" />Enviada</span><strong class="tabular-nums text-slate-700">{{ data.counts.sent }}</strong></li>
-              <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check-double" class="mr-1.5 h-3 w-3 text-emerald-500" />Vista</span><strong class="tabular-nums text-emerald-600">{{ data.counts.seen }}</strong></li>
+              <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check-double" class="mr-1.5 h-3 w-3 text-success" />Vista</span><strong class="tabular-nums text-emerald-600">{{ data.counts.seen }}</strong></li>
             </ul>
             <button v-if="canEdit && unseen > 0" type="button" class="btn-secondary mt-3 w-full px-3 py-1.5 text-xs" v-busy="busy === 'resend'" :disabled="busy !== null" @click="resend"><Icon icon="paper-plane" class="mr-1.5 h-3 w-3" />Reenviar a quien no la ha visto ({{ unseen }})</button>
             <p class="mt-2 text-xs text-slate-500">Un check: le ha llegado el aviso. Doble check verde: la ha abierto. La firma va aparte.</p>
@@ -730,7 +730,7 @@ async function respond(response: CallUpResponse) {
             <h3 class="mb-2 font-semibold text-slate-900">Firmas</h3>
             <ul class="space-y-1">
               <li class="flex justify-between gap-2"><span class="text-slate-600">Convocados que han firmado</span><strong class="tabular-nums text-emerald-600">{{ data.counts.confirmed }}</strong></li>
-              <li class="flex justify-between gap-2"><span class="text-slate-600">Sin firmar</span><strong class="tabular-nums text-amber-600">{{ data.counts.pending }}</strong></li>
+              <li class="flex justify-between gap-2"><span class="text-slate-600">Sin firmar</span><strong class="tabular-nums text-warning">{{ data.counts.pending }}</strong></li>
               <li class="flex justify-between gap-2"><span class="text-slate-600">No convocados enterados</span><strong class="tabular-nums text-slate-700">{{ data.counts.acknowledged }}</strong></li>
             </ul>
             <p v-if="data.publishedAt" class="mt-2 text-xs text-slate-500">Enviada el {{ formatKickoff(data.publishedAt) }}.</p>

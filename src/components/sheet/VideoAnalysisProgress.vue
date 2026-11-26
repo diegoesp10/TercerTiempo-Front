@@ -104,7 +104,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
     <!-- En pausa -->
     <div v-if="paused" class="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-slate-700" role="status">
       <p class="font-medium text-slate-900">
-        <Icon icon="pause" class="mr-1 h-3.5 w-3.5 text-amber-500" />
+        <Icon icon="pause" class="mr-1 h-3.5 w-3.5 text-warning" />
         <template v-if="pausing">Pausando: el analizador para en el siguiente fotograma…</template>
         <template v-else-if="part.pausedMidway">En pausa, sin perder nada de lo analizado</template>
         <template v-else>En pausa: no se analiza hasta que lo reanudes</template>
@@ -126,7 +126,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
       <li v-for="(step, i) in steps" :key="step.key" class="flex items-center gap-1" :class="i === stepIndex ? 'flex-auto' : 'flex-1'" :aria-current="i === stepIndex ? 'step' : undefined">
         <span
           class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
-          :class="i < stepIndex ? 'bg-accent-400 text-slate-950' : i === stepIndex ? (paused ? 'bg-amber-500 text-slate-950' : 'bg-brand-500 text-white ring-2 ring-brand-500/40') : 'bg-slate-200 text-slate-500'"
+          :class="i < stepIndex ? 'bg-accent-400 text-slate-950' : i === stepIndex ? (paused ? 'bg-amber-500 text-slate-950' : 'bg-action text-white ring-2 ring-brand-500/40') : 'bg-slate-200 text-slate-500'"
         >
           <Icon v-if="i < stepIndex" icon="check" class="h-2.5 w-2.5" />
           <template v-else>{{ i + 1 }}</template>
@@ -168,7 +168,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
     <dl v-if="tiles.length > 0" class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
       <div v-for="tile in tiles" :key="tile.label" class="rounded-lg border border-line bg-surface-2 px-2.5 py-1.5">
         <dt class="eyebrow text-[10px]">{{ tile.label }}</dt>
-        <dd class="font-figures text-lg font-extrabold tabular-nums" :class="tile.tone === 'warn' ? 'text-amber-600' : 'text-slate-900'">{{ tile.value }}</dd>
+        <dd class="font-figures text-lg font-extrabold tabular-nums" :class="tile.tone === 'warn' ? 'text-warning' : 'text-slate-900'">{{ tile.value }}</dd>
         <dd v-if="tile.hint" class="text-[10px] leading-tight text-slate-500">{{ tile.hint }}</dd>
       </div>
     </dl>
@@ -185,7 +185,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
     <p v-if="part.state === 'Running' || part.pausedMidway" class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
       <span v-if="elapsed !== null"><Icon icon="clock" class="mr-1 h-3 w-3" />Lleva {{ span(elapsed) }}<template v-if="pausedTotal >= 60"> (sin contar {{ span(pausedTotal) }} en pausa)</template></span>
       <span v-if="live?.remainingSeconds != null && !paused"><Icon icon="hourglass-half" class="mr-1 h-3 w-3" />Queda aprox. {{ span(live.remainingSeconds) }}</span>
-      <span v-if="since !== null" :class="quiet ? 'text-amber-600' : ''">
+      <span v-if="since !== null" :class="quiet ? 'text-warning' : ''">
         <template v-if="quiet"><Icon icon="triangle-exclamation" class="mr-1 h-3 w-3" />Sin noticias del analizador desde hace {{ span(since) }}</template>
         <template v-else>Actualizado hace {{ Math.round(since) }} s</template>
       </span>

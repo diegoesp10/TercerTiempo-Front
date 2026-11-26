@@ -88,8 +88,8 @@ const shortDay = (day: string) => new Date(`${day}T00:00:00`).toLocaleDateString
         <SearchSelect id="analytics-club" placeholder="Toda la web" :model-value="clubId" :options="clubOptions" clearable @update:model-value="clubId = ($event as string | null)" />
       </div>
       <div v-if="clubId" class="col-span-2 flex flex-wrap gap-1 rounded-lg border border-line p-1 text-sm" role="radiogroup">
-        <button type="button" class="rounded-md px-3 py-1" :class="scope === 'Subject' ? 'bg-brand-500 text-white' : 'text-slate-600'" @click="scope = 'Subject'">Visitas a sus páginas</button>
-        <button type="button" class="rounded-md px-3 py-1" :class="scope === 'Actor' ? 'bg-brand-500 text-white' : 'text-slate-600'" @click="scope = 'Actor'">Lo que hacen sus usuarios</button>
+        <button type="button" class="rounded-md px-3 py-1" :class="scope === 'Subject' ? 'bg-action text-white' : 'text-slate-600'" @click="scope = 'Subject'">Visitas a sus páginas</button>
+        <button type="button" class="rounded-md px-3 py-1" :class="scope === 'Actor' ? 'bg-action text-white' : 'text-slate-600'" @click="scope = 'Actor'">Lo que hacen sus usuarios</button>
       </div>
     </div>
 

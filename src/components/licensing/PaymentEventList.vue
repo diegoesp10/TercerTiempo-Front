@@ -32,7 +32,7 @@ const statusInfo: Record<PaymentEventStatus, { label: string; tone: 'green' | 'a
         </p>
         <p class="font-mono text-[11px] text-slate-500">{{ event.type }}<template v-if="admin"> · {{ event.externalId }}</template></p>
         <p v-if="event.summary" class="mt-0.5 text-xs text-slate-600">{{ event.summary }}</p>
-        <p v-if="event.error" class="mt-0.5 text-xs text-red-500">{{ event.error }}</p>
+        <p v-if="event.error" class="mt-0.5 text-xs text-danger">{{ event.error }}</p>
         <p v-if="admin && event.nextAttemptAt" class="mt-0.5 text-[11px] text-slate-500">Próximo intento: {{ formatKickoff(event.nextAttemptAt) }}</p>
       </div>
       <div class="flex shrink-0 items-center gap-2">

@@ -153,7 +153,7 @@ async function act(call: () => Promise<ClubLicenseDto>) {
       <div class="mt-4">
         <div class="flex flex-wrap items-baseline justify-between gap-2">
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Equipos que cubre · técnicos</p>
-          <p class="text-xs" :class="license.staffInUse >= license.staffLimit ? 'font-semibold text-amber-500' : 'text-slate-600'">
+          <p class="text-xs" :class="license.staffInUse >= license.staffLimit ? 'font-semibold text-warning' : 'text-slate-600'">
             <Icon icon="user-group" class="mr-1 h-3 w-3 text-slate-400" />{{ license.staffInUse }} de {{ staffCountLabel(license.staffLimit) }} nombrados
           </p>
         </div>

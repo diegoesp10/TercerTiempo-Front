@@ -33,7 +33,7 @@ const itemClass = computed(() => {
   return props.size === 'xs' ? 'rounded-md px-2.5 py-1 text-xs font-medium' : 'rounded-md px-3 py-1 text-sm font-medium';
 });
 const onClass = computed(() => {
-  if (props.tone === 'brand') return 'bg-brand-500 text-white';
+  if (props.tone === 'brand') return 'bg-action text-white';
   return pill.value ? 'bg-action text-white shadow-sm' : 'bg-action text-white shadow-glow';
 });
 const offClass = computed(() => (pill.value ? 'text-slate-600 hover:text-slate-900' : 'text-slate-600 hover:bg-surface-2 hover:text-slate-900'));

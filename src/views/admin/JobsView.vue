@@ -288,7 +288,7 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
 </script>
 
 <template>
-  <section v-if="!session" class="mx-auto max-w-md">
+  <section v-if="!session" class="mx-auto max-w-md" data-page-surface="transparent">
     <div v-if="mfa" class="card">
       <AdminMfaStep :challenge="mfa.challenge" :user-name="mfa.userName" @verified="start" @restart="restartLogin" />
     </div>
@@ -357,7 +357,7 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
 
     <div v-if="data" class="space-y-6">
       <p v-if="ingester" class="flex items-start gap-2 rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-slate-700">
-        <Icon icon="database" class="mt-0.5 h-3.5 w-3.5 shrink-0" :class="ingester.tone === 'green' ? 'text-emerald-500' : ingester.tone === 'amber' ? 'text-amber-500' : 'text-brand-400'" />
+        <Icon icon="database" class="mt-0.5 h-3.5 w-3.5 shrink-0" :class="ingester.tone === 'green' ? 'text-success' : ingester.tone === 'amber' ? 'text-warning' : 'text-brand-400'" />
         <span><strong class="text-slate-900">Datos reales.</strong> {{ ingester.text }}</span>
       </p>
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -374,7 +374,7 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
           </div>
 
           <p v-if="job.pause" class="mt-3 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs text-slate-700">
-            <Icon :icon="job.pause.kind === 'rest' ? 'mug-hot' : 'pause'" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+            <Icon :icon="job.pause.kind === 'rest' ? 'mug-hot' : 'pause'" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
             <span>
               <strong class="text-slate-900">{{ pauseText(job) }}.</strong>
               {{ job.pause.reason ?? 'La federación limita las peticiones.' }} Sigue sola a esa hora; si lo lanzas antes, queda pedido para entonces.
@@ -478,7 +478,7 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
                   <span v-else class="text-slate-400">—</span>
                 </td>
                 <td class="px-3 py-2 text-xs whitespace-nowrap">
-                  <span v-if="source.pausedUntil" class="font-semibold" :class="source.pauseKind === 'blocked' ? 'text-red-600' : 'text-amber-600'" :title="source.pauseReason ?? undefined">
+                  <span v-if="source.pausedUntil" class="font-semibold" :class="source.pauseKind === 'blocked' ? 'text-red-600' : 'text-warning'" :title="source.pauseReason ?? undefined">
                     {{ source.pauseKind ? pauseLabels[source.pauseKind] : 'En pausa' }} hasta {{ formatKickoff(source.pausedUntil) }}
                   </span>
                   <span v-else-if="source.nextRequestAt" class="text-slate-600">Siguiente desde {{ formatKickoff(source.nextRequestAt) }}</span>
@@ -533,13 +533,13 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
             <p class="text-xs text-slate-500">Cada petición real a una web externa (lo servido desde la caché no aparece). Se guardan 30 días.</p>
           </div>
           <div class="flex flex-wrap gap-1.5">
-            <button type="button" class="rounded-full border px-3 py-1 text-xs" :class="provider === null ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600'" @click="provider = null">Todas</button>
+            <button type="button" class="rounded-full border px-3 py-1 text-xs" :class="provider === null ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600'" @click="provider = null">Todas</button>
             <button
               v-for="source in data.sources"
               :key="source.provider"
               type="button"
               class="rounded-full border px-3 py-1 text-xs"
-              :class="provider === source.provider ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600'"
+              :class="provider === source.provider ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600'"
               @click="provider = source.provider"
             >{{ sourceTitle(source) }}</button>
           </div>

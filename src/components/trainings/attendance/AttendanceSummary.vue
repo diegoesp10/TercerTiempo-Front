@@ -59,7 +59,7 @@ const highlights = computed(() => [
           <tr class="border-b border-line text-left">
             <SortHeader class="px-2 py-2 font-semibold" label="Jugador" v-bind="sort.state('name')" @sort="sort.by('name')" />
             <SortHeader class="w-1/2 px-2 py-2 font-semibold" icon="percent" label="Asistencia" title="% de asistencia: entrenamientos a los que vino de los que le tocaban" v-bind="sort.state('rate')" @sort="sort.by('rate')" />
-            <SortHeader class="px-2 py-2 text-right font-semibold [&>button]:justify-end" icon="check" icon-class="text-emerald-500" label="Vino" title="Días que entrenó: a cuántos vino de los que le tocaban" v-bind="sort.state('attended')" @sort="sort.by('attended')" />
+            <SortHeader class="px-2 py-2 text-right font-semibold [&>button]:justify-end" icon="check" icon-class="text-success" label="Vino" title="Días que entrenó: a cuántos vino de los que le tocaban" v-bind="sort.state('attended')" @sort="sort.by('attended')" />
             <SortHeader class="col-sm px-2 py-2 text-right font-semibold [&>button]:justify-end" icon="stopwatch" label="Tiempo" title="Tiempo entrenado: la duración de cada entrenamiento al que vino" v-bind="sort.state('minutes')" @sort="sort.by('minutes')" />
           </tr>
         </thead>

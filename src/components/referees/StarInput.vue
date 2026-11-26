@@ -53,9 +53,9 @@ function preview(event: PointerEvent, star: number) {
 const grade = computed(() => {
   const value = hover.value ?? model.value;
   if (value === null) return null;
-  if (value < 5) return { label: 'Suspenso', tone: 'text-red-500' };
-  if (value < 6) return { label: 'Aprobado', tone: 'text-amber-500' };
-  if (value < 7) return { label: 'Bien', tone: 'text-amber-500' };
+  if (value < 5) return { label: 'Suspenso', tone: 'text-danger' };
+  if (value < 6) return { label: 'Aprobado', tone: 'text-warning' };
+  if (value < 7) return { label: 'Bien', tone: 'text-warning' };
   if (value < 9) return { label: 'Notable', tone: 'text-emerald-600' };
   return { label: 'Sobresaliente', tone: 'text-emerald-600' };
 });
@@ -106,7 +106,7 @@ const grade = computed(() => {
         <span v-if="grade" class="text-xs font-semibold" :class="grade.tone">{{ grade.label }}</span>
       </div>
     </div>
-    <p :id="`${id}-hint`" class="mt-1 text-xs" :class="invalid ? 'text-red-500' : 'text-slate-500'">
+    <p :id="`${id}-hint`" class="mt-1 text-xs" :class="invalid ? 'text-danger' : 'text-slate-500'">
       {{ invalid ? 'Escribe un número entero del 0 al 10.' : 'Toca una estrella o escribe la nota; el 0, escribiéndolo.' }}
     </p>
   </div>

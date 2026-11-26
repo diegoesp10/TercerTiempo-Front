@@ -628,7 +628,7 @@ async function apply(overwrite = false) {
 
         <!-- Estados sin propuesta -->
         <p v-if="part.state === 'WaitingForVideo'" class="mt-2 text-sm text-slate-600">
-          <Icon icon="hourglass-half" class="mr-1 h-3.5 w-3.5 text-amber-500" />El vídeo se está comprimiendo<template v-if="part.videoStatus === 'Processing'"> ({{ part.videoProgress }} %)</template>:
+          <Icon icon="hourglass-half" class="mr-1 h-3.5 w-3.5 text-warning" />El vídeo se está comprimiendo<template v-if="part.videoStatus === 'Processing'"> ({{ part.videoProgress }} %)</template>:
           <template v-if="analysis.enabled">el análisis empieza solo cuando termine.</template><template v-else>cuando termine se podrá ver, pero en este servidor no se analiza.</template>
         </p>
         <p v-else-if="part.state === 'NotRequested'" class="mt-2 text-sm text-slate-600">
@@ -636,7 +636,7 @@ async function apply(overwrite = false) {
           <template v-else>El análisis de vídeo no está disponible en este servidor: hace falta una máquina con tarjeta gráfica.</template>
         </p>
         <p v-else-if="part.state === 'Pending'" class="mt-2 text-sm text-slate-600">
-          <Icon icon="clock" class="mr-1 h-3.5 w-3.5 text-amber-500" />En cola: empieza en cuanto el analizador quede libre (los vídeos van de uno en uno) y tarda {{ duration(part) }}.
+          <Icon icon="clock" class="mr-1 h-3.5 w-3.5 text-warning" />En cola: empieza en cuanto el analizador quede libre (los vídeos van de uno en uno) y tarda {{ duration(part) }}.
           <span v-if="part.error" class="mt-1 block text-xs text-slate-500">Se vuelve a intentar: {{ part.error }}</span>
         </p>
         <p v-else-if="part.state === 'Cancelled'" class="mt-2 text-sm text-slate-600">
@@ -656,18 +656,18 @@ async function apply(overwrite = false) {
             <!-- Desde Ojeador 2.3.0, sobre el tiempo en juego: con el balón parado, no verlo no es un fallo -->
             <div v-if="part.quality.ballSeenInPlayPct != null" class="rounded-lg border border-line bg-surface-2 px-3 py-2">
               <dt class="eyebrow">Balón visto en juego</dt>
-              <dd class="mt-0.5 font-figures text-xl font-extrabold tabular-nums" :class="part.quality.lowBall ? 'text-amber-600' : 'text-slate-900'">{{ percent(part.quality.ballSeenInPlayPct) }} %</dd>
+              <dd class="mt-0.5 font-figures text-xl font-extrabold tabular-nums" :class="part.quality.lowBall ? 'text-warning' : 'text-slate-900'">{{ percent(part.quality.ballSeenInPlayPct) }} %</dd>
               <dd v-if="part.quality.ballTrackedInPlayPct != null" class="text-[11px] text-slate-500">con la trayectoria: {{ percent(part.quality.ballTrackedInPlayPct) }} %</dd>
               <dd v-if="part.quality.inPlayPct != null" class="text-[11px] text-slate-500" title="Sin fueras, faltas, saques ni cambios: el resto del tiempo el balón está parado">en juego el {{ percent(part.quality.inPlayPct) }} % del tramo</dd>
             </div>
             <div v-else class="rounded-lg border border-line bg-surface-2 px-3 py-2">
               <dt class="eyebrow">Fotogramas con balón</dt>
-              <dd class="mt-0.5 font-figures text-xl font-extrabold tabular-nums" :class="part.quality.lowBall ? 'text-amber-600' : 'text-slate-900'">{{ percent(part.quality.ballFramesPct) }} %</dd>
+              <dd class="mt-0.5 font-figures text-xl font-extrabold tabular-nums" :class="part.quality.lowBall ? 'text-warning' : 'text-slate-900'">{{ percent(part.quality.ballFramesPct) }} %</dd>
               <dd v-if="ballKnownPct(part) !== null" class="text-[11px] text-slate-500">con la trayectoria: {{ percent(ballKnownPct(part)!) }} %</dd>
             </div>
             <div class="rounded-lg border border-line bg-surface-2 px-3 py-2">
               <dt class="eyebrow">Campo calibrado</dt>
-              <dd class="mt-0.5 font-figures text-xl font-extrabold tabular-nums" :class="part.quality.lowCalibration ? 'text-amber-600' : 'text-slate-900'">{{ percent(part.quality.calibratedFramesPct) }} %</dd>
+              <dd class="mt-0.5 font-figures text-xl font-extrabold tabular-nums" :class="part.quality.lowCalibration ? 'text-warning' : 'text-slate-900'">{{ percent(part.quality.calibratedFramesPct) }} %</dd>
             </div>
             <div class="rounded-lg border border-line bg-surface-2 px-3 py-2">
               <dt class="eyebrow">Tramo analizado</dt>

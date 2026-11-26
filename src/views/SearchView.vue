@@ -89,7 +89,7 @@ const counts = computed(() => new Map((all.value?.groups ?? []).map((g) => [g.ty
       <button
         type="button"
         class="rounded-full border px-3 py-1 text-xs"
-        :class="!type ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
+        :class="!type ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
         @click="setType(null)"
       >Todo · {{ all.total }}</button>
       <template v-for="t in types" :key="t">
@@ -97,7 +97,7 @@ const counts = computed(() => new Map((all.value?.groups ?? []).map((g) => [g.ty
           v-if="counts.get(t)"
           type="button"
           class="rounded-full border px-3 py-1 text-xs"
-          :class="type === t ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
+          :class="type === t ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
           @click="setType(t)"
         >{{ counts.get(t)!.label }} · {{ counts.get(t)!.total }}</button>
       </template>

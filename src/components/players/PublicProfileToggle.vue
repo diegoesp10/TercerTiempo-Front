@@ -49,7 +49,7 @@ async function toggle() {
         <template v-if="auth.player.publicProfile">Cualquier cuenta con sesión ve tus actas de Tercer Tiempo, asistencias de gol y nota (nunca las observaciones del técnico).</template>
         <template v-else>Fuera de tu club solo se ve tu ficha básica con las actas oficiales. Actívalo para enseñar también tus actas de Tercer Tiempo.</template>
       </p>
-      <p v-if="error" class="mt-1 text-xs text-red-500">{{ error }}</p>
+      <p v-if="error" class="mt-1 text-xs text-danger">{{ error }}</p>
     </div>
   </div>
 </template>

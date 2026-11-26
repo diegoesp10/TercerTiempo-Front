@@ -195,7 +195,7 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
               role="radio"
               :aria-checked="type === filter.value"
               class="shrink-0 rounded-full border px-3 py-1 text-xs transition"
-              :class="type === filter.value ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
+              :class="type === filter.value ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
               @click="type = filter.value"
             >
               {{ filter.label }}<span v-if="filter.value && !type && counts.get(filter.value)" class="ml-1 opacity-70">{{ counts.get(filter.value) }}</span>
@@ -204,7 +204,7 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
 
           <!-- Resultados -->
           <div id="search-results" ref="list" class="min-h-0 flex-1 overflow-y-auto px-2 py-2">
-            <p v-if="error" class="px-3 py-6 text-center text-sm text-red-500">{{ error }}</p>
+            <p v-if="error" class="px-3 py-6 text-center text-sm text-danger">{{ error }}</p>
 
             <!-- Antes de escribir: lo último que buscaste y cómo buscar -->
             <div v-else-if="!searched" class="px-3 py-3">
@@ -243,7 +243,7 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
             </div>
 
             <template v-else-if="results">
-              <p v-if="results.partial" class="mx-3 mb-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-500">
+              <p v-if="results.partial" class="mx-3 mb-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-warning">
                 Nada coincide con todas las palabras: estos resultados coinciden con casi todas.
               </p>
               <section v-for="group in results.groups" :key="group.type" class="mb-2" :aria-label="group.label">

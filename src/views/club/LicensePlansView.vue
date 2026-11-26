@@ -286,7 +286,7 @@ const faqs = computed(() => {
           </div>
           <div class="rounded-lg bg-surface-2 px-3 py-2">
             <dt class="text-xs text-slate-500">Técnicos nombrados</dt>
-            <dd class="font-semibold" :class="license.staffInUse >= license.staffLimit && license.staffLimit > 0 ? 'text-amber-500' : 'text-slate-900'">{{ license.staffInUse }} de {{ license.staffLimit }}</dd>
+            <dd class="font-semibold" :class="license.staffInUse >= license.staffLimit && license.staffLimit > 0 ? 'text-warning' : 'text-slate-900'">{{ license.staffInUse }} de {{ license.staffLimit }}</dd>
           </div>
         </dl>
 

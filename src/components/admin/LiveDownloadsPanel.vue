@@ -244,7 +244,7 @@ const sheetState = computed(() => {
 
 // Solo un bloqueo de verdad sale en rojo; el descanso entre tandas es lo normal.
 const alertKind = computed(() => ({ red: 'error', amber: 'warning', blue: 'info', slate: 'info' } as const)[sheetState.value?.tone ?? 'slate']);
-const pauseIconTone = computed(() => ({ red: 'text-red-500', amber: 'text-amber-500', blue: 'text-brand-500', slate: 'text-slate-400' })[sheetState.value?.tone ?? 'slate']);
+const pauseIconTone = computed(() => ({ red: 'text-danger', amber: 'text-warning', blue: 'text-brand-500', slate: 'text-slate-400' })[sheetState.value?.tone ?? 'slate']);
 
 async function clearQueue(onlyFinished: boolean) {
   if (!onlyFinished) {
@@ -269,9 +269,9 @@ async function clearQueue(onlyFinished: boolean) {
 
 // --- Los demás trabajos
 
-const toneText = { blue: 'text-brand-500', amber: 'text-amber-600', slate: 'text-slate-500', green: 'text-emerald-600', red: 'text-red-600' } as const;
+const toneText = { blue: 'text-brand-500', amber: 'text-warning', slate: 'text-slate-500', green: 'text-emerald-600', red: 'text-red-600' } as const;
 const eventIcon: Record<JobEventTone, string> = { success: 'circle-check', warning: 'triangle-exclamation', info: 'circle-info' };
-const eventTone: Record<JobEventTone, string> = { success: 'text-emerald-500', warning: 'text-amber-500', info: 'text-slate-400' };
+const eventTone: Record<JobEventTone, string> = { success: 'text-success', warning: 'text-warning', info: 'text-slate-400' };
 
 /** La línea de estado de cada tarjeta de la franja de arriba. */
 function tileText(live: JobLiveDto) {
@@ -309,7 +309,7 @@ defineExpose({ load });
           >
             <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-3">
               <Icon v-if="live.job.running" icon="spinner" class="h-3.5 w-3.5 animate-spin text-brand-500" />
-              <Icon v-else-if="live.job.pause" :icon="live.job.pause.kind === 'rest' ? 'mug-hot' : 'pause'" class="h-3.5 w-3.5 text-amber-500" />
+              <Icon v-else-if="live.job.pause" :icon="live.job.pause.kind === 'rest' ? 'mug-hot' : 'pause'" class="h-3.5 w-3.5 text-warning" />
               <Icon v-else :icon="jobIcons[live.job.name] ?? 'clock'" class="h-3.5 w-3.5 text-slate-500" />
             </span>
             <span class="min-w-0 flex-1">
@@ -353,7 +353,7 @@ defineExpose({ load });
             </div>
           </div>
           <details v-if="!football.running && football.errors.length" class="mt-3 text-xs">
-            <summary class="cursor-pointer text-amber-500">{{ football.errors.length }} {{ football.errors.length === 1 ? 'error' : 'errores' }}</summary>
+            <summary class="cursor-pointer text-warning">{{ football.errors.length }} {{ football.errors.length === 1 ? 'error' : 'errores' }}</summary>
             <ul class="mt-1 space-y-1 text-slate-600"><li v-for="(message, i) in football.errors" :key="i" class="break-words">{{ message }}</li></ul>
           </details>
         </section>
@@ -365,7 +365,7 @@ defineExpose({ load });
               <h2 class="mt-1 flex items-center gap-2 text-lg font-bold text-slate-900">
                 <Icon v-if="paused" :icon="sheets.pauseKind === 'rest' ? 'mug-hot' : 'pause'" class="h-4 w-4" :class="pauseIconTone" />
                 <Icon v-else-if="sheets.downloading" icon="spinner" class="h-4 w-4 animate-spin text-brand-500" />
-                <Icon v-else-if="sheets.pending" icon="hourglass-half" class="h-4 w-4 text-amber-500" />
+                <Icon v-else-if="sheets.pending" icon="hourglass-half" class="h-4 w-4 text-warning" />
                 <Icon v-else icon="file-lines" class="h-4 w-4 text-slate-400" />
                 {{ sheetState?.title }}
               </h2>
@@ -434,8 +434,8 @@ defineExpose({ load });
             <div class="flex items-center justify-between gap-2">
               <p class="min-w-0 break-words font-semibold text-slate-900">{{ league.name }}</p>
               <Icon v-if="league.status === 'running'" icon="spinner" class="h-3.5 w-3.5 shrink-0 animate-spin text-brand-500" />
-              <Icon v-else-if="league.status === 'done'" icon="circle-check" class="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-              <Icon v-else-if="league.status === 'failed'" icon="circle-xmark" class="h-3.5 w-3.5 shrink-0 text-red-500" />
+              <Icon v-else-if="league.status === 'done'" icon="circle-check" class="h-3.5 w-3.5 shrink-0 text-success" />
+              <Icon v-else-if="league.status === 'failed'" icon="circle-xmark" class="h-3.5 w-3.5 shrink-0 text-danger" />
               <Icon v-else icon="clock" class="h-3.5 w-3.5 shrink-0 text-slate-400" />
             </div>
             <ol class="mt-2 flex gap-1" aria-label="Fases">
@@ -476,7 +476,7 @@ defineExpose({ load });
               :key="item.value"
               type="button"
               class="rounded-full border px-3 py-1 text-xs"
-              :class="feedFilter === item.value ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
+              :class="feedFilter === item.value ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
               @click="feedFilter = item.value"
             >{{ item.label }}</button>
           </div>
@@ -522,7 +522,7 @@ defineExpose({ load });
           </div>
           <div class="flex flex-wrap gap-2">
             <button type="button" class="btn-ghost px-3 py-1.5 text-xs" :disabled="busy || sheetFinished === 0" @click="clearQueue(true)">Limpiar terminadas</button>
-            <button type="button" class="btn-ghost px-3 py-1.5 text-xs text-red-500" :disabled="busy || sheets.pending === 0" @click="clearQueue(false)">
+            <button type="button" class="btn-ghost px-3 py-1.5 text-xs text-danger" :disabled="busy || sheets.pending === 0" @click="clearQueue(false)">
               <Icon icon="trash" class="h-3 w-3" />Vaciar cola
             </button>
           </div>
@@ -536,7 +536,7 @@ defineExpose({ load });
           <button
             type="button"
             class="rounded-full border px-3 py-1 text-xs"
-            :class="sheetFilter === 'all' ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
+            :class="sheetFilter === 'all' ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
             @click="sheetFilter = 'all'"
           >Todas · {{ sheetTotal }}</button>
           <button
@@ -544,7 +544,7 @@ defineExpose({ load });
             :key="status"
             type="button"
             class="rounded-full border px-3 py-1 text-xs"
-            :class="sheetFilter === status ? 'border-brand-400 bg-brand-500 text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
+            :class="sheetFilter === status ? 'border-brand-400 bg-action text-white' : 'border-line text-slate-600 hover:border-brand-400/60'"
             :disabled="count === 0"
             @click="sheetFilter = status"
           >{{ sheetLabels[status] }} · {{ count }}</button>
@@ -624,7 +624,7 @@ defineExpose({ load });
             </p>
             <p v-if="live.job.lastRun.summary" class="mt-1 text-slate-700">{{ live.job.lastRun.summary }}</p>
             <details v-if="live.job.lastRun.errors.length" class="mt-1">
-              <summary class="cursor-pointer text-amber-600">{{ live.job.lastRun.errors.length }} {{ live.job.lastRun.errors.length === 1 ? 'error' : 'errores' }}</summary>
+              <summary class="cursor-pointer text-warning">{{ live.job.lastRun.errors.length }} {{ live.job.lastRun.errors.length === 1 ? 'error' : 'errores' }}</summary>
               <ul class="mt-1 max-h-32 space-y-1 overflow-y-auto text-slate-600"><li v-for="(message, i) in live.job.lastRun.errors" :key="i" class="break-words">{{ message }}</li></ul>
             </details>
           </div>

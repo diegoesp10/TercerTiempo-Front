@@ -2,7 +2,8 @@ import type { MatchDto } from '@/types/api';
 import { outcomeFor, outcomeLabels, type Outcome } from '@/utils/format';
 
 // Colores del resultado de un partido ya jugado, desde el punto de vista del equipo: verde si ganó, amarillo si empató y
-// rojo si perdió. El sólido (la letra) no cambia con el tema; el suave usa los tonos del tema para leerse en los dos.
+// rojo si perdió. El sólido (la letra) es casi igual en los dos temas y su letra llega a 4,5:1; el suave usa los tonos del
+// tema para leerse en los dos.
 export type Result = Exclude<Outcome, null>;
 
 export const resultStyle: Record<Result, { label: string; solid: string; soft: string; ring: string; tint: string; bar: string }> = {
@@ -24,7 +25,7 @@ export const resultStyle: Record<Result, { label: string; solid: string; soft: s
   },
   loss: {
     label: 'Derrota',
-    solid: 'bg-red-500 text-white',
+    solid: 'bg-danger-solid text-white',
     soft: 'bg-red-500/15 text-red-700',
     ring: 'ring-red-500/50',
     tint: 'border-red-500/40 bg-red-500/15',

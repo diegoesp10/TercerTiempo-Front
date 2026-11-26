@@ -222,7 +222,7 @@ async function save(official: MatchOfficialDto) {
               @input="delete commentErrors[official.refereeId]"
             />
             <p v-if="commentErrors[official.refereeId]" class="field-error">{{ commentErrors[official.refereeId] }}</p>
-            <p :id="`comment-rules-${official.refereeId}`" class="flex items-start gap-1.5 text-xs text-amber-600">
+            <p :id="`comment-rules-${official.refereeId}`" class="flex items-start gap-1.5 text-xs text-warning">
               <Icon icon="triangle-exclamation" class="mt-0.5 h-3 w-3 shrink-0" />
               No se permiten palabras malsonantes ni insultos: solo comentarios que dejen claro el trabajo realizado.
             </p>

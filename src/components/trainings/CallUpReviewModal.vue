@@ -88,13 +88,13 @@ const nobodyToWarn = computed(() => props.update && props.changes && !props.chan
         <div>
           <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Cita</h3>
           <p v-if="meetAt" class="font-medium text-slate-900">{{ formatKickoff(meetAt) }}</p>
-          <p v-else class="text-sm text-amber-600">Sin hora de cita</p>
+          <p v-else class="text-sm text-warning">Sin hora de cita</p>
           <p v-if="meetBeforeKickoff" class="text-xs text-slate-500">{{ meetBeforeKickoff }}</p>
         </div>
         <div>
           <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Lugar</h3>
           <GroundCard v-if="ground || place" :ground="ground" :place="place" compact />
-          <p v-else class="text-sm text-amber-600">Sin lugar</p>
+          <p v-else class="text-sm text-warning">Sin lugar</p>
         </div>
         <div v-if="notes" class="sm:col-span-2">
           <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Notas</h3>
@@ -128,7 +128,7 @@ const nobodyToWarn = computed(() => props.update && props.changes && !props.chan
               <PlayerAvatar :src="p.photoUrl" :name="p.name" size="sm" />
               <span class="min-w-0 flex-1 break-words text-slate-900">{{ p.name }}</span>
               <DisciplineBadge :discipline="p.discipline" class="shrink-0" />
-              <span v-if="changes?.entering.includes(p.id)" class="text-[10px] font-semibold uppercase text-emerald-500">Entra</span>
+              <span v-if="changes?.entering.includes(p.id)" class="text-[10px] font-semibold uppercase text-success">Entra</span>
               <span v-if="!p.linked" class="text-[10px] text-slate-400" title="Sin cuenta en la app: no le llega el aviso">sin cuenta</span>
             </li>
           </ul>
@@ -139,7 +139,7 @@ const nobodyToWarn = computed(() => props.update && props.changes && !props.chan
         <p class="mb-1.5 font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">No convocados · {{ notCalled.length }}</p>
         <p class="text-sm text-slate-600">
           <template v-for="(p, i) in notCalled" :key="p.id">
-            <span :class="changes?.leaving.includes(p.id) ? 'font-medium text-red-500' : ''">{{ p.name }}<template v-if="changes?.leaving.includes(p.id)"> (sale)</template><template v-if="p.suspended"> (sancionado)</template><template v-else-if="p.injured"> (lesionado)</template></span><template v-if="i < notCalled.length - 1">, </template>
+            <span :class="changes?.leaving.includes(p.id) ? 'font-medium text-danger' : ''">{{ p.name }}<template v-if="changes?.leaving.includes(p.id)"> (sale)</template><template v-if="p.suspended"> (sancionado)</template><template v-else-if="p.injured"> (lesionado)</template></span><template v-if="i < notCalled.length - 1">, </template>
           </template>
         </p>
       </section>
