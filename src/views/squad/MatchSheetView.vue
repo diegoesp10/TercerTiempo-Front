@@ -99,7 +99,7 @@ const canRateReferees = computed(() => canPrepare.value && (auth.isClub || auth.
 const canGivePasses = computed(() => canPrepare.value && (auth.isClub || auth.isCoach) && !isAdmin.value);
 // Lo interno del rival en este partido (acta interna y vídeo): se ve con un pase de su club, que se le puede pedir si
 // su plantilla está abierta a solicitudes. Se consulta como visitante, igual que desde la página del partido.
-const visitor = useAsync(() => api.matches.get(props.matchId), { immediate: false, redirectOnError: false });
+const visitor = useAsync(() => api.matches.get(props.matchId), { immediate: false, redirectOnError: false, revalidate: true });
 watch(
   () => [matchOver.value, canGivePasses.value] as const,
   ([over, staff]) => { if (over && staff && !visitor.data.value && !visitor.loading.value) void visitor.run(); },

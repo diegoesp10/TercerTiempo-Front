@@ -18,6 +18,25 @@ declare module 'vue-router' {
 
 // Lo que dura la salida de la página anterior (.page-leave-active en style.css): el scroll se mueve cuando ya no se ve.
 const PAGE_LEAVE_MS = 150;
+// «Volver»: lo más que se espera a que la página sea tan alta como para llegar a donde estaba (los datos, las imágenes).
+const SCROLL_WAIT_MS = 2_000;
+
+/** Llama a `done` cuando la página llega a `top` (o se acaba la espera): antes, el navegador no puede bajar hasta ahí. */
+function whenReachable(top: number, done: () => void) {
+  const deadline = performance.now() + SCROLL_WAIT_MS;
+  let frame = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const check = () => {
+    cancelAnimationFrame(frame);
+    clearTimeout(timer);
+    const reachable = document.documentElement.scrollHeight - window.innerHeight >= top - 1;
+    if (reachable || performance.now() >= deadline) return done();
+    // Cada fotograma y, por si la pestaña está en segundo plano (sin fotogramas), también con un temporizador.
+    frame = requestAnimationFrame(check);
+    timer = setTimeout(check, 100);
+  };
+  check();
+}
 
 const router = createRouter({
   history: createWebHistory(),
@@ -29,7 +48,8 @@ const router = createRouter({
     const sameLayout = to.matched.length > 1 && to.matched[0] === from.matched[0] && to.params.squadId === from.params.squadId;
     if (sameLayout && !savedPosition) return false;
     const target = savedPosition ?? { top: 0 };
-    return new Promise((resolve) => setTimeout(() => resolve({ ...target, behavior: 'instant' }), PAGE_LEAVE_MS));
+    return new Promise((resolve) =>
+      setTimeout(() => whenReachable(target.top ?? 0, () => resolve({ ...target, behavior: 'instant' })), PAGE_LEAVE_MS));
   },
   routes: [
     { path: '/', name: 'home', component: () => import('@/views/HomeView.vue'), meta: { root: true } },

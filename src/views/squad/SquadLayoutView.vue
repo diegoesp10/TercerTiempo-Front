@@ -2,7 +2,7 @@
 import { computed, provide, ref, shallowRef, toRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '@/api';
-import { ApiError, errorMessage } from '@/api/http';
+import { ApiError, errorMessage, revalidated, staleReads } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
@@ -30,14 +30,28 @@ async function reload() {
   loading.value = true;
   error.value = null;
   forbidden.value = false;
+  const staleBefore = staleReads();
   try {
     detail.value = await api.squads.get(props.squadId);
+    if (staleReads() !== staleBefore) void refreshDetail();
   } catch (e) {
     error.value = errorMessage(e);
     forbidden.value = e instanceof ApiError && e.status === 403;
     licenseCode.value = e instanceof ApiError && e.code?.startsWith('license.') ? e.code : null;
   } finally {
     loading.value = false;
+  }
+}
+
+// Al volver a la plantilla se pinta la de la caché; cuando llega la nueva, se cambia solo si algo cambió.
+async function refreshDetail() {
+  const squadId = props.squadId;
+  await revalidated();
+  try {
+    const fresh = await api.squads.get(squadId);
+    if (squadId === props.squadId && JSON.stringify(fresh) !== JSON.stringify(detail.value)) detail.value = fresh;
+  } catch {
+    // Se queda la que se estaba viendo.
   }
 }
 

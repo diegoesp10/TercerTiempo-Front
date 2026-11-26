@@ -35,7 +35,7 @@ const auth = useAuthStore();
 const { signedIn } = useViewer();
 const router = useRouter();
 
-const { data, loading, error } = useAsync(() => api.teams.get(props.teamId));
+const { data, loading, error } = useAsync(() => api.teams.get(props.teamId), { revalidate: true });
 useBackFallback(() => data.value
   ? { to: { name: 'teams', query: { competition: data.value.season.competitionId } }, label: `Volver a ${data.value.season.competitionName}` }
   : null);
@@ -44,7 +44,7 @@ useBackFallback(() => data.value
 const route = useRoute();
 if (typeof route.query.jugador === 'string' && signedIn.value)
   void router.replace({ name: 'player-card', params: { teamId: props.teamId, entryId: route.query.jugador } });
-const matches = useAsync(() => api.teams.matches(props.teamId));
+const matches = useAsync(() => api.teams.matches(props.teamId), { revalidate: true });
 
 // Los que ya pasaron de hora sin resultado van con los jugados (con «Sin resultado»), no con los próximos.
 const isPlayed = (m: MatchDto) => ['Played', 'AwaitingResult'].includes(matchDisplayStatus(m));

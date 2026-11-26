@@ -43,7 +43,7 @@ const alerts = useAlertsStore();
 
 // La plantilla (la página del partido se vuelve a montar con cada plantilla): la foto y la posición de cada jugador, y
 // el equipo, para el rival del repaso.
-const { data: detail, loading: detailLoading, error: detailError } = useAsync(() => api.squads.get(props.squadId));
+const { data: detail, loading: detailLoading, error: detailError } = useAsync(() => api.squads.get(props.squadId), { revalidate: true });
 
 const { data, loading, error, run } = useAsync(() => api.trainings.callUp(props.squadId, props.matchId));
 // Sube con cada acción propia (guardar, enviar, firmar, cambiar de partido): una recarga en segundo plano que llegue

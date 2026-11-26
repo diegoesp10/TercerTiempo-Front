@@ -41,6 +41,13 @@ interface RequestOptions {
   silent?: boolean;
   /** Solo GET: reutiliza la respuesta durante estos milisegundos (datos de referencia que casi no cambian). */
   cacheMs?: number;
+  /** Con cacheMs: lista de referencia que no cambia con lo que guarda una cuenta (sí con lo del administrador). */
+  reference?: boolean;
+  /**
+   * Solo GET, páginas a las que se vuelve (ficha del equipo, partidos de la plantilla...): durante estos milisegundos se
+   * devuelve al momento la respuesta anterior y se vuelve a pedir por detrás. useAsync con `revalidate` repinta si cambió.
+   */
+  staleMs?: number;
   /** Token propio en lugar del de la sesión (página de administración): un 401 no cierra la sesión del usuario. */
   token?: string;
   /** Lectura pública: va sin token, así que responde igual sin sesión, con una cuenta o como administrador. */
@@ -56,16 +63,41 @@ export const mediaBaseUrl = mediaUrl;
 // sola petición, y las listas de referencia (competiciones, tipos de lesión...) no se repiten al cambiar de página.
 // Las GET que ya iban en vuelo al guardar algo pueden traer datos de antes: no se reutilizan para las lecturas de
 // después (cada escritura abre una generación nueva) ni se guardan en la caché.
+// Cada respuesta guardada se puede devolver hasta `keep`; pasado `fresh` (con staleMs) se devuelve igual, pero se vuelve
+// a pedir por detrás.
+interface CacheEntry { fresh: number; keep: number; data: unknown; reference: boolean }
 const inFlight = new Map<string, { generation: number; promise: Promise<unknown> }>();
-const cache = new Map<string, { expires: number; data: unknown }>();
+const cache = new Map<string, CacheEntry>();
+const revalidating = new Map<string, Promise<void>>();
 let generation = 0;
+let staleServed = 0;
 
-/** Olvida las respuestas cacheadas (tras guardar algo, o al cambiar de sesión). */
+// Con staleMs, lo que se vuelve a leer en estos milisegundos (dos componentes, o la segunda pasada de useAsync) no se
+// vuelve a pedir.
+const STALE_FRESH_MS = 3_000;
+
+/** Olvida todas las respuestas cacheadas (al cambiar de sesión o de temporada). */
 export function clearHttpCache() {
   cache.clear();
   inFlight.clear();
+  revalidating.clear();
   generation++;
 }
+
+// Tras guardar algo: fuera todo menos las listas de referencia, salvo si guarda el administrador (sus catálogos).
+function forgetAfterWrite(options: RequestOptions) {
+  if (options.token) return clearHttpCache();
+  for (const [key, entry] of cache) if (!entry.reference) cache.delete(key);
+  inFlight.clear();
+  revalidating.clear();
+  generation++;
+}
+
+/** Cuántas lecturas han salido de la caché a la espera de revalidarse: useAsync lo mira antes y después de leer. */
+export const staleReads = () => staleServed;
+
+/** Espera a que lleguen las respuestas nuevas de lo que salió de la caché. */
+export const revalidated = () => Promise.all(revalidating.values()).then(() => undefined);
 
 // Sin cuenta abierta, la sesión del administrador sirve para leer toda la web (visor de solo lectura): la API solo le
 // deja hacer GET en las rutas de las cuentas.
@@ -75,11 +107,18 @@ function adminViewerToken(): string | null {
 
 export function http<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const method = options.method ?? 'GET';
-  if (method !== 'GET') return request<T>(path, options).finally(() => { if (!options.keepCache) clearHttpCache(); });
+  if (method !== 'GET') return request<T>(path, options).finally(() => { if (!options.keepCache) forgetAfterWrite(options); });
 
   const key = `${options.anonymous ? '' : options.token ?? useAuthStore().token ?? adminViewerToken() ?? ''}|${useSeasonStore().selectedId ?? ''}|${path}`;
+  const now = Date.now();
   const cached = cache.get(key);
-  if (cached && cached.expires > Date.now()) return Promise.resolve(cached.data as T);
+  if (cached && cached.keep > now) {
+    if (cached.fresh <= now) {
+      staleServed++;
+      revalidate(key, path, options);
+    }
+    return Promise.resolve(cached.data as T);
+  }
 
   const pending = inFlight.get(key);
   if (pending && pending.generation === generation) return pending.promise as Promise<T>;
@@ -87,7 +126,7 @@ export function http<T>(path: string, options: RequestOptions = {}): Promise<T> 
   const started = generation;
   const promise = request<T>(path, options)
     .then((data) => {
-      if (options.cacheMs && started === generation) cache.set(key, { expires: Date.now() + options.cacheMs, data });
+      if (started === generation) remember(key, data, options);
       return data;
     })
     .finally(() => {
@@ -95,6 +134,43 @@ export function http<T>(path: string, options: RequestOptions = {}): Promise<T> 
     });
   inFlight.set(key, { generation, promise });
   return promise;
+}
+
+const MAX_CACHE_ENTRIES = 150;
+
+function remember(key: string, data: unknown, options: RequestOptions) {
+  if (!options.staleMs && !options.cacheMs) return;
+  const now = Date.now();
+  // Se borra antes para que vuelva al final: el Map recorre en orden de inserción y lo primero es lo más antiguo.
+  cache.delete(key);
+  if (options.staleMs) cache.set(key, { fresh: now + STALE_FRESH_MS, keep: now + options.staleMs, data, reference: false });
+  else cache.set(key, { fresh: now + options.cacheMs!, keep: now + options.cacheMs!, data, reference: options.reference ?? false });
+  if (cache.size <= MAX_CACHE_ENTRIES) return;
+  for (const [stored, entry] of cache) if (entry.keep <= now) cache.delete(stored);
+  for (const stored of cache.keys()) {
+    if (cache.size <= MAX_CACHE_ENTRIES) break;
+    cache.delete(stored);
+  }
+}
+
+function revalidate(key: string, path: string, options: RequestOptions) {
+  if (revalidating.has(key)) return;
+  const started = generation;
+  const done = request(path, { ...options, silent: true })
+    .then((data) => {
+      if (started !== generation) return;
+      // Si no ha cambiado se guarda el mismo objeto: quien lo pinta no tiene nada que repintar.
+      const previous = cache.get(key)?.data;
+      remember(key, previous !== undefined && JSON.stringify(previous) === JSON.stringify(data) ? previous : data, options);
+    })
+    .catch((e: unknown) => {
+      // Ya no existe o ya no se puede ver: que lo diga la próxima lectura. Sin conexión, se queda la anterior.
+      if (e instanceof ApiError && e.status >= 400 && e.status < 500) cache.delete(key);
+    })
+    .finally(() => {
+      if (revalidating.get(key) === done) revalidating.delete(key);
+    });
+  revalidating.set(key, done);
 }
 
 async function request<T>(path: string, options: RequestOptions): Promise<T> {

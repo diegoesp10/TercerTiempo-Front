@@ -19,7 +19,7 @@ import type { CallUpSummaryDto, MatchDto } from '@/types/api';
 const auth = useAuthStore();
 const { squadId, detail } = useSquad();
 
-const { data, loading, error, run } = useAsync(() => api.squads.matches(squadId.value));
+const { data, loading, error, run } = useAsync(() => api.squads.matches(squadId.value), { revalidate: true });
 
 const teamId = computed(() => detail.value?.summary.teamId ?? '');
 const canManage = computed(() => detail.value?.canManage ?? false);

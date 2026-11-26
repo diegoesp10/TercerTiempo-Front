@@ -31,7 +31,7 @@ const auth = useAuthStore();
 const { signedIn } = useViewer();
 const route = useRoute();
 const router = useRouter();
-const { data, loading, error, run } = useAsync(() => api.matches.get(props.matchId));
+const { data, loading, error, run } = useAsync(() => api.matches.get(props.matchId), { revalidate: true });
 
 // Solicitud de acceso a lo interno de un partido (acta interna y vídeo) de una plantilla abierta a solicitudes.
 const requesting = ref<{ sheet: MatchSquadSheetDto; video: boolean } | null>(null);

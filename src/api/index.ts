@@ -149,6 +149,9 @@ const REFERENCE_CACHE_MS = 5 * 60_000;
 const TAB_CACHE_MS = 60_000;
 /** Cálculos de una plantilla que comparten varias pestañas (estadísticas y comparador): cualquier cambio guardado los invalida. */
 const SQUAD_READ_CACHE_MS = 30_000;
+// Páginas a las que se vuelve (ficha del equipo, la plantilla y sus partidos, la página del partido): al volver se pintan
+// al momento con la respuesta anterior y se revalidan por detrás (useAsync con `revalidate`).
+const PAGE_STALE_MS = 5 * 60_000;
 
 export const api = {
   privacy: {
@@ -159,7 +162,7 @@ export const api = {
   },
   seasons: {
     /** Temporadas de la app, de la más reciente a la más antigua (la actual marcada). */
-    list: () => http<SeasonYearDto[]>('/api/seasons', { silent: true, cacheMs: 300_000 }),
+    list: () => http<SeasonYearDto[]>('/api/seasons', { silent: true, cacheMs: 300_000, reference: true }),
   },
   auth: {
     register: (body: RegisterRequest) => http<AuthResponse>('/api/auth/register', { method: 'POST', body }),
@@ -170,7 +173,7 @@ export const api = {
     passwordStatus: () => http<PasswordStatusDto>('/api/auth/password', { silent: true }),
     changePassword: (body: ChangePasswordRequest) => http<AuthResponse>('/api/auth/password', { method: 'PUT', body }),
     /** Si el alta de clubes exige invitación (beta cerrada). */
-    registrationOptions: () => http<RegistrationOptionsDto>('/api/auth/registration-options', { silent: true, cacheMs: 300_000 }),
+    registrationOptions: () => http<RegistrationOptionsDto>('/api/auth/registration-options', { silent: true, cacheMs: 300_000, reference: true }),
     /** Para qué club es una invitación de la beta (404 si no vale). */
     clubInvitation: (code: string) =>
       http<ClubInvitationLookupDto>(`/api/auth/club-invitation/${encodeURIComponent(code.trim())}`, { silent: true }),
@@ -244,7 +247,7 @@ export const api = {
   /** Gestión de plantillas por el cuerpo técnico (las lecturas también valen para jugadores vinculados y plantillas públicas). */
   squads: {
     mine: () => http<SquadSummaryDto[]>('/api/squads/mine'),
-    get: (squadId: string) => http<SquadDetailDto>(`/api/squads/${squadId}`),
+    get: (squadId: string) => http<SquadDetailDto>(`/api/squads/${squadId}`, { staleMs: PAGE_STALE_MS }),
     addPlayer: (squadId: string, body: SquadPlayerRequest) =>
       http<SquadPlayerDto>(`/api/squads/${squadId}/players`, { method: 'POST', body }),
     updatePlayer: (squadId: string, squadPlayerId: string, body: SquadPlayerRequest) =>
@@ -260,7 +263,7 @@ export const api = {
       http<SquadDetailDto>(`/api/squads/${squadId}/call-up-size`, { method: 'PUT', body: { size } }),
     generatePlayerInviteCode: (squadId: string, squadPlayerId: string) =>
       http<SquadDetailDto>(`/api/squads/${squadId}/players/${squadPlayerId}/invite-code`, { method: 'POST' }),
-    matches: (squadId: string) => http<SquadMatchDto[]>(`/api/squads/${squadId}/matches`),
+    matches: (squadId: string) => http<SquadMatchDto[]>(`/api/squads/${squadId}/matches`, { staleMs: PAGE_STALE_MS }),
     sheet: (squadId: string, matchId: string) => http<MatchSheetDto>(`/api/squads/${squadId}/matches/${matchId}/sheet`),
     recordSheet: (squadId: string, matchId: string, entries: MatchSheetEntryInput[]) =>
       http<MatchSheetDto>(`/api/squads/${squadId}/matches/${matchId}/sheet`, { method: 'PUT', body: { entries } }),
@@ -295,9 +298,9 @@ export const api = {
     playerProfile: (squadId: string, squadPlayerId: string) =>
       http<SquadPlayerProfileDto>(`/api/squads/${squadId}/players/${squadPlayerId}/profile`),
     timeline: (squadId: string) => http<SquadTimelineDto>(`/api/squads/${squadId}/timeline`, { cacheMs: SQUAD_READ_CACHE_MS }),
-    injuryTypes: () => http<InjuryTypeDto[]>('/api/squads/injury-types', { cacheMs: 60 * 60_000 }),
+    injuryTypes: () => http<InjuryTypeDto[]>('/api/squads/injury-types', { cacheMs: 60 * 60_000, reference: true }),
     // El catálogo de sitios del cuerpo (también los retirados, que enseñan las lesiones que ya los tienen).
-    bodySites: () => http<BodySiteDto[]>('/api/squads/body-sites', { cacheMs: 60 * 60_000 }),
+    bodySites: () => http<BodySiteDto[]>('/api/squads/body-sites', { cacheMs: 60 * 60_000, reference: true }),
     injuries: (squadId: string) => http<InjuryDto[]>(`/api/squads/${squadId}/injuries`),
     // Partidos y entrenamientos ya empezados de la plantilla, los más recientes primero: dónde se pudo lesionar.
     injuryOccasions: (squadId: string) => http<InjuryOccasionDto[]>(`/api/squads/${squadId}/injury-occasions`),
@@ -348,7 +351,7 @@ export const api = {
   /** Árbitros y notas de los equipos (solo clubes y cuerpos técnicos con licencia). */
   referees: {
     // Públicas: van sin token. Los árbitros se buscan siempre dentro de una categoría.
-    categories: () => http<RefereeCategoryDto[]>('/api/referees/categories', { anonymous: true, cacheMs: REFERENCE_CACHE_MS }),
+    categories: () => http<RefereeCategoryDto[]>('/api/referees/categories', { anonymous: true, cacheMs: REFERENCE_CACHE_MS, reference: true }),
     category: (category: string, filter: { duty?: OfficialDuty; search?: string; sort?: RefereeSort; order?: SortOrder } = {}) => {
       const query = new URLSearchParams(Object.entries(filter).filter((entry): entry is [string, string] => !!entry[1])).toString();
       return http<RefereeCategoryListDto>(`/api/referees/categories/${encodeURIComponent(category)}${query ? `?${query}` : ''}`, { anonymous: true });
@@ -376,7 +379,7 @@ export const api = {
 
   /** Preparación semanal del cuerpo técnico: biblioteca de ejercicios, entrenamientos con asistencia y convocatorias. */
   trainings: {
-    catalog: () => http<TrainingCatalogDto>('/api/trainings/catalog', { cacheMs: REFERENCE_CACHE_MS }),
+    catalog: () => http<TrainingCatalogDto>('/api/trainings/catalog', { cacheMs: REFERENCE_CACHE_MS, reference: true }),
     exercises: (squadId: string) => http<ExerciseDto[]>(`/api/squads/${squadId}/exercises`),
     createExercise: (squadId: string, body: ExerciseRequest) => http<ExerciseDto[]>(`/api/squads/${squadId}/exercises`, { method: 'POST', body }),
     updateExercise: (squadId: string, exerciseId: string, body: ExerciseRequest) =>
@@ -461,7 +464,7 @@ export const api = {
   },
 
   competitions: {
-    list: () => http<CompetitionDto[]>('/api/competitions', { cacheMs: REFERENCE_CACHE_MS }),
+    list: () => http<CompetitionDto[]>('/api/competitions', { cacheMs: REFERENCE_CACHE_MS, reference: true }),
     /** Partidos de una jornada; sin número, la jornada en curso o la próxima. */
     matchday: (competitionId: string, matchday?: number | null) =>
       http<CompetitionMatchdayDto>(`/api/competitions/${competitionId}/matchdays/${matchday ?? 'current'}`),
@@ -470,11 +473,11 @@ export const api = {
     list: (competitionId: string) => http<TeamSummaryDto[]>(`/api/teams?competitionId=${encodeURIComponent(competitionId)}`),
     /** Ficha de un jugador (con sesión): la básica siempre; la completa si es de tu club o la ha hecho pública. */
     playerCard: (teamId: string, entryId: string) => http<PlayerCardDto>(`/api/teams/${teamId}/roster/${entryId}`),
-    get: (teamId: string) => http<TeamDetailDto>(`/api/teams/${teamId}`),
-    matches: (teamId: string) => http<MatchDto[]>(`/api/teams/${teamId}/matches`),
+    get: (teamId: string) => http<TeamDetailDto>(`/api/teams/${teamId}`, { staleMs: PAGE_STALE_MS }),
+    matches: (teamId: string) => http<MatchDto[]>(`/api/teams/${teamId}/matches`, { staleMs: PAGE_STALE_MS }),
   },
   matches: {
-    get: (matchId: string) => http<MatchDetailDto>(`/api/matches/${matchId}`),
+    get: (matchId: string) => http<MatchDetailDto>(`/api/matches/${matchId}`, { staleMs: PAGE_STALE_MS }),
     /** Acta pública del partido, de la federación (o por qué aún no está). */
     officialSheet: (matchId: string) =>
       http<OfficialSheetDto>(`/api/matches/${matchId}/official-sheet`),
