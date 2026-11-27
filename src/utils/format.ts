@@ -265,8 +265,10 @@ export const outcomeLabels: Record<Exclude<Outcome, null>, string> = { win: 'V',
 
 export type Tone = 'green' | 'amber' | 'red' | 'blue' | 'slate';
 
-export const outcomeTone = (outcome: Outcome): Tone =>
-  outcome === 'win' ? 'green' : outcome === 'draw' ? 'amber' : outcome === 'loss' ? 'red' : 'slate';
+/** Tono de la etiqueta V/E/D: los colores del resultado (win, draw y loss), gris si aún no se ha jugado. */
+export type OutcomeTone = Exclude<Outcome, null> | 'slate';
+
+export const outcomeTone = (outcome: Outcome): OutcomeTone => outcome ?? 'slate';
 
 /** Rival de un partido para un equipo; siempre "vs Rival" (la localía se indica aparte). */
 export function opponentLabel(match: MatchDto, teamId: string): string {

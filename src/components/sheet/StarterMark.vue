@@ -7,7 +7,7 @@ const props = withDefaults(defineProps<{ started: boolean; played?: boolean }>()
 <template>
   <span
     v-if="props.started"
-    class="inline-flex h-5 min-w-5 items-center justify-center rounded bg-emerald-500/15 px-1 font-display text-2xs font-bold text-emerald-700"
+    class="inline-flex h-5 min-w-5 items-center justify-center rounded bg-starter-solid/15 px-1 font-display text-2xs font-bold text-starter"
     title="Titular"
     aria-label="Titular"
   >T</span>

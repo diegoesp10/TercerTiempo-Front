@@ -166,7 +166,7 @@ onMounted(load);
     <label v-if="scope === 'FullSeason'" class="block sm:w-72">
       <span class="label">Temporada</span>
       <input v-model="season" type="text" inputmode="numeric" placeholder="La actual" class="input" :aria-invalid="!seasonValid" />
-      <span class="mt-1 block text-xs" :class="seasonValid ? 'text-slate-500' : 'text-red-600'">
+      <span class="mt-1 block text-xs" :class="seasonValid ? 'text-slate-500' : 'text-danger'">
         {{ seasonValid
           ? 'Vacío, la actual. Una pasada («2025/2026») guarda solo sus partidos y clasificaciones para los precedentes de la previa: ni plantillas ni actas, y no cambia la temporada en curso.'
           : 'Escríbela como «2025/2026».' }}

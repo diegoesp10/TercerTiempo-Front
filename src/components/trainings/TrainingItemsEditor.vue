@@ -158,7 +158,7 @@ function remove(index: number) {
                     type="text"
                     maxlength="120"
                     class="input"
-                    :class="{ 'border-red-400 ring-1 ring-red-300': !item.name.trim() }"
+                    :class="{ 'border-danger ring-1 ring-danger/40': !item.name.trim() }"
                     placeholder="Qué se hace: rondo 4x2…"
                     :aria-invalid="!item.name.trim()"
                     @input="patch(index, { name: ($event.target as HTMLInputElement).value })"
@@ -179,7 +179,7 @@ function remove(index: number) {
                   </span>
                 </label>
               </div>
-              <p v-if="!item.name.trim()" class="mt-1 text-xs text-red-600">Escribe qué se hace en este ejercicio.</p>
+              <p v-if="!item.name.trim()" class="mt-1 text-xs text-danger">Escribe qué se hace en este ejercicio.</p>
             </div>
             <div class="flex flex-wrap items-center gap-1.5" role="group" :aria-label="`Quién hace el ejercicio ${index + 1}`">
               <span class="mr-0.5 text-xs font-medium text-slate-500">Quién lo hace</span>
@@ -276,6 +276,6 @@ function remove(index: number) {
         </div>
       </form>
     </div>
-    <p v-if="!readonly && full" class="mt-2 text-xs text-amber-700">Una sesión admite como mucho {{ maxItems }} ejercicios.</p>
+    <p v-if="!readonly && full" class="mt-2 text-xs text-warning">Una sesión admite como mucho {{ maxItems }} ejercicios.</p>
   </div>
 </template>

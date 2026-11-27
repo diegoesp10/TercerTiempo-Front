@@ -270,7 +270,7 @@ async function clearQueue(onlyFinished: boolean) {
 
 // --- Los demás trabajos
 
-const toneText = { blue: 'text-brand-500', amber: 'text-warning', slate: 'text-slate-500', green: 'text-emerald-600', red: 'text-red-600' } as const;
+const toneText = { blue: 'text-brand-500', amber: 'text-warning', slate: 'text-slate-500', green: 'text-success', red: 'text-danger' } as const;
 const eventIcon: Record<JobEventTone, string> = { success: 'circle-check', warning: 'triangle-exclamation', info: 'circle-info' };
 const eventTone: Record<JobEventTone, string> = { success: 'text-success', warning: 'text-warning', info: 'text-slate-400' };
 
@@ -305,7 +305,7 @@ defineExpose({ load });
             :key="live.job.name"
             type="button"
             class="flex min-w-0 items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition hover:border-brand-400/60"
-            :class="live.job.running ? 'border-brand-400 bg-brand-500/10' : live.job.pause ? 'border-amber-400/50 bg-amber-400/5' : 'border-line bg-surface-2'"
+            :class="live.job.running ? 'border-brand-400 bg-brand-500/10' : live.job.pause ? 'border-warning-line bg-warning-soft' : 'border-line bg-surface-2'"
             @click="reveal(live.job.name)"
           >
             <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-3">
@@ -383,9 +383,9 @@ defineExpose({ load });
           </p>
 
           <div v-if="sheetTotal" class="mt-4 flex h-2 overflow-hidden rounded-full bg-surface-3">
-            <div class="h-full bg-emerald-500 transition-[width] duration-700" :style="{ width: `${pct(sheets.done, sheetTotal)}%` }" />
-            <div class="h-full bg-amber-400 transition-[width] duration-700" :style="{ width: `${pct(sheets.missing, sheetTotal)}%` }" />
-            <div class="h-full bg-red-500 transition-[width] duration-700" :style="{ width: `${pct(sheets.failed, sheetTotal)}%` }" />
+            <div class="h-full bg-success transition-[width] duration-700" :style="{ width: `${pct(sheets.done, sheetTotal)}%` }" />
+            <div class="h-full bg-warning transition-[width] duration-700" :style="{ width: `${pct(sheets.missing, sheetTotal)}%` }" />
+            <div class="h-full bg-danger transition-[width] duration-700" :style="{ width: `${pct(sheets.failed, sheetTotal)}%` }" />
             <div class="h-full animate-pulse bg-brand-500 transition-[width] duration-700" :style="{ width: `${pct(sheets.downloading, sheetTotal)}%` }" />
           </div>
 
@@ -430,7 +430,7 @@ defineExpose({ load });
             v-for="league in football.leagues"
             :key="league.name"
             class="rounded-xl border p-3 transition"
-            :class="league.status === 'running' ? 'border-brand-400 bg-brand-500/10 shadow-card' : league.status === 'failed' ? 'border-red-400/60' : 'border-line bg-surface-2'"
+            :class="league.status === 'running' ? 'border-brand-400 bg-brand-500/10 shadow-card' : league.status === 'failed' ? 'border-danger-line' : 'border-line bg-surface-2'"
           >
             <div class="flex items-center justify-between gap-2">
               <p class="min-w-0 break-words font-semibold text-slate-900">{{ league.name }}</p>
@@ -444,7 +444,7 @@ defineExpose({ load });
                 v-for="stage in stages"
                 :key="stage"
                 class="h-1.5 flex-1 rounded-full"
-                :class="{ 'bg-emerald-500': stageState(league, stage) === 'done', 'animate-pulse bg-brand-500': stageState(league, stage) === 'current', 'bg-surface-3': stageState(league, stage) === 'idle' }"
+                :class="{ 'bg-success': stageState(league, stage) === 'done', 'animate-pulse bg-brand-500': stageState(league, stage) === 'current', 'bg-surface-3': stageState(league, stage) === 'idle' }"
                 :title="stage"
               />
             </ol>

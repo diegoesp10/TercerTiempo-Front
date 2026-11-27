@@ -1,12 +1,19 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ tone?: 'green' | 'amber' | 'red' | 'blue' | 'slate' }>(), { tone: 'slate' });
+import type { OutcomeTone, Tone } from '@/utils/format';
 
-const tones = {
-  green: 'border-emerald-300/40 bg-emerald-100 text-emerald-700',
-  amber: 'border-amber-400/40 bg-amber-100 text-amber-800',
-  red: 'border-red-600/40 bg-red-100 text-red-800',
-  blue: 'border-brand-400/40 bg-sky-100 text-sky-800',
+withDefaults(defineProps<{ tone?: Tone | OutcomeTone }>(), { tone: 'slate' });
+
+// green/amber/red/blue son los estados (correcto, aviso, error, información); win/draw/loss, el resultado de un partido
+// con los colores de MatchResultPill.
+const tones: Record<Tone | OutcomeTone, string> = {
+  green: 'border-success-line bg-success-soft text-success-strong',
+  amber: 'border-warning-line bg-warning-soft text-warning-strong',
+  red: 'border-danger-line bg-danger-soft text-danger-strong',
+  blue: 'border-info-line bg-info-soft text-info-strong',
   slate: 'border-line bg-slate-100 text-slate-700',
+  win: 'border-win-solid/40 bg-win-solid/15 text-win',
+  draw: 'border-draw-solid/50 bg-draw-solid/20 text-draw',
+  loss: 'border-loss-solid/40 bg-loss-solid/15 text-loss',
 };
 </script>
 

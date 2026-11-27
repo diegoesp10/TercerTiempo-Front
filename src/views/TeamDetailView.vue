@@ -224,7 +224,7 @@ async function linkToClub() {
           <p v-if="data.squad" class="mt-1 text-sm text-slate-600">
             <Badge :tone="data.squad.visibility === 'Public' ? 'green' : 'slate'" class="mr-1">{{ visibilityLabels[data.squad.visibility] }}</Badge>
             {{ data.squad.playersCount }} jugadores · {{ data.squad.staffCount }} en el cuerpo técnico
-            <span v-if="data.squad.isMine" class="ml-1 font-medium text-emerald-700">· es tu plantilla</span>
+            <span v-if="data.squad.isMine" class="ml-1 font-medium text-own">· es tu plantilla</span>
           </p>
           <p v-else class="mt-1 text-sm text-slate-600">Este equipo todavía no tiene plantilla en Tercer Tiempo.</p>
         </div>

@@ -205,8 +205,8 @@ const groups = (team: OfficialTeamSheetDto) => {
     <template v-else-if="sheet">
       <Alert v-if="sheet.status === 'NotPlayed'" kind="info">Todavía no se ha jugado: el acta pública aparecerá cuando se publique tras el partido.</Alert>
 
-      <div v-else-if="sheet.status === 'Pending'" class="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" aria-hidden="true"></span>
+      <div v-else-if="sheet.status === 'Pending'" class="flex items-center gap-3 rounded-lg border border-warning-line bg-warning-soft px-4 py-3 text-sm text-warning-strong">
+        <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-warning border-t-transparent" aria-hidden="true"></span>
         <span>{{ sheet.message ?? 'El acta guardada sigue pendiente. El sistema comprobará si hay datos nuevos respetando los límites de descarga.' }}</span>
       </div>
 
@@ -217,7 +217,7 @@ const groups = (team: OfficialTeamSheetDto) => {
       <Alert v-else-if="sheet.status === 'Unavailable'" kind="warning">{{ sheet.message ?? 'No se ha encontrado este partido en ninguna web de actas.' }}</Alert>
 
       <template v-else>
-        <div v-if="provisional" class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div v-if="provisional" class="mb-4 rounded-lg border border-warning-line bg-warning-soft px-4 py-3 text-sm text-warning-strong">
           <strong>Acta sin cerrar.</strong> {{ sheet.message ?? 'La federación ya ha publicado las alineaciones, pero el árbitro aún no ha cerrado el acta: faltan los goles, los cambios y las tarjetas.' }}
         </div>
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -253,7 +253,7 @@ const groups = (team: OfficialTeamSheetDto) => {
                     <div
                       class="flex items-center gap-2 rounded-md px-2.5 py-1.5 font-display text-xs font-bold uppercase tracking-[0.12em]"
                       :class="group.starter
-                        ? 'bg-emerald-500/15 text-emerald-700 shadow-[inset_3px_0_0_var(--color-emerald-500)]'
+                        ? 'bg-starter-solid/15 text-starter shadow-[inset_3px_0_0_var(--color-starter-solid)]'
                         : 'bg-slate-500/10 text-slate-600 shadow-[inset_3px_0_0_var(--color-slate-400)]'"
                     >
                       <Icon :icon="group.starter ? 'futbol' : 'user-group'" class="h-3 w-3" />
@@ -313,7 +313,7 @@ const groups = (team: OfficialTeamSheetDto) => {
         <details v-if="eventRows.length > 0" class="mt-4 text-sm">
           <summary class="cursor-pointer font-medium text-slate-700">
             Sucesos del partido ({{ eventRows.length }})
-            <span v-if="injuries.length" class="ml-1.5 whitespace-nowrap text-xs font-normal text-red-600">
+            <span v-if="injuries.length" class="ml-1.5 whitespace-nowrap text-xs font-normal text-danger">
               <Icon icon="user-injured" class="mr-0.5 h-3 w-3" />{{ injuries.length === 1 ? '1 lesión' : `${injuries.length} lesiones` }}
             </span>
           </summary>
@@ -351,7 +351,7 @@ const groups = (team: OfficialTeamSheetDto) => {
                 </span>
                 <span class="min-w-0 flex-1">
                   <PlayerName :name="row.injury.playerName" />
-                  <span class="ml-1.5 text-xs font-medium" :class="row.injury.confirmed ? 'text-red-600' : 'text-amber-700'">{{ injuryLabel(row.injury) }}</span>
+                  <span class="ml-1.5 text-xs font-medium" :class="row.injury.confirmed ? 'text-danger' : 'text-warning'">{{ injuryLabel(row.injury) }}</span>
                   <Badge v-if="row.injury.confirmed" tone="green" class="ml-1.5 whitespace-nowrap" title="Registrada: es una lesión con este partido como el sitio donde se lesionó">
                     <Icon icon="circle-check" class="mr-1 h-2.5 w-2.5" />Registrada
                   </Badge>

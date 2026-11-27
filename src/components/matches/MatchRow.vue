@@ -39,7 +39,7 @@ const target = computed<RouteLocationRaw>(() => props.to ?? { name: 'match', par
         </TeamName>
       </p>
       <p class="text-xs text-slate-500">
-        {{ formatKickoff(match.kickoffAt) }} · <span :class="isHome ? 'text-emerald-700' : 'text-slate-500'">{{ isHome ? 'en casa' : 'fuera' }}</span><span v-if="match.venue"> · {{ match.venue }}</span>
+        {{ formatKickoff(match.kickoffAt) }} · <span :class="isHome ? 'text-own' : 'text-slate-500'">{{ isHome ? 'en casa' : 'fuera' }}</span><span v-if="match.venue"> · {{ match.venue }}</span>
       </p>
     </div>
 

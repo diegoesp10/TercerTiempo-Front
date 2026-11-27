@@ -236,9 +236,9 @@ onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer); });
         </ul>
         <p v-if="selected" class="mt-1 text-xs text-slate-500">
           La invitación será solo para {{ selected.name }}: en el alta irá fijado y no se podrá cambiar.
-          <span v-if="selected.invitation?.status === 'available'" class="text-amber-700">Ya tiene una disponible ({{ selected.invitation.code }}); la nueva será otra más.</span>
+          <span v-if="selected.invitation?.status === 'available'" class="text-warning">Ya tiene una disponible ({{ selected.invitation.code }}); la nueva será otra más.</span>
         </p>
-        <p v-else-if="note.trim().length >= 2 && !open" class="mt-1 text-xs text-amber-700">Elige el club de la lista.</p>
+        <p v-else-if="note.trim().length >= 2 && !open" class="mt-1 text-xs text-warning">Elige el club de la lista.</p>
       </div>
       <label class="w-36">
         <span class="label">Caduca en (días)</span>

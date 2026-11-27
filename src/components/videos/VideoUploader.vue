@@ -220,7 +220,7 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
 
 <template>
   <div class="border-t border-slate-100 pt-4">
-    <div v-if="uploaded" class="mb-4 rounded-xl border border-emerald-300/40 bg-emerald-100 p-4 text-sm text-emerald-800" role="status">
+    <div v-if="uploaded" class="mb-4 rounded-xl border border-success-line bg-success-soft p-4 text-sm text-success-strong" role="status">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div class="flex min-w-0 items-start gap-3">
           <Icon icon="circle-check" class="mt-0.5 h-5 w-5 shrink-0" />
@@ -263,7 +263,7 @@ onBeforeUnmount(() => { disposed = true; operation += 1; controller?.abort(); })
         <div
           ref="dropRef"
           class="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-6 text-center transition"
-          :class="isOverDropZone ? 'border-brand-400 bg-brand-500/10' : file ? 'border-emerald-400/60 bg-emerald-500/5' : 'border-line bg-surface-2 hover:border-brand-400'"
+          :class="isOverDropZone ? 'border-brand-400 bg-brand-500/10' : file ? 'border-success-line bg-success-soft' : 'border-line bg-surface-2 hover:border-brand-400'"
           role="button"
           tabindex="0"
           aria-label="Elegir o arrastrar el archivo de vídeo"

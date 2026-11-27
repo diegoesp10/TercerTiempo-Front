@@ -243,7 +243,7 @@ const entriesOf = (sheet: MatchSquadSheetDto) => sortedEntries.value.filter((r) 
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr v-for="p in entriesOf(sheet)" :key="p.id" :class="p.squadPlayerId === auth.playerSquad?.squadPlayerId ? 'bg-brand-500/10' : p.started ? '' : 'bg-slate-500/[0.06]'">
-              <td class="py-2 pl-2 pr-3 lg:whitespace-nowrap" :class="p.started ? 'shadow-[inset_3px_0_0_var(--color-emerald-500)]' : ''">
+              <td class="py-2 pl-2 pr-3 lg:whitespace-nowrap" :class="p.started ? 'shadow-[inset_3px_0_0_var(--color-starter-solid)]' : ''">
                 <PlayerName :name="p.playerName" :photo-url="p.playerPhotoUrl" class="font-medium text-slate-800" />
                 <span v-if="p.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[p.position] }}</span>
                 <StarterMark :started="p.started" class="ml-1.5" />

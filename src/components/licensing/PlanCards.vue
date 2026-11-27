@@ -78,7 +78,7 @@ const cards = computed(() => [
           </p>
           <p class="mt-1 min-h-5 text-xs text-slate-500">
             <template v-if="interval === 'Yearly'">
-              Equivale a {{ monthlyEquivalent(card.price.yearlyPriceCents) }}/mes<template v-if="freeMonths(card.price) > 0"> · <strong class="text-emerald-700">{{ freeText(freeMonths(card.price)) }}</strong></template>
+              Equivale a {{ monthlyEquivalent(card.price.yearlyPriceCents) }}/mes<template v-if="freeMonths(card.price) > 0"> · <strong class="text-success">{{ freeText(freeMonths(card.price)) }}</strong></template>
             </template>
             <template v-else>O {{ formatPrice(card.price.yearlyPriceCents, currency) }}/año{{ card.unit }} pagando de una vez</template>
           </p>
@@ -96,7 +96,7 @@ const cards = computed(() => [
 
         <ul class="mt-5 flex-1 space-y-2 text-sm text-slate-700">
           <li v-for="feature in card.features" :key="feature" class="flex items-start gap-2.5">
-            <Icon icon="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+            <Icon icon="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
             <span>{{ feature }}</span>
           </li>
         </ul>

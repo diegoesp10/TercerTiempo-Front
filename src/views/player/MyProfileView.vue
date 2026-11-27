@@ -130,7 +130,7 @@ async function leave() {
             <Alert v-if="leaveError" kind="error" class="mt-3">{{ leaveError }}</Alert>
             <button
               type="button"
-              class="btn-secondary mt-4 border-red-400/60 text-red-600 hover:border-red-500 hover:bg-red-500/10"
+              class="btn-secondary mt-4 border-danger-line text-danger hover:border-danger hover:bg-danger/10"
               :disabled="leaving"
               :title="leaving ? 'Desvinculando tu cuenta…' : undefined"
               @click="leave"

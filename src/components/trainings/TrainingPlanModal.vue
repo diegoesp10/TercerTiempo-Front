@@ -156,11 +156,11 @@ async function submit() {
           <div class="grid grid-cols-2 gap-2 @sm:grid-cols-[1fr_6rem_6rem]">
             <div class="col-span-2 @sm:col-span-1">
               <label class="label" for="pt-date">{{ form.repeat ? 'Desde el día' : 'Día' }}</label>
-              <input id="pt-date" v-model="form.date" type="date" class="input" :class="{ 'border-red-400 ring-1 ring-red-300': missing.date }" :aria-invalid="missing.date" />
+              <input id="pt-date" v-model="form.date" type="date" class="input" :class="{ 'border-danger ring-1 ring-danger/40': missing.date }" :aria-invalid="missing.date" />
             </div>
             <div>
               <label class="label" for="pt-time">Hora</label>
-              <input id="pt-time" v-model="form.time" type="time" class="input px-2" :class="{ 'border-red-400 ring-1 ring-red-300': missing.time }" :aria-invalid="missing.time" />
+              <input id="pt-time" v-model="form.time" type="time" class="input px-2" :class="{ 'border-danger ring-1 ring-danger/40': missing.time }" :aria-invalid="missing.time" />
             </div>
             <div>
               <label class="label" for="pt-minutes">Minutos</label>
@@ -172,7 +172,7 @@ async function submit() {
                 readonly
                 tabindex="-1"
                 class="input cursor-default bg-surface-2 px-2 font-semibold tabular-nums"
-                :class="{ 'border-red-400 ring-1 ring-red-300': missing.duration }"
+                :class="{ 'border-danger ring-1 ring-danger/40': missing.duration }"
                 title="La suma de los minutos de los ejercicios"
                 aria-describedby="pt-minutes-hint"
               />
@@ -184,7 +184,7 @@ async function submit() {
                 :min="minMinutes"
                 :max="maxMinutes"
                 class="input px-2"
-                :class="{ 'border-red-400 ring-1 ring-red-300': missing.duration }"
+                :class="{ 'border-danger ring-1 ring-danger/40': missing.duration }"
                 aria-describedby="pt-minutes-hint"
               />
             </div>
@@ -215,7 +215,7 @@ async function submit() {
         <div v-if="form.repeat" class="mt-3 flex flex-wrap items-start gap-3">
           <div>
             <span class="label">Días</span>
-            <div id="pt-weekdays" class="flex flex-wrap gap-1 rounded-lg" :class="{ 'ring-2 ring-red-300 ring-offset-2': missing.weekdays }" role="group" aria-label="Días de la semana">
+            <div id="pt-weekdays" class="flex flex-wrap gap-1 rounded-lg" :class="{ 'ring-2 ring-danger/40 ring-offset-2': missing.weekdays }" role="group" aria-label="Días de la semana">
               <button
                 v-for="day in weekdays"
                 :key="day"
@@ -226,15 +226,15 @@ async function submit() {
                 @click="toggleWeekday(day)"
               >{{ weekdayLabels[day].slice(0, 3) }}</button>
             </div>
-            <p v-if="missing.weekdays" class="mt-1 text-xs text-red-600">Elige al menos un día.</p>
+            <p v-if="missing.weekdays" class="mt-1 text-xs text-danger">Elige al menos un día.</p>
           </div>
           <div>
             <label class="label" for="pt-until">Hasta el día</label>
-            <input id="pt-until" v-model="form.until" type="date" :min="form.date" class="input" :class="{ 'border-red-400 ring-1 ring-red-300': missing.until }" :aria-invalid="missing.until" />
-            <p v-if="!form.until" class="mt-1 text-xs text-red-600">Pon la fecha en que termina la serie.</p>
-            <p v-else-if="missing.until" class="mt-1 text-xs text-red-600">Tiene que ser igual o posterior a «Desde el día».</p>
+            <input id="pt-until" v-model="form.until" type="date" :min="form.date" class="input" :class="{ 'border-danger ring-1 ring-danger/40': missing.until }" :aria-invalid="missing.until" />
+            <p v-if="!form.until" class="mt-1 text-xs text-danger">Pon la fecha en que termina la serie.</p>
+            <p v-else-if="missing.until" class="mt-1 text-xs text-danger">Tiene que ser igual o posterior a «Desde el día».</p>
           </div>
-          <p v-if="seriesCount > 0" class="basis-full text-xs font-medium" :class="seriesCount > maxSessions ? 'text-red-600' : 'text-emerald-700'">
+          <p v-if="seriesCount > 0" class="basis-full text-xs font-medium" :class="seriesCount > maxSessions ? 'text-danger' : 'text-success'">
             <template v-if="seriesCount > maxSessions">Salen más de {{ maxSessions }} sesiones, el máximo de una serie.</template>
             <template v-else>Se crearán {{ seriesCount }} {{ seriesCount === 1 ? 'sesión' : 'sesiones' }}.</template>
           </p>
@@ -253,11 +253,11 @@ async function submit() {
 
     <template #footer>
       <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div v-if="blockers.length" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 sm:max-w-md" role="status" aria-live="polite">
+        <div v-if="blockers.length" class="rounded-lg border border-warning-line bg-warning-soft px-3 py-2 text-xs text-warning-strong sm:max-w-md" role="status" aria-live="polite">
           <p class="font-semibold"><Icon icon="triangle-exclamation" class="mr-1 h-3 w-3" />Aún no se puede {{ action }}:</p>
           <ul class="mt-1 list-disc space-y-0.5 pl-4">
             <li v-for="blocker in blockers" :key="blocker.text">
-              <button v-if="blocker.field" type="button" class="text-left underline decoration-dotted underline-offset-2 hover:text-amber-950" @click="goTo(blocker.field)">{{ blocker.text }}</button>
+              <button v-if="blocker.field" type="button" class="text-left underline decoration-dotted underline-offset-2 hover:decoration-solid" @click="goTo(blocker.field)">{{ blocker.text }}</button>
               <span v-else>{{ blocker.text }}</span>
             </li>
           </ul>

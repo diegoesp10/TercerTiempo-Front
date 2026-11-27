@@ -189,7 +189,7 @@ onMounted(() => {
           v-for="comment in comments.comments"
           :key="comment.ratingId"
           class="rounded-xl border p-3"
-          :class="comment.flaggedTerms.length ? 'border-red-400/60 bg-red-500/5' : 'border-line bg-surface-2'"
+          :class="comment.flaggedTerms.length ? 'border-danger-line bg-danger-soft' : 'border-line bg-surface-2'"
         >
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div class="min-w-0 text-xs text-slate-500">
@@ -204,7 +204,7 @@ onMounted(() => {
               <button
                 type="button"
                 class="text-xs"
-                :class="comment.hidden ? 'btn-ghost' : 'btn-ghost border-red-400/60 text-danger hover:bg-red-500/10'"
+                :class="comment.hidden ? 'btn-ghost' : 'btn-ghost-danger'"
                 v-busy="toggling === comment.ratingId"
                 :disabled="toggling !== null"
                 @click="toggle(comment)"
@@ -216,7 +216,7 @@ onMounted(() => {
           <p class="mt-2 text-sm leading-relaxed" :class="comment.hidden ? 'text-slate-500 line-through' : 'text-slate-700'">“{{ comment.comment }}”</p>
           <p v-if="comment.flaggedTerms.length" class="mt-1 flex flex-wrap items-center gap-1 text-xs text-danger">
             Contiene:
-            <span v-for="term in comment.flaggedTerms" :key="term" class="rounded bg-red-500/10 px-1.5 py-0.5 font-semibold">{{ term }}</span>
+            <span v-for="term in comment.flaggedTerms" :key="term" class="rounded bg-danger-soft px-1.5 py-0.5 font-semibold">{{ term }}</span>
           </p>
         </li>
       </ul>
@@ -268,9 +268,9 @@ onMounted(() => {
       <p v-if="words && shownWords.length === 0" class="text-sm text-slate-500">Nada en la lista con ese filtro.</p>
       <ul v-else class="flex max-h-96 flex-wrap gap-1.5 overflow-y-auto pr-1">
         <li v-for="word in shownWords" :key="word.term" class="flex items-center gap-1 rounded-full border border-line bg-surface-2 py-0.5 pl-2.5 pr-1 text-xs">
-          <span class="h-1.5 w-1.5 rounded-full" :class="{ 'bg-amber-400': word.kind === 'Profanity', 'bg-red-500': word.kind === 'Insult', 'bg-blue-400': word.kind === 'Slur', 'bg-slate-400': word.kind === 'Threat' }" :title="kindLabels[word.kind]" />
+          <span class="h-1.5 w-1.5 rounded-full" :class="{ 'bg-warning': word.kind === 'Profanity', 'bg-danger': word.kind === 'Insult', 'bg-brand-400': word.kind === 'Slur', 'bg-slate-400': word.kind === 'Threat' }" :title="kindLabels[word.kind]" />
           <span class="text-slate-700">{{ word.term }}</span>
-          <button type="button" class="rounded-full p-1 text-slate-400 hover:bg-red-500/10 hover:text-danger" :aria-label="`Quitar ${word.term}`" @click="removeWord(word.term)">
+          <button type="button" class="rounded-full p-1 text-slate-400 hover:bg-danger/10 hover:text-danger" :aria-label="`Quitar ${word.term}`" @click="removeWord(word.term)">
             <Icon icon="xmark" class="h-2.5 w-2.5" />
           </button>
         </li>

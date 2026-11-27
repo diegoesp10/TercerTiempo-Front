@@ -143,7 +143,7 @@ async function act(call: () => Promise<ClubLicenseDto>) {
         <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-3" aria-hidden="true">
           <div
             class="h-full rounded-full"
-            :class="license.status === 'Expired' ? 'bg-red-600' : license.daysLeft <= 7 && !license.renewsOn ? 'bg-amber-400' : 'bg-brand-500'"
+            :class="license.status === 'Expired' ? 'bg-danger' : license.daysLeft <= 7 && !license.renewsOn ? 'bg-warning' : 'bg-brand-500'"
             :style="{ width: `${progress}%` }"
           />
         </div>
@@ -176,7 +176,7 @@ async function act(call: () => Promise<ClubLicenseDto>) {
           <span>Próximo cobro: <strong class="text-slate-800">{{ formatPrice(license.renewalPriceCents ?? 0, currency) }}</strong> el {{ formatDate(license.renewsOn) }}</span>
         </li>
         <li v-else-if="license.contracted && license.status !== 'Expired'" class="flex items-center gap-2">
-          <Icon icon="circle-info" class="h-3 w-3 text-amber-400" />
+          <Icon icon="circle-info" class="h-3 w-3 text-warning" />
           <span>No se renueva: el acceso acaba el {{ formatDate(license.validUntil) }}.</span>
         </li>
         <li v-else-if="license.status === 'Trial'" class="flex items-center gap-2">

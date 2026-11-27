@@ -9,9 +9,19 @@
   Sistema de diseño de Tercer Tiempo. Los colores son variables CSS con un valor por tema; las utilidades de Tailwind
   (@theme inline) apuntan a esas variables, así que cambiar el tema no toca ninguna vista.
   La escala "slate" es la escala de grises de la interfaz: slate-900 = texto principal, slate-500 = secundario,
-  slate-200 = líneas, slate-50 = relleno sutil. emerald/sky/amber/red son los tonos semánticos de badges y avisos.
-  Para el texto y los iconos de error, aviso y correcto, danger/warning/success (llegan a 4,5:1 en los dos temas); para
-  un relleno con letra blanca, action o danger-solid. Los tonos de Tailwind que no están aquí no cambian con el tema.
+  slate-200 = líneas, slate-50 = relleno sutil.
+  Lo que tiene significado va siempre por su token (al final de @theme), nunca por un tono de Tailwind:
+  - estados: danger, warning, success e info para la letra y los iconos, y también para barras y puntos sin letra;
+    -strong para la letra sobre su fondo suave, -soft para el fondo de avisos y fichas y -line para su borde; para un
+    relleno con letra blanca, action o danger-solid;
+  - resultado de un partido (V/E/D): win, draw y loss para la letra, -solid para el relleno y on-* para la letra que va
+    encima;
+  - own (lo tuyo: tu equipo, en casa, tu ficha), starter (el titular del acta: letra y franja), gold (estrellas y
+    trofeos) y scrim (el velo oscuro de las ventanas).
+  Todos llegan a 4,5:1 en los dos temas salvo gold, que es decorativo y va siempre junto a su cifra o su texto. El resto
+  de la paleta queda para colores de categoría (tipos de ejercicio o de entrenamiento, local y visitante…), cada uno
+  justificado en scripts/check-palette.mjs: el build falla si aparece uno sin justificar. Los tonos de Tailwind que no
+  están aquí no cambian con el tema.
 */
 :root {
   color-scheme: light;
@@ -79,6 +89,15 @@
   --t-red-800: #87182c;
   --t-danger-solid: #c02540;
   --t-danger-solid-hover: #ad1f38;
+
+  /* Iguales en los dos temas: el verde y el amarillo del resultado (el 500 y el 400 de Tailwind) con su letra oscura (el
+     950 de cada uno), la letra blanca de la derrota y el velo de las ventanas (el 950 de la escala de grises). */
+  --t-win-solid: oklch(72.3% 0.219 149.579);
+  --t-on-win: oklch(26.6% 0.065 152.934);
+  --t-draw-solid: oklch(85.2% 0.199 91.936);
+  --t-on-draw: oklch(28.6% 0.066 53.813);
+  --t-on-loss: #ffffff;
+  --t-scrim: oklch(12.9% 0.042 264.695);
 
   --t-shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px -16px rgba(16, 24, 40, 0.18);
   --t-shadow-glow: 0 1px 2px rgba(16, 24, 40, 0.08), 0 6px 16px -8px rgba(31, 111, 232, 0.45);
@@ -234,11 +253,46 @@
   --color-red-700: var(--t-red-700);
   --color-red-800: var(--t-red-800);
 
+  /* Estados: letra e iconos (y barras o puntos sin letra), letra sobre su fondo suave (-strong), fondo suave de avisos y
+     fichas (-soft) y su borde (-line). */
   --color-danger: var(--t-red-600);
-  --color-warning: var(--t-amber-700);
-  --color-success: var(--t-emerald-600);
+  --color-danger-strong: var(--t-red-800);
+  --color-danger-soft: var(--t-red-50);
+  --color-danger-line: var(--t-red-200);
   --color-danger-solid: var(--t-danger-solid);
   --color-danger-solid-hover: var(--t-danger-solid-hover);
+  --color-warning: var(--t-amber-700);
+  --color-warning-strong: var(--t-amber-800);
+  --color-warning-soft: var(--t-amber-50);
+  --color-warning-line: var(--t-amber-200);
+  --color-success: var(--t-emerald-600);
+  --color-success-strong: var(--t-emerald-800);
+  --color-success-soft: var(--t-emerald-50);
+  --color-success-line: var(--t-emerald-200);
+  --color-info: var(--t-sky-700);
+  --color-info-strong: var(--t-sky-800);
+  --color-info-soft: var(--t-sky-50);
+  --color-info-line: var(--t-sky-200);
+
+  /* Resultado de un partido jugado (V/E/D): la letra (en el tinte del relleno o sobre la superficie), el relleno sólido
+     y la letra que va encima del relleno. */
+  --color-win: var(--t-emerald-700);
+  --color-win-solid: var(--t-win-solid);
+  --color-on-win: var(--t-on-win);
+  --color-draw: var(--t-amber-700);
+  --color-draw-solid: var(--t-draw-solid);
+  --color-on-draw: var(--t-on-draw);
+  --color-loss: var(--t-red-700);
+  --color-loss-solid: var(--t-danger-solid);
+  --color-on-loss: var(--t-on-loss);
+
+  /* Lo tuyo (tu equipo, en casa, tu ficha); el titular del acta, letra y franja; el dorado de las estrellas y los trofeos
+     (decorativo: nunca para letra), y el velo de las ventanas. */
+  --color-own: var(--t-emerald-700);
+  --color-starter: var(--t-emerald-700);
+  --color-starter-solid: var(--t-emerald-500);
+  --color-gold: var(--t-amber-400);
+  --color-scrim: var(--t-scrim);
 
   --shadow-card: var(--t-shadow-card);
   --shadow-glow: var(--t-shadow-glow);

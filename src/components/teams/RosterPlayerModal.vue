@@ -180,7 +180,7 @@ const { sorted: internalSorted, sortBy: sortInternal, state: internalState } = u
       <div v-if="current" class="flex items-center gap-4">
         <button type="button" class="group relative rounded-full" v-busy="busy" :disabled="busy" title="Cambiar la foto" @click="photoInput?.click()">
           <PlayerAvatar :src="current.photoUrl" :name="current.fullName" size="xl" />
-          <span class="absolute inset-0 flex items-center justify-center rounded-full bg-slate-950/0 text-white opacity-0 transition group-hover:bg-slate-950/50 group-hover:opacity-100">
+          <span class="absolute inset-0 flex items-center justify-center rounded-full bg-scrim/0 text-white opacity-0 transition group-hover:bg-scrim/50 group-hover:opacity-100">
             <Icon icon="camera" class="h-6 w-6" />
           </span>
         </button>

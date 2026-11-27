@@ -56,8 +56,8 @@ const grade = computed(() => {
   if (value < 5) return { label: 'Suspenso', tone: 'text-danger' };
   if (value < 6) return { label: 'Aprobado', tone: 'text-warning' };
   if (value < 7) return { label: 'Bien', tone: 'text-warning' };
-  if (value < 9) return { label: 'Notable', tone: 'text-emerald-600' };
-  return { label: 'Sobresaliente', tone: 'text-emerald-600' };
+  if (value < 9) return { label: 'Notable', tone: 'text-success' };
+  return { label: 'Sobresaliente', tone: 'text-success' };
 });
 </script>
 
@@ -71,7 +71,7 @@ const grade = computed(() => {
           type="button"
           tabindex="-1"
           class="rounded-sm transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:hover:scale-100"
-          :class="star <= shown ? 'text-amber-400' : 'text-slate-400/30'"
+          :class="star <= shown ? 'text-gold' : 'text-slate-400/30'"
           :disabled="props.disabled"
           :title="`Un ${star}`"
           :aria-label="`Nota ${star}`"
@@ -93,7 +93,7 @@ const grade = computed(() => {
           autocomplete="off"
           placeholder="–"
           class="input w-14 px-2 py-1 text-center font-figures text-lg font-extrabold"
-          :class="invalid ? 'border-red-400 focus:border-red-400' : ''"
+          :class="invalid ? 'border-danger focus:border-danger' : ''"
           :disabled="props.disabled"
           :aria-invalid="invalid"
           :aria-describedby="`${id}-hint`"

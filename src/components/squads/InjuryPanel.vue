@@ -336,28 +336,28 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
     <Alert v-else-if="error && !formOpen && !closing" kind="error" class="mb-3">{{ error }}</Alert>
 
     <!-- Posibles lesiones: lo que cuentan las crónicas de los partidos -->
-    <div v-if="visibleProposals.length > 0" class="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+    <div v-if="visibleProposals.length > 0" class="mb-3 rounded-lg border border-warning-line bg-warning-soft p-3 text-sm text-warning-strong" role="status">
       <p class="font-semibold">
         <Icon icon="newspaper" class="mr-1.5 h-3.5 w-3.5" />{{ visibleProposals.length === 1 ? 'Posible lesión' : 'Posibles lesiones' }}
         <span class="font-normal">· {{ visibleProposals.length }}</span>
       </p>
-      <p class="mt-0.5 text-xs text-amber-800">
+      <p class="mt-0.5 text-xs text-warning">
         Lo que cuentan las crónicas de los partidos.
         <template v-if="canManage">No es una lesión hasta que la registras; si no fue así, descártala.</template>
         <template v-else>No es una lesión hasta que el club o el cuerpo técnico la registran.</template>
       </p>
-      <ul class="mt-1 divide-y divide-amber-200">
+      <ul class="mt-1 divide-y divide-warning-line">
         <li v-for="p in visibleProposals" :key="p.id" class="flex flex-wrap items-start justify-between gap-2 py-2">
           <div class="min-w-0 flex-1">
             <p v-if="!playerId" class="font-medium text-slate-800"><PlayerName :name="p.playerName" :photo-url="photoOf(p.squadPlayerId)" /></p>
-            <p class="text-xs text-amber-800">
+            <p class="text-xs text-warning">
               J{{ p.matchday }} · {{ p.homeTeam }} – {{ p.awayTeam }} · {{ formatDate(p.matchDate) }}<template v-if="p.minute !== null"> · dejó el campo en el {{ p.minute }}'</template>
             </p>
-            <blockquote class="mt-1 border-l-2 border-amber-300 pl-2 text-xs italic">«{{ p.excerpt }}»</blockquote>
-            <a :href="p.sourceUrl" target="_blank" rel="noopener noreferrer" class="mt-1 inline-block text-xs font-medium text-amber-900 underline underline-offset-2">
+            <blockquote class="mt-1 border-l-2 border-warning-line pl-2 text-xs italic">«{{ p.excerpt }}»</blockquote>
+            <a :href="p.sourceUrl" target="_blank" rel="noopener noreferrer" class="mt-1 inline-block text-xs font-medium text-warning-strong underline underline-offset-2">
               Leer la crónica<Icon icon="up-right-from-square" class="ml-1 h-2.5 w-2.5" />
             </a>
-            <p v-if="canManage && openInjuryOf(p.squadPlayerId)" class="mt-1 text-xs text-amber-900">
+            <p v-if="canManage && openInjuryOf(p.squadPlayerId)" class="mt-1 text-xs text-warning-strong">
               <Icon icon="user-injured" class="mr-1 h-3 w-3" />Ya tiene una lesión abierta ({{ injuryWithLocation(openInjuryOf(p.squadPlayerId)!) }}, parte del
               {{ formatDate(openInjuryOf(p.squadPlayerId)!.startedOn) }}). Si es esta, «Es su lesión abierta» la deja como la de este partido; si no, descártala.
             </p>
@@ -492,14 +492,14 @@ const toggleRow = (id: string) => (openRow.value = openRow.value === id ? null :
                 <td class="whitespace-nowrap px-3 py-2 tabular-nums text-slate-600">{{ formatDate(e.injury.startedOn) }}</td>
                 <td class="whitespace-nowrap px-3 py-2 tabular-nums text-slate-600">
                   <template v-if="e.injury.returnedOn">{{ formatDate(e.injury.returnedOn) }}</template>
-                  <span v-else-if="e.injury.continuedOn" class="text-amber-700" :title="`Pasó sin el alta a la temporada siguiente el ${formatDate(e.injury.continuedOn)}`">Pasó sin alta</span>
-                  <span v-else class="text-amber-700">Sin alta</span>
+                  <span v-else-if="e.injury.continuedOn" class="text-warning" :title="`Pasó sin el alta a la temporada siguiente el ${formatDate(e.injury.continuedOn)}`">Pasó sin alta</span>
+                  <span v-else class="text-warning">Sin alta</span>
                 </td>
                 <td class="px-3 py-2 text-right font-semibold tabular-nums text-slate-900">{{ e.injury.daysOut }}</td>
                 <td class="col-sm whitespace-nowrap px-3 py-2 text-right tabular-nums text-slate-600">
                   <template v-if="e.injury.initialExpectedDays != null">
                     {{ e.injury.initialExpectedDays }}
-                    <span v-if="forecastDiff(e.injury)" class="ml-1 text-xs" :class="forecastDiff(e.injury)! > 0 ? 'text-amber-700' : 'text-emerald-600'">
+                    <span v-if="forecastDiff(e.injury)" class="ml-1 text-xs" :class="forecastDiff(e.injury)! > 0 ? 'text-warning' : 'text-success'">
                       {{ forecastDiff(e.injury)! > 0 ? '+' : '−' }}{{ Math.abs(forecastDiff(e.injury)!) }}
                     </span>
                   </template>

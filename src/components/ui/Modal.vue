@@ -38,7 +38,7 @@ onBeforeUnmount(() => {
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="open" class="fixed inset-0 flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-sm sm:items-center sm:p-4" :style="{ zIndex }" @click.self="emit('close')">
+      <div v-if="open" class="fixed inset-0 flex items-end justify-center bg-scrim/70 p-0 backdrop-blur-sm sm:items-center sm:p-4" :style="{ zIndex }" @click.self="emit('close')">
         <div
           class="flex max-h-[95vh] w-full flex-col rounded-t-2xl border border-line bg-surface shadow-card sm:max-h-[90vh] sm:rounded-2xl"
           :class="widths[size]"

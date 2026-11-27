@@ -238,7 +238,7 @@ const names = (rows: AttendanceRow[]) => rows.map((r) => r.name).join(', ');
         </div>
         <div class="col-span-2 bg-surface px-4 py-3 sm:col-span-1">
           <dt class="eyebrow text-slate-500">Por debajo del 60 %</dt>
-          <dd class="mt-1 font-figures text-2xl font-bold" :class="kpis.low.length ? 'text-red-600' : 'text-emerald-600'">{{ kpis.low.length }}</dd>
+          <dd class="mt-1 font-figures text-2xl font-bold" :class="kpis.low.length ? 'text-danger' : 'text-success'">{{ kpis.low.length }}</dd>
           <dd class="break-words text-xs text-slate-500">
             {{ kpis.low.length ? names(kpis.low) : `${kpis.perfect.length} con el 100 %` }}
           </dd>

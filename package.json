@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "node scripts/check-palette.mjs && vue-tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "vue-tsc -b"
+    "typecheck": "vue-tsc -b",
+    "lint:colors": "node scripts/check-palette.mjs"
   },
   "dependencies": {
     "@fontsource-variable/archivo": "5.3.0",

@@ -58,9 +58,9 @@ const favourite = computed(() => {
 });
 
 const outcomeTone: Record<FormResultDto['outcome'], string> = {
-  W: 'bg-emerald-100 text-emerald-800',
-  D: 'bg-slate-100 text-slate-700',
-  L: 'bg-red-100 text-red-800',
+  W: 'bg-win-solid/15 text-win',
+  D: 'bg-draw-solid/20 text-draw',
+  L: 'bg-loss-solid/15 text-loss',
 };
 const outcomeLetter: Record<FormResultDto['outcome'], string> = { W: 'V', D: 'E', L: 'D' };
 
@@ -258,7 +258,7 @@ const playerSorts = reactive([
                 <td class="col-sm px-2 py-1 text-center tabular-nums">{{ perMatch(player) }}'</td>
                 <td class="px-2 py-1 text-center tabular-nums font-semibold">{{ player.goals }}<span v-if="player.penaltyGoals" class="font-normal text-slate-400"> ({{ player.penaltyGoals }}p)</span></td>
                 <td class="col-md px-2 py-1 text-center tabular-nums">{{ player.goalsLastThree }}</td>
-                <td class="px-2 py-1 text-center tabular-nums"><span class="text-amber-700">{{ player.yellowCards }}</span> / <span class="text-red-600">{{ player.redCards }}</span></td>
+                <td class="px-2 py-1 text-center tabular-nums"><span class="text-warning">{{ player.yellowCards }}</span> / <span class="text-danger">{{ player.redCards }}</span></td>
               </tr>
             </tbody>
           </table>
@@ -268,7 +268,7 @@ const playerSorts = reactive([
           <div class="rounded-lg border border-line px-2 py-1.5"><dt class="text-slate-500">Penaltis a favor</dt><dd class="font-semibold text-slate-900">{{ side.setPieces.penaltyGoalsFor }}</dd></div>
           <div class="rounded-lg border border-line px-2 py-1.5"><dt class="text-slate-500">Penaltis en contra</dt><dd class="font-semibold text-slate-900">{{ side.setPieces.penaltyGoalsAgainst }}</dd></div>
           <div class="rounded-lg border border-line px-2 py-1.5"><dt class="text-slate-500">Goles en propia (rival)</dt><dd class="font-semibold text-slate-900">{{ side.setPieces.ownGoalsFor }}</dd></div>
-          <div class="rounded-lg border border-line px-2 py-1.5"><dt class="text-slate-500">Tarjetas</dt><dd class="font-semibold text-slate-900">{{ side.setPieces.yellowCards }} <span class="text-amber-700">TA</span> · {{ side.setPieces.redCards }} <span class="text-red-600">TR</span></dd></div>
+          <div class="rounded-lg border border-line px-2 py-1.5"><dt class="text-slate-500">Tarjetas</dt><dd class="font-semibold text-slate-900">{{ side.setPieces.yellowCards }} <span class="text-warning">TA</span> · {{ side.setPieces.redCards }} <span class="text-danger">TR</span></dd></div>
         </dl>
       </section>
     </div>

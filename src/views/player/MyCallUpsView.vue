@@ -109,7 +109,7 @@ const fixture = (c: MyCallUpDto) => (squad.value ? opponentOf(c.match, squad.val
                 <SuspensionNote v-if="c.mine.suspended" :suspension="c.mine.suspension" class="mt-1" />
                 <p v-if="c.mine.injured && !c.mine.suspended" class="mt-1 text-sm text-slate-600">Estás lesionado el día del partido: no puedes ir convocado.</p>
                 <InjuryNote v-if="c.mine.injured" :injury="c.mine.injury" class="mt-1" />
-                <p v-if="!c.closed && c.mine.warned" class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-amber-700">
+                <p v-if="!c.closed && c.mine.warned" class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-warning">
                   <DisciplineBadge :discipline="warnedDiscipline(c.mine)" />Llevas {{ c.mine.cycleYellows }} amarillas: con una más te pierdes el siguiente partido de liga.
                 </p>
                 <p v-if="c.mine.called && c.meetAt" class="text-sm text-slate-600">Cita: {{ formatKickoff(c.meetAt) }}.</p>

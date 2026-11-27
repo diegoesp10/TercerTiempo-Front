@@ -61,9 +61,9 @@ const notice = ref<string | null>(null);
 const isMock = computed(() => data.value?.provider === 'mock');
 
 const simulations: { event: SimulatedLicenseEvent; label: string; tone: string }[] = [
-  { event: 'RenewalPaid', label: 'Renovación cobrada', tone: 'text-emerald-600' },
+  { event: 'RenewalPaid', label: 'Renovación cobrada', tone: 'text-success' },
   { event: 'RenewalFailed', label: 'Cobro rechazado', tone: 'text-warning' },
-  { event: 'SubscriptionDeleted', label: 'Fin de suscripción', tone: 'text-red-600' },
+  { event: 'SubscriptionDeleted', label: 'Fin de suscripción', tone: 'text-danger' },
 ];
 const canSimulate = (row: AdminLicenseDto) => isMock.value && row.contracted && row.provider === 'mock';
 
@@ -198,7 +198,7 @@ defineExpose({ load });
         </div>
         <div class="card">
           <p class="text-xs text-slate-500">Pendiente de cobro</p>
-          <p class="mt-1 text-2xl font-bold" :class="data.summary.owedCents > 0 ? 'text-red-600' : 'text-slate-900'">{{ money(data.summary.owedCents) }}</p>
+          <p class="mt-1 text-2xl font-bold" :class="data.summary.owedCents > 0 ? 'text-danger' : 'text-slate-900'">{{ money(data.summary.owedCents) }}</p>
           <p class="text-xs text-slate-500">{{ data.summary.grace }} en días de cortesía · {{ data.summary.unpaid }} impagadas</p>
         </div>
         <div class="card">
@@ -254,7 +254,7 @@ defineExpose({ load });
                 </td>
                 <td class="px-3 py-2">
                   <Badge :tone="stateTone[row.state]">{{ stateLabels[row.state] }}</Badge>
-                  <span v-if="!row.hasAccess" class="block text-xs text-red-600">Sin acceso</span>
+                  <span v-if="!row.hasAccess" class="block text-xs text-danger">Sin acceso</span>
                 </td>
                 <td class="px-3 py-2 text-xs whitespace-nowrap text-slate-700">
                   <template v-if="row.contracted">{{ subscriptionLabel(row.staffSeats) }} · {{ row.interval ? billingIntervalLabels[row.interval] : '—' }}</template>
@@ -274,7 +274,7 @@ defineExpose({ load });
                 </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
                   <template v-if="row.owedCents > 0">
-                    <span class="font-semibold text-red-600">{{ money(row.owedCents) }}</span>
+                    <span class="font-semibold text-danger">{{ money(row.owedCents) }}</span>
                     <span v-if="row.owedSince" class="block text-xs text-slate-500">desde {{ formatDate(row.owedSince) }}</span>
                   </template>
                   <span v-else class="text-slate-400">—</span>

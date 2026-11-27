@@ -10,8 +10,8 @@ defineEmits<{ more: [] }>();
 const shown = computed(() => props.misses.slice(0, props.max));
 
 const tone: Record<AttendanceMiss['outcome'], string> = {
-  Warned: 'bg-amber-400/20 text-amber-700',
-  Missed: 'bg-red-500/15 text-red-700',
+  Warned: 'bg-warning-soft text-warning',
+  Missed: 'bg-danger-soft text-danger',
 };
 
 const title = (m: AttendanceMiss) =>

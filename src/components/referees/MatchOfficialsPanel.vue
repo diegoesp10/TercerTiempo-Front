@@ -218,7 +218,7 @@ async function save(official: MatchOfficialDto) {
               :aria-label="`Comentario sobre ${official.name}`"
               :aria-describedby="`comment-rules-${official.refereeId}`"
               :aria-invalid="!!commentErrors[official.refereeId]"
-              :class="commentErrors[official.refereeId] ? 'border-red-400' : ''"
+              :class="commentErrors[official.refereeId] ? 'border-danger' : ''"
               @input="delete commentErrors[official.refereeId]"
             />
             <p v-if="commentErrors[official.refereeId]" class="field-error">{{ commentErrors[official.refereeId] }}</p>
@@ -243,7 +243,7 @@ async function save(official: MatchOfficialDto) {
               <span class="text-xs text-slate-500">Se pide confirmarla dos veces: después no se puede cambiar.</span>
             </div>
           </div>
-          <p v-else-if="saved === official.refereeId" class="mt-3 text-xs font-medium text-emerald-600">Nota guardada. Ya es definitiva y pública.</p>
+          <p v-else-if="saved === official.refereeId" class="mt-3 text-xs font-medium text-success">Nota guardada. Ya es definitiva y pública.</p>
         </li>
       </ul>
     </template>

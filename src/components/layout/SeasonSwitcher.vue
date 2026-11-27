@@ -27,7 +27,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
     <button
       type="button"
       class="flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold"
-      :class="season.isCurrent ? 'border-line text-slate-700 hover:border-brand-400/60' : 'border-amber-400/70 bg-amber-500/10 text-amber-700'"
+      :class="season.isCurrent ? 'border-line text-slate-700 hover:border-brand-400/60' : 'border-warning-line bg-warning-soft text-warning'"
       :aria-expanded="open"
       aria-haspopup="listbox"
       :title="season.isCurrent ? 'Temporada actual' : 'Temporada pasada: solo consulta'"
@@ -54,7 +54,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
         @click="choose(item.id)"
       >
         <span class="tabular-nums font-medium">{{ item.label }}</span>
-        <span v-if="item.isCurrent" class="text-xs text-emerald-600">Actual</span>
+        <span v-if="item.isCurrent" class="text-xs text-success">Actual</span>
         <span v-else class="text-xs text-slate-400">Consulta</span>
       </li>
     </ul>

@@ -131,7 +131,7 @@ async function submit() {
           <input id="sug-yellow" v-model.number="form.yellowCards" type="number" min="0" max="2" class="input" />
         </div>
         <label class="flex items-center gap-2 self-end pb-2 text-sm text-slate-700">
-          <input v-model="form.redCard" type="checkbox" class="h-4 w-4 rounded border-slate-300 accent-red-600" />
+          <input v-model="form.redCard" type="checkbox" class="h-4 w-4 rounded border-slate-300 accent-danger" />
           Roja
         </label>
       </div>

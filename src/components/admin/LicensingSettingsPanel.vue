@@ -178,7 +178,7 @@ onMounted(load);
             <p class="self-end pb-2 text-xs text-slate-500 sm:col-span-2">
               <template v-if="yearlySaving(form) !== null">
                 Doce meses: {{ formatMoney(toCents(form.monthly) * 12, currency || 'EUR') }} ·
-                <span :class="yearlySaving(form)! < 0 ? 'text-red-600' : ''">el año ahorra un {{ yearlySaving(form) }} %</span>
+                <span :class="yearlySaving(form)! < 0 ? 'text-danger' : ''">el año ahorra un {{ yearlySaving(form) }} %</span>
               </template>
             </p>
             <label>

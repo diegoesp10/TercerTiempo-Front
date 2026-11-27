@@ -70,7 +70,7 @@ const columns: { key: SortKey; icon: string; tone?: string; label: string; title
               {{ r.player.attendanceRate === null ? '—' : `${r.player.attendanceRate} %` }}
             </td>
             <td class="whitespace-nowrap px-2 py-1.5 text-right tabular-nums text-slate-700">{{ formatDurationMinutes(r.player.attendedMinutes) }}</td>
-            <td class="px-2 py-1.5 text-right tabular-nums" :class="r.player.injured ? 'text-red-600' : 'text-slate-400'">{{ r.player.injured || '—' }}</td>
+            <td class="px-2 py-1.5 text-right tabular-nums" :class="r.player.injured ? 'text-danger' : 'text-slate-400'">{{ r.player.injured || '—' }}</td>
             <td class="whitespace-nowrap px-2 py-1.5 text-right text-slate-700">
               <span v-if="r.lastMiss" :title="`${r.lastMiss.title}, ${time(r.lastMiss.date)}`">{{ dayShort(r.lastMiss.date) }}</span>
               <span v-else class="text-slate-400">Nunca</span>

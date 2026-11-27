@@ -16,7 +16,7 @@ const blocks: { title: string; icon: string; tone: string; items: Item[] }[] = [
   {
     title: 'Lo que suma',
     icon: 'plus',
-    tone: 'text-emerald-600',
+    tone: 'text-success',
     items: [
       { label: 'Gol', value: '+0,9 a +1,5', detail: 'Más cuanto más atrás juega: delantero +0,9, centrocampista +1, defensa +1,2 y portero +1,5.' },
       { label: 'Asistencia de gol', value: '+0,7 a +0,8', detail: 'Y los pases clave, si llegan con la sugerencia aprobada de un jugador: de +0,15 a +0,25.' },
@@ -36,7 +36,7 @@ const blocks: { title: string; icon: string; tone: string; items: Item[] }[] = [
   {
     title: 'Lo que resta',
     icon: 'minus',
-    tone: 'text-red-600',
+    tone: 'text-danger',
     items: [
       { label: 'Pérdida de balón', value: '−0,05' },
       { label: 'Gol encajado con él en el campo', value: 'hasta −0,3', detail: 'Portero −0,3, defensa −0,2 y centrocampista −0,05; al delantero, nada.' },

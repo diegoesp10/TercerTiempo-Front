@@ -137,30 +137,30 @@ export const outcomeIcons: Record<Outcome, string> = {
 
 /** Casilla de un entrenamiento: relleno suave e icono del color del resultado. */
 export const outcomeCell: Record<Outcome, string> = {
-  Attended: 'bg-emerald-500/15 text-emerald-600 ring-emerald-500/30',
-  Missed: 'bg-red-500/15 text-red-600 ring-red-500/30',
-  Warned: 'bg-amber-400/20 text-warning ring-amber-500/30',
+  Attended: 'bg-success-soft text-success ring-success-line',
+  Missed: 'bg-danger-soft text-danger ring-danger-line',
+  Warned: 'bg-warning-soft text-warning ring-warning-line',
   Injured: 'bg-slate-400/15 text-slate-500 ring-slate-400/30',
 };
 
 /** Tramos de una barra apilada (vino, avisó, faltó, lesionado). */
 export const outcomeBar: Record<Outcome, string> = {
-  Attended: 'bg-emerald-500',
-  Warned: 'bg-amber-400',
-  Missed: 'bg-red-500',
+  Attended: 'bg-success',
+  Warned: 'bg-warning',
+  Missed: 'bg-danger',
   Injured: 'bg-slate-300',
 };
 
 export const rateText = (rate: number | null) =>
-  rate === null ? 'text-slate-400' : rate >= 80 ? 'text-emerald-600' : rate >= 50 ? 'text-warning' : 'text-red-600';
+  rate === null ? 'text-slate-400' : rate >= 80 ? 'text-success' : rate >= 50 ? 'text-warning' : 'text-danger';
 
 /** Calor de una semana: de verde intenso (todo) a rojo (casi nada). */
 export function rateHeat(rate: number | null) {
   if (rate === null) return 'bg-surface-2 text-slate-400';
-  if (rate >= 100) return 'bg-emerald-500/25 text-emerald-700';
-  if (rate >= 75) return 'bg-emerald-500/12 text-emerald-700';
-  if (rate >= 50) return 'bg-amber-400/20 text-amber-700';
-  return 'bg-red-500/15 text-red-700';
+  if (rate >= 100) return 'bg-success/25 text-success-strong';
+  if (rate >= 75) return 'bg-success/12 text-success-strong';
+  if (rate >= 50) return 'bg-warning-soft text-warning-strong';
+  return 'bg-danger-soft text-danger-strong';
 }
 
 export const rateOf = (t: { counted: number; attended: number }) => (t.counted === 0 ? null : Math.round((t.attended * 100) / t.counted));

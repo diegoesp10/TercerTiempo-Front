@@ -102,7 +102,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
 <template>
   <div class="mt-3 space-y-3">
     <!-- En pausa -->
-    <div v-if="paused" class="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-slate-700" role="status">
+    <div v-if="paused" class="rounded-lg border border-warning-line bg-warning-soft px-3 py-2 text-sm text-slate-700" role="status">
       <p class="font-medium text-slate-900">
         <Icon icon="pause" class="mr-1 h-3.5 w-3.5 text-warning" />
         <template v-if="pausing">Pausando: el analizador para en el siguiente fotograma…</template>
@@ -126,7 +126,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
       <li v-for="(step, i) in steps" :key="step.key" class="flex items-center gap-1" :class="i === stepIndex ? 'flex-auto' : 'flex-1'" :aria-current="i === stepIndex ? 'step' : undefined">
         <span
           class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-2xs font-bold"
-          :class="i < stepIndex ? 'bg-accent-400 text-slate-950' : i === stepIndex ? (paused ? 'bg-amber-500 text-slate-950' : 'bg-action text-white ring-2 ring-brand-500/40') : 'bg-slate-200 text-slate-500'"
+          :class="i < stepIndex ? 'bg-accent-400 text-surface' : i === stepIndex ? (paused ? 'bg-warning text-surface' : 'bg-action text-white ring-2 ring-brand-500/40') : 'bg-slate-200 text-slate-500'"
         >
           <Icon v-if="i < stepIndex" icon="check" class="h-2.5 w-2.5" />
           <template v-else>{{ i + 1 }}</template>
@@ -150,7 +150,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: 
         aria-valuemax="100"
         :aria-label="`Análisis del vídeo: ${part.progress} %`"
       >
-        <div class="h-full rounded-full transition-[width] duration-500" :class="paused ? 'bg-amber-500' : 'bg-brand-500'" :style="{ width: `${part.progress}%` }" />
+        <div class="h-full rounded-full transition-[width] duration-500" :class="paused ? 'bg-warning' : 'bg-brand-500'" :style="{ width: `${part.progress}%` }" />
       </div>
 
       <!-- Detalle de la etapa -->

@@ -34,8 +34,8 @@ const names = (list: ClubLicenseDto[]) =>
 </script>
 
 <template>
-  <div v-if="expired.length" class="border-b border-red-200 bg-red-50" role="status">
-    <div class="mx-auto flex w-full max-w-page flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-sm text-red-800 sm:px-6 lg:px-10">
+  <div v-if="expired.length" class="border-b border-danger-line bg-danger-soft" role="status">
+    <div class="mx-auto flex w-full max-w-page flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-sm text-danger-strong sm:px-6 lg:px-10">
       <Icon icon="lock" class="h-3.5 w-3.5" />
       <span>
         <strong>Sin licencia vigente:</strong> {{ names(expired) }}. Los datos se conservan, pero
@@ -45,8 +45,8 @@ const names = (list: ClubLicenseDto[]) =>
       <RouterLink v-if="auth.isClub" :to="{ name: 'licenses' }" class="font-semibold underline">Renovar licencia</RouterLink>
     </div>
   </div>
-  <div v-else-if="ending.length" class="border-b border-amber-200 bg-amber-50" role="status">
-    <div class="mx-auto flex w-full max-w-page flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-sm text-amber-800 sm:px-6 lg:px-10">
+  <div v-else-if="ending.length" class="border-b border-warning-line bg-warning-soft" role="status">
+    <div class="mx-auto flex w-full max-w-page flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-sm text-warning-strong sm:px-6 lg:px-10">
       <Icon icon="circle-info" class="h-3.5 w-3.5" />
       <span>
         Periodo de prueba de {{ names(ending) }} hasta el {{ formatDate(ending[0]!.validUntil) }}.

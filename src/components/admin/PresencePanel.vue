@@ -128,7 +128,7 @@ const { sorted, sortBy, state } = useSort<PresenceSessionDto, SortKey>(
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <div class="card py-4">
           <p class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <span class="relative flex h-2.5 w-2.5"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" /><span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" /></span>
+            <span class="relative flex h-2.5 w-2.5"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" /><span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-success" /></span>
             En línea
           </p>
           <p class="mt-1 font-figures text-3xl font-extrabold tabular-nums text-slate-900">{{ data.online }}</p>
@@ -211,8 +211,8 @@ const { sorted, sortBy, state } = useSort<PresenceSessionDto, SortKey>(
             <tbody class="divide-y divide-line">
               <tr v-for="session in sorted" :key="session.sessionId">
                 <td class="px-3 py-2 whitespace-nowrap">
-                  <span class="inline-flex items-center gap-2 text-xs font-medium" :class="isOnline(session) ? 'text-emerald-600' : 'text-slate-500'">
-                    <span class="h-2 w-2 rounded-full" :class="isOnline(session) ? 'bg-emerald-500' : 'bg-slate-400'" />
+                  <span class="inline-flex items-center gap-2 text-xs font-medium" :class="isOnline(session) ? 'text-success' : 'text-slate-500'">
+                    <span class="h-2 w-2 rounded-full" :class="isOnline(session) ? 'bg-success' : 'bg-slate-400'" />
                     {{ isOnline(session) ? 'En línea' : 'Inactivo' }}
                   </span>
                 </td>

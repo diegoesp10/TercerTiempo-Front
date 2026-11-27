@@ -521,7 +521,7 @@ async function respond(response: CallUpResponse) {
             </p>
             <SuspensionNote v-if="data.mine.suspended" :suspension="data.mine.suspension" class="mt-1" />
             <InjuryNote v-if="data.mine.injured" :injury="data.mine.injury" class="mt-1" />
-            <p v-if="!data.closed && data.mine.warned" class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-amber-700">
+            <p v-if="!data.closed && data.mine.warned" class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-warning">
               <DisciplineBadge :discipline="warnedDiscipline(data.mine)" />Llevas {{ data.mine.cycleYellows }} amarillas: con una más te pierdes el siguiente partido de liga.
             </p>
             <GroundCard v-if="data.mine.called && (data.meetGround || data.meetPlace)" :ground="data.meetGround" :place="data.meetPlace" class="mt-2" />
@@ -643,10 +643,10 @@ async function respond(response: CallUpResponse) {
             <p class="font-display text-3xl font-semibold tabular-nums text-slate-900">
               {{ called.size }}<span class="text-slate-400">/{{ size ?? '—' }}</span>
             </p>
-            <p v-if="size === null" class="mt-1 text-sm text-amber-700">Di a cuántos convocas para este partido.</p>
-            <p v-else-if="over > 0" class="mt-1 text-sm font-medium text-red-600">Sobran {{ over }}: quita a {{ over === 1 ? 'uno' : over }} para poder guardarla.</p>
-            <p v-else-if="missing > 0" class="mt-1 text-sm text-amber-700">Faltan {{ missing }} por convocar.</p>
-            <p v-else class="mt-1 text-sm text-emerald-600"><Icon icon="check" class="mr-1 h-3 w-3" />Convocatoria completa.</p>
+            <p v-if="size === null" class="mt-1 text-sm text-warning">Di a cuántos convocas para este partido.</p>
+            <p v-else-if="over > 0" class="mt-1 text-sm font-medium text-danger">Sobran {{ over }}: quita a {{ over === 1 ? 'uno' : over }} para poder guardarla.</p>
+            <p v-else-if="missing > 0" class="mt-1 text-sm text-warning">Faltan {{ missing }} por convocar.</p>
+            <p v-else class="mt-1 text-sm text-success"><Icon icon="check" class="mr-1 h-3 w-3" />Convocatoria completa.</p>
             <p class="mt-2 text-xs text-slate-500">
               <template v-if="data.sizeFixed">
                 Es el número fijo de la plantilla; se cambia en
@@ -703,15 +703,15 @@ async function respond(response: CallUpResponse) {
             <p class="mt-1.5 text-xs text-slate-500">
               Salen de las tarjetas de las actas: la oficial de la federación cuando está cerrada y, mientras tanto, la interna. Cuando el comité de competición publica la sanción de un jugador, cuentan los partidos que pone (una roja directa puede costar varios); hasta entonces, el mínimo.
             </p>
-            <p v-if="suspendedCount" class="mt-1.5 text-xs font-medium text-red-700">{{ suspendedCount === 1 ? '1 jugador sancionado' : `${suspendedCount} jugadores sancionados` }} para este partido.</p>
-            <p v-if="warned.length" class="mt-1 text-xs font-medium text-amber-700">{{ warned.length === 1 ? '1 jugador apercibido' : `${warned.length} jugadores apercibidos` }}.</p>
+            <p v-if="suspendedCount" class="mt-1.5 text-xs font-medium text-danger">{{ suspendedCount === 1 ? '1 jugador sancionado' : `${suspendedCount} jugadores sancionados` }} para este partido.</p>
+            <p v-if="warned.length" class="mt-1 text-xs font-medium text-warning">{{ warned.length === 1 ? '1 jugador apercibido' : `${warned.length} jugadores apercibidos` }}.</p>
           </section>
 
           <section v-if="data.status === 'Published' && data.canEdit" class="card text-sm">
             <h3 class="mb-2 font-semibold text-slate-900">Entrega</h3>
             <ul class="space-y-1">
               <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check" class="mr-1.5 h-3 w-3 text-slate-400" />Enviada</span><strong class="tabular-nums text-slate-700">{{ data.counts.sent }}</strong></li>
-              <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check-double" class="mr-1.5 h-3 w-3 text-success" />Vista</span><strong class="tabular-nums text-emerald-600">{{ data.counts.seen }}</strong></li>
+              <li class="flex justify-between gap-2"><span class="text-slate-600"><Icon icon="check-double" class="mr-1.5 h-3 w-3 text-success" />Vista</span><strong class="tabular-nums text-success">{{ data.counts.seen }}</strong></li>
             </ul>
             <button v-if="canEdit && unseen > 0" type="button" class="btn-secondary btn-sm mt-3 w-full py-1.5" v-busy="busy === 'resend'" :disabled="busy !== null" @click="resend"><Icon icon="paper-plane" class="mr-1.5 h-3 w-3" />Reenviar a quien no la ha visto ({{ unseen }})</button>
             <p class="mt-2 text-xs text-slate-500">Un check: le ha llegado el aviso. Doble check verde: la ha abierto. La firma va aparte.</p>
@@ -720,7 +720,7 @@ async function respond(response: CallUpResponse) {
           <section v-if="data.status === 'Published'" class="card text-sm">
             <h3 class="mb-2 font-semibold text-slate-900">Firmas</h3>
             <ul class="space-y-1">
-              <li class="flex justify-between gap-2"><span class="text-slate-600">Convocados que han firmado</span><strong class="tabular-nums text-emerald-600">{{ data.counts.confirmed }}</strong></li>
+              <li class="flex justify-between gap-2"><span class="text-slate-600">Convocados que han firmado</span><strong class="tabular-nums text-success">{{ data.counts.confirmed }}</strong></li>
               <li class="flex justify-between gap-2"><span class="text-slate-600">Sin firmar</span><strong class="tabular-nums text-warning">{{ data.counts.pending }}</strong></li>
               <li class="flex justify-between gap-2"><span class="text-slate-600">No convocados enterados</span><strong class="tabular-nums text-slate-700">{{ data.counts.acknowledged }}</strong></li>
             </ul>

@@ -477,7 +477,7 @@ async function remove() {
           <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Ejercicios <span class="font-normal normal-case text-slate-400">· {{ items.length ? `${formatDurationMinutes(itemsTotal)} en total` : `la sesión dura ${formatDurationMinutes(session.durationMinutes)}` }}</span></h3>
           <button v-if="canChange" type="button" class="btn-primary btn-sm" v-busy="busy === 'items'" :disabled="busy !== null || !itemsDirty || !!itemsProblem" :title="itemsProblem ?? undefined" @click="saveItems">Guardar ejercicios</button>
         </div>
-        <p v-if="canChange && itemsProblem" class="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800" role="status">
+        <p v-if="canChange && itemsProblem" class="mb-2 rounded-lg border border-warning-line bg-warning-soft px-3 py-2 text-xs text-warning-strong" role="status">
           <Icon icon="triangle-exclamation" class="mr-1 h-3 w-3" />Aún no se pueden guardar: {{ itemsProblem }}
         </p>
         <p v-else-if="canChange && itemsDirty && items.length && itemsTotal !== session.durationMinutes" class="mb-2 text-xs text-slate-500">
@@ -555,7 +555,7 @@ async function remove() {
         <ul class="divide-y divide-line rounded-lg border border-line">
           <template v-for="group in rollCallGroups" :key="group.key">
             <li v-if="group.label" class="bg-surface-2 px-3 py-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ group.label }} · {{ group.rows.length }}</li>
-            <li v-for="line in group.rows" :key="keyOf(line)" class="px-3 py-2 text-sm" :class="line.trialPlayerId ? 'bg-amber-50/40' : ''">
+            <li v-for="line in group.rows" :key="keyOf(line)" class="px-3 py-2 text-sm" :class="line.trialPlayerId ? 'bg-warning-soft/40' : ''">
               <div class="flex flex-wrap items-center gap-2">
                 <PlayerName :name="lineOf(keyOf(line))?.playerName ?? ''" :photo-url="line.squadPlayerId ? photos[line.squadPlayerId] ?? null : null" class="min-w-0 flex-1 basis-40" />
                 <Badge v-if="line.trialPlayerId" tone="amber" title="Viene a prueba, sin ficha en la plantilla">A prueba</Badge>

@@ -14,7 +14,7 @@ const iconClass = computed(() => ({ sm: 'h-2.5 w-2.5', md: 'h-3.5 w-3.5', lg: 'h
     <span class="flex gap-px text-slate-400/30" aria-hidden="true">
       <Icon v-for="star in 10" :key="star" icon="star" :class="iconClass" />
     </span>
-    <span v-if="score !== null" class="absolute inset-y-0 left-0 flex gap-px overflow-hidden text-amber-400" :style="{ width: fill }" aria-hidden="true">
+    <span v-if="score !== null" class="absolute inset-y-0 left-0 flex gap-px overflow-hidden text-gold" :style="{ width: fill }" aria-hidden="true">
       <Icon v-for="star in 10" :key="star" icon="star" class="shrink-0" :class="iconClass" />
     </span>
   </span>

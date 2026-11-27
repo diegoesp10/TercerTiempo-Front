@@ -182,7 +182,7 @@ const statusTone: Record<MatchPassStatus, 'green' | 'amber' | 'red' | 'slate' | 
         <div class="flex flex-wrap items-end gap-3">
           <div class="w-32">
             <label class="label" for="pass-price">Precio (€)</label>
-            <input id="pass-price" v-model="price" type="text" inputmode="decimal" class="input tabular-nums" :class="priceInvalid ? 'border-red-400' : ''" @input="priceTouched = true" />
+            <input id="pass-price" v-model="price" type="text" inputmode="decimal" class="input tabular-nums" :class="priceInvalid ? 'border-danger' : ''" @input="priceTouched = true" />
           </div>
           <div class="min-w-48 flex-1">
             <label class="label" for="pass-recipient">Para quién (nota tuya, opcional)</label>
@@ -195,7 +195,7 @@ const statusTone: Record<MatchPassStatus, 'green' | 'amber' | 'red' | 'slate' | 
         <p class="text-xs text-slate-500">0 = gratis. De lo que se cobre, tu club se queda el {{ data.clubSharePercent }} % y la plataforma el {{ 100 - data.clubSharePercent }} %.</p>
       </form>
 
-      <div v-if="created" class="mt-4 rounded-lg border border-emerald-300/40 bg-emerald-100 p-3 text-sm text-emerald-800">
+      <div v-if="created" class="mt-4 rounded-lg border border-success-line bg-success-soft p-3 text-sm text-success-strong">
         <p class="font-semibold">Pase listo: {{ passContents(created.includesSheet, created.includesVideo, created.allowsDownload) }} · {{ passPrice(created.priceCents, created.currency) }}</p>
         <div class="mt-2 flex flex-wrap items-center gap-2">
           <code class="rounded bg-surface px-2 py-1 font-figures text-base tracking-widest text-slate-900">{{ created.code }}</code>

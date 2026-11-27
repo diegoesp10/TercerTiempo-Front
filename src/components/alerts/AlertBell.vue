@@ -116,11 +116,11 @@ async function openAlert(alert: AlertDto) {
             :class="!shownIds.has(alert.id) ? (alert.resolved ? 'opacity-50' : 'opacity-70') : ''"
           >
             <button type="button" class="flex w-full gap-3 px-4 py-3 text-left transition hover:bg-surface-2" @click="openAlert(alert)">
-              <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full" :class="shownIds.has(alert.id) && !alert.read ? 'bg-red-500' : 'bg-transparent'" aria-hidden="true" />
+              <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full" :class="shownIds.has(alert.id) && !alert.read ? 'bg-danger' : 'bg-transparent'" aria-hidden="true" />
               <span class="min-w-0 flex-1">
                 <span class="flex items-baseline justify-between gap-2">
                   <span class="text-sm font-semibold text-slate-900">{{ alert.title }}</span>
-                  <span v-if="alert.resolved" class="shrink-0 text-2xs font-medium text-emerald-600">Resuelto</span>
+                  <span v-if="alert.resolved" class="shrink-0 text-2xs font-medium text-success">Resuelto</span>
                   <span
                     v-else-if="daysLeft(alert) !== null"
                     class="shrink-0 text-2xs font-semibold"

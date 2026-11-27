@@ -229,7 +229,7 @@ function origin(request: ScrapeRequestDto) {
 }
 
 const statusClass = (code: number | null) =>
-  code === null ? 'text-red-600' : code >= 500 || code === 403 || code === 429 ? 'text-red-600' : code >= 300 ? 'text-amber-700' : 'text-emerald-700';
+  code === null ? 'text-danger' : code >= 500 || code === 403 || code === 429 ? 'text-danger' : code >= 300 ? 'text-warning' : 'text-success';
 
 const sourceTitle = (source: ScrapeSourceDto) =>
   ({ asturfutbol: 'asturfutbol.es (actas)', futbolasturiano: 'futbolasturiano.es (datos)', escudos: 'Escudos' } as Record<string, string>)[source.provider] ?? source.provider;
@@ -373,7 +373,7 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
             <Badge v-else tone="green">{{ interval(job) }}</Badge>
           </div>
 
-          <p v-if="job.pause" class="mt-3 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs text-slate-700">
+          <p v-if="job.pause" class="mt-3 flex items-start gap-2 rounded-lg border border-warning-line bg-warning-soft px-3 py-2 text-xs text-slate-700">
             <Icon :icon="job.pause.kind === 'rest' ? 'mug-hot' : 'pause'" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
             <span>
               <strong class="text-slate-900">{{ pauseText(job) }}.</strong>
@@ -407,7 +407,7 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
           </dl>
           <p v-if="job.lastRun?.summary" class="mt-2 text-xs text-slate-600">{{ job.lastRun.summary }}</p>
           <details v-if="job.lastRun?.errors.length" class="mt-2 text-xs">
-            <summary class="cursor-pointer text-amber-700">{{ job.lastRun.errors.length }} {{ job.lastRun.errors.length === 1 ? 'error' : 'errores' }}</summary>
+            <summary class="cursor-pointer text-warning">{{ job.lastRun.errors.length }} {{ job.lastRun.errors.length === 1 ? 'error' : 'errores' }}</summary>
             <ul class="mt-1 max-h-40 space-y-1 overflow-y-auto text-slate-600">
               <li v-for="(message, i) in job.lastRun.errors" :key="i" class="break-words">{{ message }}</li>
             </ul>
@@ -478,13 +478,13 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
                   <span v-else class="text-slate-400">—</span>
                 </td>
                 <td class="px-3 py-2 text-xs whitespace-nowrap">
-                  <span v-if="source.pausedUntil" class="font-semibold" :class="source.pauseKind === 'blocked' ? 'text-red-600' : 'text-warning'" :title="source.pauseReason ?? undefined">
+                  <span v-if="source.pausedUntil" class="font-semibold" :class="source.pauseKind === 'blocked' ? 'text-danger' : 'text-warning'" :title="source.pauseReason ?? undefined">
                     {{ source.pauseKind ? pauseLabels[source.pauseKind] : 'En pausa' }} hasta {{ formatKickoff(source.pausedUntil) }}
                   </span>
                   <span v-else-if="source.nextRequestAt" class="text-slate-600">Siguiente desde {{ formatKickoff(source.nextRequestAt) }}</span>
-                  <span v-else class="text-emerald-700">Disponible</span>
+                  <span v-else class="text-success">Disponible</span>
                 </td>
-                <td class="px-3 py-2 text-right tabular-nums">{{ source.last24h }}<span v-if="source.failed24h" class="text-red-600"> ({{ source.failed24h }} fallos)</span></td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ source.last24h }}<span v-if="source.failed24h" class="text-danger"> ({{ source.failed24h }} fallos)</span></td>
                 <td class="px-3 py-2 text-right text-xs whitespace-nowrap text-slate-600">{{ source.lastRequestAt ? formatKickoff(source.lastRequestAt) : '—' }}</td>
               </tr>
             </tbody>
@@ -518,7 +518,7 @@ const { sorted: sortedRequests, sortBy: sortRequests, state: requestSortState } 
                 <td class="px-3 py-2 text-right tabular-nums">{{ run.requests }}</td>
                 <td class="min-w-80 max-w-xl px-3 py-2 text-xs text-slate-600">
                   <span v-if="run.scope" class="block break-words font-medium text-slate-700">{{ run.scope }}</span>
-                  <span class="block break-words">{{ run.summary ?? '—' }}<span v-if="run.errors.length" class="text-amber-700"> · {{ run.errors.length }} {{ run.errors.length === 1 ? 'error' : 'errores' }}</span></span>
+                  <span class="block break-words">{{ run.summary ?? '—' }}<span v-if="run.errors.length" class="text-warning"> · {{ run.errors.length }} {{ run.errors.length === 1 ? 'error' : 'errores' }}</span></span>
                 </td>
               </tr>
             </tbody>

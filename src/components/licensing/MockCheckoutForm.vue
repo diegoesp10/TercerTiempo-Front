@@ -124,11 +124,11 @@ async function pay(outcome: SimulatedPaymentOutcome) {
         <h2 class="font-semibold text-slate-900">Pagar con tarjeta</h2>
         <p class="mt-1 text-xs text-slate-500">Pasarela simulada con el mismo recorrido que Stripe Checkout. No se cobra nada y los datos de la tarjeta no salen de tu navegador.</p>
       </div>
-      <span class="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-2xs font-bold uppercase tracking-wide text-warning">Modo de prueba</span>
+      <span class="rounded-full bg-warning-soft px-2.5 py-0.5 text-2xs font-bold uppercase tracking-wide text-warning">Modo de prueba</span>
     </div>
 
     <!-- Tarjetas de prueba -->
-    <div class="rounded-xl border border-dashed border-amber-400/50 bg-amber-400/5 p-3">
+    <div class="rounded-xl border border-dashed border-warning-line bg-warning-soft p-3">
       <p class="text-xs font-semibold text-slate-700">Tarjetas de prueba de Stripe</p>
       <div class="mt-2 grid grid-cols-1 gap-1.5">
         <button

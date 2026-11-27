@@ -218,7 +218,7 @@ async function submit() {
             Te lo genera tu club o tu entrenador para tu ficha. No tienes que escribir tu nombre: la cuenta se crea con el de la ficha.
           </p>
           <div v-if="invite" class="mt-3 rounded-xl border border-accent-400/40 bg-brand-500/10 p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Tu ficha de jugador</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-own">Tu ficha de jugador</p>
             <p class="mt-1 text-lg font-semibold text-slate-900"><PlayerName :name="invite.player.fullName" :photo-url="invite.player.photoUrl" size="sm" /></p>
             <p class="mt-1 text-sm text-slate-500">
               <TeamName :name="invite.teamName" :crest-url="invite.teamCrestUrl" :team-id="invite.teamId" /> · {{ invite.competitionName }} · {{ invite.seasonLabel }}

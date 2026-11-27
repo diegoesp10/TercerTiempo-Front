@@ -336,9 +336,9 @@ async function reinstate(player: SquadPlayerDto) {
       </div>
     </section>
 
-    <section v-if="canManage && withoutPosition.length > 0" class="card mb-6 border-amber-400/40">
+    <section v-if="canManage && withoutPosition.length > 0" class="card mb-6 border-warning-line">
       <h2 class="flex items-center gap-2 font-semibold text-slate-900">
-        <Icon icon="triangle-exclamation" class="h-4 w-4 text-amber-400" />
+        <Icon icon="triangle-exclamation" class="h-4 w-4 text-warning" />
         {{ withoutPosition.length }} {{ withoutPosition.length === 1 ? 'jugador sin posición' : 'jugadores sin posición' }}
       </h2>
       <p class="mt-1 text-xs text-slate-500">
@@ -460,7 +460,7 @@ async function reinstate(player: SquadPlayerDto) {
                   </td>
                   <td class="col-sm py-2 pr-3 text-slate-600">
                     <template v-if="player.position">{{ positionLabels[player.position] }}</template>
-                    <span v-else-if="canManage" class="text-amber-400">Sin posición</span>
+                    <span v-else-if="canManage" class="text-warning">Sin posición</span>
                     <template v-else>—</template>
                   </td>
                   <td class="col-md py-2 pr-3">

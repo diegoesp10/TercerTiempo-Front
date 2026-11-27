@@ -536,7 +536,7 @@ const suggestMounted = useLazyMount(suggesting);
         </span>
       </div>
       <div class="mt-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-center">
-        <p class="flex min-w-0 flex-col items-center gap-1.5 break-words text-sm font-semibold sm:text-lg" :class="data.match.homeTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">
+        <p class="flex min-w-0 flex-col items-center gap-1.5 break-words text-sm font-semibold sm:text-lg" :class="data.match.homeTeam.id === teamId ? 'text-own' : 'text-slate-900'">
           <TeamCrest :src="data.match.homeTeam.crestUrl" :name="data.match.homeTeam.name" :short-name="data.match.homeTeam.shortName" size="md" />
           {{ data.match.homeTeam.name }}
         </p>
@@ -544,7 +544,7 @@ const suggestMounted = useLazyMount(suggesting);
           <template v-if="data.match.status === 'Played'">{{ data.match.homeGoals }} - {{ data.match.awayGoals }}</template>
           <span v-else class="text-slate-400">vs</span>
         </p>
-        <p class="flex min-w-0 flex-col items-center gap-1.5 break-words text-sm font-semibold sm:text-lg" :class="data.match.awayTeam.id === teamId ? 'text-emerald-700' : 'text-slate-900'">
+        <p class="flex min-w-0 flex-col items-center gap-1.5 break-words text-sm font-semibold sm:text-lg" :class="data.match.awayTeam.id === teamId ? 'text-own' : 'text-slate-900'">
           <TeamCrest :src="data.match.awayTeam.crestUrl" :name="data.match.awayTeam.name" :short-name="data.match.awayTeam.shortName" size="md" />
           {{ data.match.awayTeam.name }}
         </p>
@@ -780,13 +780,13 @@ const suggestMounted = useLazyMount(suggesting);
             <tr v-if="group.label">
               <td :colspan="numericColumns.length + 9" class="bg-surface-2 px-3 py-1.5 font-display text-2xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                 {{ group.label }} · {{ group.rows.filter((r) => r.played).length }} de {{ group.rows.length }} en el acta
-                <RouterLink v-if="group.key === 'none'" :to="{ name: 'squad', params: { squadId } }" class="ml-2 normal-case tracking-normal text-amber-400 hover:underline">
+                <RouterLink v-if="group.key === 'none'" :to="{ name: 'squad', params: { squadId } }" class="ml-2 normal-case tracking-normal text-warning hover:underline">
                   La federación no la publica: pónsela en Jugadores
                 </RouterLink>
               </td>
             </tr>
             <tr v-for="row in group.rows" :key="row.squadPlayerId" :class="row.played ? (row.started ? '' : 'bg-slate-500/[0.06]') : 'text-slate-400'">
-              <td :class="[tdCell, row.played && row.started ? 'shadow-[inset_3px_0_0_var(--color-emerald-500)]' : '']">
+              <td :class="[tdCell, row.played && row.started ? 'shadow-[inset_3px_0_0_var(--color-starter-solid)]' : '']">
                 <input
                   v-model="row.played"
                   type="checkbox"
@@ -831,11 +831,11 @@ const suggestMounted = useLazyMount(suggesting);
                 <input v-model.number="row.yellowCards" type="number" min="0" max="2" :class="numberInput" :disabled="!row.played" aria-label="Amarillas" />
               </td>
               <td :class="tdCell">
-                <input v-model="row.redCard" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600" :disabled="!row.played" aria-label="Roja" />
+                <input v-model="row.redCard" type="checkbox" class="h-4 w-4 rounded border-slate-300 accent-danger" :disabled="!row.played" aria-label="Roja" />
               </td>
               <td :class="tdCell" class="whitespace-nowrap">
                 <RatingBadge v-if="row.played" :rating="row.rating" size="sm" />
-                <Icon v-if="row.played && row.actionsFromVideo" icon="video" class="ml-1 text-2xs text-amber-400" :title="videoActionsTitle" />
+                <Icon v-if="row.played && row.actionsFromVideo" icon="video" class="ml-1 text-2xs text-warning" :title="videoActionsTitle" />
               </td>
               <td class="px-2 py-1 group-data-[tight]/sheet:px-1">
                 <button
@@ -865,7 +865,7 @@ const suggestMounted = useLazyMount(suggesting);
               </td>
             </tr>
             <tr v-for="row in group.rows" :key="row.squadPlayerId" :class="row.started ? '' : 'bg-slate-500/[0.06]'">
-              <td class="min-w-[10rem] px-2 py-2 group-data-[tight]/sheet:min-w-[8rem] group-data-[tight]/sheet:px-1" :class="row.started ? 'shadow-[inset_3px_0_0_var(--color-emerald-500)]' : ''">
+              <td class="min-w-[10rem] px-2 py-2 group-data-[tight]/sheet:min-w-[8rem] group-data-[tight]/sheet:px-1" :class="row.started ? 'shadow-[inset_3px_0_0_var(--color-starter-solid)]' : ''">
                 <PlayerName :name="row.player.fullName" :photo-url="row.player.photoUrl" class="font-medium text-slate-800" />
                 <span v-if="row.player.position" class="ml-1 text-xs text-slate-400">{{ positionShortLabels[row.player.position] }}</span>
                 <Icon v-if="hasNote(row)" icon="comment-dots" class="ml-1.5 text-[12px] text-accent-400" :title="`Tiene nota: ${row.notes}`" />
@@ -877,7 +877,7 @@ const suggestMounted = useLazyMount(suggesting);
               <td :class="tdRead"><CardIcon v-if="row.redCard" kind="red" /></td>
               <td :class="tdRead" class="whitespace-nowrap">
                 <RatingBadge :rating="row.rating" size="sm" />
-                <Icon v-if="row.actionsFromVideo" icon="video" class="ml-1 text-2xs text-amber-400" :title="videoActionsTitle" />
+                <Icon v-if="row.actionsFromVideo" icon="video" class="ml-1 text-2xs text-warning" :title="videoActionsTitle" />
               </td>
               <td class="px-2 py-2 group-data-[tight]/sheet:px-1">
                 <button
@@ -932,7 +932,7 @@ const suggestMounted = useLazyMount(suggesting);
               :key="row.squadPlayerId"
               class="border-t border-slate-100 px-3 py-2.5 first:border-t-0"
               :class="[
-                row.played ? (row.started ? 'shadow-[inset_3px_0_0_var(--color-emerald-500)]' : 'bg-slate-500/[0.06]') : 'text-slate-400',
+                row.played ? (row.started ? 'shadow-[inset_3px_0_0_var(--color-starter-solid)]' : 'bg-slate-500/[0.06]') : 'text-slate-400',
               ]"
             >
               <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -955,7 +955,7 @@ const suggestMounted = useLazyMount(suggesting);
                 <Badge v-else-if="canEdit && hasCallUp && !row.called" tone="amber" title="No iba en la convocatoria: se ha añadido al acta"><Icon icon="plus" class="mr-1 h-2.5 w-2.5" />Fuera de la convocatoria</Badge>
                 <span class="ml-auto inline-flex shrink-0 items-center gap-1">
                   <RatingBadge v-if="row.played" :rating="row.rating" size="sm" />
-                  <Icon v-if="row.played && row.actionsFromVideo" icon="video" class="text-2xs text-amber-400" :title="videoActionsTitle" />
+                  <Icon v-if="row.played && row.actionsFromVideo" icon="video" class="text-2xs text-warning" :title="videoActionsTitle" />
                 </span>
               </div>
               <div v-if="canEdit || row.played" class="mt-2 grid grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-1.5">
@@ -996,7 +996,7 @@ const suggestMounted = useLazyMount(suggesting);
                 </label>
                 <label class="flex flex-col items-center gap-1 text-2xs text-slate-500" title="Tarjeta roja">
                   TR
-                  <input v-if="canEdit" v-model="row.redCard" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600" :disabled="!row.played" :aria-label="`Roja de ${row.player.fullName}`" />
+                  <input v-if="canEdit" v-model="row.redCard" type="checkbox" class="h-4 w-4 rounded border-slate-300 accent-danger" :disabled="!row.played" :aria-label="`Roja de ${row.player.fullName}`" />
                   <CardIcon v-else-if="row.redCard" kind="red" />
                   <span v-else class="text-sm text-slate-400">—</span>
                 </label>
@@ -1033,7 +1033,7 @@ const suggestMounted = useLazyMount(suggesting);
         goles encajados para defensas), portería (paradas), disciplina (tarjetas) y
         resultado (según los minutos jugados). Escala de 3,0 a 10,0. Con el acta oficial cerrada, la portería a cero y los goles
         encajados son los de mientras el jugador estaba en el campo; sin ella, la parte de los del partido que le toca por sus
-        minutos. Las acciones que vuelca el vídeo (<Icon icon="video" class="text-2xs text-amber-400" />) no cuentan hasta
+        minutos. Las acciones que vuelca el vídeo (<Icon icon="video" class="text-2xs text-warning" />) no cuentan hasta
         que se guarda el acta: el vídeo solo las ve mientras identifica a cada jugador.
       </p>
     </section>

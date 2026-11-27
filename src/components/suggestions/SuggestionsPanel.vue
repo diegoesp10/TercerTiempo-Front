@@ -156,7 +156,7 @@ async function resolve(s: SuggestionDto, approve: boolean) {
             <input :id="`note-${s.id}`" v-model="notes[s.id]" type="text" maxlength="500" class="input" placeholder="Por ejemplo: «Revisado con el vídeo, tienes razón»." />
           </div>
           <button type="button" class="btn-primary" v-busy="busy === s.id" :disabled="busy !== null" @click="resolve(s, true)"><Icon icon="check" class="mr-1.5 h-3.5 w-3.5" />Aprobar</button>
-          <button type="button" class="btn-secondary text-red-600" v-busy="busy === s.id" :disabled="busy !== null" @click="resolve(s, false)"><Icon icon="xmark" class="mr-1.5 h-3.5 w-3.5" />Rechazar</button>
+          <button type="button" class="btn-secondary text-danger" v-busy="busy === s.id" :disabled="busy !== null" @click="resolve(s, false)"><Icon icon="xmark" class="mr-1.5 h-3.5 w-3.5" />Rechazar</button>
         </div>
         <p v-else class="mt-3 text-xs text-slate-500">
           {{ s.status === 'Approved' ? 'Aprobada' : 'Rechazada' }} por {{ s.resolvedBy ?? 'el cuerpo técnico' }} el {{ s.resolvedAt ? formatKickoff(s.resolvedAt) : '' }}<template v-if="s.resolutionNote">: “{{ s.resolutionNote }}”</template>.

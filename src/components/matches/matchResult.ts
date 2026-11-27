@@ -2,34 +2,34 @@ import type { MatchDto } from '@/types/api';
 import { outcomeFor, outcomeLabels, type Outcome } from '@/utils/format';
 
 // Colores del resultado de un partido ya jugado, desde el punto de vista del equipo: verde si ganó, amarillo si empató y
-// rojo si perdió. El sólido (la letra) es casi igual en los dos temas y su letra llega a 4,5:1; el suave usa los tonos del
-// tema para leerse en los dos.
+// rojo si perdió (tokens win, draw y loss de style.css). El sólido lleva su letra encima (on-*) y el suave, la letra del
+// resultado sobre el tinte del sólido; las dos llegan a 4,5:1 en los dos temas.
 export type Result = Exclude<Outcome, null>;
 
 export const resultStyle: Record<Result, { label: string; solid: string; soft: string; ring: string; tint: string; bar: string }> = {
   win: {
     label: 'Victoria',
-    solid: 'bg-green-500 text-green-950',
-    soft: 'bg-emerald-500/15 text-emerald-700',
-    ring: 'ring-green-500/50',
-    tint: 'border-green-500/40 bg-green-500/15',
-    bar: 'border-l-green-500',
+    solid: 'bg-win-solid text-on-win',
+    soft: 'bg-win-solid/15 text-win',
+    ring: 'ring-win-solid/50',
+    tint: 'border-win-solid/40 bg-win-solid/15',
+    bar: 'border-l-win-solid',
   },
   draw: {
     label: 'Empate',
-    solid: 'bg-yellow-400 text-yellow-950',
-    soft: 'bg-yellow-400/20 text-amber-700',
-    ring: 'ring-yellow-400/60',
-    tint: 'border-yellow-400/50 bg-yellow-400/15',
-    bar: 'border-l-yellow-400',
+    solid: 'bg-draw-solid text-on-draw',
+    soft: 'bg-draw-solid/20 text-draw',
+    ring: 'ring-draw-solid/60',
+    tint: 'border-draw-solid/50 bg-draw-solid/15',
+    bar: 'border-l-draw-solid',
   },
   loss: {
     label: 'Derrota',
-    solid: 'bg-danger-solid text-white',
-    soft: 'bg-red-500/15 text-red-700',
-    ring: 'ring-red-500/50',
-    tint: 'border-red-500/40 bg-red-500/15',
-    bar: 'border-l-red-500',
+    solid: 'bg-loss-solid text-on-loss',
+    soft: 'bg-loss-solid/15 text-loss',
+    ring: 'ring-loss-solid/50',
+    tint: 'border-loss-solid/40 bg-loss-solid/15',
+    bar: 'border-l-loss-solid',
   },
 };
 

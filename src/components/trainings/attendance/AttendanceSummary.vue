@@ -21,7 +21,7 @@ const highlights = computed(() => [
   {
     key: 'perfect',
     icon: 'circle-check',
-    tone: 'text-emerald-600',
+    tone: 'text-success',
     title: 'Siempre vienen',
     empty: 'Nadie ha venido a todos.',
     items: active.value.filter((r) => r.player.attendanceRate === 100).map((r) => ({ row: r, value: `${r.player.attended}/${r.player.sessions}` })),
@@ -29,7 +29,7 @@ const highlights = computed(() => [
   {
     key: 'missed',
     icon: 'triangle-exclamation',
-    tone: 'text-red-600',
+    tone: 'text-danger',
     title: 'Más faltas',
     empty: 'Nadie ha faltado.',
     items: top(active.value, (r) => r.player.missed).map((r) => ({ row: r, value: `${r.player.missed} ${r.player.missed === 1 ? 'falta' : 'faltas'}` })),

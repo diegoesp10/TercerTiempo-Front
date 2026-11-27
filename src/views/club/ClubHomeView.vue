@@ -326,7 +326,7 @@ const { sorted: sortedAppointments, sortBy, state } = useSort<AppointmentDto, Ap
         </form>
 
         <div v-if="lastCreated?.accessCode" class="mt-4 rounded-xl border border-accent-400/40 bg-brand-500/10 p-4">
-          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Código de acceso para {{ lastCreated.coachName }}</p>
+          <p class="text-xs font-semibold uppercase tracking-wide text-success">Código de acceso para {{ lastCreated.coachName }}</p>
           <p class="mt-1 font-mono text-2xl font-semibold tracking-[0.3em] text-slate-900">{{ lastCreated.accessCode }}</p>
           <p class="mt-1 text-xs text-slate-600">
             <TeamName :name="lastCreated.teamName" :team-id="lastCreated.teamId" /> · {{ lastCreated.seasonLabel }} · hasta {{ formatDate(lastCreated.validUntil) }}. Con él se da de alta en

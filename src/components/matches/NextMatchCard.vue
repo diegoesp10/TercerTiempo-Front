@@ -31,7 +31,7 @@ const target = computed<RouteLocationRaw | null>(() => (props.to === undefined ?
       <p class="font-display text-3xl font-bold text-slate-900">{{ match.matchday }}</p>
     </div>
     <div class="min-w-0 flex-1 basis-56">
-      <p class="flex flex-wrap items-baseline justify-between gap-x-3 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+      <p class="flex flex-wrap items-baseline justify-between gap-x-3 text-xs font-semibold uppercase tracking-wide text-own">
         <span v-if="live">En juego</span>
         <span v-else>Próximo partido · {{ formatDaysUntil(match.kickoffAt) }}</span>
         <span class="text-accent-400 sm:hidden">Jornada {{ match.matchday }}</span>
@@ -46,7 +46,7 @@ const target = computed<RouteLocationRaw | null>(() => (props.to === undefined ?
         <TeamName :name="opponent.name" :crest-url="opponent.crestUrl" :short-name="opponent.shortName" size="sm">
           <span class="text-slate-400">vs</span> {{ opponent.name }}
         </TeamName>
-        <span class="text-sm font-normal" :class="isHome ? 'text-emerald-700' : 'text-slate-500'">{{ isHome ? 'en casa' : 'fuera' }}</span>
+        <span class="text-sm font-normal" :class="isHome ? 'text-own' : 'text-slate-500'">{{ isHome ? 'en casa' : 'fuera' }}</span>
       </component>
       <p class="text-sm text-slate-600">{{ formatDayHeading(match.kickoffAt) }} · {{ formatTime(match.kickoffAt) }}<span v-if="match.venue"> · {{ match.venue }}</span></p>
       <div v-if="$slots.badges" class="mt-2 flex flex-wrap items-center gap-2"><slot name="badges" /></div>

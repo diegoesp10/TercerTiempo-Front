@@ -131,7 +131,7 @@ function onBlur() {
       role="listbox"
       class="absolute z-30 mt-1 max-h-72 w-full overflow-y-auto rounded-lg border border-line bg-surface py-1 shadow-card"
     >
-      <li v-if="error" class="px-3 py-2 text-sm text-red-600">{{ error }}</li>
+      <li v-if="error" class="px-3 py-2 text-sm text-danger">{{ error }}</li>
       <li v-else-if="matches.length === 0" class="px-3 py-2 text-sm text-slate-500">Ningún club coincide. Solo pueden darse de alta los clubes de las ligas que sigue Tercer Tiempo.</li>
       <li
         v-for="(club, index) in matches"

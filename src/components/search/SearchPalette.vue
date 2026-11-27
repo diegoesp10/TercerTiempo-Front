@@ -153,7 +153,7 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
     <Transition name="modal">
       <div
         v-if="store.open"
-        class="fixed inset-0 z-[60] flex items-start justify-center bg-slate-950/70 backdrop-blur-sm sm:px-4 sm:pt-[8vh]"
+        class="fixed inset-0 z-[60] flex items-start justify-center bg-scrim/70 backdrop-blur-sm sm:px-4 sm:pt-[8vh]"
         @click.self="store.hide()"
       >
         <div
@@ -243,7 +243,7 @@ const indexOf = (item: SearchItemDto) => flat.value.indexOf(item);
             </div>
 
             <template v-else-if="results">
-              <p v-if="results.partial" class="mx-3 mb-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-warning">
+              <p v-if="results.partial" class="mx-3 mb-2 rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning">
                 Nada coincide con todas las palabras: estos resultados coinciden con casi todas.
               </p>
               <section v-for="group in results.groups" :key="group.type" class="mb-2" :aria-label="group.label">

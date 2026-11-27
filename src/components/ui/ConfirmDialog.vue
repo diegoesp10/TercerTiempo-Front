@@ -12,7 +12,7 @@ watch(() => confirmState.open, (open) => { if (open) void nextTick(() => primary
   <Modal :open="confirmState.open" :title="confirmState.title" size="md" @close="settleConfirm(false)">
     <template #header>
       <div class="flex items-start gap-3">
-        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full" :class="confirmState.danger ? 'bg-red-500/15 text-danger' : 'bg-brand-500/15 text-brand-500'">
+        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full" :class="confirmState.danger ? 'bg-danger/15 text-danger' : 'bg-brand-500/15 text-brand-500'">
           <Icon :icon="confirmState.danger ? 'triangle-exclamation' : 'circle-info'" class="h-4 w-4" />
         </span>
         <h2 class="text-lg font-bold text-slate-900">{{ confirmState.title }}</h2>

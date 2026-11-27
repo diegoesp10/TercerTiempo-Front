@@ -419,7 +419,7 @@ async function save() {
   <Modal :open="open" :title="title" size="md" @close="emit('close')">
     <form :id="formId" class="space-y-4" @submit.prevent="save">
       <Alert v-if="error" kind="error">{{ error }}</Alert>
-      <p v-if="proposal" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+      <p v-if="proposal" class="rounded-lg border border-warning-line bg-warning-soft px-3 py-2 text-xs text-warning-strong">
         <Icon icon="newspaper" class="mr-1 h-3 w-3" />
         <template v-if="mode === 'edit'">
           La crónica del J{{ proposal.matchday }} ({{ proposal.homeTeam }} – {{ proposal.awayTeam }}) cuenta que se lesionó. Al guardar, esta lesión queda como la de

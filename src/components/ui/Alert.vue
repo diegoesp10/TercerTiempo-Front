@@ -2,10 +2,10 @@
 withDefaults(defineProps<{ kind?: 'error' | 'info' | 'success' | 'warning' }>(), { kind: 'info' });
 
 const styles = {
-  error: 'border-red-200 bg-red-50 text-red-800',
-  info: 'border-sky-200 bg-sky-50 text-sky-800',
-  success: 'border-accent-400/30 bg-brand-500/10 text-emerald-700',
-  warning: 'border-amber-200 bg-amber-50 text-amber-800',
+  error: 'border-danger-line bg-danger-soft text-danger-strong',
+  info: 'border-info-line bg-info-soft text-info-strong',
+  success: 'border-success-line bg-success-soft text-success-strong',
+  warning: 'border-warning-line bg-warning-soft text-warning-strong',
 };
 </script>
 

@@ -239,7 +239,7 @@ const faqs = computed(() => {
         él solo. Si quieres que tu cuerpo técnico tenga su propia cuenta, añade licencias de técnico: mes a mes o una vez al año.
       </p>
       <div v-if="catalog" class="mt-4 flex flex-wrap justify-center gap-2 text-xs font-medium text-slate-600">
-        <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1"><Icon icon="star" class="h-3 w-3 text-amber-400" />{{ catalog.trialDays }} días de prueba con {{ staffCountLabel(catalog.trialStaffSeats) }}</span>
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1"><Icon icon="star" class="h-3 w-3 text-gold" />{{ catalog.trialDays }} días de prueba con {{ staffCountLabel(catalog.trialStaffSeats) }}</span>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1"><Icon icon="credit-card" class="h-3 w-3 text-brand-500" />Sin tarjeta para probar</span>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1"><Icon icon="rotate-right" class="h-3 w-3 text-brand-500" />Sin permanencia</span>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1"><Icon icon="shield-halved" class="h-3 w-3 text-brand-500" />IVA incluido</span>

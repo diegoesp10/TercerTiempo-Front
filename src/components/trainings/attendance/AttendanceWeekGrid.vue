@@ -77,7 +77,7 @@ function title(row: AttendanceRow, week: AttendanceWeek, t: Tally | undefined) {
               <template v-if="r.weeks[w.key]?.counted">{{ r.weeks[w.key]!.attended }}/{{ r.weeks[w.key]!.counted }}</template>
               <Icon v-else-if="r.weeks[w.key]?.injured" icon="user-injured" class="h-3 w-3 text-slate-400" />
               <template v-else>·</template>
-              <span v-if="r.weeks[w.key]?.warned" class="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-amber-500" />
+              <span v-if="r.weeks[w.key]?.warned" class="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-warning" />
               <Icon v-if="r.weeks[w.key]?.counted && r.weeks[w.key]?.injured" icon="user-injured" class="absolute bottom-0.5 right-0.5 h-2 w-2 text-slate-400" />
             </div>
           </td>

@@ -11,7 +11,7 @@ defineProps<{ label: string; value: number | null }>();
       <span class="font-medium text-slate-900">{{ value === null ? '—' : `P${formatNumber(value, 0)}` }}</span>
     </div>
     <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-      <div class="h-full rounded-full bg-emerald-500 transition-all" :style="{ width: `${value ?? 0}%` }" />
+      <div class="h-full rounded-full bg-success transition-all" :style="{ width: `${value ?? 0}%` }" />
     </div>
   </div>
 </template>

@@ -77,7 +77,7 @@ useBackFallback(() => {
                 <span class="text-2xs font-semibold text-slate-500">{{ count || '' }}</span>
                 <span
                   class="w-full rounded-t"
-                  :class="score >= 7 ? 'bg-emerald-500' : score >= 5 ? 'bg-amber-400' : 'bg-red-500'"
+                  :class="score >= 7 ? 'bg-success' : score >= 5 ? 'bg-warning' : 'bg-danger'"
                   :style="{ height: `${Math.max(count ? 6 : 2, (count / maxBar) * 88)}px`, opacity: count ? 1 : 0.25 }"
                   :title="`${count} ${count === 1 ? 'nota' : 'notas'} de ${score}`"
                 />

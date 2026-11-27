@@ -63,9 +63,9 @@ const outcomes = computed(() => {
   const s = summary.value;
   if (!s || s.played === 0) return [];
   return [
-    { key: 'won', label: 'Ganados', count: s.won, pct: s.winPct ?? 0, bar: 'bg-emerald-500', text: 'text-success' },
-    { key: 'drawn', label: 'Empatados', count: s.drawn, pct: s.drawPct ?? 0, bar: 'bg-slate-400', text: 'text-slate-500' },
-    { key: 'lost', label: 'Perdidos', count: s.lost, pct: s.lossPct ?? 0, bar: 'bg-red-500', text: 'text-danger' },
+    { key: 'won', label: 'Ganados', count: s.won, pct: s.winPct ?? 0, bar: 'bg-win-solid', text: 'text-win' },
+    { key: 'drawn', label: 'Empatados', count: s.drawn, pct: s.drawPct ?? 0, bar: 'bg-draw-solid', text: 'text-draw' },
+    { key: 'lost', label: 'Perdidos', count: s.lost, pct: s.lossPct ?? 0, bar: 'bg-loss-solid', text: 'text-loss' },
   ];
 });
 
@@ -172,7 +172,7 @@ function onPhotoSaved(coach: CoachDto) {
             <div v-if="team.record && team.record.played > 0" class="min-w-0">
               <dt class="text-slate-500">Balance</dt>
               <dd class="font-semibold tabular-nums text-slate-800">
-                <span class="text-success">{{ team.record.won }} G</span> · {{ team.record.drawn }} E · <span class="text-danger">{{ team.record.lost }} P</span>
+                <span class="text-win">{{ team.record.won }} G</span> · {{ team.record.drawn }} E · <span class="text-loss">{{ team.record.lost }} P</span>
               </dd>
             </div>
             <div v-if="ordinal(team)" class="min-w-0"><dt class="text-slate-500">Clasificación</dt><dd class="font-semibold tabular-nums text-slate-800">{{ ordinal(team) }}</dd></div>
@@ -214,7 +214,7 @@ function onPhotoSaved(coach: CoachDto) {
               <p v-if="(team.record && team.record.played > 0) || ordinal(team)" class="mt-0.5 flex flex-wrap gap-x-2 text-xs tabular-nums text-slate-600">
                 <span v-if="team.record && team.record.played > 0" :title="`${team.record.goalsFor} goles a favor y ${team.record.goalsAgainst} en contra`">
                   {{ team.record.played }} PJ ·
-                  <span class="text-success">{{ team.record.won }} G</span> · {{ team.record.drawn }} E · <span class="text-danger">{{ team.record.lost }} P</span>
+                  <span class="text-win">{{ team.record.won }} G</span> · {{ team.record.drawn }} E · <span class="text-loss">{{ team.record.lost }} P</span>
                   · {{ team.record.points }} pts
                 </span>
                 <span v-if="ordinal(team)" class="font-semibold text-slate-800"><Icon icon="list-ol" class="mr-0.5 h-3 w-3 text-slate-400" />{{ ordinal(team) }}</span>

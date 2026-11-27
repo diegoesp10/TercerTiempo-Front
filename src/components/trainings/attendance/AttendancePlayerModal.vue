@@ -69,9 +69,9 @@ const stats = computed(() => {
   return [
     { label: 'Entrenó', value: `${x.attended} de ${x.sessions}`, tone: 'text-slate-900' },
     { label: 'Tiempo', value: formatDurationMinutes(x.attendedMinutes), tone: 'text-slate-900' },
-    { label: 'Faltas', value: `${x.missed}`, hint: x.missed ? `${x.warned} avisando` : null, tone: x.missed ? 'text-red-600' : 'text-slate-900' },
+    { label: 'Faltas', value: `${x.missed}`, hint: x.missed ? `${x.warned} avisando` : null, tone: x.missed ? 'text-danger' : 'text-slate-900' },
     { label: 'Lesionado', value: x.injured ? `${x.injured}` : '—', hint: x.injured ? 'no cuentan' : null, tone: x.injured ? 'text-slate-900' : 'text-slate-400' },
-    { label: 'Última falta', value: props.row.lastMiss ? dayShort(props.row.lastMiss.date) : 'Nunca', tone: props.row.lastMiss ? 'text-slate-900' : 'text-emerald-600' },
+    { label: 'Última falta', value: props.row.lastMiss ? dayShort(props.row.lastMiss.date) : 'Nunca', tone: props.row.lastMiss ? 'text-slate-900' : 'text-success' },
   ];
 });
 </script>
@@ -131,7 +131,7 @@ const stats = computed(() => {
           </li>
         </ul>
       </section>
-      <p v-else-if="p.sessions" class="flex items-center gap-2 text-sm text-emerald-600"><Icon icon="circle-check" class="h-3.5 w-3.5" />No ha faltado a ninguno.</p>
+      <p v-else-if="p.sessions" class="flex items-center gap-2 text-sm text-success"><Icon icon="circle-check" class="h-3.5 w-3.5" />No ha faltado a ninguno.</p>
 
       <section v-if="calendar.length">
         <p class="mb-2 text-2xs font-medium uppercase tracking-wide text-slate-500">Calendario</p>

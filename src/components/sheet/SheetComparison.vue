@@ -84,7 +84,7 @@ const { sorted, sortBy, state } = useSort<SheetComparisonRowDto, CompareSortKey>
 });
 
 const hasDifference = (row: SheetComparisonRowDto, field: string) => row.differences.some((d) => d.field === field);
-const cell = (row: SheetComparisonRowDto, field: string) => (hasDifference(row, field) ? 'bg-red-50 text-red-700 font-semibold' : '');
+const cell = (row: SheetComparisonRowDto, field: string) => (hasDifference(row, field) ? 'bg-danger-soft text-danger font-semibold' : '');
 const yes = (value: boolean) => (value ? 'sí' : 'no');
 </script>
 
@@ -101,7 +101,7 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
             <template v-if="available">
               {{ data.summary.coachLines }} líneas del cuerpo técnico · {{ data.summary.officialLines }} convocados en el acta oficial ·
               {{ data.summary.matched }} emparejados ·
-              <strong :class="data.summary.differences > 0 ? 'text-red-700' : 'text-emerald-700'">
+              <strong :class="data.summary.differences > 0 ? 'text-danger' : 'text-success'">
                 {{ data.summary.differences === 0 ? 'sin discrepancias' : `${data.summary.differences} ${data.summary.differences === 1 ? 'discrepancia' : 'discrepancias'}` }}
               </strong>
             </template>
@@ -164,8 +164,8 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
                 <td v-else class="border-l border-slate-200 px-2 py-2 text-center text-xs text-slate-400" colspan="5" :class="cell(row, 'played')">no convocado</td>
 
                 <td class="border-l border-slate-200 px-2 py-2">
-                  <span v-if="row.differences.length === 0" class="text-xs text-emerald-700">✓ coincide</span>
-                  <ul v-else class="space-y-0.5 text-xs text-red-700">
+                  <span v-if="row.differences.length === 0" class="text-xs text-success">✓ coincide</span>
+                  <ul v-else class="space-y-0.5 text-xs text-danger">
                     <li v-for="difference in row.differences" :key="difference.field">
                       <strong>{{ sheetFieldLabels[difference.field] }}:</strong> tú {{ difference.coach ?? '—' }} · acta pública {{ difference.official ?? '—' }}
                     </li>
@@ -176,9 +176,9 @@ const yes = (value: boolean) => (value ? 'sí' : 'no');
           </table>
         </div>
 
-        <div v-if="data.unmatchedOfficial.length > 0" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <div v-if="data.unmatchedOfficial.length > 0" class="mt-4 rounded-lg border border-warning-line bg-warning-soft p-3 text-sm text-warning-strong">
           <p class="font-medium">En el acta oficial pero sin ficha en la plantilla ({{ data.unmatchedOfficial.length }})</p>
-          <p class="text-xs text-amber-800">Añade la ficha (o corrige el nombre) para que se empareje la próxima vez.</p>
+          <p class="text-xs text-warning">Añade la ficha (o corrige el nombre) para que se empareje la próxima vez.</p>
           <ul class="mt-2 flex flex-wrap gap-2">
             <li v-for="line in data.unmatchedOfficial" :key="line.id" class="max-w-full">
               <Badge :tone="line.played ? 'amber' : 'slate'" class="max-w-full">

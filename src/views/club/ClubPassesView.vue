@@ -277,7 +277,7 @@ watch(tab, () => { saved.value = null; void load(); }, { immediate: true });
                 <div class="flex flex-wrap items-end gap-3">
                   <div class="w-32">
                     <label class="label" :for="`approve-price-${r.id}`">Precio (€)</label>
-                    <input :id="`approve-price-${r.id}`" v-model="form.price" type="text" inputmode="decimal" class="input tabular-nums" :class="formCents === null ? 'border-red-400' : ''" @input="form.touched = true" />
+                    <input :id="`approve-price-${r.id}`" v-model="form.price" type="text" inputmode="decimal" class="input tabular-nums" :class="formCents === null ? 'border-danger' : ''" @input="form.touched = true" />
                   </div>
                   <button type="submit" class="btn-primary" v-busy="busy === r.id" :disabled="busy === r.id || formCents === null || (!form.sheet && !form.video)">Aprobar y generar el pase</button>
                   <button type="button" class="btn-ghost" @click="approving = null">Cancelar</button>
@@ -324,7 +324,7 @@ watch(tab, () => { saved.value = null; void load(); }, { immediate: true });
               <input id="default-video" v-model="defaults.video" type="text" inputmode="decimal" class="input tabular-nums" />
             </div>
             <button type="submit" class="btn-primary" v-busy="busy === 'defaults'" :disabled="busy === 'defaults' || defaultsInvalid">Guardar</button>
-            <span v-if="saved === 'defaults'" class="text-xs text-emerald-600"><Icon icon="check" class="mr-1 h-3 w-3" />Guardado</span>
+            <span v-if="saved === 'defaults'" class="text-xs text-success"><Icon icon="check" class="mr-1 h-3 w-3" />Guardado</span>
           </form>
         </section>
 
@@ -364,7 +364,7 @@ watch(tab, () => { saved.value = null; void load(); }, { immediate: true });
                   </td>
                   <td class="py-2 pl-2 text-right whitespace-nowrap">
                     <button v-if="rowChanged(m)" type="button" class="btn-secondary btn-sm" v-busy="busy === rowKey(m)" :disabled="busy === rowKey(m) || rowInvalid(m)" @click="saveRow(m)">Guardar</button>
-                    <span v-else-if="saved === rowKey(m)" class="text-xs text-emerald-600"><Icon icon="check" class="mr-1 h-3 w-3" />Guardado</span>
+                    <span v-else-if="saved === rowKey(m)" class="text-xs text-success"><Icon icon="check" class="mr-1 h-3 w-3" />Guardado</span>
                     <span v-else class="text-xs text-slate-400">{{ passPrice(m.effectiveSheetPriceCents) }} / {{ passPrice(m.effectiveVideoPriceCents) }}</span>
                   </td>
                 </tr>
@@ -407,7 +407,7 @@ watch(tab, () => { saved.value = null; void load(); }, { immediate: true });
                   </td>
                   <td class="px-2 py-2 text-slate-700">{{ sale.buyer ?? '—' }}</td>
                   <td class="px-2 py-2 text-right tabular-nums">{{ formatMoney(sale.amountCents, sale.currency) }}</td>
-                  <td class="px-2 py-2 text-right tabular-nums text-emerald-600">{{ formatMoney(sale.clubShareCents, sale.currency) }}</td>
+                  <td class="px-2 py-2 text-right tabular-nums text-success">{{ formatMoney(sale.clubShareCents, sale.currency) }}</td>
                   <td class="py-2 pl-2 text-right tabular-nums text-slate-500">{{ formatMoney(sale.platformShareCents, sale.currency) }}</td>
                 </tr>
               </tbody>

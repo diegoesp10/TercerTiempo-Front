@@ -17,6 +17,7 @@ import Badge from '@/components/ui/Badge.vue';
 import ResponsiveTabs from '@/components/ui/ResponsiveTabs.vue';
 import TeamName from '@/components/teams/TeamName.vue';
 import { callUpClosed, callUpDueLabel } from '@/components/trainings/callUpState';
+import { trainingKindStyle } from '@/components/trainings/trainingKinds';
 import { unavailableOf, unavailableSummary } from '@/components/trainings/unavailable';
 import type { MatchDto, SquadAgendaItemDto, TrainingSummaryDto } from '@/types/api';
 import { opponentOf } from '@/utils/crests';
@@ -208,21 +209,8 @@ const options = computed<CalendarOptions>(() => ({
   dateClick: onDateClick,
 }));
 
-// Aspecto de cada elemento: partido relleno, entrenamiento con el color de su tipo y lo realizado apagado.
-const kindClass: Record<TrainingSummaryDto['kind'], string> = {
-  Season: 'border-brand-500/40 bg-brand-500/10 text-brand-600',
-  Preseason: 'border-amber-400/50 bg-amber-400/10 text-amber-700',
-  Recovery: 'border-emerald-400/50 bg-emerald-400/10 text-emerald-700',
-  MatchPreparation: 'border-accent-400/50 bg-accent-400/10 text-accent-500',
-  Other: 'border-slate-300 bg-surface-2 text-slate-600',
-};
-const kindBar: Record<TrainingSummaryDto['kind'], string> = {
-  Season: 'border-l-brand-500',
-  Preseason: 'border-l-amber-400',
-  Recovery: 'border-l-emerald-400',
-  MatchPreparation: 'border-l-accent-400',
-  Other: 'border-l-slate-400',
-};
+// Aspecto de cada elemento: partido relleno, entrenamiento con el color de su tipo (trainingKinds.ts) y lo realizado
+// apagado.
 const doneClass = 'border-dashed border-slate-300 bg-surface-2/70 text-slate-500';
 const matchClass = 'border-action bg-action text-white shadow-sm';
 const matchDoneClass = 'border-dashed border-brand-500/40 bg-brand-500/10 text-slate-500';
@@ -231,7 +219,7 @@ function chipClass(item: SquadAgendaItemDto) {
   const r = result(item);
   if (r) return `${resultStyle[r].tint} ${resultStyle[r].bar} border-l-[3px] text-slate-700`;
   if (item.kind === 'Match') return item.done ? matchDoneClass : matchClass;
-  return item.done ? doneClass : kindClass[item.training!.kind];
+  return item.done ? doneClass : trainingKindStyle[item.training!.kind].chip;
 }
 
 const legendResults = ['win', 'draw', 'loss'] as const;
@@ -277,7 +265,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
             </template>
             <template v-else>
               <span class="inline-flex min-w-0 items-center gap-2">
-                <span class="h-2.5 w-2.5 shrink-0 rounded-full border-2" :class="itemOf(arg).done ? 'border-slate-300' : kindBar[itemOf(arg).training!.kind].replace('border-l-', 'border-')" />
+                <span class="h-2.5 w-2.5 shrink-0 rounded-full border-2" :class="itemOf(arg).done ? 'border-slate-300' : trainingKindStyle[itemOf(arg).training!.kind].dot" />
                 <span class="font-medium" :class="itemOf(arg).done ? 'text-slate-500' : 'text-slate-900'">{{ itemOf(arg).training!.title }}</span>
               </span>
               <span class="text-xs text-slate-500">{{ itemOf(arg).training!.kindLabel }} · {{ formatDurationMinutes(itemOf(arg).training!.durationMinutes) }}<template v-if="itemOf(arg).training!.location"> · {{ itemOf(arg).training!.location }}</template></span>
@@ -292,7 +280,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
           <div
             v-else-if="arg.view.type.startsWith('timeGrid')"
             class="flex h-full w-full min-w-0 flex-col overflow-hidden rounded-md border px-1.5 py-1 text-left text-xs leading-tight transition hover:brightness-105 [&>*]:shrink-0"
-            :class="[chipClass(itemOf(arg)), itemOf(arg).kind === 'Training' && !itemOf(arg).done ? `border-l-4 ${kindBar[itemOf(arg).training!.kind]}` : '', isSelected(itemOf(arg)) ? 'ring-2 ring-brand-400' : '']"
+            :class="[chipClass(itemOf(arg)), itemOf(arg).kind === 'Training' && !itemOf(arg).done ? `border-l-4 ${trainingKindStyle[itemOf(arg).training!.kind].bar}` : '', isSelected(itemOf(arg)) ? 'ring-2 ring-brand-400' : '']"
             :title="arg.event.title"
           >
             <span class="flex min-w-0 items-center gap-1 tabular-nums">
@@ -323,10 +311,10 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
               </span>
               <span class="mt-auto flex flex-wrap gap-x-2 opacity-90">
                 <span v-if="itemOf(arg).training!.itemsCount">{{ itemOf(arg).training!.itemsCount }} ejercicios</span>
-                <span v-if="!itemOf(arg).done && itemOf(arg).training!.counts.willMiss" class="text-amber-700">{{ itemOf(arg).training!.counts.willMiss }} faltan</span>
+                <span v-if="!itemOf(arg).done && itemOf(arg).training!.counts.willMiss" class="text-warning">{{ itemOf(arg).training!.counts.willMiss }} faltan</span>
                 <span v-if="itemOf(arg).training!.started && itemOf(arg).training!.counts.attended">{{ itemOf(arg).training!.counts.attended }} vinieron</span>
-                <span v-if="itemOf(arg).training!.mine?.injured" class="text-red-600">Estás lesionado</span>
-                <span v-else-if="itemOf(arg).training!.mine?.status === 'WillMiss'" class="text-amber-700">Has avisado</span>
+                <span v-if="itemOf(arg).training!.mine?.injured" class="text-danger">Estás lesionado</span>
+                <span v-else-if="itemOf(arg).training!.mine?.status === 'WillMiss'" class="text-warning">Has avisado</span>
               </span>
             </template>
           </div>
@@ -363,7 +351,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
                 </template>
                 <template v-else>
                   <span class="truncate">{{ itemOf(arg).training!.title }}</span>
-                  <span v-if="itemOf(arg).training!.mine?.injured" class="ml-0.5 text-red-600" title="Estás lesionado: no entrenas">·</span>
+                  <span v-if="itemOf(arg).training!.mine?.injured" class="ml-0.5 text-danger" title="Estás lesionado: no entrenas">·</span>
                   <span v-else-if="itemOf(arg).training!.mine?.status === 'WillMiss'" class="ml-0.5 text-warning" title="Has avisado de que faltas">·</span>
                 </template>
               </template>
@@ -378,7 +366,7 @@ const endTime = (item: SquadAgendaItemDto) => formatTime(new Date(new Date(item.
       <span class="inline-flex items-center gap-1.5"><span class="inline-flex h-3.5 w-5 items-center justify-center rounded border border-action bg-action text-white"><Icon icon="futbol" class="h-2 w-2" /></span>Partido (convocatoria)</span>
       <span class="inline-flex items-center gap-1.5"><span class="h-3.5 w-5 rounded border border-brand-500/40 bg-brand-500/10"></span>Entrenamiento (citación)</span>
       <span class="inline-flex items-center gap-1.5"><span class="inline-flex h-3.5 w-5 items-center justify-center rounded border border-dashed border-slate-300 bg-surface-2/70 text-slate-500"><Icon icon="check" class="h-2 w-2" /></span>Ya realizado</span>
-      <span class="inline-flex items-center gap-1.5" title="En los partidos por jugar: sancionados (5.ª amarilla, expulsión o sanción del comité de competición) y lesionados"><Icon icon="ban" class="h-3 w-3 text-red-600" />No disponibles</span>
+      <span class="inline-flex items-center gap-1.5" title="En los partidos por jugar: sancionados (5.ª amarilla, expulsión o sanción del comité de competición) y lesionados"><Icon icon="ban" class="h-3 w-3 text-danger" />No disponibles</span>
       <span class="inline-flex items-center gap-1.5" title="Partidos jugados: verde si se ganó, amarillo si se empató y rojo si se perdió, con el marcador">
         <span class="inline-flex overflow-hidden rounded text-2xs font-bold leading-none">
           <span v-for="r in legendResults" :key="r" class="grid h-3.5 w-3.5 place-items-center" :class="resultStyle[r].solid">{{ outcomeLabels[r] }}</span>

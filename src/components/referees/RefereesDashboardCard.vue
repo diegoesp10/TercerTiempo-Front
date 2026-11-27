@@ -74,7 +74,7 @@ async function noVote(item: PendingRefereeRatingDto) {
 <template>
   <section v-if="loaded" class="card">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h2 class="flex items-center gap-2 font-semibold text-slate-900"><Icon icon="flag" class="h-4 w-4 text-amber-400" />Árbitros</h2>
+      <h2 class="flex items-center gap-2 font-semibold text-slate-900"><Icon icon="flag" class="h-4 w-4 text-gold" />Árbitros</h2>
       <RouterLink :to="{ name: 'referees', query: category ? { categoria: category.key } : {} }" class="text-xs font-medium text-accent-400 hover:underline">Ver todos</RouterLink>
     </div>
 
@@ -83,11 +83,11 @@ async function noVote(item: PendingRefereeRatingDto) {
     </p>
 
     <!-- Lo que te toca: partidos ya jugados sin contestar -->
-    <div v-else class="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+    <div v-else class="mt-3 rounded-xl border border-warning-line bg-warning-soft p-3">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <h3 class="text-sm font-semibold text-slate-900">
           <Icon icon="triangle-exclamation" class="mr-1.5 h-3.5 w-3.5 text-warning" />Partidos jugados por puntuar
-          <span v-if="pending.length" class="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-warning">{{ pending.length }}</span>
+          <span v-if="pending.length" class="ml-1 rounded-full bg-warning/15 px-2 py-0.5 text-xs font-semibold text-warning-strong">{{ pending.length }}</span>
         </h3>
       </div>
       <p class="mt-1 text-xs text-slate-500">
@@ -130,7 +130,7 @@ async function noVote(item: PendingRefereeRatingDto) {
     <!-- Para consultar: los mejores de la categoría -->
     <div v-if="best.length && category" class="mt-4 border-t border-line pt-4">
       <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        <Icon icon="trophy" class="mr-1.5 h-3 w-3 text-amber-400" />Mejores árbitros de {{ category.name }}
+        <Icon icon="trophy" class="mr-1.5 h-3 w-3 text-gold" />Mejores árbitros de {{ category.name }}
       </h3>
       <!-- Las estrellas bajan de línea (a la derecha) si no caben junto al nombre, que así nunca se parte a media palabra. -->
       <ol class="mt-2 space-y-2">

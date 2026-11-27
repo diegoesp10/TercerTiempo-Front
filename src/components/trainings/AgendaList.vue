@@ -111,7 +111,7 @@ const due = (item: SquadAgendaItemDto) => props.canManage && !!item.isNext && it
           </span>
           <!-- Quién no puede jugarlo: sancionados (5.ª amarilla, expulsión o lo que ponga el comité) y lesionados -->
           <span v-if="!compact && unavailableOf(item).length" class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-            <span class="inline-flex items-center font-semibold text-red-700"><Icon icon="ban" class="mr-1 h-3 w-3" />No disponibles</span>
+            <span class="inline-flex items-center font-semibold text-danger"><Icon icon="ban" class="mr-1 h-3 w-3" />No disponibles</span>
             <span v-for="u in unavailableOf(item)" :key="u.squadPlayerId" class="text-slate-700">{{ u.playerName }} <span class="text-slate-500">({{ unavailableReason(u) }})</span></span>
           </span>
         </span>

@@ -64,7 +64,7 @@ async function choose(action: ConsentAction) {
         <button type="button" class="btn-primary" :disabled="saving" @click="choose('AcceptAll')">Aceptar</button>
       </div>
     </div>
-    <p v-if="error" class="mx-auto mt-2 max-w-page text-sm text-red-600">{{ error }}</p>
+    <p v-if="error" class="mx-auto mt-2 max-w-page text-sm text-danger">{{ error }}</p>
   </div>
 
   <Modal :open="consent.settingsOpen" title="Configurar cookies" size="lg" @close="consent.settingsOpen = false">
@@ -79,7 +79,7 @@ async function choose(action: ConsentAction) {
             <h3 class="font-semibold text-slate-900">{{ category.title }}</h3>
             <p class="mt-1 text-sm text-slate-600">{{ category.text }}</p>
           </div>
-          <span v-if="category.locked" class="shrink-0 text-xs font-semibold text-emerald-600">Siempre activas</span>
+          <span v-if="category.locked" class="shrink-0 text-xs font-semibold text-success">Siempre activas</span>
           <label v-else class="flex shrink-0 cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800">
             <input v-model="analytics" type="checkbox" class="h-4 w-4 accent-brand-500" />
             {{ analytics ? 'Activada' : 'Desactivada' }}
@@ -91,7 +91,7 @@ async function choose(action: ConsentAction) {
           </li>
         </ul>
       </section>
-      <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+      <p v-if="error" class="text-sm text-danger">{{ error }}</p>
       <div class="flex flex-wrap justify-end gap-2">
         <button type="button" class="btn-secondary" :disabled="saving" @click="choose('RejectAll')">Rechazar todo</button>
         <button type="button" class="btn-secondary" :disabled="saving" @click="choose('Custom')">Guardar mi elección</button>

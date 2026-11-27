@@ -894,7 +894,7 @@ async function apply(overwrite = false) {
                   <span v-if="!proposes(row)" class="text-slate-400">{{ row.note ?? 'El vídeo no lo ha visto' }}</span>
                   <span v-else-if="sameAsSheet(row)" class="text-slate-500">Ya coincide con el acta</span>
                   <Badge v-else-if="overwrites(row)" tone="amber">Cambia lo apuntado</Badge>
-                  <span v-else class="text-emerald-700">Rellena lo que falta</span>
+                  <span v-else class="text-success">Rellena lo que falta</span>
                 </td>
                 <td class="px-2 py-1.5 text-right">
                   <button

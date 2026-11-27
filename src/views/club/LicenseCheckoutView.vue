@@ -113,9 +113,9 @@ watch(data, async (checkout) => {
           </div>
 
           <ul class="mt-4 space-y-1.5 text-sm text-slate-600">
-            <li class="flex gap-2"><Icon icon="check" class="mt-1 h-3 w-3 text-emerald-600" />Plantilla entera y todas las herramientas para el club</li>
-            <li class="flex gap-2"><Icon icon="check" class="mt-1 h-3 w-3 text-emerald-600" />{{ data.staffSeats > 0 ? `${staffCountLabel(data.staffSeats)} con cuenta, para cualquier equipo` : 'Técnicos con cuenta cuando los necesites' }}</li>
-            <li class="flex gap-2"><Icon icon="check" class="mt-1 h-3 w-3 text-emerald-600" />Sin permanencia, cancela cuando quieras</li>
+            <li class="flex gap-2"><Icon icon="check" class="mt-1 h-3 w-3 text-success" />Plantilla entera y todas las herramientas para el club</li>
+            <li class="flex gap-2"><Icon icon="check" class="mt-1 h-3 w-3 text-success" />{{ data.staffSeats > 0 ? `${staffCountLabel(data.staffSeats)} con cuenta, para cualquier equipo` : 'Técnicos con cuenta cuando los necesites' }}</li>
+            <li class="flex gap-2"><Icon icon="check" class="mt-1 h-3 w-3 text-success" />Sin permanencia, cancela cuando quieras</li>
           </ul>
 
           <dl class="mt-5 space-y-2 border-t border-line pt-4 text-sm">
@@ -143,7 +143,7 @@ watch(data, async (checkout) => {
         <section class="card lg:col-span-3">
           <!-- Hecho -->
           <div v-if="!activating && (result || data.status === 'Paid')" class="py-4 text-center">
-            <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+            <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success-soft text-success">
               <Icon icon="check" class="h-6 w-6" />
             </span>
             <h2 class="mt-4 text-xl font-bold text-slate-900">¡Listo! {{ (result?.clubName ?? data.clubName) }} tiene su licencia de club</h2>
@@ -174,9 +174,9 @@ watch(data, async (checkout) => {
           <div v-else-if="activating" class="py-6">
             <h2 class="text-center font-semibold text-slate-900">Activando la licencia…</h2>
             <ol class="mx-auto mt-5 max-w-sm space-y-3 text-sm">
-              <li class="flex items-center gap-3"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><Icon icon="check" class="h-3 w-3" /></span>Pago autorizado</li>
+              <li class="flex items-center gap-3"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-success-soft text-success"><Icon icon="check" class="h-3 w-3" /></span>Pago autorizado</li>
               <li class="flex items-center gap-3">
-                <span v-if="queueStep === 'applied'" class="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><Icon icon="check" class="h-3 w-3" /></span>
+                <span v-if="queueStep === 'applied'" class="flex h-6 w-6 items-center justify-center rounded-full bg-success-soft text-success"><Icon icon="check" class="h-3 w-3" /></span>
                 <Spinner v-else class="h-6 w-6" />
                 Aviso de la pasarela en la cola
               </li>

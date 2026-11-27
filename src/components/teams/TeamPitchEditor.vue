@@ -57,7 +57,7 @@ async function save() {
       <button type="submit" class="btn-secondary btn-sm" v-busy="saving" :disabled="saving || !dirty">Guardar medidas</button>
     </div>
     <p v-if="error" class="field-error">{{ error }}</p>
-    <p v-else-if="done && !dirty" class="mt-1 text-xs text-emerald-700">Medidas guardadas.</p>
+    <p v-else-if="done && !dirty" class="mt-1 text-xs text-success">Medidas guardadas.</p>
     <p class="mt-2 text-2xs leading-relaxed text-slate-500">
       Opcionales. El analizador de vídeo las usa en los partidos que se juegan aquí para afinar las distancias y los tercios del campo (sin ellas
       calibra con un campo genérico de 120 × 70 m; la posesión y los tiros salen igual). Deja los dos huecos vacíos para quitarlas.
