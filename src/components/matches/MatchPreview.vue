@@ -5,6 +5,8 @@ import TeamSeasonStats from '@/components/squads/TeamSeasonStats.vue';
 import TeamCrest from '@/components/teams/TeamCrest.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
+import FitBox from '@/components/ui/FitBox.vue';
+import SearchSelect, { type SelectOption } from '@/components/ui/SearchSelect.vue';
 import SortHeader from '@/components/ui/SortHeader.vue';
 import Spinner from '@/components/ui/Spinner.vue';
 import { useAsync } from '@/composables/useAsync';
@@ -108,6 +110,27 @@ const playerSorts = reactive([
   useSort<PreviewPlayerDto, PlayerSortKey>(homePlayers, playerGetters, 'form', { ascendingFirst: ['player'] }),
   useSort<PreviewPlayerDto, PlayerSortKey>(awayPlayers, playerGetters, 'form', { ascendingFirst: ['player'] }),
 ]);
+
+// La tabla de jugadores tiene que caber en su tarjeta sin desplazarse de lado (de 280 px en adelante, también con los
+// dos equipos uno al lado del otro): primero se aprieta y, si ni así, una ficha por jugador. En fichas no hay cabeceras
+// que pulsar, así que la columna se elige en un desplegable.
+const fitSteps = [[], ['tight'], ['stacked']] as const;
+// El nombre tiene un mínimo (como en el acta interna) y las cifras no parten línea: si así no cabe, mejor en fichas que
+// un nombre en cuatro renglones.
+const formCell = 'whitespace-nowrap px-2 py-1 text-center group-data-[tight]/form:px-1';
+const playerSortOptions: SelectOption[] = [
+  { value: 'form', label: 'En forma' },
+  { value: 'player', label: 'Jugador' },
+  { value: 'matches', label: 'Partidos' },
+  { value: 'minutes', label: 'Minutos por partido' },
+  { value: 'goals', label: 'Goles' },
+  { value: 'lastThree', label: 'Goles en los tres últimos' },
+  { value: 'cards', label: 'Tarjetas' },
+];
+const sortDirection = (i: number) => {
+  const { sortKey, sortDesc } = playerSorts[i];
+  return sortKey === 'player' ? (sortDesc ? 'De la Z a la A' : 'De la A a la Z') : sortDesc ? 'De mayor a menor' : 'De menor a mayor';
+};
 </script>
 
 <template>
@@ -237,32 +260,71 @@ const playerSorts = reactive([
           Jugadores en forma <span class="font-normal normal-case">· según {{ side.officialSheets }} actas públicas</span>
         </h4>
         <p v-if="side.inFormPlayers.length === 0" class="mt-2 text-sm text-slate-500">Todavía no hay actas públicas guardadas de sus partidos.</p>
-        <div v-else class="mt-2 overflow-x-auto">
-          <table class="table-sticky min-w-full text-sm">
+        <FitBox v-else :steps="fitSteps" class="group/form mt-2 overflow-x-auto">
+          <table class="min-w-full text-sm group-data-[stacked]/form:hidden group-data-[tight]/form:text-xs">
             <thead class="text-xs text-slate-500">
               <tr>
-                <SortHeader class="py-1 pr-2 text-left" label="Jugador" v-bind="playerSorts[i].state('player')" @sort="playerSorts[i].sortBy('player')" />
-                <SortHeader class="px-2 py-1 text-center" label="PJ" title="Partidos (titular)" v-bind="playerSorts[i].state('matches')" @sort="playerSorts[i].sortBy('matches')" />
-                <SortHeader class="col-sm px-2 py-1 text-center" label="Min/PJ" title="Minutos por partido" v-bind="playerSorts[i].state('minutes')" @sort="playerSorts[i].sortBy('minutes')" />
-                <SortHeader class="px-2 py-1 text-center" label="Goles" title="Goles (de penalti)" v-bind="playerSorts[i].state('goals')" @sort="playerSorts[i].sortBy('goals')" />
-                <SortHeader class="col-md px-2 py-1 text-center" label="Últ. 3" title="Goles en los tres últimos partidos" v-bind="playerSorts[i].state('lastThree')" @sort="playerSorts[i].sortBy('lastThree')" />
-                <SortHeader class="px-2 py-1 text-center" label="TA/TR" title="Tarjetas amarillas / rojas (la roja pesa más)" v-bind="playerSorts[i].state('cards')" @sort="playerSorts[i].sortBy('cards')" />
+                <SortHeader class="py-1 pr-2 text-left group-data-[tight]/form:pr-1" label="Jugador" v-bind="playerSorts[i].state('player')" @sort="playerSorts[i].sortBy('player')" />
+                <SortHeader :class="formCell" label="PJ" title="Partidos (titular)" v-bind="playerSorts[i].state('matches')" @sort="playerSorts[i].sortBy('matches')" />
+                <SortHeader :class="['col-sm', formCell]" label="Min/PJ" title="Minutos por partido" v-bind="playerSorts[i].state('minutes')" @sort="playerSorts[i].sortBy('minutes')" />
+                <SortHeader :class="formCell" label="Goles" title="Goles (de penalti)" v-bind="playerSorts[i].state('goals')" @sort="playerSorts[i].sortBy('goals')" />
+                <SortHeader :class="['col-md', formCell]" label="Últ. 3" title="Goles en los tres últimos partidos" v-bind="playerSorts[i].state('lastThree')" @sort="playerSorts[i].sortBy('lastThree')" />
+                <SortHeader :class="formCell" label="TA/TR" title="Tarjetas amarillas / rojas (la roja pesa más)" v-bind="playerSorts[i].state('cards')" @sort="playerSorts[i].sortBy('cards')" />
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-for="player in playerSorts[i].sorted" :key="player.name">
-                <td class="py-1 pr-2 lg:whitespace-nowrap">
+                <td class="min-w-[10rem] py-1 pr-2 group-data-[tight]/form:min-w-[8rem] group-data-[tight]/form:pr-1">
                   <PlayerName :name="player.name" :photo-url="player.photoUrl" class="font-medium text-slate-800" />
                 </td>
-                <td class="px-2 py-1 text-center tabular-nums">{{ player.matches }} <span class="text-slate-400">({{ player.started }})</span></td>
-                <td class="col-sm px-2 py-1 text-center tabular-nums">{{ perMatch(player) }}'</td>
-                <td class="px-2 py-1 text-center tabular-nums font-semibold">{{ player.goals }}<span v-if="player.penaltyGoals" class="font-normal text-slate-400"> ({{ player.penaltyGoals }}p)</span></td>
-                <td class="col-md px-2 py-1 text-center tabular-nums">{{ player.goalsLastThree }}</td>
-                <td class="px-2 py-1 text-center tabular-nums"><span class="text-warning">{{ player.yellowCards }}</span> / <span class="text-danger">{{ player.redCards }}</span></td>
+                <td :class="[formCell, 'tabular-nums']">{{ player.matches }} <span class="text-slate-400">({{ player.started }})</span></td>
+                <td :class="['col-sm', formCell, 'tabular-nums']">{{ perMatch(player) }}'</td>
+                <td :class="[formCell, 'tabular-nums font-semibold']">{{ player.goals }}<span v-if="player.penaltyGoals" class="font-normal text-slate-400"> ({{ player.penaltyGoals }}p)</span></td>
+                <td :class="['col-md', formCell, 'tabular-nums']">{{ player.goalsLastThree }}</td>
+                <td :class="[formCell, 'tabular-nums']"><span class="text-warning">{{ player.yellowCards }}</span> / <span class="text-danger">{{ player.redCards }}</span></td>
               </tr>
             </tbody>
           </table>
-        </div>
+
+          <!-- Si ni apretada cabe la tabla: una ficha por jugador, con sus cifras en una rejilla que se recoloca a cualquier ancho. -->
+          <div class="hidden group-data-[stacked]/form:block">
+            <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+              <span class="shrink-0 text-xs text-slate-500">Ordenar por</span>
+              <SearchSelect
+                class="min-w-0 flex-1"
+                size="sm"
+                nowrap
+                :searchable="false"
+                :model-value="playerSorts[i].sortKey"
+                :options="playerSortOptions"
+                :aria-label="`Columna por la que se ordenan los jugadores de ${side.team.name}`"
+                @update:model-value="(key) => { if (key !== playerSorts[i].sortKey) playerSorts[i].sortBy(key as PlayerSortKey); }"
+              />
+              <button
+                type="button"
+                class="btn-ghost shrink-0 px-2 py-1"
+                :title="`${sortDirection(i)}: pulsa para darle la vuelta`"
+                :aria-label="`${sortDirection(i)}: darle la vuelta al orden`"
+                @click="playerSorts[i].sortBy(playerSorts[i].sortKey)"
+              >
+                <Icon :icon="playerSorts[i].sortDesc ? 'arrow-down-wide-short' : 'arrow-up-short-wide'" class="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <ul class="divide-y divide-slate-100">
+              <li v-for="player in playerSorts[i].sorted" :key="player.name" class="py-2.5">
+                <PlayerName :name="player.name" :photo-url="player.photoUrl" class="font-medium text-slate-800" />
+                <dl class="mt-2 grid grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-1.5 text-center text-sm tabular-nums">
+                  <div class="rounded-md bg-surface-2 py-1"><dt class="text-2xs text-slate-500" title="Partidos (titular)">PJ</dt><dd>{{ player.matches }} <span class="text-slate-400">({{ player.started }})</span></dd></div>
+                  <div class="rounded-md bg-surface-2 py-1"><dt class="text-2xs text-slate-500" title="Minutos por partido">Min/PJ</dt><dd>{{ perMatch(player) }}'</dd></div>
+                  <div class="rounded-md bg-surface-2 py-1"><dt class="text-2xs text-slate-500" title="Goles (de penalti)">Goles</dt><dd class="font-semibold">{{ player.goals }}<span v-if="player.penaltyGoals" class="font-normal text-slate-400"> ({{ player.penaltyGoals }}p)</span></dd></div>
+                  <div class="rounded-md bg-surface-2 py-1"><dt class="text-2xs text-slate-500" title="Goles en los tres últimos partidos">Últ. 3</dt><dd>{{ player.goalsLastThree }}</dd></div>
+                  <div class="rounded-md bg-surface-2 py-1"><dt class="text-2xs text-slate-500" title="Tarjetas amarillas">TA</dt><dd class="text-warning">{{ player.yellowCards }}</dd></div>
+                  <div class="rounded-md bg-surface-2 py-1"><dt class="text-2xs text-slate-500" title="Tarjetas rojas">TR</dt><dd class="text-danger">{{ player.redCards }}</dd></div>
+                </dl>
+              </li>
+            </ul>
+          </div>
+        </FitBox>
 
         <dl class="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
           <div class="rounded-lg border border-line px-2 py-1.5"><dt class="text-slate-500">Penaltis a favor</dt><dd class="font-semibold text-slate-900">{{ side.setPieces.penaltyGoalsFor }}</dd></div>
