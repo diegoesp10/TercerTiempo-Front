@@ -1,6 +1,7 @@
+import { watch } from 'vue';
 import type { Router } from 'vue-router';
 import { useAdminSessionStore } from './adminSession';
-import { useAuthStore } from './auth';
+import { ACCOUNT_KEY, TOKEN_KEY, TOKEN_UNTIL_KEY, useAuthStore } from './auth';
 
 /**
  * Una sola sesión por navegador: o la de una cuenta (club, técnico o jugador) o la del administrador, nunca las dos.
@@ -40,10 +41,20 @@ export function installSessionSync(router: Router) {
 
   window.addEventListener('storage', (event) => {
     if (event.key === ACTIVE_KEY && event.newValue?.startsWith('user')) admin.end();
-    if (event.key === null || event.key === 'tt.token' || event.key === 'tt.account') {
+    if (event.key === null || event.key === TOKEN_KEY || event.key === TOKEN_UNTIL_KEY || event.key === ACCOUNT_KEY) {
       const wasAuthenticated = auth.isAuthenticated;
       auth.reloadFromStorage();
       if (wasAuthenticated && !auth.isAuthenticated && router.currentRoute.value.meta.requiresAuth) void router.push({ name: 'login' });
     }
+  });
+
+  // La sesión de esta pestaña caduca o deja de valer con una página que la necesita abierta: se va a «Entrar», que lo
+  // explica y vuelve aquí al entrar; la del administrador, a su página. Así esa página deja de pedir sus datos.
+  watch(() => auth.expired, (expired) => {
+    const route = router.currentRoute.value;
+    if (expired && route.meta.requiresAuth) void router.push({ name: 'login', query: { redirect: route.fullPath } });
+  });
+  watch(() => admin.isActive, (active, wasActive) => {
+    if (wasActive && !active && !auth.isAuthenticated && router.currentRoute.value.meta.requiresAuth) void router.push({ name: 'jobs' });
   });
 }

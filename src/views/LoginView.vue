@@ -42,6 +42,7 @@ async function submit() {
     <form class="mt-6 space-y-4" :novalidate="backendTest" @submit.prevent="submit">
       <Alert v-if="backendTest" kind="warning">Prueba del backend: la validación del navegador está desactivada.</Alert>
       <Alert v-if="error" kind="error">{{ error }}</Alert>
+      <Alert v-else-if="auth.expired" kind="info">Tu sesión ha caducado o ya no es válida: vuelve a entrar.</Alert>
 
       <div>
         <label class="label" for="email">Email</label>

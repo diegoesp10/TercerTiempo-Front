@@ -107,6 +107,34 @@ function adminViewerToken(): string | null {
   return useAuthStore().token ? null : useAdminSessionStore().session?.token ?? null;
 }
 
+/** El 401 con el que la API rechazaría un token caducado, sin llegar a pedirlo. */
+function sessionExpired(): ApiError {
+  return new ApiError(401, {
+    status: 401,
+    title: 'No autenticado',
+    detail: 'Tu sesión ha caducado o ya no es válida: vuelve a iniciar sesión.',
+    code: 'auth.session_expired',
+  });
+}
+
+/**
+ * Un token de sesión (el de la cuenta o el del administrador) que ya ha caducado no sale: la sesión se cierra aquí y la
+ * petición falla con el mismo 401 que daría la API, pero sin hacerla, y sin un error en la consola del navegador.
+ */
+export function ensureFreshToken(token: string | null) {
+  if (!token) return;
+  const auth = useAuthStore();
+  if (token === auth.token && auth.isExpired()) {
+    auth.expire();
+    throw sessionExpired();
+  }
+  const admin = useAdminSessionStore();
+  if (token === admin.session?.token && admin.isExpired()) {
+    admin.end();
+    throw sessionExpired();
+  }
+}
+
 const keyOf = (path: string, options: RequestOptions) =>
   `${options.anonymous ? '' : options.token ?? useAuthStore().token ?? adminViewerToken() ?? ''}|${useSeasonStore().selectedId ?? ''}|${path}`;
 
@@ -213,6 +241,7 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
   if (options.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   const viewerToken = options.anonymous || options.token ? null : adminViewerToken();
   const token = options.anonymous ? null : options.token ?? auth.token ?? viewerToken;
+  ensureFreshToken(token);
   if (token) headers.Authorization = `Bearer ${token}`;
   // Todos los datos se leen de la temporada elegida (sin cabecera, la actual).
   const season = useSeasonStore().selectedId;
@@ -239,7 +268,8 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
     }
 
     if (!response.ok) {
-      if (response.status === 401 && auth.token && !options.token) auth.logout();
+      // La API ya no acepta la sesión con la que se ha pedido: se olvida (si sigue siendo la abierta).
+      if (response.status === 401 && token && token === auth.token) auth.expire(token);
       // Token del administrador caducado o ya no válido (el 401 del propio token, no el de una contraseña mal escrita):
       // se cierra su sesión.
       const code = (data as ProblemDetails | null)?.code;
@@ -255,14 +285,19 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
 
 /** Imagen o archivo que solo se sirve con la sesión iniciada (un <img> no puede mandar el token): devuelve el contenido. */
 export async function httpBlob(path: string): Promise<Blob> {
-  const token = useAuthStore().token ?? adminViewerToken();
+  const auth = useAuthStore();
+  const token = auth.token ?? adminViewerToken();
+  ensureFreshToken(token);
   let response: Response;
   try {
     response = await fetch(`${originOf(path)}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
   } catch {
     throw new ApiError(0, { title: 'Sin conexión', detail: 'No hemos podido conectar con Tercer Tiempo. Comprueba tu conexión a internet y vuelve a intentarlo en un momento.' });
   }
-  if (!response.ok) throw new ApiError(response.status, { status: response.status, title: response.statusText });
+  if (!response.ok) {
+    if (response.status === 401 && token && token === auth.token) auth.expire(token);
+    throw new ApiError(response.status, { status: response.status, title: response.statusText });
+  }
   return response.blob();
 }
 

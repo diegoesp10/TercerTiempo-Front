@@ -133,9 +133,12 @@ function lowerCaseIds(params: RouteParamsGeneric): RouteParamsGeneric | null {
   return changed ? result : null;
 }
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore();
   useLoadingStore().navigating = true;
+  // Con una sesión guardada, la primera navegación espera a que la API diga si aún vale: así ninguna página pide nada con
+  // un token que ya no vale y, si la página necesita sesión, se va a «Entrar».
+  await auth.sessionChecked();
 
   // Los parámetros *Id van tal cual a las rutas de la API: uno que no sea un GUID (con %2F, ?, ..) podría cambiar la
   // petición, así que esa dirección no existe.

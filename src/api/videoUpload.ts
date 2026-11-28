@@ -1,4 +1,4 @@
-import { ApiError, mediaBaseUrl } from '@/api/http';
+import { ApiError, ensureFreshToken, mediaBaseUrl } from '@/api/http';
 import { useAuthStore } from '@/stores/auth';
 import type { ProblemDetails, VideoUploadDto } from '@/types/api';
 
@@ -12,13 +12,20 @@ export function uploadVideoChunk(
   signal?: AbortSignal,
 ): Promise<VideoUploadDto> {
   const auth = useAuthStore();
+  const token = auth.token;
 
   return new Promise<VideoUploadDto>((resolve, reject) => {
+    try {
+      ensureFreshToken(token);
+    } catch (e) {
+      reject(e);
+      return;
+    }
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', `${mediaBaseUrl}/media/squads/${squadId}/video-uploads/${uploadId}/chunks/${index}`);
     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
     xhr.setRequestHeader('Accept', 'application/json');
-    if (auth.token) xhr.setRequestHeader('Authorization', `Bearer ${auth.token}`);
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
     xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress(event.loaded); };
 
@@ -28,7 +35,7 @@ export function uploadVideoChunk(
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve(data as VideoUploadDto);
       } else {
-        if (xhr.status === 401 && auth.token) auth.logout();
+        if (xhr.status === 401 && token) auth.expire(token);
         reject(new ApiError(xhr.status, (data as ProblemDetails | null) ?? { status: xhr.status, title: xhr.statusText }));
       }
     };

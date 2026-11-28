@@ -47,5 +47,10 @@ export const useAdminSessionStore = defineStore('adminSession', () => {
     writeSession(null);
   }
 
-  return { session, isActive, start, end };
+  /** Como el token de una cuenta: se deja de usar medio minuto antes de que caduque (http.ts no lo deja salir). */
+  function isExpired() {
+    return session.value !== null && Date.now() >= new Date(session.value.expiresAt).getTime() - 30_000;
+  }
+
+  return { session, isActive, start, end, isExpired };
 });

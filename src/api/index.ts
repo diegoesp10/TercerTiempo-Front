@@ -179,7 +179,8 @@ export const api = {
     invite: (inviteCode: string) => http<SquadInviteDto>(`/api/auth/invite/${encodeURIComponent(inviteCode.trim())}`),
     login: (body: LoginRequest) => http<AuthResponse>('/api/auth/login', { method: 'POST', body }),
     // Al arrancar y al entrar en algunos paneles: dentro de unos segundos vale la misma (tras guardar algo se vuelve a pedir).
-    me: () => http<AccountDto>('/api/auth/me', { cacheMs: 10_000 }),
+    // Sin una sesión que valga, null (204), no un 401: así se comprueba la guardada al abrir la web.
+    me: () => http<AccountDto | null>('/api/auth/me', { cacheMs: 10_000 }),
     /** Último cambio de contraseña y si ya se puede volver a cambiar (uno cada 24 h). */
     passwordStatus: () => http<PasswordStatusDto>('/api/auth/password', { silent: true }),
     changePassword: (body: ChangePasswordRequest) => http<AuthResponse>('/api/auth/password', { method: 'PUT', body }),
@@ -348,11 +349,11 @@ export const api = {
   },
 
   /**
-   * Latido de la sesión (la lista de gente en sesión de la administración): la página en la que está la cuenta. Con
-   * `end` y el token de la sesión que se cierra, desaparece de la lista al momento.
+   * Latido de la sesión (la lista de gente en sesión de la administración): la página en la que está la cuenta, o null
+   * (204) si la API ya no acepta la sesión. Con `end` y el token de la sesión que se cierra, desaparece de la lista al momento.
    */
   presence: {
-    ping: (path: string) => http<PresencePulseDto>('/api/presence', { method: 'POST', body: { path }, silent: true, keepCache: true }),
+    ping: (path: string) => http<PresencePulseDto | null>('/api/presence', { method: 'POST', body: { path }, silent: true, keepCache: true }),
     end: (token: string) => http<void>('/api/presence', { method: 'DELETE', token, silent: true, keepCache: true }),
   },
 
