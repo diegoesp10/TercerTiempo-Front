@@ -12,6 +12,7 @@ withDefaults(defineProps<{ title: string; subtitle: string; narrow?: boolean }>(
   <!-- overflow-clip y no overflow-hidden: recorta las esquinas sin romper el sticky del panel estrecho. -->
   <div
     class="mx-auto mt-4 grid max-w-5xl grid-cols-1 overflow-clip rounded-2xl border border-line bg-surface shadow-card"
+    data-page-surface="transparent"
     :class="narrow ? 'lg:grid-cols-[17rem_minmax(0,1fr)]' : 'lg:grid-cols-5'"
   >
     <aside class="auth-aside text-white" :class="narrow ? 'hidden p-7 lg:block' : 'px-5 py-4 lg:col-span-2 lg:flex lg:flex-col lg:p-8 xl:p-10'">

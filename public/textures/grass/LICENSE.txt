@@ -1,2 +1,3 @@
-Grass004 de ambientCG (https://ambientcg.com/view?id=Grass004), licencia CC0 1.0 (dominio publico).
-Color y normales convertidos a WebP de 1024 px (calidad 72 y 70) para el fondo de la aplicacion.
+pitch-sideline.webp: imagen generada con IA para Tercer Tiempo (generacion de imagenes de OpenAI, desde Codex, el 26-11-2026),
+convertida a WebP sin metadatos (calidad 85). No es una foto de terceros: segun las condiciones de uso de OpenAI, lo generado
+pertenece a quien lo genera.
